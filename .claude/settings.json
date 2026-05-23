@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rsvg-convert -w 192 -h 192 /home/mmanto/Projects/gestion.ar.back/frontend/public/img/logo_vertical_ius.svg -o /home/mmanto/Projects/gestion.ar.back/frontend/public/icons/icon-192.png)",
+      "Bash(rsvg-convert -w 512 -h 512 /home/mmanto/Projects/gestion.ar.back/frontend/public/img/logo_vertical_ius.svg -o /home/mmanto/Projects/gestion.ar.back/frontend/public/icons/icon-512.png)"
+    ]
+  }
+}

@@ -1,0 +1,93 @@
+
+services:
+  # MongoDB (base de datos principal)
+  mongo:
+    image: mongo:7
+    container_name: gestionar_mongo
+    ports:
+      - "27018:27017"   # 27018 en host para no colisionar con instancias locales
+    volumes:
+      - mongo_data:/data/db
+    command: --wiredTigerCacheSizeGB 0.25
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis (cache e idempotencia)
+  redis:
+    image: redis:7-alpine
+    container_name: gestionar_redis
+    ports:
+      - "6380:6379"   # 6380 en host para no colisionar con instancias locales
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # Aplicación FastAPI (backend)
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gestionar_app
+    env_file:
+      - ./backend/.env.dev
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/leadtrackers
+      - REDIS_URL=redis://redis:6379
+      - CHROMA_PATH=/app/chroma_db
+    volumes:
+      - chroma_data:/app/chroma_db
+      - ./docs:/app/documents
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - default
+      - traefik_public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.leadtrackers-api.rule=Host(`api.law.dev.leadtrackers.pro`)"
+      - "traefik.http.routers.leadtrackers-api.entrypoints=websecure"
+      - "traefik.http.routers.leadtrackers-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.leadtrackers-api.loadbalancer.server.port=8000"
+
+  # Frontend React (Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: gestionar_frontend
+    depends_on:
+      - app
+    restart: unless-stopped
+    networks:
+      - default
+      - traefik_public
+    labels:
+      - "traefik.enable=true"
+      # Ruta HTTPS
+      - "traefik.http.routers.leadtrackers.rule=Host(`law.dev.leadtrackers.pro`)"
+      - "traefik.http.routers.leadtrackers.entrypoints=websecure"
+      - "traefik.http.routers.leadtrackers.tls.certresolver=letsencrypt"
+      - "traefik.http.services.leadtrackers.loadbalancer.server.port=80"
+
+volumes:
+  mongo_data:
+  chroma_data:
+
+networks:
+  default:
+    name: gestionar_network
+  traefik_public:
+    external: true

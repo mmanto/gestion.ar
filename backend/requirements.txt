@@ -1,0 +1,33 @@
+# PASO 1: Dependencias básicas de infraestructura
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+motor==3.7.1
+redis==5.0.1
+pydantic==2.10.6
+pydantic-settings==2.7.1
+pytest==7.4.3
+pytest-asyncio==0.21.1
+httpx==0.26.0
+
+# PASO 2: Dependencias RAG
+chromadb==0.4.22
+sentence-transformers==2.3.1
+langchain==0.1.4
+langchain-community==0.0.14
+pypdf==4.0.0
+python-docx==1.1.0
+python-multipart==0.0.6
+
+# PASO 3: Dependencias Claude API
+anthropic==0.34.2
+
+# PASO 4: Dependencias de Autenticación JWT
+python-jose[cryptography]==3.3.0
+# bcrypt ya viene con chromadb, usamos directamente sin passlib
+
+# PASO 5: QR Code para canal web
+qrcode[pil]==7.4.2
+
+# PASO 6: PWA Push Notifications (VAPID)
+pywebpush==2.0.0
+py-vapid==1.9.1

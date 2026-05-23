@@ -1,0 +1,30 @@
+# docker-compose.prod.yml — Overrides de producción
+# Uso: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Requiere en el servidor:
+#   - .env              → REGISTRY_IMAGE=registry.gitlab.com/NAMESPACE/PROJECT
+#   - backend/.env.prod → credenciales reales
+#   - docs/             → directorio (puede estar vacío)
+
+services:
+  app:
+    image: ${REGISTRY_IMAGE}/backend:${IMAGE_TAG:-latest}
+    env_file:
+      - ./backend/.env.prod
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/leadtrackers
+      - REDIS_URL=redis://redis:6379
+      - CHROMA_PATH=/app/chroma_db
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+    labels:
+      - "traefik.http.routers.leadtrackers-api.rule=Host(`api.law.leadtrackers.pro`)"
+
+  frontend:
+    image: ${REGISTRY_IMAGE}/frontend:${IMAGE_TAG:-latest}
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=/api
+    labels:
+      - "traefik.http.routers.leadtrackers.rule=Host(`law.leadtrackers.pro`)"

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/icons/icon-512.png" sizes="512x512" />
+    <link rel="icon" href="/img/icons/icon-512.png" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/img/logo_vertical_ius.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Asistente</title>
+
+    <!-- PWA: capturar beforeinstallprompt lo antes absolutamente posible.
+         Los módulos ES son diferidos; este script inline corre ANTES que ellos. -->
+    <script>
+      window.__pwaBeforeInstallPrompt = null;
+      window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        window.__pwaBeforeInstallPrompt = e;
+        window.dispatchEvent(new CustomEvent('pwa-install-ready'));
+      });
+    </script>
+
+    <!-- PWA: Manifest - estático en el HTML para que Chrome lo detecte durante el parseo.
+         El script inline actualiza el href para rutas de chat antes de que Chrome lo fetchee. -->
+    <link rel="manifest" id="app-manifest" href="/manifest.webmanifest" />
+    <script>
+      (function () {
+        var match = window.location.pathname.match(/^\/chat\/c\/([^/]+)/);
+        if (match) {
+          document.getElementById('app-manifest').href =
+            '/api/public/channels/' + match[1] + '/manifest.webmanifest';
+        }
+      })();
+    </script>
+
+    <!-- PWA: Theme color (Android toolbar, iOS status bar) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet" />
+
+    <meta name="theme-color" content="#2793b4" />
+
+    <!-- PWA: iOS / Safari -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Asistente" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

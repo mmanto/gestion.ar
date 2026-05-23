@@ -1,0 +1,58 @@
+# Traefik — Reverse proxy + SSL automático
+# Instalar UNA SOLA VEZ en el servidor en /opt/traefik/
+#
+# Setup inicial:
+#   mkdir -p /opt/traefik
+#   touch /opt/traefik/acme.json && chmod 600 /opt/traefik/acme.json
+#   docker network create traefik_public
+#   docker compose up -d
+
+services:
+  traefik:
+    image: traefik:v3.6
+    container_name: traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - TZ=America/Argentina/Buenos_Aires
+      - DOCKER_API_VERSION=1.41
+    command:
+      # API & Dashboard (solo accesible internamente)
+      - --api.dashboard=true
+      - --api.insecure=false
+
+      # Providers
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=traefik_public
+
+      # Entrypoints
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+
+      # Redirect HTTP → HTTPS global
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.permanent=true
+
+      # Let's Encrypt
+      - --certificatesresolvers.letsencrypt.acme.email=admin@leadtrackers.pro
+      - --certificatesresolvers.letsencrypt.acme.storage=/acme.json
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+
+      # Logs
+      - --log.level=INFO
+      - --accesslog=true
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /opt/traefik/acme.json:/acme.json
+
+    networks:
+      - traefik_public
+
+networks:
+  traefik_public:
+    external: true
