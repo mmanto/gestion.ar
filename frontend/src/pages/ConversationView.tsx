@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AppLayout } from '../components/layout/AppLayout';
 import { Navbar } from '../components/layout/Navbar';
+import { Footer } from '../components/layout/Footer';
 import { LoadingPage } from '../components/common/Spinner';
 import ConversationDetail from '../components/conversations/ConversationDetail';
 import conversationsService from '../services/conversations.service';

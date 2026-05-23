@@ -17,9 +17,7 @@ export function PushNotificationButton({ channelId, botId }: PushNotificationBut
     permissionState,
     isSubscribed,
     isLoading,
-    error,
     subscribe,
-    unsubscribe,
   } = usePushNotifications(channelId, botId);
 
   // No mostrar si no soporta push, ya está suscrito, o está bloqueado (va a configuración)
