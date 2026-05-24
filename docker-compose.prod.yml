@@ -17,7 +17,11 @@ services:
       - CHROMA_PATH=/app/chroma_db
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
     labels:
+      - "traefik.enable=true"
       - "traefik.http.routers.gestionar-api.rule=Host(`api.gestionar.kairosgroup.ar`)"
+      - "traefik.http.routers.gestionar-api.entrypoints=websecure"
+      - "traefik.http.routers.gestionar-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.gestionar-api.loadbalancer.server.port=8000"
 
   frontend:
     image: ${REGISTRY_IMAGE}/frontend:${IMAGE_TAG:-latest}
@@ -27,4 +31,8 @@ services:
       args:
         - VITE_API_URL=/api
     labels:
+      - "traefik.enable=true"
       - "traefik.http.routers.gestionar.rule=Host(`gestionar.kairosgroup.ar`)"
+      - "traefik.http.routers.gestionar.entrypoints=websecure"
+      - "traefik.http.routers.gestionar.tls.certresolver=letsencrypt"
+      - "traefik.http.services.gestionar.loadbalancer.server.port=80"
