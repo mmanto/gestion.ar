@@ -38,7 +38,7 @@ services:
       - --entrypoints.web.http.redirections.entrypoint.permanent=true
 
       # Let's Encrypt
-      - --certificatesresolvers.letsencrypt.acme.email=admin@leadtrackers.pro
+      - --certificatesresolvers.letsencrypt.acme.email=admin@kairosgroup.ar
       - --certificatesresolvers.letsencrypt.acme.storage=/acme.json
       - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
 

@@ -17,7 +17,7 @@ class BotService:
 
     def __init__(self):
         """Inicializa el servicio de bots"""
-        self.mongodb_uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017/leadtrackers")
+        self.mongodb_uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017/gestionar")
         self.client = AsyncIOMotorClient(self.mongodb_uri)
         self.db = self.client.get_default_database()
         self.bots = self.db.bots

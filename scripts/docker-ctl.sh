@@ -5,14 +5,14 @@
 #   docker-ctl.sh <proyecto> <comando> [servicio]
 #   docker-ctl.sh <comando-global>
 #
-# PROYECTOS:  leadtrackers | cubika | email | postgres | proxy | subse
+# PROYECTOS:  gestionar | cubika | email | postgres | proxy | subse
 # COMANDOS:   up | down | restart | rebuild | status | logs | pull
 # GLOBALES:   up-all | down-all | restart-all | status-all | help
 #
 # EJEMPLOS:
-#   ./docker-ctl.sh leadtrackers up
-#   ./docker-ctl.sh leadtrackers logs app
-#   ./docker-ctl.sh leadtrackers rebuild
+#   ./docker-ctl.sh gestionar up
+#   ./docker-ctl.sh gestionar logs app
+#   ./docker-ctl.sh gestionar rebuild
 #   ./docker-ctl.sh up-all
 #   ./docker-ctl.sh status-all
 
@@ -52,7 +52,7 @@ ${BOLD}USO${RESET}
   ${SCRIPT_NAME} <comando-global>
 
 ${BOLD}PROYECTOS${RESET}
-  leadtrackers   LeadTrackers   (FastAPI + React + Mongo + Redis)
+  gestionar   Gestionar   (FastAPI + React + Mongo + Redis)
   cubika     Cubika           (FastAPI + React + MongoDB)
   email      Email-Service    (FastAPI standalone)
   postgres   Postgres16       (PostgreSQL 16)
@@ -76,9 +76,9 @@ ${BOLD}COMANDOS GLOBALES${RESET}
   help         Mostrar esta ayuda
 
 ${BOLD}EJEMPLOS${RESET}
-  ${SCRIPT_NAME} leadtrackers up
-  ${SCRIPT_NAME} leadtrackers logs app
-  ${SCRIPT_NAME} leadtrackers rebuild
+  ${SCRIPT_NAME} gestionar up
+  ${SCRIPT_NAME} gestionar logs app
+  ${SCRIPT_NAME} gestionar rebuild
   ${SCRIPT_NAME} postgres status
   ${SCRIPT_NAME} up-all
   ${SCRIPT_NAME} status-all

@@ -26,7 +26,7 @@ class PushService:
     """Servicio para gestionar suscripciones push y envío de notificaciones VAPID"""
 
     def __init__(self):
-        self.mongodb_uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017/leadtrackers")
+        self.mongodb_uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017/gestionar")
         self.client = AsyncIOMotorClient(self.mongodb_uri)
         self.db = self.client.get_default_database()
         self.subscriptions = self.db.push_subscriptions

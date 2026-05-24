@@ -39,7 +39,7 @@ services:
     env_file:
       - ./backend/.env.dev
     environment:
-      - MONGODB_URI=mongodb://mongo:27017/leadtrackers
+      - MONGODB_URI=mongodb://mongo:27017/gestionar
       - REDIS_URL=redis://redis:6379
       - CHROMA_PATH=/app/chroma_db
     volumes:
@@ -57,10 +57,10 @@ services:
       - traefik_public
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.leadtrackers-api.rule=Host(`api.law.dev.leadtrackers.pro`)"
-      - "traefik.http.routers.leadtrackers-api.entrypoints=websecure"
-      - "traefik.http.routers.leadtrackers-api.tls.certresolver=letsencrypt"
-      - "traefik.http.services.leadtrackers-api.loadbalancer.server.port=8000"
+      - "traefik.http.routers.gestionar-api.rule=Host(`api.dev.gestionar.kairosgroup.ar`)"
+      - "traefik.http.routers.gestionar-api.entrypoints=websecure"
+      - "traefik.http.routers.gestionar-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.gestionar-api.loadbalancer.server.port=8000"
 
   # Frontend React (Nginx)
   frontend:
@@ -77,10 +77,10 @@ services:
     labels:
       - "traefik.enable=true"
       # Ruta HTTPS
-      - "traefik.http.routers.leadtrackers.rule=Host(`law.dev.leadtrackers.pro`)"
-      - "traefik.http.routers.leadtrackers.entrypoints=websecure"
-      - "traefik.http.routers.leadtrackers.tls.certresolver=letsencrypt"
-      - "traefik.http.services.leadtrackers.loadbalancer.server.port=80"
+      - "traefik.http.routers.gestionar.rule=Host(`dev.gestionar.kairosgroup.ar`)"
+      - "traefik.http.routers.gestionar.entrypoints=websecure"
+      - "traefik.http.routers.gestionar.tls.certresolver=letsencrypt"
+      - "traefik.http.services.gestionar.loadbalancer.server.port=80"
 
 volumes:
   mongo_data:

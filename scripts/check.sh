@@ -49,7 +49,7 @@ if ! python -c "import motor" &>/dev/null || ! python -c "import redis" &>/dev/n
 fi
 
 # Usa las mismas variables que CI; si no están definidas usa los defaults locales
-export MONGODB_URI="${MONGODB_URI:-mongodb://localhost:27017/leadtrackers_test}"
+export MONGODB_URI="${MONGODB_URI:-mongodb://localhost:27017/gestionar_test}"
 export REDIS_URL="${REDIS_URL:-redis://localhost:6379}"
 export CHROMA_PATH="${CHROMA_PATH:-/tmp/chroma_ci}"
 export ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-dummy}"
@@ -58,8 +58,8 @@ export VAPID_PRIVATE_KEY="${VAPID_PRIVATE_KEY:-dummy}"
 export VAPID_PUBLIC_KEY="${VAPID_PUBLIC_KEY:-dummy}"
 
 # Verificar que MongoDB y Redis están levantados antes de correr tests
-if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q "leadtrackers_mongo"; then
-    echo -e "${YELLOW}⚠️  leadtrackers_mongo no está corriendo — los tests de infraestructura fallarán${NC}"
+if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q "gestionar_mongo"; then
+    echo -e "${YELLOW}⚠️  gestionar_mongo no está corriendo — los tests de infraestructura fallarán${NC}"
     echo -e "   Levanta los servicios con: docker compose up -d mongo redis"
 fi
 

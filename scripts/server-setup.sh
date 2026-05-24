@@ -6,7 +6,7 @@
 #   ssh user@servidor "bash /tmp/server-setup.sh"
 set -euo pipefail
 
-DEPLOY_PATH="${DEPLOY_PATH:-/opt/leadtrackers}"
+DEPLOY_PATH="${DEPLOY_PATH:-/opt/gestionar}"
 REGISTRY_IMAGE="${REGISTRY_IMAGE:-registry.gitlab.com/NAMESPACE/PROJECT}"
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'

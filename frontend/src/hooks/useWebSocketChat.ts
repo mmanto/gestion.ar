@@ -10,7 +10,7 @@ interface UseWebSocketChatReturn {
   sendMessage: (content: string) => void;
 }
 
-const DEVICE_ID_KEY = 'leadtrackers_device_id';
+const DEVICE_ID_KEY = 'gestionar_device_id';
 
 function generateUUID(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {

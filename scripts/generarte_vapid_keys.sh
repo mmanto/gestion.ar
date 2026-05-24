@@ -1,6 +1,6 @@
 #! /bin/bash
 
-docker exec leadtrackers_app python -c "
+docker exec gestionar_app python -c "
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import serialization
 import base64
