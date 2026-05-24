@@ -5,7 +5,7 @@ services:
     image: mongo:7
     container_name: gestionar_mongo
     ports:
-      - "27018:27017"   # 27018 en host para no colisionar con instancias locales
+      - "27018:27017"
     volumes:
       - mongo_data:/data/db
     command: --wiredTigerCacheSizeGB 0.25
@@ -21,7 +21,7 @@ services:
     image: redis:7-alpine
     container_name: gestionar_redis
     ports:
-      - "6380:6379"   # 6380 en host para no colisionar con instancias locales
+      - "6380:6379"
     command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -54,15 +54,8 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     networks:
       - default
-      - traefik_public
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.gestionar-api.rule=Host(`api.dev.gestionar.kairosgroup.ar`)"
-      - "traefik.http.routers.gestionar-api.entrypoints=websecure"
-      - "traefik.http.routers.gestionar-api.tls.certresolver=letsencrypt"
-      - "traefik.http.services.gestionar-api.loadbalancer.server.port=8000"
 
-  # Frontend React (Nginx)
+  # Frontend React (Nginx — proxy /api/ y /ws/ al backend internamente)
   frontend:
     build:
       context: ./frontend
@@ -76,11 +69,39 @@ services:
       - traefik_public
     labels:
       - "traefik.enable=true"
-      # Ruta HTTPS
       - "traefik.http.routers.gestionar.rule=Host(`dev.gestionar.kairosgroup.ar`)"
       - "traefik.http.routers.gestionar.entrypoints=websecure"
       - "traefik.http.routers.gestionar.tls.certresolver=letsencrypt"
       - "traefik.http.services.gestionar.loadbalancer.server.port=80"
+
+  # Traefik — solo activo con: docker compose --profile traefik up -d
+  traefik:
+    image: traefik:v3.6
+    container_name: gestionar_traefik
+    restart: unless-stopped
+    profiles: ["traefik"]
+    ports:
+      - "80:80"
+      - "443:443"
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=traefik_public
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.permanent=true
+      - --certificatesresolvers.letsencrypt.acme.email=admin@kairosgroup.ar
+      - --certificatesresolvers.letsencrypt.acme.storage=/acme.json
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+      - --log.level=INFO
+      - --accesslog=true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./acme.json:/acme.json
+    networks:
+      - traefik_public
 
 volumes:
   mongo_data:
@@ -90,4 +111,4 @@ networks:
   default:
     name: gestionar_network
   traefik_public:
-    external: true
+    name: gestionar_traefik_public
