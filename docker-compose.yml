@@ -94,7 +94,7 @@ services:
       - --entrypoints.web.http.redirections.entrypoint.permanent=true
       - --certificatesresolvers.letsencrypt.acme.email=admin@kairosgroup.ar
       - --certificatesresolvers.letsencrypt.acme.storage=/acme.json
-      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+      - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
       - --log.level=INFO
       - --accesslog=true
     volumes:
@@ -111,4 +111,4 @@ networks:
   default:
     name: gestionar_network
   traefik_public:
-    name: gestionar_traefik_public
+    name: traefik_public
