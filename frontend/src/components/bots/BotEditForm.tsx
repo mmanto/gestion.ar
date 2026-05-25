@@ -31,6 +31,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [iusError, setIusError] = useState<string | null>(null);
+  const [iusJustLoaded, setIusJustLoaded] = useState(false);
   const [isJsonPrompt, setIsJsonPrompt] = useState(() => {
     try { const p = JSON.parse(bot.config.system_prompt); return typeof p === 'object' && p !== null; } catch { return false; }
   });
@@ -62,6 +63,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
           return;
         }
         setIusError(null);
+        setIusJustLoaded(true);
         updateConfig('ius_config', parsed);
       } catch {
         setIusError('Error al parsear el archivo. Asegurate de que sea un JSON válido.');
@@ -74,6 +76,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
   const removeIusConfig = () => {
     updateConfig('ius_config', null);
     setIusError(null);
+    setIusJustLoaded(false);
   };
 
   const validate = (): boolean => {
@@ -115,6 +118,8 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
     e.preventDefault();
 
     if (!validate()) return;
+
+    setIusJustLoaded(false);
 
     const updateData: BotUpdate = {
       name: formData.name,
@@ -646,6 +651,18 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
         <p className="text-sm text-gray-500 mb-4">
           Carga el archivo <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">ius_system_prompt.json</code> para activar el agente calificador de casos laborales. Si está configurado, reemplaza el System Prompt como instrucción principal del bot.
         </p>
+
+        {/* Aviso: archivo cargado pero no guardado */}
+        {iusJustLoaded && (
+          <div className="mb-4 flex items-start gap-2 bg-amber-50 border border-amber-300 rounded-lg p-3">
+            <svg className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm text-amber-700">
+              Archivo cargado. Hacé click en <strong>Guardar Cambios</strong> para persistir la configuración.
+            </p>
+          </div>
+        )}
 
         {/* JSON cargado */}
         {formData.config.ius_config && (
