@@ -94,7 +94,7 @@ export function InstallPrompt({ ignoreDismiss = false }: InstallPromptProps) {
       <div className="bg-white rounded-xl shadow-lg border border-indigo-100 p-4 flex items-start gap-3">
         <img
           src="/img/logo_vertical_ius.svg"
-          alt="iUS"
+          alt="gestion.ar"
           className="w-12 h-12 rounded-xl flex-shrink-0"
         />
         <div className="flex-1 min-w-0">

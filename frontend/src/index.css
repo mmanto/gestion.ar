@@ -4,7 +4,9 @@
 
 @layer base {
   :root {
-    font-family: 'Montserrat', system-ui, sans-serif;
+    --font-editorial: 'Cormorant Garamond', Georgia, serif;
+    --font-body: 'Inter', 'Montserrat', system-ui, sans-serif;
+    font-family: var(--font-body);
     line-height: 1.5;
     font-weight: 400;
   }
@@ -16,14 +18,84 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold;
+    font-family: var(--font-editorial);
+    font-weight: 300;
   }
 }
 
 @layer components {
-  /* Estilos personalizados globales */
+  .font-editorial {
+    font-family: var(--font-editorial);
+  }
+
   .container {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .text-h1 {
+    font-family: var(--font-editorial);
+    font-size: clamp(36px, 6vw, 80px);
+    font-weight: 300;
+    letter-spacing: 0.01em;
+    line-height: 1.12;
+  }
+
+  .text-h2 {
+    font-family: var(--font-editorial);
+    font-size: clamp(32px, 4vw, 56px);
+    font-weight: 300;
+    letter-spacing: 0.01em;
+    line-height: 1.12;
+  }
+
+  .text-h3 {
+    font-family: var(--font-editorial);
+    font-size: clamp(20px, 2.5vw, 28px);
+    font-weight: 300;
+    letter-spacing: 0.01em;
+    line-height: 1.18;
+  }
+
+  .text-body {
+    font-family: var(--font-body);
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  .text-body-small {
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    line-height: 1.6;
+  }
+
+  .text-nav {
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .text-label {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .text-cta {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-transform: uppercase;
   }
 }
 

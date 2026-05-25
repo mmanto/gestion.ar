@@ -7,7 +7,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Montserrat', 'system-ui', 'sans-serif'],
+        sans:      ['Inter', 'Montserrat', 'system-ui', 'sans-serif'],
+        editorial: ["'Cormorant Garamond'", 'Georgia', 'serif'],
       },
       colors: {
         primary: {

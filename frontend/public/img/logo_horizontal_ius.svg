@@ -1,3 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 60" width="100%" height="100%">
-  <text x="10" y="48" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="42" font-weight="300" fill="#718096" letter-spacing="1">gestion.ar</text>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="0 0 134 36"
+   width="134"
+   height="36"
+   version="1.1"
+   id="svg3"
+   sodipodi:docname="logo_horizontal_ius.svg"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs3" />
+  <sodipodi:namedview
+     id="namedview3"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="18.328358"
+     inkscape:cx="30.908388"
+     inkscape:cy="18.004886"
+     inkscape:window-width="2560"
+     inkscape:window-height="1511"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg3" />
+  <text
+     font-family="Montserrat, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
+     font-size="22px"
+     font-weight="500"
+     letter-spacing="0.3"
+     id="text3"><tspan
+       x="0"
+       y="26"
+       fill="#1b3161"
+       id="tspan1">gestiona</tspan></text>
 </svg>

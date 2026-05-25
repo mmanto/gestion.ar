@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { publicService } from '../../services/public.service';
@@ -12,10 +12,10 @@ const NAV_LINKS = [
 ];
 
 const LANDING_LINKS = [
-  { label: '¿Qué es iUS?', href: '/#que-es-ius' },
-  { label: 'Ventajas',     href: '/#ventajas'   },
-  { label: 'Costo',        href: '/#costo'       },
-  { label: 'Contacto',     href: '/#contacto'    },
+  { label: 'Cómo funciona', id: 'como-funciona' },
+  { label: 'Canales',       id: 'canales'        },
+  { label: 'Precios',       id: 'costo'          },
+  { label: 'Contacto',      id: 'contacto'       },
 ];
 
 export const Navbar: React.FC = () => {
@@ -28,6 +28,8 @@ export const Navbar: React.FC = () => {
   const [copied,         setCopied]         = useState(false);
   const [userMenuOpen,   setUserMenuOpen]   = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled,       setScrolled]       = useState(false);
+  const [activeSection,  setActiveSection]  = useState('');
 
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -35,6 +37,32 @@ export const Navbar: React.FC = () => {
     publicService.getPublicUrl().then(setAppBaseUrl).catch(() => {});
     publicService.getLlmInfo().then((info) => setLlmModel(info.model)).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) return;
+    const handleScroll = () => setScrolled(window.scrollY > window.innerHeight * 0.5);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isAuthenticated]);
+
+  // IntersectionObserver para sección activa
+  useEffect(() => {
+    if (isAuthenticated) return;
+    const ids = LANDING_LINKS.map(l => l.id);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) setActiveSection(entry.target.id);
+        });
+      },
+      { threshold: 0.3, rootMargin: '-64px 0px 0px 0px' }
+    );
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, [isAuthenticated]);
 
   // Cerrar dropdown al hacer click fuera
   useEffect(() => {
@@ -72,15 +100,43 @@ export const Navbar: React.FC = () => {
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + '/');
 
+  const handleLandingNav = useCallback((e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      // Si no estamos en la landing, navegar y luego scrollear
+      navigate(`/#${id}`);
+    }
+    setMobileMenuOpen(false);
+  }, [navigate]);
+
+  const navStyle = isAuthenticated
+    ? { backgroundColor: 'white' }
+    : {
+        backgroundColor: scrolled ? 'rgba(42, 59, 77, 0.95)' : 'transparent',
+        backdropFilter:         scrolled ? 'blur(12px)' : 'none',
+        WebkitBackdropFilter:   scrolled ? 'blur(12px)' : 'none',
+      };
+
   return (
-    <nav className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-200">
+    <nav
+      className={`${isAuthenticated ? 'sticky shadow-sm border-b border-gray-200' : 'fixed'} top-0 left-0 right-0 z-50 transition-all duration-300`}
+      style={navStyle}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
 
           {/* ── Izquierda: logo + links ── */}
           <div className="flex items-center gap-8">
             <Link to={isAuthenticated ? '/clients' : '/'}>
-              <img src="/img/logo_horizontal_ius.svg" alt="iUS" className="h-9 w-auto" />
+              <span
+                className="font-editorial text-[24px] font-light uppercase tracking-[0.08em] select-none"
+                style={{ color: isAuthenticated ? '#0D1B38' : 'white' }}
+              >
+                GESTIONA
+              </span>
             </Link>
 
             {isAuthenticated && (
@@ -110,19 +166,29 @@ export const Navbar: React.FC = () => {
 
             {/* Landing nav — no autenticado */}
             {!isAuthenticated && (
-              <div className="hidden md:flex items-center gap-6">
-                {LANDING_LINKS.map(({ label, href }) => (
+              <div className="hidden md:flex items-center gap-8">
+                {LANDING_LINKS.map(({ label, id }) => (
                   <a
-                    key={label}
-                    href={href}
-                    className="text-sm font-medium text-gray-600 hover:text-primary transition-colors"
+                    key={id}
+                    href={`#${id}`}
+                    onClick={(e) => handleLandingNav(e, id)}
+                    className="text-nav relative py-1 transition-colors duration-200"
+                    style={{ color: activeSection === id ? 'white' : 'rgba(255,255,255,0.65)' }}
                   >
                     {label}
+                    <span
+                      className="absolute bottom-0 left-0 h-[2px] transition-all duration-200 ease-out"
+                      style={{
+                        width: activeSection === id ? '100%' : '0%',
+                        backgroundColor: '#C5A55A',
+                      }}
+                    />
                   </a>
                 ))}
                 <Link
                   to="/login"
-                  className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-600 transition-colors"
+                  className="text-cta px-5 py-2.5 rounded-lg transition-colors border"
+                  style={{ color: 'white', borderColor: 'rgba(255,255,255,0.25)', backgroundColor: 'rgba(255,255,255,0.08)' }}
                 >
                   Iniciar sesión
                 </Link>
@@ -138,7 +204,6 @@ export const Navbar: React.FC = () => {
                     onClick={() => setUserMenuOpen(v => !v)}
                     className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30"
                   >
-                    {/* Avatar */}
                     <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
                       <span className="text-primary text-sm font-semibold">
                         {user?.username?.charAt(0).toUpperCase()}
@@ -155,11 +220,9 @@ export const Navbar: React.FC = () => {
                     </svg>
                   </button>
 
-                  {/* Panel del dropdown */}
                   {userMenuOpen && (
                     <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg ring-1 ring-black/5 overflow-hidden z-50">
 
-                      {/* Header: info del usuario */}
                       <div className="flex items-center gap-3 px-4 py-3.5 bg-gray-50 border-b border-gray-100">
                         <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
                           <span className="text-primary font-semibold">
@@ -174,7 +237,6 @@ export const Navbar: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Items */}
                       <div className="py-1">
                         <Link
                           to="/settings"
@@ -214,19 +276,18 @@ export const Navbar: React.FC = () => {
                         )}
                       </div>
 
-                        {llmModel && (
-                          <div className="flex items-center gap-3 px-4 py-2.5">
-                            <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-2" />
-                            </svg>
-                            <div className="min-w-0">
-                              <p className="text-xs text-gray-400">Modelo</p>
-                              <p className="text-xs font-medium text-gray-700 truncate" title={llmModel}>{llmModel}</p>
-                            </div>
+                      {llmModel && (
+                        <div className="flex items-center gap-3 px-4 py-2.5">
+                          <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-2" />
+                          </svg>
+                          <div className="min-w-0">
+                            <p className="text-xs text-gray-400">Modelo</p>
+                            <p className="text-xs font-medium text-gray-700 truncate" title={llmModel}>{llmModel}</p>
                           </div>
-                        )}
+                        </div>
+                      )}
 
-                      {/* Cerrar sesión */}
                       <div className="border-t border-gray-100">
                         <button
                           onClick={handleLogout}
