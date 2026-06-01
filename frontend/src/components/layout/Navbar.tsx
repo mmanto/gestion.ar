@@ -113,7 +113,7 @@ export const Navbar: React.FC = () => {
   }, [navigate]);
 
   const navStyle = isAuthenticated
-    ? { backgroundColor: 'white' }
+    ? { backgroundColor: '#2A3B4D' }
     : {
         backgroundColor: scrolled ? 'rgba(42, 59, 77, 0.95)' : 'transparent',
         backdropFilter:         scrolled ? 'blur(12px)' : 'none',
@@ -122,7 +122,7 @@ export const Navbar: React.FC = () => {
 
   return (
     <nav
-      className={`${isAuthenticated ? 'sticky shadow-sm border-b border-gray-200' : 'fixed'} top-0 left-0 right-0 z-50 transition-all duration-300`}
+      className={`${isAuthenticated ? 'sticky shadow-sm border-b border-white/10' : 'fixed'} top-0 left-0 right-0 z-50 transition-all duration-300`}
       style={navStyle}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -133,7 +133,7 @@ export const Navbar: React.FC = () => {
             <Link to={isAuthenticated ? '/clients' : '/'}>
               <span
                 className="font-editorial text-[24px] font-light uppercase tracking-[0.08em] select-none"
-                style={{ color: isAuthenticated ? '#0D1B38' : 'white' }}
+                style={{ color: 'white' }}
               >
                 GESTIONA
               </span>
@@ -147,13 +147,13 @@ export const Navbar: React.FC = () => {
                     to={to}
                     className={`relative px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       isActive(to)
-                        ? 'text-primary bg-primary-50'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                        ? 'text-white bg-white/15'
+                        : 'text-white/70 hover:text-white hover:bg-white/10'
                     }`}
                   >
                     {label}
                     {isActive(to) && (
-                      <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-primary rounded-full" />
+                      <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-white rounded-full" />
                     )}
                   </Link>
                 ))}
@@ -202,18 +202,18 @@ export const Navbar: React.FC = () => {
                 <div className="relative" ref={userMenuRef}>
                   <button
                     onClick={() => setUserMenuOpen(v => !v)}
-                    className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-white/30"
                   >
-                    <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-primary text-sm font-semibold">
+                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-white text-sm font-semibold">
                         {user?.username?.charAt(0).toUpperCase()}
                       </span>
                     </div>
-                    <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-[120px] truncate">
+                    <span className="hidden sm:block text-sm font-medium text-white/90 max-w-[120px] truncate">
                       {user?.username}
                     </span>
                     <svg
-                      className={`w-3.5 h-3.5 text-gray-400 flex-shrink-0 transition-transform duration-150 ${userMenuOpen ? 'rotate-180' : ''}`}
+                      className={`w-3.5 h-3.5 text-white/50 flex-shrink-0 transition-transform duration-150 ${userMenuOpen ? 'rotate-180' : ''}`}
                       fill="none" viewBox="0 0 24 24" stroke="currentColor"
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -306,7 +306,7 @@ export const Navbar: React.FC = () => {
                 {/* Hamburger — solo mobile */}
                 <button
                   onClick={() => setMobileMenuOpen(v => !v)}
-                  className="md:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                  className="md:hidden p-2 rounded-lg text-white/70 hover:bg-white/10 transition-colors"
                   aria-label={mobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
                 >
                   {mobileMenuOpen
@@ -322,7 +322,7 @@ export const Navbar: React.FC = () => {
 
       {/* ── Menú mobile ── */}
       {isAuthenticated && mobileMenuOpen && (
-        <div className="md:hidden border-t border-gray-100 bg-white shadow-md">
+        <div className="md:hidden border-t border-white/10 bg-[#2A3B4D] shadow-md">
           <div className="px-3 py-2 space-y-0.5">
             {NAV_LINKS.map(({ to, label }) => (
               <Link
@@ -330,8 +330,8 @@ export const Navbar: React.FC = () => {
                 to={to}
                 className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive(to)
-                    ? 'text-primary bg-primary-50'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    ? 'text-white bg-white/15'
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
                 }`}
               >
                 {label}
