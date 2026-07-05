@@ -44,7 +44,7 @@ const StatsCards = ({ stats }: StatsCardsProps) => {
       {cards.map((card) => {
         const Icon = card.icon;
         return (
-          <Card key={card.title} className="hover:shadow-lg transition-shadow duration-200">
+          <Card key={card.title} shadow="none">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">{card.title}</p>

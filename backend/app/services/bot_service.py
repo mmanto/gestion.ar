@@ -1,34 +1,43 @@
 """
-Bot Service - CRUD operations for bots in MongoDB
+Bot Service - CRUD operations for bots in PostgreSQL (ver ADR-006 en docs/dev/DECISIONS.md)
 """
 
-import os
 import uuid
-from datetime import datetime
 from typing import Dict, Optional
 
-from motor.motor_asyncio import AsyncIOMotorClient
+from sqlalchemy import func, select
 
-from app.models.bot import Bot, BotCreate, BotUpdate, BotStatus, BotConfig
+from app.db.database import AsyncSessionLocal
+from app.db.models import Bot as BotModel
+from app.db.models import Conversation as ConversationModel
+from app.models.bot import Bot, BotConfig, BotCreate, BotStatus, BotUpdate
+
+
+def _to_bot(row: BotModel) -> Bot:
+    return Bot(
+        bot_id=row.bot_id,
+        owner_id=row.owner_id,
+        name=row.name,
+        description=row.description,
+        business_type=row.business_type,
+        status=row.status,
+        config=row.config,
+        channel_ids=row.channel_ids or [],
+        created_at=row.created_at.isoformat(),
+        updated_at=row.updated_at.isoformat(),
+        total_clients=row.total_clients,
+        total_conversations=row.total_conversations,
+        total_messages=row.total_messages,
+        metadata=row.metadata_,
+    )
 
 
 class BotService:
-    """Servicio para gestionar bots en MongoDB"""
-
-    def __init__(self):
-        """Inicializa el servicio de bots"""
-        self.mongodb_uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017/gestionar")
-        self.client = AsyncIOMotorClient(self.mongodb_uri)
-        self.db = self.client.get_default_database()
-        self.bots = self.db.bots
-        print("Bot Service inicializado")
+    """Servicio para gestionar bots en PostgreSQL"""
 
     async def ensure_indexes(self):
-        """Crea los índices necesarios en la colección"""
-        await self.bots.create_index("bot_id", unique=True)
-        await self.bots.create_index("owner_id")
-        await self.bots.create_index("status")
-        await self.bots.create_index("created_at")
+        """No-op: los índices ya se crean vía migraciones Alembic (ver backend/alembic/versions/)."""
+        pass
 
     async def create_bot(self, bot_data: BotCreate, owner_id: str) -> Bot:
         """
@@ -41,46 +50,42 @@ class BotService:
         Returns:
             Bot creado
         """
-        timestamp = datetime.utcnow().isoformat()
         bot_id = f"bot_{uuid.uuid4().hex[:12]}"
-
         config = bot_data.config if bot_data.config else BotConfig()
-        channels = bot_data.channels if bot_data.channels else []
 
-        bot_dict = {
-            "bot_id": bot_id,
-            "name": bot_data.name,
-            "description": bot_data.description,
-            "business_type": bot_data.business_type,
-            "owner_id": owner_id,
-            "status": BotStatus.ACTIVE.value,
-            "config": config.model_dump(),
-            "channels": [c.model_dump() for c in channels],
-            "channel_ids": [],
-            "knowledge_base_id": None,
-            "created_at": timestamp,
-            "updated_at": timestamp,
-            "total_clients": 0,
-            "total_conversations": 0,
-            "total_messages": 0,
-            "metadata": {}
-        }
-
-        await self.bots.insert_one(bot_dict)
-        return Bot(**bot_dict)
+        async with AsyncSessionLocal() as session:
+            row = BotModel(
+                bot_id=bot_id,
+                owner_id=owner_id,
+                name=bot_data.name,
+                description=bot_data.description,
+                business_type=bot_data.business_type,
+                status=BotStatus.ACTIVE.value,
+                config=config.model_dump(),
+                channel_ids=[],
+                total_clients=0,
+                total_conversations=0,
+                total_messages=0,
+                metadata_={},
+            )
+            session.add(row)
+            await session.commit()
+            await session.refresh(row)
+            return _to_bot(row)
 
     async def get_bot(self, bot_id: str) -> Optional[Bot]:
         """Obtiene un bot por ID"""
-        bot = await self.bots.find_one({"bot_id": bot_id}, {"_id": 0})
-        return Bot(**bot) if bot else None
+        async with AsyncSessionLocal() as session:
+            row = await session.get(BotModel, bot_id)
+            return _to_bot(row) if row else None
 
     async def get_bot_by_owner(self, bot_id: str, owner_id: str) -> Optional[Bot]:
         """Obtiene un bot verificando que pertenezca al owner"""
-        bot = await self.bots.find_one(
-            {"bot_id": bot_id, "owner_id": owner_id},
-            {"_id": 0}
-        )
-        return Bot(**bot) if bot else None
+        async with AsyncSessionLocal() as session:
+            row = await session.get(BotModel, bot_id)
+            if row and row.owner_id == owner_id:
+                return _to_bot(row)
+            return None
 
     async def get_bots_by_owner(
         self,
@@ -90,22 +95,28 @@ class BotService:
         status: Optional[BotStatus] = None
     ) -> Dict:
         """Obtiene bots de un propietario con paginación"""
-        filter_query = {"owner_id": owner_id}
+        filters = [BotModel.owner_id == owner_id]
         if status:
-            filter_query["status"] = status.value
+            filters.append(BotModel.status == status.value)
 
-        total = await self.bots.count_documents(filter_query)
-        cursor = self.bots.find(
-            filter_query,
-            {"_id": 0}
-        ).sort("created_at", -1).skip(skip).limit(limit)
+        async with AsyncSessionLocal() as session:
+            total = (await session.execute(
+                select(func.count()).select_from(BotModel).where(*filters)
+            )).scalar_one()
 
-        bots = await cursor.to_list(length=limit)
+            result = await session.execute(
+                select(BotModel)
+                .where(*filters)
+                .order_by(BotModel.created_at.desc())
+                .offset(skip)
+                .limit(limit)
+            )
+            rows = result.scalars().all()
 
         return {
-            "bots": [Bot(**b) for b in bots],
+            "bots": [_to_bot(r) for r in rows],
             "total": total,
-            "page": (skip // limit) + 1,
+            "page": (skip // limit) + 1 if limit > 0 else 1,
             "pages": (total + limit - 1) // limit if limit > 0 else 0,
             "limit": limit
         }
@@ -115,42 +126,44 @@ class BotService:
         update_dict = {}
 
         for key, value in update_data.model_dump(exclude_unset=True).items():
-            if value is not None:
-                if key == "config" and isinstance(value, dict):
-                    update_dict["config"] = value
-                elif key == "channels" and isinstance(value, list):
-                    update_dict["channels"] = value
-                elif key == "status":
-                    update_dict["status"] = value.value if hasattr(value, 'value') else value
-                else:
-                    update_dict[key] = value
+            if value is None:
+                continue
+            if key == "channels":
+                # legacy, ya no se persiste (estaba siempre vacío en la práctica)
+                continue
+            if key == "config" and isinstance(value, dict):
+                update_dict["config"] = value
+            elif key == "status":
+                update_dict["status"] = value.value if hasattr(value, "value") else value
+            elif key == "metadata":
+                update_dict["metadata_"] = value
+            else:
+                update_dict[key] = value
 
-        if not update_dict:
-            return await self.get_bot_by_owner(bot_id, owner_id)
+        async with AsyncSessionLocal() as session:
+            row = await session.get(BotModel, bot_id)
+            if not row or row.owner_id != owner_id:
+                return None
 
-        update_dict["updated_at"] = datetime.utcnow().isoformat()
+            if not update_dict:
+                return _to_bot(row)
 
-        result = await self.bots.update_one(
-            {"bot_id": bot_id, "owner_id": owner_id},
-            {"$set": update_dict}
-        )
+            for k, v in update_dict.items():
+                setattr(row, k, v)
 
-        if result.matched_count > 0:
-            return await self.get_bot(bot_id)
-        return None
+            await session.commit()
+            await session.refresh(row)
+            return _to_bot(row)
 
     async def delete_bot(self, bot_id: str, owner_id: str) -> bool:
         """Elimina un bot (soft delete)"""
-        result = await self.bots.update_one(
-            {"bot_id": bot_id, "owner_id": owner_id},
-            {
-                "$set": {
-                    "status": BotStatus.INACTIVE.value,
-                    "updated_at": datetime.utcnow().isoformat()
-                }
-            }
-        )
-        return result.modified_count > 0
+        async with AsyncSessionLocal() as session:
+            row = await session.get(BotModel, bot_id)
+            if not row or row.owner_id != owner_id:
+                return False
+            row.status = BotStatus.INACTIVE.value
+            await session.commit()
+            return True
 
     async def get_bot_stats(self, bot_id: str) -> Dict:
         """Obtiene estadísticas de un bot"""
@@ -158,11 +171,18 @@ class BotService:
         if not bot:
             return {}
 
+        async with AsyncSessionLocal() as session:
+            total_tokens_used = (await session.execute(
+                select(func.coalesce(func.sum(ConversationModel.total_tokens_used), 0))
+                .where(ConversationModel.bot_id == bot_id)
+            )).scalar_one()
+
         return {
             "bot_id": bot_id,
             "total_clients": bot.total_clients,
             "total_conversations": bot.total_conversations,
             "total_messages": bot.total_messages,
+            "total_tokens_used": total_tokens_used,
             "status": bot.status,
             "created_at": bot.created_at,
             "updated_at": bot.updated_at
@@ -176,46 +196,45 @@ class BotService:
         messages: int = 0
     ):
         """Incrementa contadores del bot"""
-        update_fields = {"updated_at": datetime.utcnow().isoformat()}
-        inc_fields = {}
-
-        if clients != 0:
-            inc_fields["total_clients"] = clients
-        if conversations != 0:
-            inc_fields["total_conversations"] = conversations
-        if messages != 0:
-            inc_fields["total_messages"] = messages
-
-        update_query = {"$set": update_fields}
-        if inc_fields:
-            update_query["$inc"] = inc_fields
-
-        await self.bots.update_one(
-            {"bot_id": bot_id},
-            update_query
-        )
+        async with AsyncSessionLocal() as session:
+            row = await session.get(BotModel, bot_id)
+            if not row:
+                return
+            if clients:
+                row.total_clients += clients
+            if conversations:
+                row.total_conversations += conversations
+            if messages:
+                row.total_messages += messages
+            await session.commit()
 
     async def add_channel_to_bot(self, bot_id: str, channel_id: str) -> bool:
         """Agrega un canal al bot"""
-        result = await self.bots.update_one(
-            {"bot_id": bot_id},
-            {
-                "$addToSet": {"channel_ids": channel_id},
-                "$set": {"updated_at": datetime.utcnow().isoformat()}
-            }
-        )
-        return result.modified_count > 0
+        async with AsyncSessionLocal() as session:
+            row = await session.get(BotModel, bot_id)
+            if not row:
+                return False
+            channel_ids = list(row.channel_ids or [])
+            if channel_id in channel_ids:
+                return False
+            channel_ids.append(channel_id)
+            row.channel_ids = channel_ids
+            await session.commit()
+            return True
 
     async def remove_channel_from_bot(self, bot_id: str, channel_id: str) -> bool:
         """Elimina un canal del bot"""
-        result = await self.bots.update_one(
-            {"bot_id": bot_id},
-            {
-                "$pull": {"channel_ids": channel_id},
-                "$set": {"updated_at": datetime.utcnow().isoformat()}
-            }
-        )
-        return result.modified_count > 0
+        async with AsyncSessionLocal() as session:
+            row = await session.get(BotModel, bot_id)
+            if not row:
+                return False
+            channel_ids = list(row.channel_ids or [])
+            if channel_id not in channel_ids:
+                return False
+            channel_ids.remove(channel_id)
+            row.channel_ids = channel_ids
+            await session.commit()
+            return True
 
 
 # Singleton

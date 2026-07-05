@@ -24,6 +24,7 @@ from app.services.bot_service import get_bot_service
 from app.services.channel_service import get_channel_service
 from app.services.client_service import get_client_service
 from app.services.conversation_flow_service import create_flow_state, FlowState
+from app.services.appointment_booking_service import BookingState, detects_booking_intent, start_booking
 from app.models.client import ClientUpdate
 
 logger = logging.getLogger(__name__)
@@ -95,7 +96,7 @@ async def websocket_chat(websocket: WebSocket, bot_id: str, device_id: Optional[
     """
     Canal de chat web en tiempo real para un bot.
     Público: el usuario llega escaneando un QR code, sin autenticarse.
-    Cada conexión crea una conversación nueva en MongoDB (channel='web').
+    Cada conexión crea una conversación nueva en PostgreSQL (channel='web').
     Si se recibe device_id, se reutiliza el cliente existente del dispositivo.
     """
     await websocket.accept()
@@ -177,7 +178,7 @@ async def websocket_chat(websocket: WebSocket, bot_id: str, device_id: Optional[
                 rag_context: Optional[str] = None
                 if bot.config.use_rag:
                     rag_context = rag.get_context(
-                        user_text, n_results=bot.config.rag_results_count
+                        user_text, bot_id=bot_id, n_results=bot.config.rag_results_count
                     )
 
                 # Llamar a Claude (es síncrono internamente; lo ejecutamos en un thread)
@@ -197,7 +198,7 @@ async def websocket_chat(websocket: WebSocket, bot_id: str, device_id: Optional[
                     ChatMessage(role="assistant", content=response["response"])
                 )
 
-                # Persistir en MongoDB — reutilizando la misma conversación
+                # Persistir en PostgreSQL — reutilizando la misma conversación
                 await conv_service.log_chat_interaction(
                     user_id=session_id,
                     user_message=user_text,
@@ -389,6 +390,10 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
                     {"type": "message", "role": "assistant", "content": first_question}
                 )
 
+    # Reserva de turnos por chat (ver appointment_booking_service.py): estado
+    # de la mini-conversación de booking para esta sesión, si hay una activa.
+    booking_state: Optional[BookingState] = None
+
     try:
         while True:
             raw = await websocket.receive_text()
@@ -408,8 +413,17 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
             await websocket.send_json({"type": "typing", "status": True})
 
             try:
+                # === Reserva de turnos: si hay una mini-conversación de booking
+                # en curso para esta sesión, tiene prioridad sobre flow y RAG.
+                # booking_result queda en None salvo en las dos ramas de booking
+                # (ver el envío unificado más abajo, después de este if/elif) ===
+                booking_result: Optional[dict] = None
+
+                if booking_state is not None:
+                    booking_result = await booking_state.process_answer(user_text)
+
                 # === Fase 2: Procesar respuesta del flujo si está activo ===
-                if flow_state and not flow_state.is_complete:
+                elif flow_state and not flow_state.is_complete:
                     result = flow_state.process_answer(user_text)
 
                     # Registrar en conversación
@@ -463,12 +477,16 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
                             await websocket.send_json(
                                 {"type": "message", "role": "assistant", "content": next_q}
                             )
+                elif detects_booking_intent(user_text):
+                    # === Detección de intención de reserva de turno ===
+                    booking_state, booking_result = await start_booking(bot, channel_client_id)
+
                 else:
                     # === Flujo completado o no configurado: chat RAG normal ===
                     rag_context: Optional[str] = None
                     if bot.config.use_rag:
                         rag_context = rag.get_context(
-                            user_text, n_results=bot.config.rag_results_count
+                            user_text, bot_id=channel.bot_id, n_results=bot.config.rag_results_count
                         )
 
                     response = await asyncio.to_thread(
@@ -526,6 +544,33 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
                             },
                         }
                     )
+
+                # === Envío unificado para las dos ramas de booking de arriba
+                # (booking_state activo o recién arrancado por start_booking) ===
+                if booking_result is not None:
+                    await conv_service.log_chat_interaction(
+                        user_id=session_id,
+                        user_message=user_text,
+                        assistant_response=booking_result["message"],
+                        metadata={
+                            "source": channel_source,
+                            "channel_id": channel_id,
+                            "booking_stage": booking_state.stage.value if booking_state else None,
+                            "widget_type": (booking_result.get("widget") or {}).get("widget_type"),
+                        },
+                        conversation_id=conversation_id,
+                        bot_id=channel.bot_id,
+                        client_id=channel_client_id,
+                        channel=channel_source,
+                    )
+
+                    payload = {"type": "message", "role": "assistant", "content": booking_result["message"]}
+                    if booking_result.get("widget"):
+                        payload["metadata"] = booking_result["widget"]
+                    await websocket.send_json(payload)
+
+                    if booking_result["done"] or booking_result["cancelled"]:
+                        booking_state = None
 
             except Exception as e:
                 logger.error("Error generando respuesta (channel_id=%s): %s\n%s", channel_id, e, traceback.format_exc())

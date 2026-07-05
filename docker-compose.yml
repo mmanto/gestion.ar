@@ -1,16 +1,19 @@
 
 services:
-  # MongoDB (base de datos principal)
-  mongo:
-    image: mongo:7
-    container_name: gestionar_mongo
+  # PostgreSQL (base de datos principal — ver ADR-006)
+  postgres:
+    image: postgres:16
+    container_name: gestionar_postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-gestionar}
+      POSTGRES_USER: ${DB_USER:-gestionar_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-gestionar_dev_password}
     ports:
-      - "27018:27017"
+      - "5433:5432"
     volumes:
-      - mongo_data:/data/db
-    command: --wiredTigerCacheSizeGB 0.25
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-gestionar_user} -d ${DB_NAME:-gestionar}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -35,20 +38,22 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      secrets:
+        - github_token
     container_name: gestionar_app
     env_file:
       - ./backend/.env.dev
     environment:
-      - MONGODB_URI=mongodb://mongo:27017/gestionar
       - REDIS_URL=redis://redis:6379
       - CHROMA_PATH=/app/chroma_db
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-gestionar_user}:${DB_PASSWORD:-gestionar_dev_password}@postgres:5432/${DB_NAME:-gestionar}
     volumes:
       - chroma_data:/app/chroma_db
       - ./docs:/app/documents
     depends_on:
-      mongo:
-        condition: service_healthy
       redis:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
@@ -60,6 +65,9 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     networks:
       - default
 
@@ -113,8 +121,12 @@ services:
       - traefik_public
 
 volumes:
-  mongo_data:
   chroma_data:
+  postgres_data:
+
+secrets:
+  github_token:
+    environment: GITHUB_TOKEN
 
 networks:
   default:

@@ -15,8 +15,9 @@ from app.services.client_service import get_client_service
 from app.models.channel import ChannelType, WhatsAppProvider
 from app.providers import get_whatsapp_provider, ParsedMessage
 from app.rag_service import get_rag_service
-from app.claude_service import get_llm_service
+from app.claude_service import get_llm_service, build_effective_system_prompt
 from app.conversation_service import get_conversation_service
+from app.services.bot_service import get_bot_service
 
 logger = logging.getLogger(__name__)
 
@@ -61,16 +62,22 @@ async def process_whatsapp_message(
             except Exception as e:
                 logger.warning(f"Error registrando cliente WhatsApp: {e}")
 
-        # Obtener contexto RAG
-        rag_context = ""
-        if parsed_message.text:
-            rag_context = rag.get_context(parsed_message.text, n_results=3)
+        # Cargar el bot para aplicar su system_prompt/ius_config y su RAG propio
+        bot = await get_bot_service().get_bot(bot_id) if bot_id else None
 
-        # Generar respuesta con Claude
+        # Obtener contexto RAG, exclusivo de este bot
+        rag_context = ""
+        if parsed_message.text and bot and bot.config.use_rag:
+            rag_context = rag.get_context(
+                parsed_message.text, bot_id=bot_id, n_results=bot.config.rag_results_count
+            )
+
+        # Generar respuesta con Claude, usando el entrenamiento propio del bot
         response = await claude.generate_rag_response(
             user_message=parsed_message.text or "[Mensaje no textual]",
             rag_context=rag_context,
-            max_tokens=1024
+            system_prompt=build_effective_system_prompt(bot.config) if bot else None,
+            max_tokens=(bot.config.max_tokens if bot else 1024),
         )
 
         # Guardar conversación

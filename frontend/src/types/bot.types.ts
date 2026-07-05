@@ -54,7 +54,6 @@ export interface Bot {
   config: BotConfig;
   channels: BotChannelConfig[];
   channel_ids: string[];
-  knowledge_base_id?: string;
   created_at: string;
   updated_at: string;
   total_clients: number;
@@ -106,6 +105,7 @@ export interface BotStats {
   total_clients: number;
   total_conversations: number;
   total_messages: number;
+  total_tokens_used: number;
   status: BotStatus;
   created_at: string;
   updated_at: string;

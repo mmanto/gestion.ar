@@ -108,9 +108,22 @@ class ClaudeService:
             ChatResponse con la respuesta y metadatos
         """
         try:
-            # Construir el system prompt
+            # Construir el system prompt: default o el del bot, seguido siempre
+            # del contexto RAG si existe (antes se perdía el contexto cuando
+            # se pasaba un system_prompt propio, ver _build_system_prompt)
             if not system_prompt:
-                system_prompt = self._build_system_prompt(context)
+                system_prompt = self._build_system_prompt()
+            if context:
+                system_prompt += (
+                    "\n\nCONTEXTO RELEVANTE (información de la base de conocimiento):\n"
+                    f"{context}\n\n"
+                    "INSTRUCCIONES:\n"
+                    "- Usa el contexto proporcionado para responder cuando sea relevante\n"
+                    "- Si la información del contexto responde directamente la pregunta, úsala\n"
+                    "- Si el contexto no tiene información relevante, responde basándote en tu conocimiento general\n"
+                    "- Sé claro, conciso y profesional\n"
+                    "- Si no estás seguro de algo, admítelo honestamente"
+                )
 
             # Construir mensajes
             messages = []
@@ -162,35 +175,18 @@ class ClaudeService:
         except Exception as e:
             raise Exception(f"Error al generar respuesta: {str(e)}")
 
-    def _build_system_prompt(self, context: Optional[str] = None) -> str:
+    def _build_system_prompt(self) -> str:
         """
-        Construye el system prompt para Claude
-
-        Args:
-            context: Contexto RAG (opcional)
+        Construye el system prompt base (genérico) para Claude, sin contexto RAG.
+        El contexto RAG se agrega siempre en generate_response, sin importar
+        si el system_prompt es este default o uno propio del bot.
 
         Returns:
-            System prompt completo
+            System prompt base
         """
-        base_prompt = """Eres un asistente virtual inteligente y servicial.
+        return """Eres un asistente virtual inteligente y servicial.
 Tu objetivo es ayudar a los usuarios respondiendo sus preguntas de manera clara,
 precisa y amigable."""
-
-        if context:
-            base_prompt += f"""
-
-CONTEXTO RELEVANTE (información de la base de conocimiento):
-{context}
-
-INSTRUCCIONES:
-- Usa el contexto proporcionado para responder cuando sea relevante
-- Si la información del contexto responde directamente la pregunta, úsala
-- Si el contexto no tiene información relevante, responde basándote en tu conocimiento general
-- Sé claro, conciso y profesional
-- Si no estás seguro de algo, admítelo honestamente
-"""
-
-        return base_prompt
 
     def sync_generate(
         self,
@@ -224,11 +220,13 @@ INSTRUCCIONES:
         self,
         user_message: str,
         rag_context: str,
+        system_prompt: Optional[str] = None,
         max_tokens: int = 1024
     ) -> ChatResponse:
         return await self.generate_response(
             user_message=user_message,
             context=rag_context,
+            system_prompt=system_prompt,
             max_tokens=max_tokens
         )
 

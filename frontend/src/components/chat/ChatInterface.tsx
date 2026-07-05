@@ -1,8 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { useWebSocketChat } from '../../hooks/useWebSocketChat';
+import { parseAppointmentWidget } from '../../types/chat.types';
 import { ChatHeader } from './ChatHeader';
 import { ChatInputBar } from './ChatInputBar';
 import { TypingIndicator } from './TypingIndicator';
+import { AppointmentCalendarWidget } from './AppointmentCalendarWidget';
+import { AppointmentTimesWidget } from './AppointmentTimesWidget';
+import { AppointmentConfirmWidget } from './AppointmentConfirmWidget';
 
 interface ChatInterfaceProps {
   botId?: string;
@@ -54,19 +58,41 @@ export function ChatInterface({ botId, channelId }: ChatInterfaceProps) {
             );
           }
 
+          const widget = !isUser ? parseAppointmentWidget(msg.metadata) : null;
+
           return (
             <div
               key={msg.id}
               className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
             >
-              <div
-                className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-sm shadow-sm whitespace-pre-wrap break-words ${
-                  isUser
-                    ? 'bg-indigo-600 text-white rounded-br-sm'
-                    : 'bg-white text-gray-800 border border-gray-200 rounded-bl-sm'
-                }`}
-              >
-                {msg.content}
+              <div className={`flex flex-col gap-2 ${widget ? 'max-w-[92%] w-full sm:max-w-[340px]' : 'max-w-[78%]'}`}>
+                <div
+                  className={`rounded-2xl px-4 py-2.5 text-sm shadow-sm whitespace-pre-wrap break-words ${
+                    isUser
+                      ? 'bg-indigo-600 text-white rounded-br-sm'
+                      : 'bg-white text-gray-800 border border-gray-200 rounded-bl-sm'
+                  }`}
+                >
+                  {msg.content}
+                </div>
+
+                {widget?.widget_type === 'appointment_calendar' && (
+                  <AppointmentCalendarWidget widget={widget} onSelectDay={(d) => sendMessage(d)} />
+                )}
+                {widget?.widget_type === 'appointment_times' && (
+                  <AppointmentTimesWidget
+                    widget={widget}
+                    onSelectTime={(s) => sendMessage(s)}
+                    onBack={() => sendMessage('volver')}
+                  />
+                )}
+                {widget?.widget_type === 'appointment_confirm' && (
+                  <AppointmentConfirmWidget
+                    widget={widget}
+                    onConfirm={() => sendMessage('si')}
+                    onDecline={() => sendMessage('no')}
+                  />
+                )}
               </div>
             </div>
           );

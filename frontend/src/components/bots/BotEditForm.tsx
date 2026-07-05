@@ -261,7 +261,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
               onChange={(e) => updateConfig('system_prompt', e.target.value)}
               rows={4}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
-              placeholder="Instrucciones del sistema para el bot... (también podés pegar JSON)"
+              placeholder="Instrucciones del sistema para el agente... (también podés pegar JSON)"
             />
             {isJsonPrompt && (
               <p className="mt-1 text-xs text-green-600 font-medium">✓ JSON detectado — se convertirá a texto antes de enviarlo al modelo</p>
@@ -290,7 +290,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
               onChange={(e) => updateConfig('fallback_message', e.target.value)}
               rows={2}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Mensaje cuando el bot no puede responder..."
+              placeholder="Mensaje cuando el agente no puede responder..."
             />
           </div>
         </div>
@@ -649,7 +649,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
           )}
         </div>
         <p className="text-sm text-gray-500 mb-4">
-          Carga el archivo <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">ius_system_prompt.json</code> para activar el agente calificador de casos laborales. Si está configurado, reemplaza el System Prompt como instrucción principal del bot.
+          Carga el archivo <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">ius_system_prompt.json</code> para activar el agente calificador de casos laborales. Si está configurado, reemplaza el System Prompt como instrucción principal del agente.
         </p>
 
         {/* Aviso: archivo cargado pero no guardado */}

@@ -36,7 +36,7 @@ async def handle_telegram_channel_webhook(
     Webhook endpoint for Telegram updates routed by channel_id.
 
     Flow:
-    1. Look up channel in MongoDB
+    1. Look up channel in PostgreSQL
     2. Validate type=TELEGRAM and status=ACTIVE
     3. Create TelegramService with channel credentials
     4. Verify secret token header

@@ -37,7 +37,7 @@ const ChartsSection = ({ stats, timeline }: ChartsSectionProps) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
       {/* Pie Chart - Conversaciones por Plataforma */}
-      <Card>
+      <Card shadow="none">
         <CardHeader>
           <CardTitle>Conversaciones por Plataforma</CardTitle>
         </CardHeader>
@@ -68,7 +68,7 @@ const ChartsSection = ({ stats, timeline }: ChartsSectionProps) => {
       </Card>
 
       {/* Area Chart - Costos Acumulados */}
-      <Card>
+      <Card shadow="none">
         <CardHeader>
           <CardTitle>Costos Acumulados (USD)</CardTitle>
         </CardHeader>

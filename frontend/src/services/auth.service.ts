@@ -1,5 +1,31 @@
+import Nango from '@nangohq/frontend';
 import api from './api';
-import type { LoginCredentials, LoginResponse, User, RegisterCredentials, RegisterResponse } from '../types/auth.types';
+import type { AuthProvider, LoginCredentials, LoginResponse, User, RegisterCredentials, RegisterResponse } from '../types/auth.types';
+
+// URLs del Nango self-hosted, visibles desde el browser.
+const NANGO_CONNECT_URL = import.meta.env.VITE_NANGO_CONNECT_URL || 'http://localhost:3009';
+const NANGO_API_URL = import.meta.env.VITE_NANGO_API_URL || 'http://localhost:3003';
+
+/** Abre el Connect UI de Nango y resuelve con el connectionId cuando el usuario autoriza. */
+function openNangoConnect(sessionToken: string): Promise<{ connectionId: string; providerConfigKey: string }> {
+  return new Promise((resolve, reject) => {
+    const nango = new Nango();
+    const connect = nango.openConnectUI({
+      baseURL: NANGO_CONNECT_URL,
+      apiURL: NANGO_API_URL,
+      onEvent: (event) => {
+        if (event.type === 'connect') {
+          resolve({ connectionId: event.payload.connectionId, providerConfigKey: event.payload.providerConfigKey });
+        } else if (event.type === 'close') {
+          reject(new Error('cancelled'));
+        } else if (event.type === 'error') {
+          reject(new Error(event.payload.errorMessage));
+        }
+      },
+    });
+    connect.setSessionToken(sessionToken);
+  });
+}
 
 const authService = {
   /**
@@ -38,6 +64,21 @@ const authService = {
     });
 
     return response.data;
+  },
+
+  /**
+   * Login con Google o Microsoft vía Nango. Devuelve el app token.
+   */
+  async loginWithProvider(provider: AuthProvider): Promise<{ token: string }> {
+    const { data: sess } = await api.post<{ sessionToken: string; nonce: string; provider: string }>(
+      '/auth/oauth/connect/login/session', { provider },
+    );
+    const { connectionId } = await openNangoConnect(sess.sessionToken);
+    const { data } = await api.post<{ token: string }>(
+      '/auth/oauth/connect/login/finalize',
+      { connectionId, provider, nonce: sess.nonce },
+    );
+    return { token: data.token };
   },
 
   /**

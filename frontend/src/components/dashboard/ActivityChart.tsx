@@ -18,7 +18,7 @@ const ActivityChart = ({ timeline }: ActivityChartProps) => {
   }));
 
   return (
-    <Card>
+    <Card shadow="none">
       <CardHeader>
         <CardTitle>Actividad de los últimos {timeline.days} días</CardTitle>
       </CardHeader>

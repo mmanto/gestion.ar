@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/icons/icon-512.png" sizes="512x512" />
-    <link rel="icon" href="/img/icons/icon-512.png" sizes="any" />
+    <link rel="icon" href="/icons/icon-512.png" sizes="any" />
     <link rel="icon" type="image/svg+xml" href="/img/logo_vertical_ius.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Asistente</title>
@@ -19,15 +19,19 @@
       });
     </script>
 
-    <!-- PWA: Manifest - estático en el HTML para que Chrome lo detecte durante el parseo.
-         El script inline actualiza el href para rutas de chat antes de que Chrome lo fetchee. -->
+    <!-- PWA: Manifest - solo el chat por canal es instalable. Estático en el HTML
+         para que Chrome lo detecte durante el parseo; el script inline lo reescribe
+         para /chat/c/:channelId o lo quita por completo en cualquier otra ruta
+         (panel de administración incluido) para que esas páginas NO sean instalables. -->
     <link rel="manifest" id="app-manifest" href="/manifest.webmanifest" />
     <script>
       (function () {
         var match = window.location.pathname.match(/^\/chat\/c\/([^/]+)/);
+        var manifestLink = document.getElementById('app-manifest');
         if (match) {
-          document.getElementById('app-manifest').href =
-            '/api/public/channels/' + match[1] + '/manifest.webmanifest';
+          manifestLink.href = '/api/public/channels/' + match[1] + '/manifest.webmanifest';
+        } else {
+          manifestLink.remove();
         }
       })();
     </script>

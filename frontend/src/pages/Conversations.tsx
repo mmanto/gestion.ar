@@ -1,4 +1,6 @@
 import { AppLayout } from '../components/layout/AppLayout';
+import { PageHeader } from '../components/common/PageHeader';
+import { Alert } from '../components/common/Alert';
 import ConversationFilters from '../components/conversations/ConversationFilters';
 import ConversationList from '../components/conversations/ConversationList';
 import { useConversations } from '../hooks/useConversations';
@@ -18,21 +20,22 @@ export const Conversations = () => {
   if (error) {
     return (
       <AppLayout>
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-red-800">Error: {error}</p>
-            </div>
-    </AppLayout>
+        <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
+          <Alert variant="error">Error: {error}</Alert>
+        </div>
+      </AppLayout>
     );
   }
 
   return (
     <AppLayout>
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Conversaciones</h1>
-            <p className="mt-2 text-gray-600">
-              Administra y revisa todas las conversaciones de tus clientes
-            </p>
-          </div>
+        <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
+          <PageHeader
+            title="Conversaciones"
+            description="Administra y revisa todas las conversaciones de tus clientes"
+            titleClassName="font-light uppercase tracking-[0.08em]"
+            descriptionClassName="text-gray-800"
+          />
 
           {/* Filters */}
           <div className="mb-6">
@@ -47,6 +50,7 @@ export const Conversations = () => {
             onPageChange={goToPage}
             loading={loading}
           />
+        </div>
     </AppLayout>
   );
 };

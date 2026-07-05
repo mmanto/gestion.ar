@@ -13,9 +13,9 @@ services:
     env_file:
       - ./backend/.env.prod
     environment:
-      - MONGODB_URI=mongodb://mongo:27017/gestionar
       - REDIS_URL=redis://redis:6379
       - CHROMA_PATH=/app/chroma_db
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-gestionar}
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
     networks:
       - default

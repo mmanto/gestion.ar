@@ -98,10 +98,12 @@ class OllamaService:
         self,
         user_message: str,
         rag_context: str,
+        system_prompt: Optional[str] = None,
         max_tokens: int = 1024,
     ) -> ChatResponse:
         return await self.generate_response(
             user_message=user_message,
             context=rag_context,
+            system_prompt=system_prompt,
             max_tokens=max_tokens,
         )

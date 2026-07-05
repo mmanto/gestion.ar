@@ -1,9 +1,13 @@
+# syntax=docker/dockerfile:1
 FROM python:3.13-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Setear directorio de trabajo
 WORKDIR /app
+# Necesario para que "alembic" (instalado como script standalone) encuentre el
+# paquete app/ — tanto en el entrypoint como en sesiones `docker compose exec`
+ENV PYTHONPATH=/app
 
 # Instalar dependencias del sistema necesarias
 RUN apt-get update && apt-get install -y \
@@ -11,16 +15,21 @@ RUN apt-get update && apt-get install -y \
     curl \
     libssl-dev \
     pkg-config \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Copiar requirements
 COPY requirements.txt .
 
-# Instalar dependencias de Python
-RUN pip install --no-cache-dir --no-input -r requirements.txt
+# Instalar dependencias de Python; devbout-oauth (repo privado) via PAT secret
+RUN --mount=type=secret,id=github_token \
+    pip install --no-cache-dir --no-input \
+      -r requirements.txt \
+      "devbout-oauth @ git+https://x-access-token:$(cat /run/secrets/github_token)@github.com/mmanto/devbout-oauth.git@v0.2.0"
 
 # Copiar aplicación
 COPY . .
+RUN chmod +x entrypoint.sh
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
@@ -28,6 +37,9 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 
 # Exponer puerto
 EXPOSE 8000
+
+# Corre "alembic upgrade head" (Postgres, ver ADR-006) antes de levantar la app
+ENTRYPOINT ["./entrypoint.sh"]
 
 # Comando por defecto (puede ser sobreescrito por docker-compose)
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

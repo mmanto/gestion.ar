@@ -112,6 +112,7 @@ class BotUpdate(BaseModel):
     status: Optional[BotStatus] = None
     config: Optional[BotConfig] = None
     channels: Optional[List[BotChannelConfig]] = None
+    metadata: Optional[Dict] = None
 
 
 class Bot(BotBase):
@@ -122,7 +123,6 @@ class Bot(BotBase):
     config: BotConfig = Field(default_factory=BotConfig)
     channels: List[BotChannelConfig] = Field(default_factory=list, description="Configuración inline de canales (legacy)")
     channel_ids: List[str] = Field(default_factory=list, description="IDs de canales configurados")
-    knowledge_base_id: Optional[str] = None
     created_at: str
     updated_at: str
     total_clients: int = 0

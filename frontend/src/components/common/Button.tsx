@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAccentTheme } from '../../hooks/useAccentTheme';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'danger';
 export type ButtonSize = 'sm' | 'md' | 'lg';
@@ -19,16 +20,25 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   children,
   className = '',
+  style,
   ...props
 }) => {
+  const { accent, accentHover, accentSoft } = useAccentTheme();
+
   const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
 
   const variantStyles: Record<ButtonVariant, string> = {
-    primary: 'bg-primary text-white hover:bg-primary-600 focus:ring-primary',
+    primary: 'bg-[var(--btn-bg)] text-white hover:bg-[var(--btn-bg-hover)] focus:ring-[var(--btn-bg)]',
     secondary: 'bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500',
-    outline: 'bg-transparent border-2 border-primary text-primary hover:bg-primary-50 focus:ring-primary',
+    outline: 'bg-transparent border-2 border-[var(--btn-bg)] text-[var(--btn-bg)] hover:bg-[var(--btn-soft)] focus:ring-[var(--btn-bg)]',
     danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
   };
+
+  const accentVars = {
+    '--btn-bg': accent,
+    '--btn-bg-hover': accentHover,
+    '--btn-soft': accentSoft,
+  } as React.CSSProperties;
 
   const sizeStyles: Record<ButtonSize, string> = {
     sm: 'px-3 py-1.5 text-sm',
@@ -41,6 +51,7 @@ export const Button: React.FC<ButtonProps> = ({
   return (
     <button
       disabled={disabled || loading}
+      style={{ ...accentVars, ...style }}
       className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${widthStyles} ${className}`}
       {...props}
     >

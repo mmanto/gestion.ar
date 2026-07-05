@@ -4,7 +4,7 @@ ConversationFlowService - Máquina de estados para captura progresiva de datos (
 Guía al visitante anónimo a través de una secuencia de preguntas para capturar:
   nombre → email → teléfono → tipo de caso → descripción
 
-Una vez completado el flujo, actualiza el cliente en MongoDB y continúa con RAG normal.
+Una vez completado el flujo, actualiza el cliente en PostgreSQL y continúa con RAG normal.
 
 Estado del flujo se mantiene en memoria por sesión WebSocket (no persiste entre conexiones).
 """
@@ -156,7 +156,7 @@ class FlowState:
         return True, answer, None
 
     def get_client_update_data(self) -> Dict[str, Any]:
-        """Retorna los datos capturados para actualizar el cliente en MongoDB"""
+        """Retorna los datos capturados para actualizar el cliente en PostgreSQL"""
         update: Dict[str, Any] = {}
         field_mapping = {
             "name": "name",

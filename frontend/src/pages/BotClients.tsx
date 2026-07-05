@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { Users } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { LoadingPage } from '../components/common/Spinner';
+import { PageHeader } from '../components/common/PageHeader';
+import { Alert } from '../components/common/Alert';
+import { EmptyState } from '../components/common/EmptyState';
+import { Button } from '../components/common/Button';
+import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '../components/common/Table';
+import { useAccentTheme } from '../hooks/useAccentTheme';
 import { useClients } from '../hooks/useClients';
 import botsService from '../services/bots.service';
 import clientsService from '../services/clients.service';
@@ -9,9 +16,9 @@ import type { Bot } from '../types/bot.types';
 import type { Client, ClientStatus } from '../types/client.types';
 
 const statusColors: Record<ClientStatus, string> = {
-  active: 'bg-green-100 text-green-800',
-  blocked: 'bg-red-100 text-red-800',
-  archived: 'bg-gray-100 text-gray-800',
+  active: 'bg-green-200 text-green-950',
+  blocked: 'bg-red-200 text-red-950',
+  archived: 'bg-gray-200 text-gray-950',
 };
 
 const statusLabels: Record<ClientStatus, string> = {
@@ -20,28 +27,29 @@ const statusLabels: Record<ClientStatus, string> = {
   archived: 'Archivado',
 };
 
-const sourceIcons: Record<string, string> = {
-  whatsapp: '💬',
-  telegram: '✈️',
-  web: '🌐',
-  manual: '📝',
+const sourceColors: Record<string, string> = {
+  whatsapp: 'bg-green-200 text-green-950',
+  telegram: 'bg-blue-200 text-blue-950',
+  web: 'bg-purple-200 text-purple-950',
+  manual: 'bg-gray-200 text-gray-950',
 };
 
 const ScoreBadge = ({ score }: { score: number }) => {
   const color =
     score >= 70
-      ? 'bg-green-100 text-green-800'
+      ? 'bg-green-200 text-green-950'
       : score >= 40
-      ? 'bg-yellow-100 text-yellow-800'
-      : 'bg-gray-100 text-gray-600';
+      ? 'bg-yellow-200 text-yellow-950'
+      : 'bg-gray-200 text-gray-900';
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${color}`}>
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-base font-semibold ${color}`}>
       {score.toFixed(1)}
     </span>
   );
 };
 
 export const BotClients = () => {
+  const { accent } = useAccentTheme();
   const { botId } = useParams<{ botId: string }>();
   const [bot, setBot] = useState<Bot | null>(null);
   const [botLoading, setBotLoading] = useState(true);
@@ -99,18 +107,19 @@ export const BotClients = () => {
 
   return (
     <AppLayout>
+        <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
           {/* Breadcrumb */}
           <nav className="mb-4">
-            <ol className="flex items-center space-x-2 text-sm text-gray-500">
+            <ol className="flex items-center space-x-2 text-base text-gray-700">
               <li>
-                <Link to="/bots" className="hover:text-indigo-600">
-                  Bots
+                <Link to="/bots" className="hover:underline" style={{ color: accent }}>
+                  Agentes
                 </Link>
               </li>
               <li>/</li>
               <li>
-                <Link to={`/bots/${botId}`} className="hover:text-indigo-600">
-                  {bot?.name || 'Bot'}
+                <Link to={`/bots/${botId}`} className="hover:underline" style={{ color: accent }}>
+                  {bot?.name || 'Agente'}
                 </Link>
               </li>
               <li>/</li>
@@ -118,15 +127,12 @@ export const BotClients = () => {
             </ol>
           </nav>
 
-          {/* Header */}
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Clientes</h1>
-              <p className="text-gray-600">
-                {total} cliente{total !== 1 ? 's' : ''} de {bot?.name}
-              </p>
-            </div>
-          </div>
+          <PageHeader
+            title="Clientes"
+            description={`${total} cliente${total !== 1 ? 's' : ''} de ${bot?.name}`}
+            titleClassName="font-light uppercase tracking-[0.08em]"
+            descriptionClassName="text-gray-800"
+          />
 
           {/* Search */}
           <form onSubmit={handleSearch} className="mb-6">
@@ -136,144 +142,120 @@ export const BotClients = () => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar por nombre, teléfono o email..."
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none"
               />
-              <button
-                type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-              >
+              <Button type="submit" variant="primary">
                 Buscar
-              </button>
+              </Button>
             </div>
           </form>
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <p className="text-red-800">Error: {error}</p>
-            </div>
-          )}
+          {error && <Alert variant="error" className="mb-6">Error: {error}</Alert>}
 
-          {/* Clients Table */}
+          {/* Tabla de clientes */}
           {clients.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center">
-              <p className="text-gray-500">No hay clientes para este bot</p>
-            </div>
+            <Table>
+              <TableBody>
+                <tr>
+                  <td colSpan={7}>
+                    <EmptyState
+                      icon={<Users className="w-8 h-8 text-gray-600" />}
+                      title="No hay clientes para este agente"
+                      titleClassName="text-gray-900 text-xl"
+                    />
+                  </td>
+                </tr>
+              </TableBody>
+            </Table>
           ) : (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Score
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Cliente
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Canal
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Estado
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Conversaciones
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Último contacto
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Acciones
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {clients.map((client: Client) => (
-                    <tr key={client.client_id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <ScoreBadge score={client.score ?? 0} />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {client.name || client.external_id}
-                          </p>
-                          {client.email && (
-                            <p className="text-sm text-gray-500">{client.email}</p>
-                          )}
-                          {client.phone && client.phone !== client.external_id && (
-                            <p className="text-sm text-gray-500">{client.phone}</p>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-lg" title={client.source}>
-                          {sourceIcons[client.source] || '❓'}
-                        </span>
-                        <span className="ml-2 text-sm text-gray-600">
-                          {client.source}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            statusColors[client.status]
-                          }`}
-                        >
-                          {statusLabels[client.status]}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {client.total_conversations}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(client.last_contact_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() =>
-                            handleBlockClient(
-                              client.client_id,
-                              client.status === 'blocked'
-                            )
-                          }
-                          className={`${
-                            client.status === 'blocked'
-                              ? 'text-green-600 hover:text-green-900'
-                              : 'text-red-600 hover:text-red-900'
-                          }`}
-                        >
-                          {client.status === 'blocked' ? 'Desbloquear' : 'Bloquear'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table>
+              <TableHead>
+                <tr>
+                  <TableHeaderCell>Score</TableHeaderCell>
+                  <TableHeaderCell>Cliente</TableHeaderCell>
+                  <TableHeaderCell>Canal</TableHeaderCell>
+                  <TableHeaderCell>Estado</TableHeaderCell>
+                  <TableHeaderCell>Conversaciones</TableHeaderCell>
+                  <TableHeaderCell>Último contacto</TableHeaderCell>
+                  <TableHeaderCell align="right">Acciones</TableHeaderCell>
+                </tr>
+              </TableHead>
+              <TableBody>
+                {clients.map((client: Client) => (
+                  <TableRow key={client.client_id}>
+                    <TableCell>
+                      <ScoreBadge score={client.score ?? 0} />
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <p className="text-lg font-normal text-gray-900">
+                          {client.name || client.external_id}
+                        </p>
+                        {client.email && (
+                          <p className="text-base text-gray-800">{client.email}</p>
+                        )}
+                        {client.phone && client.phone !== client.external_id && (
+                          <p className="text-base text-gray-800">{client.phone}</p>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`px-2 py-1 text-base font-medium rounded-full capitalize ${
+                          sourceColors[client.source] || 'bg-gray-200 text-gray-950'
+                        }`}
+                      >
+                        {client.source}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`px-2 py-1 text-base font-medium rounded-full ${statusColors[client.status]}`}
+                      >
+                        {statusLabels[client.status]}
+                      </span>
+                    </TableCell>
+                    <TableCell textClassName="text-gray-800">
+                      {client.total_conversations}
+                    </TableCell>
+                    <TableCell textClassName="text-gray-800">
+                      {new Date(client.last_contact_at).toLocaleDateString('es-ES', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                      })}
+                    </TableCell>
+                    <TableCell align="right" className="font-medium">
+                      <Button
+                        variant="outline"
+                        onClick={() =>
+                          handleBlockClient(client.client_id, client.status === 'blocked')
+                        }
+                      >
+                        {client.status === 'blocked' ? 'Desbloquear' : 'Bloquear'}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
 
-          {/* Pagination */}
+          {/* Paginación */}
           {pages > 1 && (
-            <div className="flex justify-center mt-6 gap-2">
-              <button
-                onClick={() => goToPage(page - 1)}
-                disabled={page === 1}
-                className="px-4 py-2 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
+            <div className="flex justify-center items-center mt-6 gap-2">
+              <Button variant="outline" onClick={() => goToPage(page - 1)} disabled={page === 1}>
                 Anterior
-              </button>
-              <span className="px-4 py-2">
+              </Button>
+              <span className="px-4 py-2 text-base text-gray-900">
                 Página {page} de {pages}
               </span>
-              <button
-                onClick={() => goToPage(page + 1)}
-                disabled={page === pages}
-                className="px-4 py-2 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
+              <Button variant="outline" onClick={() => goToPage(page + 1)} disabled={page === pages}>
                 Siguiente
-              </button>
+              </Button>
             </div>
           )}
+        </div>
     </AppLayout>
   );
 };

@@ -1,13 +1,12 @@
 # PASO 1: Dependencias básicas de infraestructura
 fastapi==0.109.0
 uvicorn[standard]==0.27.0
-motor==3.7.1
 redis==5.0.1
 pydantic==2.10.6
 pydantic-settings==2.7.1
 pytest==7.4.3
 pytest-asyncio==0.21.1
-httpx==0.26.0
+httpx==0.28.1
 
 # PASO 2: Dependencias RAG
 chromadb==0.4.22
@@ -31,3 +30,11 @@ qrcode[pil]==7.4.2
 # PASO 6: PWA Push Notifications (VAPID)
 pywebpush==2.0.0
 py-vapid==1.9.1
+
+# PASO 7: devbout-oauth se instala en el Dockerfile via --mount=type=secret,id=github_token
+
+# PASO 8: PostgreSQL (SQLAlchemy async + Alembic) — ver ADR-006 en docs/dev/DECISIONS.md
+sqlalchemy==2.0.46
+asyncpg==0.31.0
+alembic==1.18.4
+psycopg2-binary==2.9.11

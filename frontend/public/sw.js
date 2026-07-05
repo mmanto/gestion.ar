@@ -6,7 +6,7 @@
  *  3. Clic en notificación → abrir URL del chat
  */
 
-const CACHE_NAME = 'ius-pwa-v2';
+const CACHE_NAME = 'ius-pwa-v3';
 
 // Assets de la shell de la aplicación a pre-cachear en install
 const SHELL_ASSETS = [
@@ -46,7 +46,10 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// ── Fetch: estrategia cache-first para assets, network-first para API ─────────
+// ── Fetch: network-first para navegación/HTML (para no quedar pegado a una
+// versión vieja del shell tras cada deploy), cache-first para el resto de
+// assets estáticos (con content-hash en el nombre, así que cachear "para
+// siempre" es seguro y no necesita revalidar) ──────────────────────────────
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -67,34 +70,39 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Para navegación (HTML) y assets estáticos: cache-first con fallback a network
+  const isNavigation = request.mode === 'navigate' || request.destination === 'document';
+
+  if (isNavigation) {
+    // Network-first: siempre intenta traer el HTML fresco del deploy actual.
+    // Si el server no responde (offline), recién ahí cae al cache.
+    event.respondWith(
+      fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse.ok) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, responseToCache));
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(request).then((cached) => cached || caches.match('/index.html')))
+    );
+    return;
+  }
+
+  // Assets estáticos (JS/CSS con hash, íconos, etc.): cache-first con fallback a network
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       if (cachedResponse) {
         return cachedResponse;
       }
 
-      return fetch(request)
-        .then((networkResponse) => {
-          // Solo cachear respuestas exitosas de GET
-          if (
-            networkResponse.ok &&
-            request.method === 'GET' &&
-            !url.pathname.startsWith('/sw.js')
-          ) {
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, responseToCache);
-            });
-          }
-          return networkResponse;
-        })
-        .catch(() => {
-          // Offline fallback: devolver index.html para rutas SPA
-          if (request.destination === 'document') {
-            return caches.match('/index.html');
-          }
-        });
+      return fetch(request).then((networkResponse) => {
+        if (networkResponse.ok && request.method === 'GET' && !url.pathname.startsWith('/sw.js')) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseToCache));
+        }
+        return networkResponse;
+      });
     })
   );
 });

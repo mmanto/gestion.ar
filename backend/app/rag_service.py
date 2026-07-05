@@ -60,11 +60,12 @@ class RAGService:
     def add_document(
         self,
         text: str,
+        bot_id: str,
         metadata: Dict = None,
         doc_id: str = None
     ) -> int:
         """
-        Agregar documento a la base de conocimiento
+        Agregar documento a la base de conocimiento, asociado a un bot_id
 
         Returns:
             Número de chunks creados
@@ -91,6 +92,7 @@ class RAGService:
         metadatas = [
             {
                 **(metadata or {}),
+                "bot_id": bot_id,
                 "chunk_index": i,
                 "total_chunks": len(chunks),
                 "doc_id": doc_id
@@ -108,7 +110,7 @@ class RAGService:
 
         return len(chunks)
 
-    def add_pdf(self, pdf_path: str, metadata: Dict = None, doc_id: str = None) -> int:
+    def add_pdf(self, pdf_path: str, bot_id: str, metadata: Dict = None, doc_id: str = None) -> int:
         """Agregar PDF a la base de conocimiento"""
 
         text = ""
@@ -119,6 +121,7 @@ class RAGService:
 
         return self.add_document(
             text,
+            bot_id=bot_id,
             metadata={
                 **(metadata or {}),
                 "source": pdf_path,
@@ -127,7 +130,7 @@ class RAGService:
             doc_id=doc_id
         )
 
-    def add_docx(self, docx_path: str, metadata: Dict = None, doc_id: str = None) -> int:
+    def add_docx(self, docx_path: str, bot_id: str, metadata: Dict = None, doc_id: str = None) -> int:
         """Agregar DOCX a la base de conocimiento"""
 
         doc = DocxDocument(docx_path)
@@ -135,6 +138,7 @@ class RAGService:
 
         return self.add_document(
             text,
+            bot_id=bot_id,
             metadata={
                 **(metadata or {}),
                 "source": docx_path,
@@ -143,7 +147,7 @@ class RAGService:
             doc_id=doc_id
         )
 
-    def add_text_file(self, file_path: str, metadata: Dict = None, doc_id: str = None) -> int:
+    def add_text_file(self, file_path: str, bot_id: str, metadata: Dict = None, doc_id: str = None) -> int:
         """Agregar archivo de texto"""
 
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -151,6 +155,7 @@ class RAGService:
 
         return self.add_document(
             text,
+            bot_id=bot_id,
             metadata={
                 **(metadata or {}),
                 "source": file_path,
@@ -159,13 +164,13 @@ class RAGService:
             doc_id=doc_id
         )
 
-    def list_documents(self) -> List[Dict]:
-        """Listar documentos únicos en la base de conocimiento"""
+    def list_documents(self, bot_id: str) -> List[Dict]:
+        """Listar documentos únicos de un agente en la base de conocimiento"""
 
         if self.collection.count() == 0:
             return []
 
-        results = self.collection.get(include=["metadatas"])
+        results = self.collection.get(where={"bot_id": bot_id}, include=["metadatas"])
 
         docs: Dict[str, Dict] = {}
         for meta in results["metadatas"]:
@@ -186,11 +191,11 @@ class RAGService:
 
         return list(docs.values())
 
-    def delete_document(self, doc_id: str) -> int:
-        """Eliminar todos los chunks de un documento por doc_id"""
+    def delete_document(self, doc_id: str, bot_id: str) -> int:
+        """Eliminar todos los chunks de un documento por doc_id, solo si pertenece a bot_id"""
 
         results = self.collection.get(
-            where={"doc_id": doc_id},
+            where={"$and": [{"doc_id": doc_id}, {"bot_id": bot_id}]},
             include=["metadatas"]
         )
 
@@ -214,16 +219,18 @@ class RAGService:
     def search(
         self,
         query: str,
+        bot_id: str,
         n_results: int = 3,
         filter_metadata: Dict = None
     ) -> List[Dict]:
         """
-        Buscar documentos relevantes
+        Buscar documentos relevantes, exclusivamente dentro de los del agente bot_id
 
         Args:
             query: Consulta del usuario
+            bot_id: Agente al que deben pertenecer los documentos
             n_results: Cantidad de resultados
-            filter_metadata: Filtros opcionales
+            filter_metadata: Filtros adicionales opcionales
 
         Returns:
             Lista de documentos relevantes con scores
@@ -235,11 +242,16 @@ class RAGService:
             convert_to_numpy=True
         ).tolist()[0]
 
+        where_clause = (
+            {"bot_id": bot_id} if not filter_metadata
+            else {"$and": [{"bot_id": bot_id}, filter_metadata]}
+        )
+
         # Buscar en ChromaDB
         results = self.collection.query(
             query_embeddings=[query_embedding],
             n_results=n_results,
-            where=filter_metadata
+            where=where_clause
         )
 
         # Formatear resultados
@@ -257,14 +269,16 @@ class RAGService:
     def get_context(
         self,
         query: str,
+        bot_id: str,
         n_results: int = 3,
         max_tokens: int = 1500
     ) -> str:
         """
-        Obtener contexto para el LLM
+        Obtener contexto para el LLM, exclusivamente de los documentos del agente bot_id
 
         Args:
             query: Consulta del usuario
+            bot_id: Agente al que deben pertenecer los documentos
             n_results: Docs a recuperar
             max_tokens: Máximo de tokens de contexto
 
@@ -273,7 +287,7 @@ class RAGService:
         """
 
         # Buscar documentos relevantes
-        docs = self.search(query, n_results=n_results)
+        docs = self.search(query, bot_id=bot_id, n_results=n_results)
 
         if not docs:
             return ""
@@ -303,17 +317,30 @@ class RAGService:
         return context
 
     def clear_collection(self):
-        """Limpiar toda la colección"""
+        """Limpiar toda la colección (todos los agentes). Uso exclusivo del script de migración manual."""
         self.chroma_client.delete_collection("knowledge_base")
         self.collection = self.chroma_client.get_or_create_collection(
             name="knowledge_base",
             metadata={"hnsw:space": "cosine"}
         )
 
-    def get_stats(self) -> Dict:
-        """Obtener estadísticas de la base de conocimiento"""
+    def clear_bot_documents(self, bot_id: str) -> int:
+        """Eliminar todos los documentos de un agente puntual"""
 
-        count = self.collection.count()
+        results = self.collection.get(where={"bot_id": bot_id}, include=[])
+        count = len(results["ids"])
+        if count:
+            self.collection.delete(where={"bot_id": bot_id})
+        return count
+
+    def get_stats(self, bot_id: str = None) -> Dict:
+        """Obtener estadísticas de la base de conocimiento (global o de un agente)"""
+
+        if bot_id:
+            results = self.collection.get(where={"bot_id": bot_id}, include=[])
+            count = len(results["ids"])
+        else:
+            count = self.collection.count()
 
         return {
             "total_chunks": count,

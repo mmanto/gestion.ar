@@ -1,16 +1,17 @@
 """
-Client Service - CRUD operations for clients in MongoDB
+Client Service - CRUD operations for clients in PostgreSQL (ver ADR-006 en docs/dev/DECISIONS.md)
 """
 
 import math
-import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
-from motor.motor_asyncio import AsyncIOMotorClient
+from sqlalchemy import func, or_, select
 
-from app.models.client import Client, ClientCreate, ClientUpdate, ClientStatus, ClientSource
+from app.db.database import AsyncSessionLocal
+from app.db.models import Client as ClientModel
+from app.models.client import Client, ClientCreate, ClientSource, ClientStatus, ClientUpdate
 
 
 def calculate_score(total_messages: int, first_contact_at: str) -> float:
@@ -33,55 +34,63 @@ def calculate_score(total_messages: int, first_contact_at: str) -> float:
     return round(msg_score + freq_score, 2)
 
 
-class ClientService:
-    """Servicio para gestionar clientes en MongoDB"""
+def _to_client(row: ClientModel) -> Client:
+    return Client(
+        client_id=row.client_id,
+        bot_id=row.bot_id,
+        external_id=row.external_id,
+        source=row.source,
+        name=row.name,
+        email=row.email,
+        phone=row.phone,
+        status=row.status,
+        first_contact_at=row.first_contact_at.isoformat(),
+        last_contact_at=row.last_contact_at.isoformat(),
+        total_conversations=row.total_conversations,
+        total_messages=row.total_messages,
+        total_tokens_used=row.total_tokens_used,
+        score=float(row.score),
+        metadata=row.metadata_,
+    )
 
-    def __init__(self):
-        """Inicializa el servicio de clientes"""
-        self.mongodb_uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017/gestionar")
-        self.client = AsyncIOMotorClient(self.mongodb_uri)
-        self.db = self.client.get_default_database()
-        self.clients = self.db.clients
-        print("Client Service inicializado")
+
+class ClientService:
+    """Servicio para gestionar clientes en PostgreSQL"""
 
     async def ensure_indexes(self):
-        """Crea los índices necesarios en la colección"""
-        await self.clients.create_index("client_id", unique=True)
-        await self.clients.create_index([("bot_id", 1), ("external_id", 1)], unique=True)
-        await self.clients.create_index([("bot_id", 1), ("status", 1)])
-        await self.clients.create_index("last_contact_at")
-        await self.clients.create_index([("score", -1)])
+        """No-op: los índices ya se crean vía migraciones Alembic (ver backend/alembic/versions/)."""
+        pass
 
     async def create_client(self, client_data: ClientCreate) -> Client:
         """Crea un nuevo cliente"""
-        timestamp = datetime.utcnow().isoformat()
         client_id = f"client_{uuid.uuid4().hex[:12]}"
 
-        client_dict = {
-            "client_id": client_id,
-            "bot_id": client_data.bot_id,
-            "external_id": client_data.external_id,
-            "source": client_data.source.value if hasattr(client_data.source, 'value') else client_data.source,
-            "name": client_data.name,
-            "email": client_data.email,
-            "phone": client_data.phone,
-            "status": ClientStatus.ACTIVE.value,
-            "first_contact_at": timestamp,
-            "last_contact_at": timestamp,
-            "total_conversations": 0,
-            "total_messages": 0,
-            "total_tokens_used": 0,
-            "score": 0.0,
-            "metadata": client_data.metadata or {}
-        }
-
-        await self.clients.insert_one(client_dict)
-        return Client(**client_dict)
+        async with AsyncSessionLocal() as session:
+            row = ClientModel(
+                client_id=client_id,
+                bot_id=client_data.bot_id,
+                external_id=client_data.external_id,
+                source=client_data.source.value if hasattr(client_data.source, 'value') else client_data.source,
+                name=client_data.name,
+                email=client_data.email,
+                phone=client_data.phone,
+                status=ClientStatus.ACTIVE.value,
+                total_conversations=0,
+                total_messages=0,
+                total_tokens_used=0,
+                score=0.0,
+                metadata_=client_data.metadata or {},
+            )
+            session.add(row)
+            await session.commit()
+            await session.refresh(row)
+            return _to_client(row)
 
     async def get_client(self, client_id: str) -> Optional[Client]:
         """Obtiene un cliente por ID"""
-        client = await self.clients.find_one({"client_id": client_id}, {"_id": 0})
-        return Client(**client) if client else None
+        async with AsyncSessionLocal() as session:
+            row = await session.get(ClientModel, client_id)
+            return _to_client(row) if row else None
 
     async def get_client_by_external_id(
         self,
@@ -89,11 +98,15 @@ class ClientService:
         external_id: str
     ) -> Optional[Client]:
         """Obtiene cliente por bot_id y external_id"""
-        client = await self.clients.find_one(
-            {"bot_id": bot_id, "external_id": external_id},
-            {"_id": 0}
-        )
-        return Client(**client) if client else None
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(ClientModel).where(
+                    ClientModel.bot_id == bot_id,
+                    ClientModel.external_id == external_id,
+                )
+            )
+            row = result.scalars().first()
+            return _to_client(row) if row else None
 
     async def get_or_create_client(
         self,
@@ -103,15 +116,19 @@ class ClientService:
         metadata: Optional[Dict] = None
     ) -> Client:
         """Obtiene o crea un cliente"""
-        existing = await self.get_client_by_external_id(bot_id, external_id)
-        if existing:
-            # Actualizar last_contact_at
-            await self.clients.update_one(
-                {"client_id": existing.client_id},
-                {"$set": {"last_contact_at": datetime.utcnow().isoformat()}}
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(ClientModel).where(
+                    ClientModel.bot_id == bot_id,
+                    ClientModel.external_id == external_id,
+                )
             )
-            # Re-fetch para obtener el timestamp actualizado
-            return await self.get_client(existing.client_id)
+            row = result.scalars().first()
+            if row:
+                row.last_contact_at = datetime.now(timezone.utc)
+                await session.commit()
+                await session.refresh(row)
+                return _to_client(row)
 
         # Crear nuevo cliente
         source_enum = ClientSource(source) if source in [e.value for e in ClientSource] else ClientSource.MANUAL
@@ -123,6 +140,48 @@ class ClientService:
         )
         return await self.create_client(client_data)
 
+    async def _query_clients(
+        self,
+        base_filters: list,
+        skip: int,
+        limit: int,
+        status: Optional[ClientStatus],
+        search: Optional[str],
+    ) -> Dict:
+        filters = list(base_filters)
+        if status:
+            filters.append(ClientModel.status == status.value)
+        if search:
+            pattern = f"%{search}%"
+            filters.append(or_(
+                ClientModel.name.ilike(pattern),
+                ClientModel.external_id.ilike(pattern),
+                ClientModel.email.ilike(pattern),
+                ClientModel.phone.ilike(pattern),
+            ))
+
+        async with AsyncSessionLocal() as session:
+            total = (await session.execute(
+                select(func.count()).select_from(ClientModel).where(*filters)
+            )).scalar_one()
+
+            result = await session.execute(
+                select(ClientModel)
+                .where(*filters)
+                .order_by(ClientModel.score.desc(), ClientModel.last_contact_at.desc())
+                .offset(skip)
+                .limit(limit)
+            )
+            rows = result.scalars().all()
+
+        return {
+            "clients": [_to_client(r) for r in rows],
+            "total": total,
+            "page": (skip // limit) + 1 if limit > 0 else 1,
+            "pages": (total + limit - 1) // limit if limit > 0 else 0,
+            "limit": limit
+        }
+
     async def get_clients_by_bot(
         self,
         bot_id: str,
@@ -132,34 +191,7 @@ class ClientService:
         search: Optional[str] = None
     ) -> Dict:
         """Obtiene clientes de un bot con paginación y filtros"""
-        filter_query = {"bot_id": bot_id}
-
-        if status:
-            filter_query["status"] = status.value
-
-        if search:
-            filter_query["$or"] = [
-                {"name": {"$regex": search, "$options": "i"}},
-                {"external_id": {"$regex": search, "$options": "i"}},
-                {"email": {"$regex": search, "$options": "i"}},
-                {"phone": {"$regex": search, "$options": "i"}}
-            ]
-
-        total = await self.clients.count_documents(filter_query)
-        cursor = self.clients.find(
-            filter_query,
-            {"_id": 0}
-        ).sort([("score", -1), ("last_contact_at", -1)]).skip(skip).limit(limit)
-
-        clients = await cursor.to_list(length=limit)
-
-        return {
-            "clients": [Client(**c) for c in clients],
-            "total": total,
-            "page": (skip // limit) + 1,
-            "pages": (total + limit - 1) // limit if limit > 0 else 0,
-            "limit": limit
-        }
+        return await self._query_clients([ClientModel.bot_id == bot_id], skip, limit, status, search)
 
     async def get_clients_by_bot_ids(
         self,
@@ -170,61 +202,37 @@ class ClientService:
         search: Optional[str] = None
     ) -> Dict:
         """Obtiene clientes de múltiples bots con paginación y filtros"""
-        filter_query: Dict = {"bot_id": {"$in": bot_ids}}
-
-        if status:
-            filter_query["status"] = status.value
-
-        if search:
-            filter_query["$or"] = [
-                {"name": {"$regex": search, "$options": "i"}},
-                {"external_id": {"$regex": search, "$options": "i"}},
-                {"email": {"$regex": search, "$options": "i"}},
-                {"phone": {"$regex": search, "$options": "i"}}
-            ]
-
-        total = await self.clients.count_documents(filter_query)
-        cursor = self.clients.find(
-            filter_query,
-            {"_id": 0}
-        ).sort([("score", -1), ("last_contact_at", -1)]).skip(skip).limit(limit)
-
-        clients = await cursor.to_list(length=limit)
-
-        return {
-            "clients": [Client(**c) for c in clients],
-            "total": total,
-            "page": (skip // limit) + 1 if limit > 0 else 1,
-            "pages": (total + limit - 1) // limit if limit > 0 else 0,
-            "limit": limit
-        }
+        return await self._query_clients([ClientModel.bot_id.in_(bot_ids)], skip, limit, status, search)
 
     async def update_client(self, client_id: str, update_data: ClientUpdate) -> Optional[Client]:
         """Actualiza un cliente"""
         update_dict = {}
-
         for key, value in update_data.model_dump(exclude_unset=True).items():
-            if value is not None:
-                if key == "status":
-                    update_dict["status"] = value.value if hasattr(value, 'value') else value
-                else:
-                    update_dict[key] = value
+            if value is None:
+                continue
+            if key == "status":
+                update_dict["status"] = value.value if hasattr(value, "value") else value
+            elif key == "metadata":
+                update_dict["metadata_"] = value
+            else:
+                update_dict[key] = value
 
-        if not update_dict:
-            return await self.get_client(client_id)
+        async with AsyncSessionLocal() as session:
+            row = await session.get(ClientModel, client_id)
+            if not row:
+                return None
 
-        # Si se actualiza el score manualmente, usarlo tal cual (sin recalcular)
-        # Si no viene score en el update, no tocarlo
-        update_dict["last_contact_at"] = datetime.utcnow().isoformat()
+            if not update_dict:
+                return _to_client(row)
 
-        result = await self.clients.update_one(
-            {"client_id": client_id},
-            {"$set": update_dict}
-        )
+            # Si se actualiza el score manualmente, se usa tal cual (sin recalcular)
+            update_dict["last_contact_at"] = datetime.now(timezone.utc)
+            for k, v in update_dict.items():
+                setattr(row, k, v)
 
-        if result.matched_count > 0:
-            return await self.get_client(client_id)
-        return None
+            await session.commit()
+            await session.refresh(row)
+            return _to_client(row)
 
     async def increment_counters(
         self,
@@ -234,60 +242,45 @@ class ClientService:
         tokens: int = 0
     ):
         """Incrementa contadores del cliente y recalcula el score automáticamente"""
-        update_fields = {"last_contact_at": datetime.utcnow().isoformat()}
-        inc_fields = {}
+        async with AsyncSessionLocal() as session:
+            row = await session.get(ClientModel, client_id)
+            if not row:
+                return
 
-        if conversations != 0:
-            inc_fields["total_conversations"] = conversations
-        if messages != 0:
-            inc_fields["total_messages"] = messages
-        if tokens != 0:
-            inc_fields["total_tokens_used"] = tokens
+            if conversations:
+                row.total_conversations += conversations
+            if messages:
+                row.total_messages += messages
+            if tokens:
+                row.total_tokens_used += tokens
+            row.last_contact_at = datetime.now(timezone.utc)
 
-        update_query = {"$set": update_fields}
-        if inc_fields:
-            update_query["$inc"] = inc_fields
+            if messages != 0:
+                row.score = calculate_score(row.total_messages, row.first_contact_at.isoformat())
 
-        await self.clients.update_one(
-            {"client_id": client_id},
-            update_query
-        )
-
-        # Recalcular score tras actualizar contadores
-        if messages != 0:
-            client = await self.get_client(client_id)
-            if client:
-                new_score = calculate_score(client.total_messages, client.first_contact_at)
-                await self.clients.update_one(
-                    {"client_id": client_id},
-                    {"$set": {"score": new_score}}
-                )
+            await session.commit()
 
     async def block_client(self, client_id: str) -> bool:
         """Bloquea un cliente"""
-        result = await self.clients.update_one(
-            {"client_id": client_id},
-            {
-                "$set": {
-                    "status": ClientStatus.BLOCKED.value,
-                    "last_contact_at": datetime.utcnow().isoformat()
-                }
-            }
-        )
-        return result.modified_count > 0
+        async with AsyncSessionLocal() as session:
+            row = await session.get(ClientModel, client_id)
+            if not row:
+                return False
+            row.status = ClientStatus.BLOCKED.value
+            row.last_contact_at = datetime.now(timezone.utc)
+            await session.commit()
+            return True
 
     async def unblock_client(self, client_id: str) -> bool:
         """Desbloquea un cliente"""
-        result = await self.clients.update_one(
-            {"client_id": client_id},
-            {
-                "$set": {
-                    "status": ClientStatus.ACTIVE.value,
-                    "last_contact_at": datetime.utcnow().isoformat()
-                }
-            }
-        )
-        return result.modified_count > 0
+        async with AsyncSessionLocal() as session:
+            row = await session.get(ClientModel, client_id)
+            if not row:
+                return False
+            row.status = ClientStatus.ACTIVE.value
+            row.last_contact_at = datetime.now(timezone.utc)
+            await session.commit()
+            return True
 
 
 # Singleton

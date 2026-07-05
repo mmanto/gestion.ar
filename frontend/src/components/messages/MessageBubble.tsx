@@ -42,7 +42,10 @@ const MessageBubble = ({ message, showMetadata = false }: MessageBubbleProps) =>
         {/* Message Content */}
         <div className="flex flex-col">
           {isAgent && (
-            <span className="text-xs text-teal-600 font-medium mb-0.5 px-1">Agente</span>
+            <span className="text-xs text-teal-600 font-medium mb-0.5 px-1">Agente humano</span>
+          )}
+          {!isUser && !isAgent && (
+            <span className="text-xs text-gray-600 font-medium mb-0.5 px-1">Agente</span>
           )}
           <div className={`rounded-2xl px-4 py-2 ${bubbleClass}`}>
             <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>

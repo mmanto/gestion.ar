@@ -1,13 +1,19 @@
 """
 Conversation Service
-Servicio para gestionar conversaciones y mensajes en MongoDB
+Servicio para gestionar conversaciones y mensajes en PostgreSQL
+(ver ADR-006 en docs/dev/DECISIONS.md)
 """
 
-import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
-from motor.motor_asyncio import AsyncIOMotorClient
+
 from pydantic import BaseModel
+from sqlalchemy import func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db.database import AsyncSessionLocal
+from app.db.models import Conversation as ConversationModel
+from app.db.models import Message as MessageModel
 
 
 class ConversationMessage(BaseModel):
@@ -33,19 +39,48 @@ class Conversation(BaseModel):
     metadata: Optional[Dict] = None
 
 
+def _parse_iso(value: Optional[str]):
+    if not value:
+        return None
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def _to_message_dict(row: MessageModel) -> Dict:
+    return {
+        "conversation_id": row.conversation_id,
+        "role": row.role,
+        "content": row.content,
+        "timestamp": row.timestamp.isoformat(),
+        "metadata": row.metadata_ or {},
+    }
+
+
 class ConversationService:
-    """Servicio para gestionar conversaciones en MongoDB"""
+    """Servicio para gestionar conversaciones en PostgreSQL"""
 
-    def __init__(self):
-        """Inicializa el servicio de conversaciones"""
-        self.mongodb_uri = os.getenv("MONGODB_URI", "mongodb://mongo:27017/whatsapp")
-        self.client = AsyncIOMotorClient(self.mongodb_uri)
-        self.db = self.client.get_default_database()
-        self.conversations = self.db.conversations
-        self.messages = self.db.messages
+    async def _messages_for(self, session: AsyncSession, conversation_id: str) -> List[Dict]:
+        result = await session.execute(
+            select(MessageModel)
+            .where(MessageModel.conversation_id == conversation_id)
+            .order_by(MessageModel.timestamp.asc())
+        )
+        return [_to_message_dict(r) for r in result.scalars().all()]
 
-        print("✅ Conversation Service inicializado")
-        print(f"📊 MongoDB URI: {self.mongodb_uri}")
+    async def _to_conversation_dict(self, session: AsyncSession, row: ConversationModel) -> Dict:
+        messages = await self._messages_for(session, row.conversation_id)
+        return {
+            "conversation_id": row.conversation_id,
+            "bot_id": row.bot_id,
+            "client_id": row.client_id,
+            "user_id": row.user_id,
+            "channel": row.channel,
+            "messages": messages,
+            "created_at": row.created_at.isoformat(),
+            "updated_at": row.updated_at.isoformat(),
+            "total_tokens_used": row.total_tokens_used,
+            "total_cost_usd": float(row.total_cost_usd or 0),
+            "metadata": row.metadata_ or {},
+        }
 
     async def create_conversation(
         self,
@@ -70,22 +105,23 @@ class ConversationService:
         """
         timestamp = datetime.utcnow().isoformat()
         conversation_id = f"{user_id}_{timestamp}"
+        metadata = metadata or {}
 
-        conversation = {
-            "conversation_id": conversation_id,
-            "bot_id": bot_id,
-            "client_id": client_id,
-            "user_id": user_id,
-            "channel": channel,
-            "messages": [],
-            "created_at": timestamp,
-            "updated_at": timestamp,
-            "total_tokens_used": 0,
-            "total_cost_usd": 0.0,
-            "metadata": metadata or {}
-        }
+        async with AsyncSessionLocal() as session:
+            session.add(ConversationModel(
+                conversation_id=conversation_id,
+                bot_id=bot_id,
+                client_id=client_id,
+                user_id=user_id,
+                channel=channel,
+                source=metadata.get("source"),
+                channel_id=metadata.get("channel_id"),
+                total_tokens_used=0,
+                total_cost_usd=0,
+                metadata_=metadata,
+            ))
+            await session.commit()
 
-        await self.conversations.insert_one(conversation)
         return conversation_id
 
     async def add_message(
@@ -107,39 +143,35 @@ class ConversationService:
         Returns:
             Mensaje creado
         """
-        timestamp = datetime.utcnow().isoformat()
+        timestamp = datetime.now(timezone.utc)
+        metadata = metadata or {}
 
-        message = {
+        async with AsyncSessionLocal() as session:
+            session.add(MessageModel(
+                conversation_id=conversation_id,
+                role=role,
+                content=content,
+                timestamp=timestamp,
+                metadata_=metadata,
+            ))
+
+            conv_row = await session.get(ConversationModel, conversation_id)
+            if conv_row:
+                conv_row.updated_at = timestamp
+                if "tokens_used" in metadata:
+                    conv_row.total_tokens_used += metadata["tokens_used"]
+                if "estimated_cost_usd" in metadata:
+                    conv_row.total_cost_usd = float(conv_row.total_cost_usd or 0) + metadata["estimated_cost_usd"]
+
+            await session.commit()
+
+        return {
             "conversation_id": conversation_id,
             "role": role,
             "content": content,
-            "timestamp": timestamp,
-            "metadata": metadata or {}
+            "timestamp": timestamp.isoformat(),
+            "metadata": metadata,
         }
-
-        # Guardar mensaje en colección de mensajes
-        await self.messages.insert_one(message.copy())
-
-        # Actualizar conversación
-        update_data = {
-            "$push": {"messages": message},
-            "$set": {"updated_at": timestamp}
-        }
-
-        # Si hay metadatos de tokens/costo, actualizar totales
-        if metadata:
-            if "tokens_used" in metadata:
-                update_data["$inc"] = {"total_tokens_used": metadata["tokens_used"]}
-            if "estimated_cost_usd" in metadata:
-                update_data["$inc"] = update_data.get("$inc", {})
-                update_data["$inc"]["total_cost_usd"] = metadata["estimated_cost_usd"]
-
-        await self.conversations.update_one(
-            {"conversation_id": conversation_id},
-            update_data
-        )
-
-        return message
 
     async def log_chat_interaction(
         self,
@@ -168,11 +200,9 @@ class ConversationService:
         Returns:
             Dict con información de la conversación
         """
-        # Extraer channel de metadata si no se proporciona directamente
         if not channel and metadata:
             channel = metadata.get("source")
 
-        # Crear nueva conversación si no existe
         if not conversation_id:
             conversation_id = await self.create_conversation(
                 user_id=user_id,
@@ -182,7 +212,6 @@ class ConversationService:
                 channel=channel
             )
 
-        # Guardar mensaje del usuario
         await self.add_message(
             conversation_id=conversation_id,
             role="user",
@@ -190,7 +219,6 @@ class ConversationService:
             metadata={}
         )
 
-        # Guardar respuesta del asistente
         await self.add_message(
             conversation_id=conversation_id,
             role="assistant",
@@ -216,18 +244,20 @@ class ConversationService:
         Retorna la conversación más reciente de un usuario para un bot/canal dado.
         Útil para reanudar la sesión cuando el cliente reconecta.
         """
-        query: Dict = {"user_id": user_id}
+        filters = [ConversationModel.user_id == user_id]
         if bot_id:
-            query["bot_id"] = bot_id
+            filters.append(ConversationModel.bot_id == bot_id)
         if channel_id:
-            query["metadata.channel_id"] = channel_id
+            filters.append(ConversationModel.channel_id == channel_id)
 
-        doc = await self.conversations.find_one(
-            query,
-            {"_id": 0},
-            sort=[("updated_at", -1)],
-        )
-        return doc
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(ConversationModel).where(*filters).order_by(ConversationModel.updated_at.desc())
+            )
+            row = result.scalars().first()
+            if not row:
+                return None
+            return await self._to_conversation_dict(session, row)
 
     async def get_conversation(self, conversation_id: str) -> Optional[Dict]:
         """
@@ -239,11 +269,11 @@ class ConversationService:
         Returns:
             Conversación o None si no existe
         """
-        conversation = await self.conversations.find_one(
-            {"conversation_id": conversation_id},
-            {"_id": 0}
-        )
-        return conversation
+        async with AsyncSessionLocal() as session:
+            row = await session.get(ConversationModel, conversation_id)
+            if not row:
+                return None
+            return await self._to_conversation_dict(session, row)
 
     async def get_user_conversations(
         self,
@@ -260,13 +290,15 @@ class ConversationService:
         Returns:
             Lista de conversaciones
         """
-        cursor = self.conversations.find(
-            {"user_id": user_id},
-            {"_id": 0}
-        ).sort("updated_at", -1).limit(limit)
-
-        conversations = await cursor.to_list(length=limit)
-        return conversations
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(ConversationModel)
+                .where(ConversationModel.user_id == user_id)
+                .order_by(ConversationModel.updated_at.desc())
+                .limit(limit)
+            )
+            rows = result.scalars().all()
+            return [await self._to_conversation_dict(session, r) for r in rows]
 
     async def get_conversation_stats(self, bot_ids: Optional[List[str]] = None) -> Dict:
         """
@@ -278,50 +310,57 @@ class ConversationService:
         Returns:
             Estadísticas de uso
         """
-        base_filter: Dict = {}
+        base_filters = []
         if bot_ids is not None:
-            base_filter["bot_id"] = {"$in": bot_ids + [None]}
+            # Incluir conversaciones legacy sin bot_id (bot_id=None) además de las del owner
+            base_filters.append(or_(ConversationModel.bot_id.in_(bot_ids), ConversationModel.bot_id.is_(None)))
 
-        total_conversations = await self.conversations.count_documents(base_filter)
-        total_messages = await self.messages.count_documents({})
+        async with AsyncSessionLocal() as session:
+            total_conversations = (await session.execute(
+                select(func.count()).select_from(ConversationModel).where(*base_filters)
+            )).scalar_one()
 
-        # Calcular totales de tokens y costos
-        pipeline = [
-            {"$match": base_filter} if base_filter else {"$match": {}},
-            {
-                "$group": {
-                    "_id": None,
-                    "total_tokens": {"$sum": "$total_tokens_used"},
-                    "total_cost": {"$sum": "$total_cost_usd"}
-                }
-            }
-        ]
+            # total_messages: join a conversations, filtrado por bot_ids
+            # (antes usaba la colección Mongo vestigial sin filtrar por owner)
+            total_messages = (await session.execute(
+                select(func.count(MessageModel.message_id))
+                .select_from(MessageModel)
+                .join(ConversationModel, ConversationModel.conversation_id == MessageModel.conversation_id)
+                .where(*base_filters)
+            )).scalar_one()
 
-        result = await self.conversations.aggregate(pipeline).to_list(1)
+            tokens_cost = (await session.execute(
+                select(
+                    func.sum(ConversationModel.total_tokens_used),
+                    func.sum(ConversationModel.total_cost_usd),
+                ).where(*base_filters)
+            )).one()
 
-        # Contar usuarios activos (únicos)
-        active_users = await self.conversations.distinct("user_id", base_filter)
+            active_users = (await session.execute(
+                select(func.count(func.distinct(ConversationModel.user_id))).where(*base_filters)
+            )).scalar_one()
 
-        # Contar por plataforma
-        whatsapp_filter = {**base_filter, "metadata.source": "whatsapp"}
-        telegram_filter = {**base_filter, "metadata.source": "telegram"}
-        whatsapp_count = await self.conversations.count_documents(whatsapp_filter)
-        telegram_count = await self.conversations.count_documents(telegram_filter)
+            whatsapp_count = (await session.execute(
+                select(func.count()).select_from(ConversationModel)
+                .where(*base_filters, ConversationModel.source == "whatsapp")
+            )).scalar_one()
+            telegram_count = (await session.execute(
+                select(func.count()).select_from(ConversationModel)
+                .where(*base_filters, ConversationModel.source == "telegram")
+            )).scalar_one()
 
-        stats = {
+        return {
             "total_conversations": total_conversations,
             "total_messages": total_messages,
-            "total_tokens_used": result[0]["total_tokens"] if result else 0,
-            "total_cost_usd": round(result[0]["total_cost"], 6) if result else 0.0,
-            "active_users": len(active_users),
+            "total_tokens_used": tokens_cost[0] or 0,
+            "total_cost_usd": round(float(tokens_cost[1] or 0), 6),
+            "active_users": active_users,
             "conversations_by_platform": {
                 "whatsapp": whatsapp_count,
                 "telegram": telegram_count,
                 "other": total_conversations - whatsapp_count - telegram_count
             }
         }
-
-        return stats
 
     async def get_all_conversations(
         self,
@@ -355,54 +394,51 @@ class ConversationService:
         Returns:
             Dict con conversaciones, total y metadata de paginación
         """
-        # Construir filtro
-        filter_query = {}
+        filters = []
 
         if bot_ids is not None:
-            # Incluir conversaciones legacy sin bot_id (bot_id=None) además de las del owner
-            filter_query["bot_id"] = {"$in": bot_ids + [None]}
+            filters.append(or_(ConversationModel.bot_id.in_(bot_ids), ConversationModel.bot_id.is_(None)))
         elif bot_id:
-            filter_query["bot_id"] = bot_id
+            filters.append(ConversationModel.bot_id == bot_id)
 
         if client_id:
-            filter_query["client_id"] = client_id
+            filters.append(ConversationModel.client_id == client_id)
 
         if user_id:
-            filter_query["user_id"] = user_id
+            filters.append(ConversationModel.user_id == user_id)
 
         if platform:
-            filter_query["metadata.source"] = platform
+            filters.append(ConversationModel.source == platform)
 
-        if date_from or date_to:
-            date_filter = {}
-            if date_from:
-                date_filter["$gte"] = date_from
-            if date_to:
-                date_filter["$lte"] = date_to
-            filter_query["created_at"] = date_filter
+        if date_from:
+            filters.append(ConversationModel.created_at >= _parse_iso(date_from))
+        if date_to:
+            filters.append(ConversationModel.created_at <= _parse_iso(date_to))
 
         if search:
-            # Buscar en user_id o en el contenido de mensajes
-            filter_query["$or"] = [
-                {"user_id": {"$regex": search, "$options": "i"}},
-                {"messages.content": {"$regex": search, "$options": "i"}}
-            ]
+            pattern = f"%{search}%"
+            message_exists = (
+                select(MessageModel.message_id)
+                .where(MessageModel.conversation_id == ConversationModel.conversation_id)
+                .where(MessageModel.content.ilike(pattern))
+                .exists()
+            )
+            filters.append(or_(ConversationModel.user_id.ilike(pattern), message_exists))
 
-        # Contar total de documentos que coinciden con el filtro
-        total = await self.conversations.count_documents(filter_query)
+        sort_column = getattr(ConversationModel, sort_by, ConversationModel.updated_at)
+        order_clause = sort_column.desc() if order == "desc" else sort_column.asc()
 
-        # Determinar orden
-        sort_order = -1 if order == "desc" else 1
+        async with AsyncSessionLocal() as session:
+            total = (await session.execute(
+                select(func.count()).select_from(ConversationModel).where(*filters)
+            )).scalar_one()
 
-        # Obtener conversaciones
-        cursor = self.conversations.find(
-            filter_query,
-            {"_id": 0}
-        ).sort(sort_by, sort_order).skip(skip).limit(limit)
+            result = await session.execute(
+                select(ConversationModel).where(*filters).order_by(order_clause).offset(skip).limit(limit)
+            )
+            rows = result.scalars().all()
+            conversations = [await self._to_conversation_dict(session, r) for r in rows]
 
-        conversations = await cursor.to_list(length=limit)
-
-        # Calcular metadata de paginación
         total_pages = (total + limit - 1) // limit if limit > 0 else 0
         current_page = (skip // limit) + 1 if limit > 0 else 1
 
@@ -425,49 +461,48 @@ class ConversationService:
         Returns:
             Dict con timeline de estadísticas
         """
-        # Calcular fecha de inicio
-        date_from = (datetime.utcnow() - timedelta(days=days)).isoformat()
+        date_from = datetime.now(timezone.utc) - timedelta(days=days)
 
-        # Construir filtro de match
-        match_filter: Dict = {"created_at": {"$gte": date_from}}
+        filters = [ConversationModel.created_at >= date_from]
         if bot_ids is not None:
-            match_filter["bot_id"] = {"$in": bot_ids + [None]}
+            filters.append(or_(ConversationModel.bot_id.in_(bot_ids), ConversationModel.bot_id.is_(None)))
 
-        # Agregación para obtener estadísticas por día
-        pipeline = [
-            {
-                "$match": match_filter
-            },
-            {
-                "$addFields": {
-                    "date": {"$substr": ["$created_at", 0, 10]}  # Extraer solo la fecha YYYY-MM-DD
-                }
-            },
-            {
-                "$group": {
-                    "_id": "$date",
-                    "conversations": {"$sum": 1},
-                    "messages": {"$sum": {"$size": "$messages"}},
-                    "tokens": {"$sum": "$total_tokens_used"},
-                    "cost": {"$sum": "$total_cost_usd"}
-                }
-            },
-            {
-                "$sort": {"_id": 1}
-            }
-        ]
+        msg_count_subq = (
+            select(
+                MessageModel.conversation_id.label("conversation_id"),
+                func.count().label("msg_count"),
+            )
+            .group_by(MessageModel.conversation_id)
+            .subquery()
+        )
 
-        results = await self.conversations.aggregate(pipeline).to_list(length=days)
+        day_col = func.date_trunc("day", ConversationModel.created_at).label("day")
 
-        # Formatear resultados
+        async with AsyncSessionLocal() as session:
+            stmt = (
+                select(
+                    day_col,
+                    func.count(ConversationModel.conversation_id).label("conversations"),
+                    func.coalesce(func.sum(msg_count_subq.c.msg_count), 0).label("messages"),
+                    func.sum(ConversationModel.total_tokens_used).label("tokens"),
+                    func.sum(ConversationModel.total_cost_usd).label("cost"),
+                )
+                .select_from(ConversationModel)
+                .outerjoin(msg_count_subq, msg_count_subq.c.conversation_id == ConversationModel.conversation_id)
+                .where(*filters)
+                .group_by(day_col)
+                .order_by(day_col)
+            )
+            rows = (await session.execute(stmt)).all()
+
         timeline = []
-        for result in results:
+        for row in rows:
             timeline.append({
-                "date": result["_id"],
-                "conversations": result["conversations"],
-                "messages": result["messages"],
-                "tokens": result["tokens"],
-                "cost": round(result["cost"], 6)
+                "date": row.day.date().isoformat(),
+                "conversations": row.conversations,
+                "messages": int(row.messages),
+                "tokens": row.tokens or 0,
+                "cost": round(float(row.cost or 0), 6),
             })
 
         return {
@@ -485,15 +520,14 @@ class ConversationService:
         Returns:
             Número de usuarios únicos activos
         """
-        date_from = (datetime.utcnow() - timedelta(days=days)).isoformat()
+        date_from = datetime.now(timezone.utc) - timedelta(days=days)
 
-        # Obtener usuarios únicos que tienen conversaciones desde date_from
-        active_users = await self.conversations.distinct(
-            "user_id",
-            {"created_at": {"$gte": date_from}}
-        )
-
-        return len(active_users)
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(func.count(func.distinct(ConversationModel.user_id)))
+                .where(ConversationModel.created_at >= date_from)
+            )
+            return result.scalar_one()
 
 
 # Instancia global del servicio

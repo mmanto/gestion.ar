@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { Radio } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { LoadingPage } from '../components/common/Spinner';
+import { PageHeader } from '../components/common/PageHeader';
+import { Alert } from '../components/common/Alert';
+import { EmptyState } from '../components/common/EmptyState';
+import { Card } from '../components/common/Card';
+import { Button } from '../components/common/Button';
+import { useAccentTheme } from '../hooks/useAccentTheme';
 import { ChannelEditForm } from '../components/channels/ChannelEditForm';
 import useChannels from '../hooks/useChannels';
 import { useAuth } from '../hooks/useAuth';
@@ -22,10 +29,10 @@ const whatsappProviderLabels: Record<WhatsAppProvider, string> = {
 };
 
 const statusColors: Record<ChannelStatus, string> = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  active: 'bg-green-100 text-green-800',
-  inactive: 'bg-gray-100 text-gray-800',
-  error: 'bg-red-100 text-red-800',
+  pending: 'bg-yellow-200 text-yellow-950',
+  active: 'bg-green-200 text-green-950',
+  inactive: 'bg-gray-200 text-gray-950',
+  error: 'bg-red-200 text-red-950',
 };
 
 const statusLabels: Record<ChannelStatus, string> = {
@@ -45,6 +52,7 @@ interface CreateChannelForm {
 }
 
 export const BotChannels = () => {
+  const { accent } = useAccentTheme();
   const { botId } = useParams<{ botId: string }>();
   const { channels, loading, error, refetch } = useChannels(botId || '');
   const { user } = useAuth();
@@ -226,18 +234,19 @@ export const BotChannels = () => {
 
   return (
     <AppLayout>
+      <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
           {/* Breadcrumb */}
           <nav className="mb-4">
-            <ol className="flex items-center space-x-2 text-sm text-gray-500">
+            <ol className="flex items-center space-x-2 text-base text-gray-700">
               <li>
-                <Link to="/bots" className="hover:text-indigo-600">
-                  Bots
+                <Link to="/bots" className="hover:underline" style={{ color: accent }}>
+                  Agentes
                 </Link>
               </li>
               <li>/</li>
               <li>
-                <Link to={`/bots/${botId}`} className="hover:text-indigo-600">
-                  Bot
+                <Link to={`/bots/${botId}`} className="hover:underline" style={{ color: accent }}>
+                  Agente
                 </Link>
               </li>
               <li>/</li>
@@ -245,39 +254,34 @@ export const BotChannels = () => {
             </ol>
           </nav>
 
-          {/* Header */}
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Canales</h1>
-              <p className="text-gray-600 mt-1">
-                Gestiona los canales de comunicacion del bot
-              </p>
-            </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-            >
-              Nuevo Canal
-            </button>
-          </div>
+          <PageHeader
+            title="Canales"
+            description="Gestiona los canales de comunicacion del agente"
+            titleClassName="font-light uppercase tracking-[0.08em]"
+            descriptionClassName="text-gray-800"
+            actions={
+              <Button variant="primary" onClick={() => setShowCreateModal(true)}>
+                Nuevo Canal
+              </Button>
+            }
+          />
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <p className="text-red-800">{error}</p>
-            </div>
-          )}
+          {error && <Alert variant="error" className="mb-6">{error}</Alert>}
 
           {/* Channels List */}
           {channels.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center">
-              <p className="text-gray-500 mb-4">No hay canales configurados</p>
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="text-indigo-600 hover:text-indigo-800"
-              >
-                Crear el primer canal
-              </button>
-            </div>
+            <Card>
+              <EmptyState
+                icon={<Radio className="w-8 h-8 text-gray-600" />}
+                title="No hay canales configurados"
+                titleClassName="text-gray-900 text-xl"
+                action={
+                  <Button variant="primary" onClick={() => setShowCreateModal(true)}>
+                    Crear el primer canal
+                  </Button>
+                }
+              />
+            </Card>
           ) : (
             <div className="grid gap-4">
               {channels.map((channel: Channel) => (
@@ -296,6 +300,7 @@ export const BotChannels = () => {
               ))}
             </div>
           )}
+      </div>
 
       {/* Create Modal */}
       {showCreateModal && (

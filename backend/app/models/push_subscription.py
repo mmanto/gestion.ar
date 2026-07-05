@@ -29,7 +29,7 @@ class PushSubscriptionCreate(BaseModel):
 
 
 class PushSubscription(BaseModel):
-    """Modelo completo de suscripción push almacenado en MongoDB"""
+    """Modelo completo de suscripción push almacenado en PostgreSQL"""
     subscription_id: str = Field(..., description="ID único, formato: sub_{hex12}")
     bot_id: str
     channel_id: str

@@ -1,15 +1,21 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Bot as BotIcon } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { LoadingPage } from '../components/common/Spinner';
+import { PageHeader } from '../components/common/PageHeader';
+import { Alert } from '../components/common/Alert';
+import { EmptyState } from '../components/common/EmptyState';
+import { Card } from '../components/common/Card';
+import { Button } from '../components/common/Button';
 import { useBots } from '../hooks/useBots';
 import type { Bot, BotStatus } from '../types/bot.types';
 import botsService from '../services/bots.service';
 
 const statusColors: Record<BotStatus, string> = {
-  active: 'bg-green-100 text-green-800',
-  inactive: 'bg-gray-100 text-gray-800',
-  maintenance: 'bg-yellow-100 text-yellow-800',
+  active: 'bg-green-200 text-green-950',
+  inactive: 'bg-gray-200 text-gray-950',
+  maintenance: 'bg-yellow-200 text-yellow-950',
 };
 
 const statusLabels: Record<BotStatus, string> = {
@@ -53,92 +59,88 @@ export const Bots = () => {
 
   return (
     <AppLayout>
-          {/* Header */}
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Mis Bots</h1>
-              <p className="text-gray-600 mt-1">
-                {total} bot{total !== 1 ? 's' : ''} en total
-              </p>
-            </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
-            >
-              + Crear Bot
-            </button>
-          </div>
+        <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
+          <PageHeader
+            title="Mis Agentes"
+            description={`${total} agente${total !== 1 ? 's' : ''} en total`}
+            titleClassName="font-light uppercase tracking-[0.08em]"
+            descriptionClassName="text-gray-800"
+            actions={
+              <Button variant="primary" onClick={() => setShowCreateModal(true)}>
+                + Crear Agente
+              </Button>
+            }
+          />
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <p className="text-red-800">Error: {error}</p>
-            </div>
-          )}
+          {error && <Alert variant="error" className="mb-6">Error: {error}</Alert>}
 
           {/* Bots Grid */}
           {bots.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center">
-              <p className="text-gray-500 mb-4">No tienes bots creados</p>
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="text-indigo-600 hover:text-indigo-800"
-              >
-                Crear tu primer bot
-              </button>
-            </div>
+            <Card shadow="none">
+              <EmptyState
+                icon={<BotIcon className="w-8 h-8 text-gray-600" />}
+                title="Todavía no tenés agentes"
+                description="Creá tu primer agente para empezar"
+                titleClassName="text-gray-900 text-xl"
+                descriptionClassName="text-gray-700 text-base"
+                action={
+                  <Button variant="primary" onClick={() => setShowCreateModal(true)}>
+                    Crear tu primer agente
+                  </Button>
+                }
+              />
+            </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {bots.map((bot: Bot) => (
-                <Link
-                  key={bot.bot_id}
-                  to={`/bots/${bot.bot_id}`}
-                  className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {bot.name}
-                    </h3>
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        statusColors[bot.status]
-                      }`}
-                    >
-                      {statusLabels[bot.status]}
-                    </span>
-                  </div>
-
-                  {bot.description && (
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                      {bot.description}
-                    </p>
-                  )}
-
-                  <div className="text-sm text-gray-500 mb-4">
-                    <span className="inline-block bg-gray-100 rounded px-2 py-1">
-                      {bot.business_type}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2 text-center text-sm">
-                    <div>
-                      <p className="font-semibold text-gray-900">
-                        {bot.total_clients}
-                      </p>
-                      <p className="text-gray-500">Clientes</p>
+                <Link key={bot.bot_id} to={`/bots/${bot.bot_id}`}>
+                  <Card shadow="none">
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="text-lg font-normal text-gray-900">
+                        {bot.name}
+                      </h3>
+                      <span
+                        className={`px-2 py-1 text-base font-medium rounded-full ${
+                          statusColors[bot.status]
+                        }`}
+                      >
+                        {statusLabels[bot.status]}
+                      </span>
                     </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">
-                        {bot.total_conversations}
+
+                    {bot.description && (
+                      <p className="text-gray-800 text-base mb-4 line-clamp-2">
+                        {bot.description}
                       </p>
-                      <p className="text-gray-500">Chats</p>
+                    )}
+
+                    <div className="text-base text-gray-800 mb-4">
+                      <span className="inline-block bg-gray-200 rounded-full px-2 py-1">
+                        {bot.business_type}
+                      </span>
                     </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">
-                        {bot.total_messages}
-                      </p>
-                      <p className="text-gray-500">Mensajes</p>
+
+                    <div className="grid grid-cols-3 gap-2 text-center text-base">
+                      <div>
+                        <p className="font-semibold text-gray-900">
+                          {bot.total_clients}
+                        </p>
+                        <p className="text-gray-700">Clientes</p>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">
+                          {bot.total_conversations}
+                        </p>
+                        <p className="text-gray-700">Chats</p>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">
+                          {bot.total_messages}
+                        </p>
+                        <p className="text-gray-700">Mensajes</p>
+                      </div>
                     </div>
-                  </div>
+                  </Card>
                 </Link>
               ))}
             </div>
@@ -146,36 +148,29 @@ export const Bots = () => {
 
           {/* Pagination */}
           {pages > 1 && (
-            <div className="flex justify-center mt-8 gap-2">
-              <button
-                onClick={() => goToPage(page - 1)}
-                disabled={page === 1}
-                className="px-4 py-2 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
+            <div className="flex justify-center items-center mt-8 gap-2">
+              <Button variant="outline" onClick={() => goToPage(page - 1)} disabled={page === 1}>
                 Anterior
-              </button>
-              <span className="px-4 py-2">
+              </Button>
+              <span className="px-4 py-2 text-base text-gray-900">
                 Página {page} de {pages}
               </span>
-              <button
-                onClick={() => goToPage(page + 1)}
-                disabled={page === pages}
-                className="px-4 py-2 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
+              <Button variant="outline" onClick={() => goToPage(page + 1)} disabled={page === pages}>
                 Siguiente
-              </button>
+              </Button>
             </div>
           )}
+        </div>
 
       {/* Create Bot Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Crear Nuevo Bot</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Crear Nuevo Agente</h2>
             <form onSubmit={handleCreateBot}>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nombre del Bot *
+                  Nombre del Agente *
                 </label>
                 <input
                   type="text"
@@ -212,24 +207,16 @@ export const Bots = () => {
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
                   rows={3}
-                  placeholder="Descripción opcional del bot"
+                  placeholder="Descripción opcional del agente"
                 />
               </div>
               <div className="flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
+                <Button type="button" variant="outline" onClick={() => setShowCreateModal(false)}>
                   Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={creating}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-                >
-                  {creating ? 'Creando...' : 'Crear Bot'}
-                </button>
+                </Button>
+                <Button type="submit" variant="primary" loading={creating}>
+                  Crear Agente
+                </Button>
               </div>
             </form>
           </div>

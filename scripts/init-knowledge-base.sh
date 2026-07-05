@@ -1,4 +1,9 @@
 #!/bin/bash
+# DEPRECADO: /api/documents/upload ya no existe (era global, sin bot_id).
+# Los documentos ahora se suben scoped a un agente vía
+# POST /api/bots/{bot_id}/documents/upload (requiere JWT), o desde el panel
+# admin en /bots/{bot_id}/documents. Este script queda solo de referencia.
+#
 # Script de inicialización de la base de conocimiento
 # Crea documentos de ejemplo para el chatbot
 

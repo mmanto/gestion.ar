@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request, Query, Header, Depends, status
+from fastapi import FastAPI, HTTPException, Form, Request, Query, Header, Depends, status
 from fastapi.responses import PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -7,7 +7,6 @@ import os
 import json
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-import shutil
 import httpx
 
 from app.rag_service import get_rag_service
@@ -27,6 +26,7 @@ from app.routers import bot_router, client_router, channel_router
 from app.services.user_service import get_user_service
 from app.services.bot_service import get_bot_service
 from app.services.client_service import get_client_service
+from app.services.channel_service import get_channel_service
 from app.services.push_service import get_push_service
 from app.models.client import ClientStatus
 from app.models.push_subscription import SendNotificationRequest
@@ -35,6 +35,10 @@ from app.routers.telegram_webhook_router import router as telegram_webhook_route
 from app.routers.web_chat_router import router as web_chat_router
 from app.routers.pwa_router import router as pwa_router
 from app.routers.public_router import router as public_router
+from app.routers.google_oauth_router import router as google_oauth_router
+from app.routers.appointments_router import router as appointments_router
+from app.routers.appointments_webhook_router import router as appointments_webhook_router
+from app.routers.document_router import router as document_router
 from app.telegram_handlers import (
     handle_telegram_command,
     handle_telegram_text_message,
@@ -69,6 +73,10 @@ app.include_router(telegram_webhook_router)  # Webhooks de Telegram por canal
 app.include_router(web_chat_router)          # QR code + WebSocket chat web
 app.include_router(pwa_router)               # PWA Push Notifications (VAPID)
 app.include_router(public_router)            # Endpoints públicos sin JWT
+app.include_router(google_oauth_router)      # Login/conexión OAuth (Google/Microsoft) vía Nango
+app.include_router(appointments_router)      # CRUD de turnos scoped por bot
+app.include_router(appointments_webhook_router)  # Webhook de devbout-appointments
+app.include_router(document_router)          # Documentos RAG scoped por bot
 
 # ==================== SEGURIDAD Y AUTENTICACIÓN ====================
 
@@ -105,19 +113,6 @@ async def get_current_user(
     return user
 
 # ==================== MODELOS ====================
-
-class DocumentUpload(BaseModel):
-    title: str
-    category: Optional[str] = "general"
-
-class TextDocument(BaseModel):
-    title: str
-    text: str
-    category: Optional[str] = "general"
-
-class TestRAGQuery(BaseModel):
-    query: str
-    n_results: Optional[int] = 3
 
 class ChatRequest(BaseModel):
     message: str
@@ -266,279 +261,21 @@ async def register(
     }
 
 # ==================== ENDPOINTS RAG ====================
-
-@app.get("/api/documents")
-async def list_documents(
-    current_user: User = Depends(get_current_user)
-):
-    """Listar todos los documentos en la base de conocimiento"""
-    try:
-        rag = get_rag_service()
-        documents = rag.list_documents()
-        return {"success": True, "documents": documents, "total": len(documents)}
-    except Exception as e:
-        raise HTTPException(500, f"Error listando documentos: {str(e)}")
-
-
-@app.post("/api/documents/upload")
-async def upload_document(
-    file: UploadFile = File(...),
-    title: str = Form(""),
-    category: str = Form("general"),
-    current_user: User = Depends(get_current_user)
-):
-    """Upload y procesar documento para RAG"""
-    import uuid as _uuid
-
-    upload_dir = "/app/documents"
-    os.makedirs(upload_dir, exist_ok=True)
-
-    file_path = os.path.join(upload_dir, file.filename)
-
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    try:
-        rag = get_rag_service()
-        doc_id = str(_uuid.uuid4())
-        metadata = {
-            "title": title or file.filename,
-            "category": category,
-            "uploaded_at": datetime.utcnow().isoformat(),
-        }
-
-        chunks_created = 0
-        if file.filename.endswith('.pdf'):
-            chunks_created = rag.add_pdf(file_path, metadata=metadata, doc_id=doc_id)
-        elif file.filename.endswith('.docx'):
-            chunks_created = rag.add_docx(file_path, metadata=metadata, doc_id=doc_id)
-        elif file.filename.endswith('.txt'):
-            chunks_created = rag.add_text_file(file_path, metadata=metadata, doc_id=doc_id)
-        else:
-            raise HTTPException(400, "Formato no soportado. Usa PDF, DOCX o TXT")
-
-        return {
-            "success": True,
-            "doc_id": doc_id,
-            "filename": file.filename,
-            "chunks_created": chunks_created,
-            "message": f"Documento procesado: {chunks_created} chunks creados"
-        }
-
-    except HTTPException:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-        raise
-    except Exception as e:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-        raise HTTPException(500, f"Error procesando documento: {str(e)}")
-
-
-@app.delete("/api/documents/{doc_id}")
-async def delete_document(
-    doc_id: str,
-    current_user: User = Depends(get_current_user)
-):
-    """Eliminar un documento de la base de conocimiento por doc_id"""
-    try:
-        rag = get_rag_service()
-        deleted_chunks = rag.delete_document(doc_id)
-        if deleted_chunks == 0:
-            raise HTTPException(404, f"Documento {doc_id} no encontrado")
-        return {
-            "success": True,
-            "doc_id": doc_id,
-            "deleted_chunks": deleted_chunks,
-            "message": f"Documento eliminado: {deleted_chunks} chunks borrados"
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(500, f"Error eliminando documento: {str(e)}")
-
-@app.post("/api/documents/text")
-async def add_text_document(doc: TextDocument):
-    """Agregar documento de texto directamente"""
-
-    try:
-        rag = get_rag_service()
-
-        chunks_created = rag.add_document(
-            text=doc.text,
-            metadata={
-                "title": doc.title,
-                "category": doc.category,
-                "source": "direct_input"
-            }
-        )
-
-        return {
-            "success": True,
-            "title": doc.title,
-            "chunks_created": chunks_created,
-            "message": f"Documento agregado: {chunks_created} chunks creados"
-        }
-
-    except Exception as e:
-        raise HTTPException(500, f"Error: {str(e)}")
-
-@app.post("/api/rag/search")
-async def search_documents(query: TestRAGQuery):
-    """Buscar documentos relevantes (para testing)"""
-
-    try:
-        rag = get_rag_service()
-        docs = rag.search(query.query, n_results=query.n_results)
-
-        return {
-            "query": query.query,
-            "results_count": len(docs),
-            "documents": docs
-        }
-
-    except Exception as e:
-        raise HTTPException(500, f"Error en búsqueda: {str(e)}")
-
-@app.post("/api/rag/context")
-async def get_context(query: TestRAGQuery):
-    """Obtener contexto formateado para LLM (para testing)"""
-
-    try:
-        rag = get_rag_service()
-        context = rag.get_context(query.query, n_results=query.n_results)
-
-        return {
-            "query": query.query,
-            "context": context,
-            "context_length": len(context),
-            "estimated_tokens": len(context) // 4
-        }
-
-    except Exception as e:
-        raise HTTPException(500, f"Error obteniendo contexto: {str(e)}")
-
-@app.get("/api/rag/stats")
-async def get_rag_stats():
-    """Obtener estadísticas de la base de conocimiento"""
-
-    try:
-        rag = get_rag_service()
-        stats = rag.get_stats()
-
-        return {
-            "success": True,
-            "stats": stats
-        }
-
-    except Exception as e:
-        raise HTTPException(500, f"Error obteniendo stats: {str(e)}")
-
-@app.delete("/api/rag/clear")
-async def clear_knowledge_base():
-    """Limpiar toda la base de conocimiento (CUIDADO!)"""
-
-    try:
-        rag = get_rag_service()
-        rag.clear_collection()
-
-        return {
-            "success": True,
-            "message": "Base de conocimiento limpiada completamente"
-        }
-
-    except Exception as e:
-        raise HTTPException(500, f"Error limpiando base: {str(e)}")
+# Movidos a app/routers/document_router.py, scoped por bot_id:
+# /api/bots/{bot_id}/documents (GET/POST /upload/POST /text/DELETE /{doc_id}/GET /stats/DELETE)
 
 # ==================== ENDPOINTS CHAT ====================
 
 @app.post("/api/chat")
 async def chat(request: ChatRequest):
     """
-    Endpoint principal de chat con Claude + RAG
-
-    Flujo:
-    1. Recibe mensaje del usuario
-    2. Si use_rag=True, busca contexto relevante en la base de conocimiento
-    3. Genera respuesta con Claude usando el contexto
-    4. Retorna respuesta con metadatos (tokens, costo, etc.)
+    Endpoint legacy pre-multi-tenant (sin bot_id). Deprecado: usar el chat
+    scoped por agente (WebSocket /ws/chat/{bot_id} o /ws/chat/channel/{channel_id}).
     """
-
-    try:
-        # Obtener servicios
-        claude = get_llm_service()
-
-        # Buscar contexto RAG si está habilitado
-        rag_context = None
-        if request.use_rag:
-            try:
-                rag = get_rag_service()
-                rag_context = rag.get_context(request.message, n_results=3)
-                print(f"📚 Contexto RAG recuperado: {len(rag_context)} caracteres")
-            except Exception as e:
-                print(f"⚠️  Error obteniendo contexto RAG: {e}")
-                # Continuar sin RAG si falla
-                rag_context = None
-
-        # Generar respuesta con Claude
-        response = await claude.generate_rag_response(
-            user_message=request.message,
-            rag_context=rag_context if rag_context else "",
-            max_tokens=request.max_tokens
-        )
-
-        # Guardar conversación en MongoDB
-        conversation_info = None
-        if request.save_conversation:
-            try:
-                conv_service = get_conversation_service()
-                conversation_info = await conv_service.log_chat_interaction(
-                    user_id=request.user_id,
-                    user_message=request.message,
-                    assistant_response=response.response,
-                    metadata={
-                        "model": response.model,
-                        "tokens_used": response.tokens_used,
-                        "input_tokens": response.input_tokens,
-                        "output_tokens": response.output_tokens,
-                        "estimated_cost_usd": response.estimated_cost_usd,
-                        "rag_used": request.use_rag and rag_context is not None,
-                        "context_length": len(rag_context) if rag_context else 0
-                    }
-                )
-                print(f"💾 Conversación guardada: {conversation_info['conversation_id']}")
-            except Exception as e:
-                print(f"⚠️  Error guardando conversación: {e}")
-                # No fallar si el guardado falla
-
-        return {
-            "success": True,
-            "message": request.message,
-            "response": response.response,
-            "metadata": {
-                "model": response.model,
-                "tokens_used": response.tokens_used,
-                "input_tokens": response.input_tokens,
-                "output_tokens": response.output_tokens,
-                "estimated_cost_usd": round(response.estimated_cost_usd, 6),
-                "timestamp": response.timestamp,
-                "rag_used": request.use_rag and rag_context is not None,
-                "context_length": len(rag_context) if rag_context else 0,
-                "conversation_id": conversation_info["conversation_id"] if conversation_info else None
-            }
-        }
-
-    except ValueError as e:
-        # Error de configuración (API key no configurada)
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error generando respuesta: {str(e)}"
-        )
+    raise HTTPException(
+        status_code=410,
+        detail="Endpoint deprecado. Usá /ws/chat/{bot_id} o /ws/chat/channel/{channel_id}."
+    )
 
 # ==================== ENDPOINTS DE CLIENTES (GLOBAL) ====================
 
@@ -865,158 +602,18 @@ async def send_agent_message(
 # ==================== ENDPOINTS WHATSAPP ====================
 
 @app.get("/api/webhook", response_class=PlainTextResponse)
-async def verify_webhook(
-    request: Request
-):
-    """
-    Webhook verification endpoint for WhatsApp
-
-    WhatsApp will call this endpoint to verify the webhook
-    """
-    whatsapp = get_whatsapp_service()
-
-    # Get query parameters manually (FastAPI has issues with dots in param names)
-    mode = request.query_params.get("hub.mode", "")
-    token = request.query_params.get("hub.verify_token", "")
-    challenge = request.query_params.get("hub.challenge", "")
-
-    result = whatsapp.verify_webhook(mode, token, challenge)
-
-    if result:
-        return result
-    else:
-        raise HTTPException(status_code=403, detail="Verification failed")
-
-
 @app.post("/api/webhook")
-async def handle_webhook(
-    request: Request,
-    x_hub_signature: Optional[str] = Header(None, alias="X-Hub-Signature-256")
-):
+async def legacy_whatsapp_webhook():
     """
-    Webhook endpoint to receive WhatsApp messages
-
-    Handles incoming messages and processes them with Claude + RAG
+    Endpoint legacy pre-multi-tenant (sin bot_id, usaba env vars globales
+    WHATSAPP_TOKEN/WHATSAPP_PHONE_ID). Deprecado: usar
+    /api/webhook/whatsapp/meta/{channel_id} o /api/webhook/whatsapp/twilio/{channel_id}.
     """
-    try:
-        whatsapp = get_whatsapp_service()
-
-        # Get raw body for signature verification
-        body = await request.body()
-        body_str = body.decode()
-
-        # Verify signature (if configured) - TEMPORARILY DISABLED FOR TESTING
-        # TODO: Fix WHATSAPP_APP_SECRET and re-enable signature verification
-        # if not whatsapp.verify_signature(body_str, x_hub_signature or ""):
-        #     raise HTTPException(status_code=403, detail="Invalid signature")
-
-        # Parse JSON
-        webhook_data = json.loads(body_str)
-
-        # DEBUG: Log received data
-        print(f"🔍 DEBUG: Webhook data received: {json.dumps(webhook_data, indent=2)}")
-
-        # Parse message
-        message_data = whatsapp.parse_message(webhook_data)
-
-        # DEBUG: Log parsed message
-        print(f"🔍 DEBUG: Parsed message data: {message_data}")
-
-        if not message_data:
-            # Not a message event (could be status update, etc.)
-            return {"status": "ok", "message": "Event received but not a message"}
-
-        # Check for duplicate (idempotency)
-        if whatsapp.is_duplicate_message(message_data["message_id"]):
-            return {"status": "ok", "message": "Duplicate message, already processed"}
-
-        # Check rate limit
-        if whatsapp.check_rate_limit(message_data["from_number"]):
-            # Send rate limit message
-            await whatsapp.send_message(
-                to_number=message_data["from_number"],
-                message="Has excedido el límite de mensajes. Por favor, espera un momento antes de enviar más mensajes."
-            )
-            return {"status": "ok", "message": "Rate limit exceeded"}
-
-        # Only process text messages for now
-        if message_data["type"] != "text" or not message_data["text"]:
-            await whatsapp.send_message(
-                to_number=message_data["from_number"],
-                message="Por el momento solo puedo procesar mensajes de texto."
-            )
-            return {"status": "ok", "message": "Non-text message"}
-
-        # Mark message as read
-        await whatsapp.mark_message_as_read(message_data["message_id"])
-
-        # Process message with Claude + RAG
-        try:
-            # Get services
-            claude = get_llm_service()
-            rag = get_rag_service()
-
-            # Get RAG context
-            rag_context = rag.get_context(message_data["text"], n_results=3)
-
-            # Generate response with Claude
-            response = await claude.generate_rag_response(
-                user_message=message_data["text"],
-                rag_context=rag_context,
-                max_tokens=1024
-            )
-
-            # Send response back to WhatsApp
-            await whatsapp.send_message(
-                to_number=message_data["from_number"],
-                message=response.response
-            )
-
-            # Save conversation to MongoDB
-            try:
-                conv_service = get_conversation_service()
-                await conv_service.log_chat_interaction(
-                    user_id=message_data["from_number"],
-                    user_message=message_data["text"],
-                    assistant_response=response.response,
-                    metadata={
-                        "model": response.model,
-                        "tokens_used": response.tokens_used,
-                        "input_tokens": response.input_tokens,
-                        "output_tokens": response.output_tokens,
-                        "estimated_cost_usd": response.estimated_cost_usd,
-                        "rag_used": True,
-                        "context_length": len(rag_context),
-                        "whatsapp_message_id": message_data["message_id"],
-                        "source": "whatsapp"
-                    }
-                )
-            except Exception as e:
-                print(f"⚠️ Error saving conversation: {e}")
-
-            return {
-                "status": "ok",
-                "message": "Message processed successfully",
-                "tokens_used": response.tokens_used,
-                "cost_usd": response.estimated_cost_usd
-            }
-
-        except Exception as e:
-            # Send error message to user
-            await whatsapp.send_message(
-                to_number=message_data["from_number"],
-                message="Lo siento, ocurrió un error al procesar tu mensaje. Por favor intenta de nuevo."
-            )
-            raise e
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Error processing webhook: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error processing webhook: {str(e)}"
-        )
+    raise HTTPException(
+        status_code=410,
+        detail="Endpoint deprecado. Usá /api/webhook/whatsapp/meta/{channel_id} o "
+               "/api/webhook/whatsapp/twilio/{channel_id}."
+    )
 
 
 @app.post("/api/whatsapp/send")
@@ -1122,6 +719,25 @@ async def handle_telegram_webhook(
 
         if not message_data:
             return {"status": "ok", "message": "Not a message update"}
+
+        # Este webhook es global (sin channel_id en la URL), pero si el
+        # TELEGRAM_BOT_TOKEN coincide con el de un canal configurado, resolvemos
+        # su bot_id para que el mensaje use el system_prompt/ius_config y el RAG
+        # propios de ese agente (en vez de quedar sin agente asociado).
+        channel = await get_channel_service().get_channel_by_telegram_token(telegram.bot_token)
+        if channel:
+            message_data["bot_id"] = channel.bot_id
+            try:
+                client_service = get_client_service()
+                client = await client_service.get_or_create_client(
+                    bot_id=channel.bot_id,
+                    external_id=str(message_data["user_id"]),
+                    source="telegram",
+                    metadata={"first_name": message_data.get("first_name")},
+                )
+                message_data["client_id"] = client.client_id
+            except Exception as e:
+                print(f"⚠️ Error registrando cliente Telegram: {e}")
 
         # Check for duplicate (idempotency)
         if telegram.is_duplicate_message(message_data["update_id"]):
@@ -1242,7 +858,7 @@ async def startup_event():
     print(f"⏰ Timestamp: {datetime.utcnow().isoformat()}")
     print("=" * 50)
 
-    # Inicializar usuarios en MongoDB y crear admin por defecto
+    # Inicializar usuarios en PostgreSQL y crear admin por defecto
     try:
         user_service = get_user_service()
         await user_service.ensure_indexes()

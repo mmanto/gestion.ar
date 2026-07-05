@@ -1,43 +1,52 @@
 """
-Channel Service - CRUD operations for channels in MongoDB
+Channel Service - CRUD operations for channels in PostgreSQL (ver ADR-006 en docs/dev/DECISIONS.md)
 """
 
 import os
 import uuid
-from datetime import datetime
 from typing import Dict, Optional
 
-from motor.motor_asyncio import AsyncIOMotorClient
+from sqlalchemy import func, select
 
+from app.db.database import AsyncSessionLocal
+from app.db.models import Channel as ChannelModel
 from app.models.channel import (
     Channel,
     ChannelCreate,
-    ChannelUpdate,
     ChannelStatus,
     ChannelType,
+    ChannelUpdate,
     WhatsAppProvider,
 )
 
 
-class ChannelService:
-    """Servicio para gestionar canales en MongoDB"""
+def _to_channel(row: ChannelModel) -> Channel:
+    return Channel(
+        channel_id=row.channel_id,
+        bot_id=row.bot_id,
+        channel_type=row.channel_type,
+        name=row.name,
+        status=row.status,
+        whatsapp_config=row.whatsapp_config,
+        telegram_config=row.telegram_config,
+        web_config=row.web_config,
+        pwa_config=row.pwa_config,
+        webhook_url=row.webhook_url,
+        created_at=row.created_at.isoformat(),
+        updated_at=row.updated_at.isoformat(),
+        last_activity_at=row.last_activity_at.isoformat() if row.last_activity_at else None,
+        total_messages_received=row.total_messages_received,
+        total_messages_sent=row.total_messages_sent,
+        metadata=row.metadata_,
+    )
 
-    def __init__(self):
-        """Inicializa el servicio de canales"""
-        self.mongodb_uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017/gestionar")
-        self.client = AsyncIOMotorClient(self.mongodb_uri)
-        self.db = self.client.get_default_database()
-        self.channels = self.db.channels
-        print("Channel Service inicializado")
+
+class ChannelService:
+    """Servicio para gestionar canales en PostgreSQL"""
 
     async def ensure_indexes(self):
-        """Crea los índices necesarios en la colección"""
-        await self.channels.create_index("channel_id", unique=True)
-        await self.channels.create_index("bot_id")
-        await self.channels.create_index([("bot_id", 1), ("channel_type", 1)])
-        await self.channels.create_index("status")
-        # Índice para búsqueda por número de teléfono (Twilio)
-        await self.channels.create_index("whatsapp_config.twilio_config.phone_number")
+        """No-op: los índices ya se crean vía migraciones Alembic (ver backend/alembic/versions/)."""
+        pass
 
     def _generate_webhook_url(
         self,
@@ -59,7 +68,6 @@ class ChannelService:
         base_url = os.getenv("WEBHOOK_BASE_URL", "https://api.example.com")
 
         if channel_type == ChannelType.WHATSAPP:
-            # Determinar el proveedor de WhatsApp
             provider = "meta"  # Default
             if whatsapp_config:
                 provider = whatsapp_config.provider.value if hasattr(whatsapp_config, 'provider') else "meta"
@@ -67,11 +75,9 @@ class ChannelService:
         elif channel_type == ChannelType.TELEGRAM:
             return f"{base_url}/api/webhook/telegram/{channel_id}"
         elif channel_type == ChannelType.WEB:
-            # El canal web usa WebSocket — la URL de conexión
             ws_base = base_url.replace("https://", "wss://").replace("http://", "ws://")
             return f"{ws_base}/ws/chat/channel/{channel_id}"
         elif channel_type == ChannelType.PWA:
-            # El canal PWA usa WebSocket + Push Notifications — URL pública del chat
             ws_base = base_url.replace("https://", "wss://").replace("http://", "ws://")
             return f"{ws_base}/ws/chat/channel/{channel_id}"
         else:
@@ -87,10 +93,8 @@ class ChannelService:
         Returns:
             Channel creado
         """
-        timestamp = datetime.utcnow().isoformat()
         channel_id = f"channel_{uuid.uuid4().hex[:12]}"
 
-        # Usar webhook personalizado si se proporciona, o generar uno automáticamente
         if channel_data.webhook_url:
             webhook_url = channel_data.webhook_url
         else:
@@ -100,31 +104,32 @@ class ChannelService:
                 channel_data.whatsapp_config
             )
 
-        channel_dict = {
-            "channel_id": channel_id,
-            "bot_id": channel_data.bot_id,
-            "channel_type": channel_data.channel_type.value,
-            "name": channel_data.name,
-            "status": ChannelStatus.PENDING.value,
-            "whatsapp_config": channel_data.whatsapp_config.model_dump() if channel_data.whatsapp_config else None,
-            "telegram_config": channel_data.telegram_config.model_dump() if channel_data.telegram_config else None,
-            "web_config": channel_data.web_config.model_dump() if channel_data.web_config else None,
-            "webhook_url": webhook_url,
-            "created_at": timestamp,
-            "updated_at": timestamp,
-            "last_activity_at": None,
-            "total_messages_received": 0,
-            "total_messages_sent": 0,
-            "metadata": {}
-        }
-
-        await self.channels.insert_one(channel_dict)
-        return Channel(**channel_dict)
+        async with AsyncSessionLocal() as session:
+            row = ChannelModel(
+                channel_id=channel_id,
+                bot_id=channel_data.bot_id,
+                channel_type=channel_data.channel_type.value,
+                name=channel_data.name,
+                status=ChannelStatus.PENDING.value,
+                whatsapp_config=channel_data.whatsapp_config.model_dump() if channel_data.whatsapp_config else None,
+                telegram_config=channel_data.telegram_config.model_dump() if channel_data.telegram_config else None,
+                web_config=channel_data.web_config.model_dump() if channel_data.web_config else None,
+                pwa_config=channel_data.pwa_config.model_dump() if channel_data.pwa_config else None,
+                webhook_url=webhook_url,
+                total_messages_received=0,
+                total_messages_sent=0,
+                metadata_={},
+            )
+            session.add(row)
+            await session.commit()
+            await session.refresh(row)
+            return _to_channel(row)
 
     async def get_channel(self, channel_id: str) -> Optional[Channel]:
         """Obtiene un canal por ID"""
-        channel = await self.channels.find_one({"channel_id": channel_id}, {"_id": 0})
-        return Channel(**channel) if channel else None
+        async with AsyncSessionLocal() as session:
+            row = await session.get(ChannelModel, channel_id)
+            return _to_channel(row) if row else None
 
     async def get_channels_by_bot(
         self,
@@ -135,23 +140,28 @@ class ChannelService:
         status: Optional[ChannelStatus] = None
     ) -> Dict:
         """Obtiene canales de un bot con paginación"""
-        filter_query = {"bot_id": bot_id}
-
+        filters = [ChannelModel.bot_id == bot_id]
         if channel_type:
-            filter_query["channel_type"] = channel_type.value
+            filters.append(ChannelModel.channel_type == channel_type.value)
         if status:
-            filter_query["status"] = status.value
+            filters.append(ChannelModel.status == status.value)
 
-        total = await self.channels.count_documents(filter_query)
-        cursor = self.channels.find(
-            filter_query,
-            {"_id": 0}
-        ).sort("created_at", -1).skip(skip).limit(limit)
+        async with AsyncSessionLocal() as session:
+            total = (await session.execute(
+                select(func.count()).select_from(ChannelModel).where(*filters)
+            )).scalar_one()
 
-        channels = await cursor.to_list(length=limit)
+            result = await session.execute(
+                select(ChannelModel)
+                .where(*filters)
+                .order_by(ChannelModel.created_at.desc())
+                .offset(skip)
+                .limit(limit)
+            )
+            rows = result.scalars().all()
 
         return {
-            "channels": [Channel(**c) for c in channels],
+            "channels": [_to_channel(r) for r in rows],
             "total": total,
             "page": (skip // limit) + 1 if limit > 0 else 1,
             "pages": (total + limit - 1) // limit if limit > 0 else 0,
@@ -160,81 +170,86 @@ class ChannelService:
 
     async def get_channel_by_type(self, bot_id: str, channel_type: ChannelType) -> Optional[Channel]:
         """Obtiene un canal específico de un bot por tipo"""
-        channel = await self.channels.find_one(
-            {"bot_id": bot_id, "channel_type": channel_type.value},
-            {"_id": 0}
-        )
-        return Channel(**channel) if channel else None
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(ChannelModel).where(
+                    ChannelModel.bot_id == bot_id,
+                    ChannelModel.channel_type == channel_type.value,
+                )
+            )
+            row = result.scalars().first()
+            return _to_channel(row) if row else None
 
     async def get_active_channel_by_type(self, bot_id: str, channel_type: ChannelType) -> Optional[Channel]:
         """Obtiene el canal activo de un bot por tipo"""
-        channel = await self.channels.find_one(
-            {
-                "bot_id": bot_id,
-                "channel_type": channel_type.value,
-                "status": ChannelStatus.ACTIVE.value
-            },
-            {"_id": 0}
-        )
-        return Channel(**channel) if channel else None
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(ChannelModel).where(
+                    ChannelModel.bot_id == bot_id,
+                    ChannelModel.channel_type == channel_type.value,
+                    ChannelModel.status == ChannelStatus.ACTIVE.value,
+                )
+            )
+            row = result.scalars().first()
+            return _to_channel(row) if row else None
 
     async def update_channel(self, channel_id: str, update_data: ChannelUpdate) -> Optional[Channel]:
         """Actualiza un canal"""
         update_dict = {}
-
         for key, value in update_data.model_dump(exclude_unset=True).items():
-            if value is not None:
-                if key == "status":
-                    update_dict["status"] = value.value if hasattr(value, 'value') else value
-                elif key in ["whatsapp_config", "telegram_config"] and isinstance(value, dict):
-                    update_dict[key] = value
-                else:
-                    update_dict[key] = value
+            if value is None:
+                continue
+            if key == "status":
+                update_dict["status"] = value.value if hasattr(value, "value") else value
+            elif key == "metadata":
+                update_dict["metadata_"] = value
+            else:
+                update_dict[key] = value
 
-        if not update_dict:
-            return await self.get_channel(channel_id)
+        async with AsyncSessionLocal() as session:
+            row = await session.get(ChannelModel, channel_id)
+            if not row:
+                return None
 
-        update_dict["updated_at"] = datetime.utcnow().isoformat()
+            if not update_dict:
+                return _to_channel(row)
 
-        result = await self.channels.update_one(
-            {"channel_id": channel_id},
-            {"$set": update_dict}
-        )
+            for k, v in update_dict.items():
+                setattr(row, k, v)
 
-        if result.matched_count > 0:
-            return await self.get_channel(channel_id)
-        return None
+            await session.commit()
+            await session.refresh(row)
+            return _to_channel(row)
 
     async def activate_channel(self, channel_id: str) -> bool:
         """Activa un canal"""
-        result = await self.channels.update_one(
-            {"channel_id": channel_id},
-            {
-                "$set": {
-                    "status": ChannelStatus.ACTIVE.value,
-                    "updated_at": datetime.utcnow().isoformat()
-                }
-            }
-        )
-        return result.modified_count > 0
+        async with AsyncSessionLocal() as session:
+            row = await session.get(ChannelModel, channel_id)
+            if not row:
+                return False
+            row.status = ChannelStatus.ACTIVE.value
+            await session.commit()
+            return True
 
     async def deactivate_channel(self, channel_id: str) -> bool:
         """Desactiva un canal"""
-        result = await self.channels.update_one(
-            {"channel_id": channel_id},
-            {
-                "$set": {
-                    "status": ChannelStatus.INACTIVE.value,
-                    "updated_at": datetime.utcnow().isoformat()
-                }
-            }
-        )
-        return result.modified_count > 0
+        async with AsyncSessionLocal() as session:
+            row = await session.get(ChannelModel, channel_id)
+            if not row:
+                return False
+            row.status = ChannelStatus.INACTIVE.value
+            await session.commit()
+            return True
 
     async def delete_channel(self, channel_id: str) -> bool:
         """Elimina un canal"""
-        result = await self.channels.delete_one({"channel_id": channel_id})
-        return result.deleted_count > 0
+        async with AsyncSessionLocal() as session:
+            row = await session.get(ChannelModel, channel_id)
+            if not row:
+                return False
+            await session.delete(row)
+            await session.commit()
+            return True
 
     async def increment_message_counters(
         self,
@@ -243,39 +258,33 @@ class ChannelService:
         sent: int = 0
     ):
         """Incrementa contadores de mensajes del canal"""
-        update_fields = {
-            "updated_at": datetime.utcnow().isoformat(),
-            "last_activity_at": datetime.utcnow().isoformat()
-        }
-        inc_fields = {}
+        from datetime import datetime, timezone
 
-        if received != 0:
-            inc_fields["total_messages_received"] = received
-        if sent != 0:
-            inc_fields["total_messages_sent"] = sent
-
-        update_query = {"$set": update_fields}
-        if inc_fields:
-            update_query["$inc"] = inc_fields
-
-        await self.channels.update_one(
-            {"channel_id": channel_id},
-            update_query
-        )
+        async with AsyncSessionLocal() as session:
+            row = await session.get(ChannelModel, channel_id)
+            if not row:
+                return
+            if received:
+                row.total_messages_received += received
+            if sent:
+                row.total_messages_sent += sent
+            row.last_activity_at = datetime.now(timezone.utc)
+            await session.commit()
 
     async def set_channel_error(self, channel_id: str, error_message: str):
         """Marca un canal con error"""
-        await self.channels.update_one(
-            {"channel_id": channel_id},
-            {
-                "$set": {
-                    "status": ChannelStatus.ERROR.value,
-                    "updated_at": datetime.utcnow().isoformat(),
-                    "metadata.last_error": error_message,
-                    "metadata.error_at": datetime.utcnow().isoformat()
-                }
-            }
-        )
+        from datetime import datetime, timezone
+
+        async with AsyncSessionLocal() as session:
+            row = await session.get(ChannelModel, channel_id)
+            if not row:
+                return
+            metadata = dict(row.metadata_ or {})
+            metadata["last_error"] = error_message
+            metadata["error_at"] = datetime.now(timezone.utc).isoformat()
+            row.status = ChannelStatus.ERROR.value
+            row.metadata_ = metadata
+            await session.commit()
 
     async def get_channel_by_twilio_phone(self, phone_number: str) -> Optional[Channel]:
         """
@@ -287,43 +296,54 @@ class ChannelService:
         Returns:
             Canal encontrado o None
         """
-        # Normalizar el número: eliminar espacios y asegurar formato whatsapp:+xxx
         normalized = phone_number.replace(" ", "")
-
-        # Extraer solo los dígitos del número
         digits = ''.join(c for c in normalized if c.isdigit())
-
-        # Reconstruir en formato estándar
         if digits:
             normalized = f"whatsapp:+{digits}"
 
-        # Buscar por número exacto
-        channel = await self.channels.find_one(
-            {
-                "channel_type": ChannelType.WHATSAPP.value,
-                "whatsapp_config.provider": WhatsAppProvider.TWILIO.value,
-                "whatsapp_config.twilio_config.phone_number": normalized
-            },
-            {"_id": 0}
-        )
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(ChannelModel).where(
+                    ChannelModel.channel_type == ChannelType.WHATSAPP.value,
+                    ChannelModel.whatsapp_config["provider"].astext == WhatsAppProvider.TWILIO.value,
+                    ChannelModel.whatsapp_config["twilio_config"]["phone_number"].astext == normalized,
+                )
+            )
+            row = result.scalars().first()
+            if row:
+                return _to_channel(row)
 
-        if channel:
-            return Channel(**channel)
+            plain_number = f"+{digits}"
+            result = await session.execute(
+                select(ChannelModel).where(
+                    ChannelModel.channel_type == ChannelType.WHATSAPP.value,
+                    ChannelModel.whatsapp_config["provider"].astext == WhatsAppProvider.TWILIO.value,
+                    ChannelModel.whatsapp_config["twilio_config"]["phone_number"].astext == plain_number,
+                )
+            )
+            row = result.scalars().first()
+            return _to_channel(row) if row else None
 
-        # Intentar sin el prefijo whatsapp:
-        plain_number = f"+{digits}"
-        channel = await self.channels.find_one(
-            {
-                "channel_type": ChannelType.WHATSAPP.value,
-                "whatsapp_config.provider": WhatsAppProvider.TWILIO.value,
-                "whatsapp_config.twilio_config.phone_number": plain_number
-            },
-            {"_id": 0}
-        )
-        if channel:
-            return Channel(**channel)
+    async def get_channel_by_telegram_token(self, bot_token: str) -> Optional[Channel]:
+        """
+        Busca un canal de Telegram por bot_token.
 
-        return None
+        Usado por el webhook legacy /api/webhook/telegram (sin channel_id en la
+        URL, un solo bot global vía TELEGRAM_BOT_TOKEN) para resolver a qué
+        agente pertenece, si ese token coincide con el de algún canal configurado.
+
+        Returns:
+            Canal encontrado o None
+        """
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(ChannelModel).where(
+                    ChannelModel.channel_type == ChannelType.TELEGRAM.value,
+                    ChannelModel.telegram_config["bot_token"].astext == bot_token,
+                )
+            )
+            row = result.scalars().first()
+            return _to_channel(row) if row else None
 
 
 # Singleton

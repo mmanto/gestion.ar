@@ -17,12 +17,13 @@ export interface RAGStats {
 }
 
 const documentsService = {
-  async list(): Promise<RAGDocument[]> {
-    const { data } = await api.get('/documents');
+  async list(botId: string): Promise<RAGDocument[]> {
+    const { data } = await api.get(`/bots/${botId}/documents`);
     return data.documents as RAGDocument[];
   },
 
   async upload(
+    botId: string,
     file: File,
     title: string,
     category: string,
@@ -32,7 +33,7 @@ const documentsService = {
     formData.append('file', file);
     formData.append('title', title || file.name);
     formData.append('category', category || 'general');
-    const { data } = await api.post('/documents/upload', formData, {
+    const { data } = await api.post(`/bots/${botId}/documents/upload`, formData, {
       headers: { 'Content-Type': null },  // let browser set multipart/form-data with boundary
       onUploadProgress: (e) => {
         if (onUploadProgress && e.total) {
@@ -43,12 +44,12 @@ const documentsService = {
     return data;
   },
 
-  async remove(docId: string): Promise<void> {
-    await api.delete(`/documents/${docId}`);
+  async remove(botId: string, docId: string): Promise<void> {
+    await api.delete(`/bots/${botId}/documents/${docId}`);
   },
 
-  async getStats(): Promise<RAGStats> {
-    const { data } = await api.get('/rag/stats');
+  async getStats(botId: string): Promise<RAGStats> {
+    const { data } = await api.get(`/bots/${botId}/documents/stats`);
     return data.stats as RAGStats;
   },
 };

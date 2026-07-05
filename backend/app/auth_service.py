@@ -78,7 +78,7 @@ def verify_token(token: str) -> Optional[dict]:
 
 async def authenticate_user(username: str, password: str) -> Optional[User]:
     """
-    Autenticar usuario consultando MongoDB
+    Autenticar usuario consultando PostgreSQL
 
     Args:
         username: Nombre de usuario
@@ -94,7 +94,7 @@ async def authenticate_user(username: str, password: str) -> Optional[User]:
 
 async def get_current_user_from_token(token: str) -> Optional[User]:
     """
-    Obtener usuario actual desde un token JWT, consultando MongoDB
+    Obtener usuario actual desde un token JWT, consultando PostgreSQL
 
     Args:
         token: Token JWT string

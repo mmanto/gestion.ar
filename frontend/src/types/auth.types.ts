@@ -1,3 +1,5 @@
+export type AuthProvider = 'google' | 'microsoft';
+
 export interface User {
   username: string;
   email?: string;
@@ -35,6 +37,7 @@ export interface RegisterResponse {
 
 export interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
+  loginWithProvider: (provider: AuthProvider) => Promise<void>;
   logout: () => void;
   checkAuth: () => Promise<void>;
   register: (credentials: RegisterCredentials) => Promise<void>;

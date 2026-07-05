@@ -11,9 +11,10 @@ from typing import Dict
 from fastapi import HTTPException
 
 from app.rag_service import get_rag_service
-from app.claude_service import get_llm_service
+from app.claude_service import get_llm_service, build_effective_system_prompt
 from app.conversation_service import get_conversation_service
 from app.services.client_service import get_client_service
+from app.services.bot_service import get_bot_service
 
 logger = logging.getLogger(__name__)
 
@@ -119,9 +120,9 @@ Formatos soportados:
             for conv in conversations:
                 total_messages += len(conv.get("messages", []))
 
-            # Get RAG stats
+            # Get RAG stats (scoped al bot si el mensaje viene de un canal multi-tenant)
             rag = get_rag_service()
-            rag_stats = rag.get_stats()
+            rag_stats = rag.get_stats(bot_id=message_data.get("bot_id"))
 
             stats_text = f"""
 📊 *Tus Estadísticas*
@@ -183,14 +184,24 @@ async def handle_telegram_text_message(telegram, message_data: Dict) -> Dict:
         claude = get_llm_service()
         rag = get_rag_service()
 
-        # Get RAG context
-        rag_context = rag.get_context(text, n_results=3)
+        # Cargar el bot (si el mensaje viene de un canal multi-tenant) para
+        # aplicar su system_prompt/ius_config y su RAG propio. En el bot
+        # legacy de un solo tenant (sin bot_id) queda en None: sin RAG y
+        # con el prompt genérico, igual que el comportamiento histórico.
+        bot_id = message_data.get("bot_id")
+        bot = await get_bot_service().get_bot(bot_id) if bot_id else None
 
-        # Generate response with Claude
+        # Get RAG context, exclusivo de este bot
+        rag_context = ""
+        if bot and bot.config.use_rag:
+            rag_context = rag.get_context(text, bot_id=bot_id, n_results=bot.config.rag_results_count)
+
+        # Generate response with Claude, usando el entrenamiento propio del bot
         response = await claude.generate_rag_response(
             user_message=text,
             rag_context=rag_context,
-            max_tokens=1024
+            system_prompt=build_effective_system_prompt(bot.config) if bot else None,
+            max_tokens=(bot.config.max_tokens if bot else 1024),
         )
 
         # Send response
@@ -201,7 +212,6 @@ async def handle_telegram_text_message(telegram, message_data: Dict) -> Dict:
 
         # Save conversation
         client_id = message_data.get("client_id")
-        bot_id = message_data.get("bot_id")
         try:
             conv_service = get_conversation_service()
             await conv_service.log_chat_interaction(
@@ -217,7 +227,7 @@ async def handle_telegram_text_message(telegram, message_data: Dict) -> Dict:
                     "input_tokens": response.input_tokens,
                     "output_tokens": response.output_tokens,
                     "estimated_cost_usd": response.estimated_cost_usd,
-                    "rag_used": True,
+                    "rag_used": bool(rag_context),
                     "context_length": len(rag_context),
                     "source": "telegram",
                     "telegram_message_id": message_data["message_id"]
@@ -256,6 +266,14 @@ async def handle_telegram_document(telegram, message_data: Dict) -> Dict:
     chat_id = message_data["chat_id"]
     user_id = str(message_data["user_id"])
     document = message_data["document"]
+
+    bot_id = message_data.get("bot_id")
+    if not bot_id:
+        await telegram.send_message(
+            chat_id=chat_id,
+            text="⚠️ No puedo procesar documentos: este bot no está asociado a ningún agente."
+        )
+        return {"status": "ok", "message": "No bot_id associated, upload rejected"}
 
     # Send upload_document indicator
     await telegram.send_chat_action(chat_id, "upload_document")
@@ -307,14 +325,14 @@ async def handle_telegram_document(telegram, message_data: Dict) -> Dict:
         rag = get_rag_service()
 
         if file_name.endswith(".pdf"):
-            chunks_created = rag.add_pdf(local_path, metadata={
+            chunks_created = rag.add_pdf(local_path, bot_id=bot_id, metadata={
                 "title": file_name,
                 "source": "telegram",
                 "uploaded_by": user_id,
                 "chat_id": str(chat_id)
             })
         else:  # .docx
-            chunks_created = rag.add_docx(local_path, metadata={
+            chunks_created = rag.add_docx(local_path, bot_id=bot_id, metadata={
                 "title": file_name,
                 "source": "telegram",
                 "uploaded_by": user_id,

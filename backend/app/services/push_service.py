@@ -1,5 +1,6 @@
 """
-Push Service - Gestión de suscripciones Web Push con VAPID
+Push Service - Gestión de suscripciones Web Push con VAPID en PostgreSQL
+(ver ADR-006 en docs/dev/DECISIONS.md).
 Permite enviar notificaciones push al navegador sin depender de WhatsApp/Meta.
 """
 
@@ -7,30 +8,44 @@ import json
 import logging
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
-from motor.motor_asyncio import AsyncIOMotorClient
+from sqlalchemy import func, select
 
+from app.db.database import AsyncSessionLocal
+from app.db.models import PushSubscription as PushSubscriptionModel
 from app.models.push_subscription import (
+    NotificationResult,
     PushSubscription,
     PushSubscriptionCreate,
     SendNotificationRequest,
-    NotificationResult,
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _to_push_subscription(row: PushSubscriptionModel) -> PushSubscription:
+    return PushSubscription(
+        subscription_id=row.subscription_id,
+        bot_id=row.bot_id,
+        channel_id=row.channel_id,
+        client_id=row.client_id,
+        endpoint=row.endpoint,
+        p256dh=row.p256dh,
+        auth=row.auth,
+        user_agent=row.user_agent,
+        is_active=row.is_active,
+        created_at=row.created_at.isoformat(),
+        last_used_at=row.last_used_at.isoformat() if row.last_used_at else None,
+        expiration_time=row.expiration_time,
+    )
 
 
 class PushService:
     """Servicio para gestionar suscripciones push y envío de notificaciones VAPID"""
 
     def __init__(self):
-        self.mongodb_uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017/gestionar")
-        self.client = AsyncIOMotorClient(self.mongodb_uri)
-        self.db = self.client.get_default_database()
-        self.subscriptions = self.db.push_subscriptions
-
         self.vapid_private_key = os.getenv("VAPID_PRIVATE_KEY", "").strip()
         self.vapid_public_key = os.getenv("VAPID_PUBLIC_KEY", "").strip()
         self.vapid_subject = os.getenv("VAPID_SUBJECT", "mailto:admin@example.com").strip()
@@ -46,14 +61,8 @@ class PushService:
         return self.vapid_public_key
 
     async def ensure_indexes(self):
-        """Crea los índices necesarios en la colección push_subscriptions"""
-        await self.subscriptions.create_index("subscription_id", unique=True)
-        await self.subscriptions.create_index("endpoint", unique=True)
-        await self.subscriptions.create_index("bot_id")
-        await self.subscriptions.create_index([("bot_id", 1), ("channel_id", 1)])
-        await self.subscriptions.create_index([("bot_id", 1), ("is_active", 1)])
-        await self.subscriptions.create_index("client_id", sparse=True)
-        print("Push subscriptions indexes ensured")
+        """No-op: los índices ya se crean vía migraciones Alembic (ver backend/alembic/versions/)."""
+        pass
 
     async def save_subscription(self, data: PushSubscriptionCreate) -> PushSubscription:
         """
@@ -62,65 +71,80 @@ class PushService:
         Returns:
             PushSubscription guardada o actualizada
         """
-        now = datetime.utcnow().isoformat()
-        existing = await self.subscriptions.find_one({"endpoint": data.subscription.endpoint})
-
-        if existing:
-            # Reactivar suscripción existente y actualizar datos
-            await self.subscriptions.update_one(
-                {"endpoint": data.subscription.endpoint},
-                {"$set": {
-                    "is_active": True,
-                    "last_used_at": now,
-                    "p256dh": data.subscription.keys.p256dh,
-                    "auth": data.subscription.keys.auth,
-                    "user_agent": data.user_agent,
-                    "expiration_time": data.subscription.expirationTime,
-                    "channel_id": data.channel_id,
-                    "bot_id": data.bot_id,
-                }}
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(PushSubscriptionModel).where(
+                    PushSubscriptionModel.endpoint == data.subscription.endpoint
+                )
             )
-            existing = await self.subscriptions.find_one({"endpoint": data.subscription.endpoint})
-            return PushSubscription(**{k: v for k, v in existing.items() if k != "_id"})
+            row = result.scalars().first()
 
-        subscription_id = f"sub_{uuid.uuid4().hex[:12]}"
-        doc = {
-            "subscription_id": subscription_id,
-            "bot_id": data.bot_id,
-            "channel_id": data.channel_id,
-            "client_id": None,
-            "endpoint": data.subscription.endpoint,
-            "p256dh": data.subscription.keys.p256dh,
-            "auth": data.subscription.keys.auth,
-            "user_agent": data.user_agent,
-            "is_active": True,
-            "created_at": now,
-            "last_used_at": now,
-            "expiration_time": data.subscription.expirationTime,
-        }
-        await self.subscriptions.insert_one(doc)
-        return PushSubscription(**{k: v for k, v in doc.items() if k != "_id"})
+            if row:
+                row.is_active = True
+                row.last_used_at = datetime.now(timezone.utc)
+                row.p256dh = data.subscription.keys.p256dh
+                row.auth = data.subscription.keys.auth
+                row.user_agent = data.user_agent
+                row.expiration_time = data.subscription.expirationTime
+                row.channel_id = data.channel_id
+                row.bot_id = data.bot_id
+                await session.commit()
+                await session.refresh(row)
+                return _to_push_subscription(row)
+
+            subscription_id = f"sub_{uuid.uuid4().hex[:12]}"
+            row = PushSubscriptionModel(
+                subscription_id=subscription_id,
+                bot_id=data.bot_id,
+                channel_id=data.channel_id,
+                client_id=None,
+                endpoint=data.subscription.endpoint,
+                p256dh=data.subscription.keys.p256dh,
+                auth=data.subscription.keys.auth,
+                user_agent=data.user_agent,
+                is_active=True,
+                expiration_time=data.subscription.expirationTime,
+            )
+            session.add(row)
+            await session.commit()
+            await session.refresh(row)
+            return _to_push_subscription(row)
 
     async def deactivate_subscription(self, endpoint: str) -> bool:
         """Desactiva una suscripción por su endpoint"""
-        result = await self.subscriptions.update_one(
-            {"endpoint": endpoint},
-            {"$set": {"is_active": False}}
-        )
-        return result.modified_count > 0
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(PushSubscriptionModel).where(PushSubscriptionModel.endpoint == endpoint)
+            )
+            row = result.scalars().first()
+            if not row:
+                return False
+            row.is_active = False
+            await session.commit()
+            return True
 
     async def delete_subscription_by_id(self, subscription_id: str) -> bool:
         """Elimina permanentemente una suscripción (acción admin)"""
-        result = await self.subscriptions.delete_one({"subscription_id": subscription_id})
-        return result.deleted_count > 0
+        async with AsyncSessionLocal() as session:
+            row = await session.get(PushSubscriptionModel, subscription_id)
+            if not row:
+                return False
+            await session.delete(row)
+            await session.commit()
+            return True
 
     async def link_client(self, endpoint: str, client_id: str) -> bool:
         """Vincula una suscripción push a un cliente (usado en Fase 2)"""
-        result = await self.subscriptions.update_one(
-            {"endpoint": endpoint},
-            {"$set": {"client_id": client_id}}
-        )
-        return result.modified_count > 0
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(PushSubscriptionModel).where(PushSubscriptionModel.endpoint == endpoint)
+            )
+            row = result.scalars().first()
+            if not row:
+                return False
+            row.client_id = client_id
+            await session.commit()
+            return True
 
     async def get_subscriptions_by_bot(
         self,
@@ -130,33 +154,52 @@ class PushService:
         active_only: bool = True
     ) -> Dict:
         """Lista suscripciones de un bot con paginación"""
-        query: Dict = {"bot_id": bot_id}
+        filters = [PushSubscriptionModel.bot_id == bot_id]
         if active_only:
-            query["is_active"] = True
+            filters.append(PushSubscriptionModel.is_active.is_(True))
 
-        total = await self.subscriptions.count_documents(query)
-        cursor = self.subscriptions.find(query, {"_id": 0}).skip(skip).limit(limit)
-        docs = await cursor.to_list(length=limit)
+        async with AsyncSessionLocal() as session:
+            total = (await session.execute(
+                select(func.count()).select_from(PushSubscriptionModel).where(*filters)
+            )).scalar_one()
+
+            result = await session.execute(
+                select(PushSubscriptionModel).where(*filters).offset(skip).limit(limit)
+            )
+            rows = result.scalars().all()
 
         return {
-            "subscriptions": [PushSubscription(**d) for d in docs],
+            "subscriptions": [_to_push_subscription(r) for r in rows],
             "total": total,
             "active": total if active_only else None,
         }
 
     async def get_subscriptions_by_client(self, client_id: str) -> List[PushSubscription]:
         """Retorna todas las suscripciones activas de un cliente"""
-        cursor = self.subscriptions.find(
-            {"client_id": client_id, "is_active": True},
-            {"_id": 0}
-        )
-        docs = await cursor.to_list(length=100)
-        return [PushSubscription(**d) for d in docs]
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(PushSubscriptionModel)
+                .where(
+                    PushSubscriptionModel.client_id == client_id,
+                    PushSubscriptionModel.is_active.is_(True),
+                )
+                .limit(100)
+            )
+            rows = result.scalars().all()
+        return [_to_push_subscription(r) for r in rows]
 
     async def get_stats(self, bot_id: str) -> Dict:
         """Estadísticas de suscripciones de un bot"""
-        total = await self.subscriptions.count_documents({"bot_id": bot_id})
-        active = await self.subscriptions.count_documents({"bot_id": bot_id, "is_active": True})
+        async with AsyncSessionLocal() as session:
+            total = (await session.execute(
+                select(func.count()).select_from(PushSubscriptionModel)
+                .where(PushSubscriptionModel.bot_id == bot_id)
+            )).scalar_one()
+            active = (await session.execute(
+                select(func.count()).select_from(PushSubscriptionModel)
+                .where(PushSubscriptionModel.bot_id == bot_id, PushSubscriptionModel.is_active.is_(True))
+            )).scalar_one()
+
         return {"total_subscriptions": total, "active_subscriptions": active}
 
     async def send_notification(self, subscription: PushSubscription, payload: dict) -> bool:
@@ -190,21 +233,22 @@ class PushService:
                 },
             )
 
-            # Actualizar last_used_at
-            await self.subscriptions.update_one(
-                {"subscription_id": subscription.subscription_id},
-                {"$set": {"last_used_at": datetime.utcnow().isoformat()}}
-            )
+            async with AsyncSessionLocal() as session:
+                row = await session.get(PushSubscriptionModel, subscription.subscription_id)
+                if row:
+                    row.last_used_at = datetime.now(timezone.utc)
+                    await session.commit()
             return True
 
         except Exception as e:
             error_str = str(e)
             # Si el endpoint devuelve 410 Gone, la suscripción ya no es válida
             if "410" in error_str or "404" in error_str:
-                await self.subscriptions.update_one(
-                    {"subscription_id": subscription.subscription_id},
-                    {"$set": {"is_active": False}}
-                )
+                async with AsyncSessionLocal() as session:
+                    row = await session.get(PushSubscriptionModel, subscription.subscription_id)
+                    if row:
+                        row.is_active = False
+                        await session.commit()
             print(f"Error enviando push a {subscription.endpoint[:50]}...: {error_str[:100]}")
             return False
 
@@ -219,21 +263,23 @@ class PushService:
         """
         result = NotificationResult()
 
-        # Construir query
-        query: Dict = {"bot_id": bot_id, "is_active": True}
+        filters = [PushSubscriptionModel.bot_id == bot_id, PushSubscriptionModel.is_active.is_(True)]
         if request.client_id:
-            query["client_id"] = request.client_id
+            filters.append(PushSubscriptionModel.client_id == request.client_id)
         elif request.channel_id:
-            query["channel_id"] = request.channel_id
+            filters.append(PushSubscriptionModel.channel_id == request.channel_id)
 
-        logger.info("Push broadcast query: %s", query)
+        logger.info("Push broadcast filters: bot_id=%s client_id=%s channel_id=%s", bot_id, request.client_id, request.channel_id)
 
-        cursor = self.subscriptions.find(query, {"_id": 0})
-        subs = await cursor.to_list(length=1000)
+        async with AsyncSessionLocal() as session:
+            db_result = await session.execute(
+                select(PushSubscriptionModel).where(*filters).limit(1000)
+            )
+            rows = db_result.scalars().all()
 
-        logger.info("Push broadcast: encontradas %d suscripciones", len(subs))
+        logger.info("Push broadcast: encontradas %d suscripciones", len(rows))
 
-        if not subs:
+        if not rows:
             return result
 
         payload = {
@@ -244,8 +290,8 @@ class PushService:
             "badge": request.badge or "/icons/icon-192.png",
         }
 
-        for sub_doc in subs:
-            sub = PushSubscription(**sub_doc)
+        for row in rows:
+            sub = _to_push_subscription(row)
             success = await self.send_notification(sub, payload)
             if success:
                 result.sent += 1
