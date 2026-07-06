@@ -227,17 +227,6 @@ export const BotDetail = () => {
 
               {/* Quick Actions */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-                <Link to={`/bots/${bot.bot_id}/clients`}>
-                  <Card shadow="none">
-                    <h3 className="text-lg font-normal text-gray-900 mb-2">
-                      Clientes
-                    </h3>
-                    <p className="text-gray-800">
-                      Gestiona los {bot.total_clients} clientes de este agente
-                    </p>
-                  </Card>
-                </Link>
-
                 <Link to={`/bots/${bot.bot_id}/channels`}>
                   <Card shadow="none">
                     <h3 className="text-lg font-normal text-gray-900 mb-2">

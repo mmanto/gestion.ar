@@ -1,8 +1,11 @@
 export type AuthProvider = 'google' | 'microsoft';
+export type UserRole = 'super_admin' | 'admin' | 'operativo';
 
 export interface User {
   username: string;
   email?: string;
+  tenant_id?: string | null;
+  role: UserRole;
 }
 
 export interface LoginCredentials {
@@ -23,22 +26,9 @@ export interface AuthState {
   isLoading: boolean;
 }
 
-export interface RegisterCredentials {
-  username: string;
-  password: string;
-  email?: string;
-}
-
-export interface RegisterResponse {
-  success: boolean;
-  message: string;
-  user: User;
-}
-
 export interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
   loginWithProvider: (provider: AuthProvider) => Promise<void>;
   logout: () => void;
   checkAuth: () => Promise<void>;
-  register: (credentials: RegisterCredentials) => Promise<void>;
 }

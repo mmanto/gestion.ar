@@ -21,9 +21,8 @@ from typing import Optional
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from app.auth_service import get_current_user_from_token, User
+from app.dependencies.auth import require_role
 from app.integrations.appointments_client import SlotUnavailableError, get_appointments_client
 from app.models.appointment import (
     AppointmentCancelRequest,
@@ -41,20 +40,17 @@ from app.models.bot import Bot, BotUpdate
 from app.services.bot_service import get_bot_service
 from app.services.client_service import get_client_service
 
-router = APIRouter(prefix="/api/bots/{bot_id}/appointments", tags=["appointments"])
-
-security = HTTPBearer()
-
-
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> User:
-    user = await get_current_user_from_token(credentials.credentials)
-    if user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid authentication credentials")
-    return user
+router = APIRouter(
+    prefix="/api/bots/{bot_id}/appointments",
+    tags=["appointments"],
+    dependencies=[Depends(require_role("super_admin"))],
+)
 
 
-async def verify_bot_access(bot_id: str, current_user: User = Depends(get_current_user)) -> Bot:
-    bot = await get_bot_service().get_bot_by_owner(bot_id, current_user.username)
+async def verify_bot_access(bot_id: str) -> Bot:
+    """Verificar que el bot exista (configuración técnica — sólo
+    administración general llega hasta acá, ver dependency del router)."""
+    bot = await get_bot_service().get_bot(bot_id)
     if not bot:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Bot no encontrado")
     return bot
@@ -69,10 +65,10 @@ def _get_appointments_config(bot: Bot) -> dict:
     return config
 
 
-async def _save_appointments_config(bot: Bot, current_user: User, config: dict) -> Bot:
+async def _save_appointments_config(bot: Bot, config: dict) -> Bot:
     metadata = dict(bot.metadata or {})
     metadata["appointments"] = config
-    updated = await get_bot_service().update_bot(bot.bot_id, current_user.username, BotUpdate(metadata=metadata))
+    updated = await get_bot_service().update_bot_admin(bot.bot_id, BotUpdate(metadata=metadata))
     if updated is None:
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Error al guardar la configuración de turnos")
     return updated
@@ -117,7 +113,6 @@ async def get_appointments_config(bot: Bot = Depends(verify_bot_access)):
 async def update_appointments_config(
     payload: AppointmentsConfigUpdate,
     bot: Bot = Depends(verify_bot_access),
-    current_user: User = Depends(get_current_user),
 ):
     config = _get_appointments_config(bot)
     if payload.resource_ids is not None:
@@ -128,7 +123,7 @@ async def update_appointments_config(
         config["default_service_id"] = payload.default_service_id
     if payload.enabled_in_chat is not None:
         config["enabled_in_chat"] = payload.enabled_in_chat
-    await _save_appointments_config(bot, current_user, config)
+    await _save_appointments_config(bot, config)
     return {"success": True, "config": config}
 
 
@@ -139,7 +134,6 @@ async def update_appointments_config(
 async def create_resource(
     payload: ResourceCreateRequest,
     bot: Bot = Depends(verify_bot_access),
-    current_user: User = Depends(get_current_user),
 ):
     client = get_appointments_client()
     try:
@@ -155,7 +149,7 @@ async def create_resource(
 
     config = _get_appointments_config(bot)
     config["resource_ids"] = list({*config["resource_ids"], resource["id"]})
-    await _save_appointments_config(bot, current_user, config)
+    await _save_appointments_config(bot, config)
     return {"success": True, "resource": resource}
 
 
@@ -246,7 +240,6 @@ async def delete_availability_rule(resource_id: str, rule_id: str, bot: Bot = De
 async def create_service(
     payload: ServiceCreateRequest,
     bot: Bot = Depends(verify_bot_access),
-    current_user: User = Depends(get_current_user),
 ):
     client = get_appointments_client()
     try:
@@ -265,7 +258,7 @@ async def create_service(
     config["service_ids"] = list({*config["service_ids"], service["id"]})
     if not config["default_service_id"]:
         config["default_service_id"] = service["id"]
-    await _save_appointments_config(bot, current_user, config)
+    await _save_appointments_config(bot, config)
     return {"success": True, "service": service}
 
 

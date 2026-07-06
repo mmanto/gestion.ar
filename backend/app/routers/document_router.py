@@ -15,28 +15,24 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 
-from app.auth_service import get_current_user_from_token, User
+from app.dependencies.auth import require_role
 from app.models.bot import Bot
 from app.rag_service import get_rag_service
 from app.services.bot_service import get_bot_service
 
-router = APIRouter(prefix="/api/bots/{bot_id}/documents", tags=["documents"])
-
-security = HTTPBearer()
-
-
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> User:
-    user = await get_current_user_from_token(credentials.credentials)
-    if user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid authentication credentials")
-    return user
+router = APIRouter(
+    prefix="/api/bots/{bot_id}/documents",
+    tags=["documents"],
+    dependencies=[Depends(require_role("super_admin"))],
+)
 
 
-async def verify_bot_access(bot_id: str, current_user: User = Depends(get_current_user)) -> Bot:
-    bot = await get_bot_service().get_bot_by_owner(bot_id, current_user.username)
+async def verify_bot_access(bot_id: str) -> Bot:
+    """Verificar que el bot exista (configuración técnica — sólo
+    administración general llega hasta acá, ver dependency del router)."""
+    bot = await get_bot_service().get_bot(bot_id)
     if not bot:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Bot no encontrado")
     return bot

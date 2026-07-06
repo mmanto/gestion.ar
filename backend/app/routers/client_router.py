@@ -3,43 +3,24 @@ Client Router - API endpoints for client management
 """
 
 from fastapi import APIRouter, HTTPException, Depends, Query, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
 
 from app.models.client import ClientUpdate, ClientStatus
 from app.services.client_service import get_client_service
 from app.services.bot_service import get_bot_service
-from app.auth_service import get_current_user_from_token, User
+from app.auth_service import User
+from app.dependencies.auth import get_current_user, require_role
 
 router = APIRouter(prefix="/api/bots/{bot_id}/clients", tags=["clients"])
 
-# Esquema de seguridad HTTP Bearer
-security = HTTPBearer()
-
-
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> User:
-    """Dependency para obtener el usuario actual desde el token JWT"""
-    token = credentials.credentials
-    user = await get_current_user_from_token(token)
-
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    return user
-
 
 async def verify_bot_access(bot_id: str, current_user: User):
-    """Verificar acceso al bot"""
+    """Verificar que el bot pertenezca al tenant del usuario autenticado
+    (admin y operativo del tenant pueden ver/gestionar clientes/leads)."""
     bot_service = get_bot_service()
-    bot = await bot_service.get_bot_by_owner(bot_id, current_user.username)
+    bot = await bot_service.get_bot(bot_id)
 
-    if not bot:
+    if not bot or bot.tenant_id != current_user.tenant_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Bot no encontrado"
@@ -137,7 +118,7 @@ async def update_client(
 async def block_client(
     bot_id: str,
     client_id: str,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_role("admin", "super_admin"))
 ):
     """Bloquear un cliente"""
     await verify_bot_access(bot_id, current_user)
@@ -169,7 +150,7 @@ async def block_client(
 async def unblock_client(
     bot_id: str,
     client_id: str,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_role("admin", "super_admin"))
 ):
     """Desbloquear un cliente"""
     await verify_bot_access(bot_id, current_user)

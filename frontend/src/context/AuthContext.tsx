@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { AuthContextType, User, LoginCredentials, RegisterCredentials, AuthProvider as SocialProvider } from '../types/auth.types';
+import type { AuthContextType, User, LoginCredentials, AuthProvider as SocialProvider } from '../types/auth.types';
 import authService from '../services/auth.service';
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -91,17 +91,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsAuthenticated(false);
   };
 
-  const register = async (credentials: RegisterCredentials) => {
-    try {
-      await authService.register(credentials);
-      // Hacer login automático tras el registro exitoso
-      await login({ username: credentials.username, password: credentials.password });
-    } catch (error) {
-      console.error('Register error:', error);
-      throw error;
-    }
-  };
-
   const value: AuthContextType = {
     user,
     token,
@@ -111,7 +100,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loginWithProvider,
     logout,
     checkAuth,
-    register,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

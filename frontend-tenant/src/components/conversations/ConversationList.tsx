@@ -1,0 +1,156 @@
+import { useNavigate } from 'react-router-dom';
+import { MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from '../common/Button';
+import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '../common/Table';
+import { EmptyState } from '../common/EmptyState';
+import { Spinner } from '../common/Spinner';
+import { formatDate, formatCurrency, formatNumber, truncateText } from '../../utils/formatters';
+import type { Conversation } from '../../types/conversation.types';
+
+interface ConversationListProps {
+  conversations: Conversation[];
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  loading?: boolean;
+}
+
+const ConversationList = ({
+  conversations,
+  currentPage,
+  totalPages,
+  onPageChange,
+  loading = false,
+}: ConversationListProps) => {
+  const navigate = useNavigate();
+
+  const getPlatformBadge = (platform?: string) => {
+    const colors = {
+      whatsapp: 'bg-green-200 text-green-950',
+      telegram: 'bg-blue-200 text-blue-950',
+      default: 'bg-gray-200 text-gray-950',
+    };
+
+    const colorClass = platform ? colors[platform as keyof typeof colors] || colors.default : colors.default;
+    const displayName = platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : 'Unknown';
+
+    return (
+      <span className={`px-2 py-1 text-base font-medium rounded-full ${colorClass}`}>
+        {displayName}
+      </span>
+    );
+  };
+
+  const getMessagePreview = (conversation: Conversation) => {
+    if (conversation.messages.length === 0) return 'Sin mensajes';
+    const lastMessage = conversation.messages[conversation.messages.length - 1];
+    return truncateText(lastMessage.content, 60);
+  };
+
+  if (loading) {
+    return (
+      <div className="py-12">
+        <Spinner message="Cargando conversaciones..." />
+      </div>
+    );
+  }
+
+  if (conversations.length === 0) {
+    return (
+      <Table>
+        <TableBody>
+          <tr>
+            <td>
+              <EmptyState
+                icon={<MessageSquare className="w-8 h-8 text-gray-600" />}
+                title="No hay conversaciones"
+                description="No se encontraron conversaciones con los filtros aplicados"
+                titleClassName="text-gray-900 text-xl"
+                descriptionClassName="text-gray-700 text-base"
+              />
+            </td>
+          </tr>
+        </TableBody>
+      </Table>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Table */}
+      <Table>
+        <TableHead>
+          <tr>
+            <TableHeaderCell>Usuario</TableHeaderCell>
+            <TableHeaderCell>Plataforma</TableHeaderCell>
+            <TableHeaderCell>Último mensaje</TableHeaderCell>
+            <TableHeaderCell>Mensajes</TableHeaderCell>
+            <TableHeaderCell>Tokens</TableHeaderCell>
+            <TableHeaderCell>Costo</TableHeaderCell>
+            <TableHeaderCell>Actualizado</TableHeaderCell>
+          </tr>
+        </TableHead>
+        <TableBody>
+          {conversations.map((conversation) => (
+            <TableRow
+              key={conversation.conversation_id}
+              onClick={() => navigate(`/conversations/${conversation.conversation_id}`)}
+              className="cursor-pointer"
+            >
+              <TableCell>
+                <div className="font-medium text-gray-900">{conversation.user_id}</div>
+                <div className="text-sm text-gray-700">{conversation.conversation_id.slice(0, 8)}...</div>
+              </TableCell>
+              <TableCell>
+                {getPlatformBadge(conversation.metadata?.source)}
+              </TableCell>
+              <TableCell className="max-w-md truncate">
+                {getMessagePreview(conversation)}
+              </TableCell>
+              <TableCell>{formatNumber(conversation.messages.length)}</TableCell>
+              <TableCell>{formatNumber(conversation.total_tokens_used)}</TableCell>
+              <TableCell>{formatCurrency(conversation.total_cost_usd)}</TableCell>
+              <TableCell>{formatDate(conversation.updated_at)}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-4 py-3 bg-white border border-gray-200 sm:px-6 rounded-lg">
+          <div className="flex justify-between items-center w-full">
+            <div>
+              <p className="text-base text-gray-900">
+                Página <span className="font-medium">{currentPage}</span> de{' '}
+                <span className="font-medium">{totalPages}</span>
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Siguiente
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ConversationList;

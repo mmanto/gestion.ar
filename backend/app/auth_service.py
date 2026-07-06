@@ -22,6 +22,8 @@ class User(BaseModel):
     username: str
     email: Optional[str] = None
     disabled: Optional[bool] = False
+    tenant_id: Optional[str] = None
+    role: str = "admin"
 
 
 class Token(BaseModel):
@@ -116,4 +118,10 @@ async def get_current_user_from_token(token: str) -> Optional[User]:
     if user_in_db is None:
         return None
 
-    return User(username=user_in_db.username, email=user_in_db.email, disabled=user_in_db.disabled)
+    return User(
+        username=user_in_db.username,
+        email=user_in_db.email,
+        disabled=user_in_db.disabled,
+        tenant_id=user_in_db.tenant_id,
+        role=user_in_db.role,
+    )

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Bot as BotIcon } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
@@ -10,7 +10,9 @@ import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { useBots } from '../hooks/useBots';
 import type { Bot, BotStatus } from '../types/bot.types';
+import type { Tenant } from '../types/tenant.types';
 import botsService from '../services/bots.service';
+import tenantAdminService from '../services/tenantAdmin.service';
 
 const statusColors: Record<BotStatus, string> = {
   active: 'bg-green-200 text-green-950',
@@ -30,21 +32,27 @@ export const Bots = () => {
   });
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
   const [newBot, setNewBot] = useState({
+    tenant_id: '',
     name: '',
     description: '',
     business_type: '',
   });
 
+  useEffect(() => {
+    tenantAdminService.listTenants(1, 200).then((r) => setTenants(r.tenants)).catch(() => {});
+  }, []);
+
   const handleCreateBot = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newBot.name || !newBot.business_type) return;
+    if (!newBot.name || !newBot.business_type || !newBot.tenant_id) return;
 
     try {
       setCreating(true);
       await botsService.createBot(newBot);
       setShowCreateModal(false);
-      setNewBot({ name: '', description: '', business_type: '' });
+      setNewBot({ tenant_id: '', name: '', description: '', business_type: '' });
       refetch();
     } catch (err) {
       console.error('Error creating bot:', err);
@@ -168,6 +176,22 @@ export const Bots = () => {
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Crear Nuevo Agente</h2>
             <form onSubmit={handleCreateBot}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tenant *
+                </label>
+                <select
+                  value={newBot.tenant_id}
+                  onChange={(e) => setNewBot({ ...newBot, tenant_id: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                  required
+                >
+                  <option value="">Seleccioná un tenant...</option>
+                  {tenants.map((t) => (
+                    <option key={t.tenant_id} value={t.tenant_id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Nombre del Agente *

@@ -1,6 +1,6 @@
 import Nango from '@nangohq/frontend';
 import api from './api';
-import type { AuthProvider, LoginCredentials, LoginResponse, User, RegisterCredentials, RegisterResponse } from '../types/auth.types';
+import type { AuthProvider, LoginCredentials, LoginResponse, User } from '../types/auth.types';
 
 // URLs del Nango self-hosted, visibles desde el browser.
 const NANGO_CONNECT_URL = import.meta.env.VITE_NANGO_CONNECT_URL || 'http://localhost:3009';
@@ -28,26 +28,6 @@ function openNangoConnect(sessionToken: string): Promise<{ connectionId: string;
 }
 
 const authService = {
-  /**
-   * Registrar un nuevo usuario
-   */
-  async register(credentials: RegisterCredentials): Promise<RegisterResponse> {
-    const formData = new FormData();
-    formData.append('username', credentials.username);
-    formData.append('password', credentials.password);
-    if (credentials.email) {
-      formData.append('email', credentials.email);
-    }
-
-    const response = await api.post<RegisterResponse>('/auth/register', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-
-    return response.data;
-  },
-
   /**
    * Login con username y password
    */

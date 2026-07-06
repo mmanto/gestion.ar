@@ -14,10 +14,30 @@ from fastapi.responses import Response
 from app.services.channel_service import get_channel_service
 from app.services.bot_service import get_bot_service
 from app.services.user_service import get_user_service
+from app.services.tenant_service import get_tenant_service
 from app.models.channel import ChannelStatus, ChannelType
 from app.models.bot import BotStatus
+from app.models.tenant import TenantPublicInfo
 
 router = APIRouter(prefix="/api/public", tags=["public"])
+
+
+@router.get("/tenants/{tenant_id}", response_model=TenantPublicInfo)
+async def get_public_tenant_info(tenant_id: str):
+    """
+    Info pública de un tenant (sin PII) — usada por el frontend-tenant para
+    pintar landing/login con la marca del tenant antes de autenticarse.
+    """
+    tenant = await get_tenant_service().get_tenant(tenant_id)
+    if not tenant:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant no encontrado")
+
+    return TenantPublicInfo(
+        tenant_id=tenant.tenant_id,
+        name=tenant.name,
+        status=tenant.status,
+        branding=tenant.branding,
+    )
 
 
 @router.get("/app-url")

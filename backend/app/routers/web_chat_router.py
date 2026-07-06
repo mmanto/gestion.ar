@@ -13,9 +13,9 @@ from typing import List, Optional
 import qrcode
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect, status
 from fastapi.responses import Response
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from app.auth_service import get_current_user_from_token, User
+from app.auth_service import User
+from app.dependencies.auth import get_current_user
 from app.claude_service import get_llm_service, ChatMessage, build_effective_system_prompt, get_effective_welcome_message
 from app.connection_manager import connection_manager
 from app.conversation_service import get_conversation_service
@@ -30,23 +30,6 @@ from app.models.client import ClientUpdate
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["web-chat"])
-
-security = HTTPBearer()
-
-
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-) -> User:
-    """Dependency: extrae el usuario actual del JWT"""
-    token = credentials.credentials
-    user = get_current_user_from_token(token)
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenciales inválidas",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return user
 
 
 # ---------------------------------------------------------------------------
@@ -64,8 +47,8 @@ async def get_qr_code(
     Requiere autenticación de administrador.
     """
     bot_service = get_bot_service()
-    bot = await bot_service.get_bot_by_owner(bot_id, current_user.username)
-    if not bot:
+    bot = await bot_service.get_bot(bot_id)
+    if not bot or bot.tenant_id != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="Bot no encontrado")
 
     chat_url = f"{base_url.rstrip('/')}/chat/{bot_id}"

@@ -17,6 +17,7 @@ def _to_bot(row: BotModel) -> Bot:
     return Bot(
         bot_id=row.bot_id,
         owner_id=row.owner_id,
+        tenant_id=row.tenant_id,
         name=row.name,
         description=row.description,
         business_type=row.business_type,
@@ -39,13 +40,14 @@ class BotService:
         """No-op: los índices ya se crean vía migraciones Alembic (ver backend/alembic/versions/)."""
         pass
 
-    async def create_bot(self, bot_data: BotCreate, owner_id: str) -> Bot:
+    async def create_bot(self, bot_data: BotCreate, owner_id: str, tenant_id: str) -> Bot:
         """
         Crea un nuevo bot
 
         Args:
             bot_data: Datos para crear el bot
-            owner_id: ID del usuario propietario
+            owner_id: Usuario de administración general que lo configura
+            tenant_id: Tenant al que pertenece el bot
 
         Returns:
             Bot creado
@@ -57,6 +59,7 @@ class BotService:
             row = BotModel(
                 bot_id=bot_id,
                 owner_id=owner_id,
+                tenant_id=tenant_id,
                 name=bot_data.name,
                 description=bot_data.description,
                 business_type=bot_data.business_type,
@@ -121,8 +124,79 @@ class BotService:
             "limit": limit
         }
 
-    async def update_bot(self, bot_id: str, owner_id: str, update_data: BotUpdate) -> Optional[Bot]:
-        """Actualiza un bot"""
+    async def get_bots_by_tenant(
+        self,
+        tenant_id: Optional[str],
+        skip: int = 0,
+        limit: int = 20,
+        status: Optional[BotStatus] = None
+    ) -> Dict:
+        """Obtiene bots de un tenant con paginación (scoping real del modelo
+        multi-tenant — ver estrategia multi-tenant, Fase 4). `tenant_id=None`
+        (super_admin sin tenant propio) siempre resuelve a "sin bots": los
+        datos operativos de tenants no son parte del alcance de super_admin."""
+        if tenant_id is None:
+            return {"bots": [], "total": 0, "page": 1, "pages": 0, "limit": limit}
+
+        filters = [BotModel.tenant_id == tenant_id]
+        if status:
+            filters.append(BotModel.status == status.value)
+
+        async with AsyncSessionLocal() as session:
+            total = (await session.execute(
+                select(func.count()).select_from(BotModel).where(*filters)
+            )).scalar_one()
+
+            result = await session.execute(
+                select(BotModel)
+                .where(*filters)
+                .order_by(BotModel.created_at.desc())
+                .offset(skip)
+                .limit(limit)
+            )
+            rows = result.scalars().all()
+
+        return {
+            "bots": [_to_bot(r) for r in rows],
+            "total": total,
+            "page": (skip // limit) + 1 if limit > 0 else 1,
+            "pages": (total + limit - 1) // limit if limit > 0 else 0,
+            "limit": limit
+        }
+
+    async def list_all_bots(
+        self, skip: int = 0, limit: int = 20, status: Optional[BotStatus] = None
+    ) -> Dict:
+        """Lista todos los bots de todos los tenants (uso exclusivo de
+        administración general — ver estrategia multi-tenant)."""
+        filters = []
+        if status:
+            filters.append(BotModel.status == status.value)
+
+        async with AsyncSessionLocal() as session:
+            total = (await session.execute(
+                select(func.count()).select_from(BotModel).where(*filters)
+            )).scalar_one()
+
+            result = await session.execute(
+                select(BotModel)
+                .where(*filters)
+                .order_by(BotModel.created_at.desc())
+                .offset(skip)
+                .limit(limit)
+            )
+            rows = result.scalars().all()
+
+        return {
+            "bots": [_to_bot(r) for r in rows],
+            "total": total,
+            "page": (skip // limit) + 1 if limit > 0 else 1,
+            "pages": (total + limit - 1) // limit if limit > 0 else 0,
+            "limit": limit
+        }
+
+    async def update_bot_admin(self, bot_id: str, update_data: BotUpdate) -> Optional[Bot]:
+        """Actualiza un bot (configuración técnica — sólo administración general)"""
         update_dict = {}
 
         for key, value in update_data.model_dump(exclude_unset=True).items():
@@ -142,7 +216,7 @@ class BotService:
 
         async with AsyncSessionLocal() as session:
             row = await session.get(BotModel, bot_id)
-            if not row or row.owner_id != owner_id:
+            if not row:
                 return None
 
             if not update_dict:
@@ -155,11 +229,11 @@ class BotService:
             await session.refresh(row)
             return _to_bot(row)
 
-    async def delete_bot(self, bot_id: str, owner_id: str) -> bool:
-        """Elimina un bot (soft delete)"""
+    async def delete_bot_admin(self, bot_id: str) -> bool:
+        """Elimina un bot (soft delete, sólo administración general)"""
         async with AsyncSessionLocal() as session:
             row = await session.get(BotModel, bot_id)
-            if not row or row.owner_id != owner_id:
+            if not row:
                 return False
             row.status = BotStatus.INACTIVE.value
             await session.commit()

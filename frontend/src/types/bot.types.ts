@@ -50,6 +50,7 @@ export interface Bot {
   description?: string;
   business_type: string;
   owner_id: string;
+  tenant_id: string;
   status: BotStatus;
   config: BotConfig;
   channels: BotChannelConfig[];
@@ -63,6 +64,7 @@ export interface Bot {
 }
 
 export interface BotCreate {
+  tenant_id: string;
   name: string;
   description?: string;
   business_type: string;
@@ -98,6 +100,7 @@ export interface BotFilters {
   page?: number;
   limit?: number;
   status?: BotStatus | '';
+  tenant_id?: string;
 }
 
 export interface BotStats {

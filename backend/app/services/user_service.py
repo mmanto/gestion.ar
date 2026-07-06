@@ -2,10 +2,11 @@
 User Service - Gestión de usuarios en PostgreSQL (ver ADR-006 en docs/dev/DECISIONS.md)
 """
 
-from typing import Optional
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 
 from app.auth_service import get_password_hash, verify_password, User
 from app.db.database import AsyncSessionLocal
@@ -18,6 +19,8 @@ class UserInDB(BaseModel):
     email: Optional[str] = None
     hashed_password: str
     disabled: bool = False
+    tenant_id: Optional[str] = None
+    role: str = "admin"
 
 
 def _to_user_in_db(row: UserModel) -> UserInDB:
@@ -26,6 +29,8 @@ def _to_user_in_db(row: UserModel) -> UserInDB:
         email=row.email,
         hashed_password=row.hashed_password,
         disabled=row.disabled,
+        tenant_id=row.tenant_id,
+        role=row.role,
     )
 
 
@@ -50,7 +55,9 @@ class UserService:
         self,
         username: str,
         password: str,
-        email: Optional[str] = None
+        email: Optional[str] = None,
+        tenant_id: Optional[str] = None,
+        role: str = "admin",
     ) -> UserInDB:
         """
         Crear un nuevo usuario
@@ -59,6 +66,8 @@ class UserService:
             username: Nombre de usuario único
             password: Contraseña en texto plano (se hashea internamente)
             email: Email opcional
+            tenant_id: Tenant al que pertenece (None sólo para super_admin)
+            role: 'super_admin' | 'admin' | 'operativo'
 
         Returns:
             Usuario creado
@@ -77,10 +86,15 @@ class UserService:
                 email=email,
                 hashed_password=hashed,
                 disabled=False,
+                tenant_id=tenant_id,
+                role=role,
             ))
             await session.commit()
 
-        return UserInDB(username=username, email=email, hashed_password=hashed, disabled=False)
+        return UserInDB(
+            username=username, email=email, hashed_password=hashed, disabled=False,
+            tenant_id=tenant_id, role=role,
+        )
 
     async def authenticate_user(self, username: str, password: str) -> Optional[User]:
         """
@@ -96,7 +110,13 @@ class UserService:
             return None
         if user.disabled:
             return None
-        return User(username=user.username, email=user.email, disabled=user.disabled)
+        return User(
+            username=user.username,
+            email=user.email,
+            disabled=user.disabled,
+            tenant_id=user.tenant_id,
+            role=user.role,
+        )
 
     # ── ConnectionStorage (devbout-oauth / Nango) ──────────────────────────────
     # Nango custodia los tokens; sólo guardamos el mapeo (provider, connection_id,
@@ -133,8 +153,6 @@ class UserService:
     async def find_or_create_by_identity(
         self, provider: str, provider_user_id: str, email: str, given_name: str, family_name: str
     ) -> tuple[str, str]:
-        import re
-        import secrets
         from app.auth_service import create_access_token
 
         async with AsyncSessionLocal() as session:
@@ -166,27 +184,18 @@ class UserService:
                     row.google_id = provider_user_id
                 await session.commit()
                 username = row.username
+                tenant_id, role = row.tenant_id, row.role
             else:
-                # Nuevo usuario (password aleatorio — debe ingresar vía proveedor social)
-                local = email.split("@")[0]
-                base = re.sub(r"[^a-zA-Z0-9_]", "_", local)
-                username = base
-                counter = 1
-                while (await session.get(UserModel, username)) is not None:
-                    username = f"{base}{counter}"
-                    counter += 1
-                session.add(UserModel(
-                    username=username,
-                    email=email,
-                    hashed_password=get_password_hash(secrets.token_hex(32)),
-                    disabled=False,
-                    auth_provider=provider,
-                    provider_user_id=provider_user_id,
-                    google_id=provider_user_id if provider == "google" else None,
-                ))
-                await session.commit()
+                # No hay autoregistro: toda cuenta nueva la crea super_admin
+                # desde administración general (ver estrategia multi-tenant).
+                # Un identity social sin cuenta previa no tiene tenant al que
+                # asociarse, así que no se crea un usuario "huérfano".
+                raise ValueError(
+                    "No existe una cuenta para este proveedor social. "
+                    "Pedile a administración general que te cree un usuario."
+                )
 
-        token = create_access_token({"sub": username})
+        token = create_access_token({"sub": username, "tenant_id": tenant_id, "role": role})
         return username, token
 
     async def ensure_default_admin(self):
@@ -198,17 +207,88 @@ class UserService:
             count = (await session.execute(select(func.count()).select_from(UserModel))).scalar_one()
 
         if count == 0:
+            # En una instalación nueva, el primer usuario es el super_admin de
+            # plataforma (administración general) — sin tenant propio. Los
+            # tenants y sus usuarios se crean desde ahí, no por autoregistro.
             await self.create_user(
                 username="admin",
                 password="admin123",
-                email="admin@ventachat.com"
+                email="admin@ventachat.com",
+                tenant_id=None,
+                role="super_admin",
             )
-            print("✅ Usuario admin por defecto creado (admin/admin123)")
+            print("✅ Usuario admin por defecto creado (admin/admin123, super_admin)")
         else:
             # Verificar si admin específicamente existe
             admin = await self.get_user_by_username("admin")
             if not admin:
                 print("ℹ️  Usuarios existentes en DB, no se crea admin por defecto")
+
+    # ── Administración general: gestión de usuarios de cualquier tenant ───────
+
+    async def list_users(
+        self, tenant_id: Optional[str] = None, skip: int = 0, limit: int = 50
+    ) -> Dict:
+        """Lista usuarios, opcionalmente filtrados por tenant (super_admin)."""
+        filters = []
+        if tenant_id is not None:
+            filters.append(UserModel.tenant_id == tenant_id)
+
+        async with AsyncSessionLocal() as session:
+            total = (await session.execute(
+                select(func.count()).select_from(UserModel).where(*filters)
+            )).scalar_one()
+            result = await session.execute(
+                select(UserModel).where(*filters).order_by(UserModel.created_at.desc())
+                .offset(skip).limit(limit)
+            )
+            rows = result.scalars().all()
+
+        return {
+            "users": [_to_user_in_db(r) for r in rows],
+            "total": total,
+            "page": (skip // limit) + 1 if limit > 0 else 1,
+            "pages": (total + limit - 1) // limit if limit > 0 else 0,
+            "limit": limit,
+        }
+
+    async def update_user(
+        self,
+        username: str,
+        role: Optional[str] = None,
+        disabled: Optional[bool] = None,
+        email: Optional[str] = None,
+    ) -> Optional[UserInDB]:
+        """Actualiza rol/estado/email de un usuario (super_admin). El rol
+        nunca lo puede fijar el propio usuario — sólo administración general."""
+        async with AsyncSessionLocal() as session:
+            row = await session.get(UserModel, username)
+            if not row:
+                return None
+            if role is not None:
+                row.role = role
+            if disabled is not None:
+                row.disabled = disabled
+            if email is not None:
+                row.email = email
+            await session.commit()
+            await session.refresh(row)
+            return _to_user_in_db(row)
+
+    async def delete_user(self, username: str) -> bool:
+        """Elimina un usuario. Falla (False) si tiene bots asociados
+        (bots.owner_id) que dependan de esa cuenta."""
+        async with AsyncSessionLocal() as session:
+            row = await session.get(UserModel, username)
+            if not row:
+                return False
+            try:
+                await session.delete(row)
+                await session.commit()
+            except IntegrityError:
+                await session.rollback()
+                return False
+            return True
 
 
 # Instancia global del servicio

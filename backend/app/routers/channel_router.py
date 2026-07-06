@@ -7,7 +7,6 @@ import io
 import qrcode
 from fastapi import APIRouter, HTTPException, Depends, Query, status
 from fastapi.responses import Response
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
 
 import logging
@@ -20,38 +19,24 @@ from app.models.channel import (
 )
 from app.services.channel_service import get_channel_service
 from app.services.bot_service import get_bot_service
-from app.auth_service import get_current_user_from_token, User
+from app.auth_service import User
+from app.dependencies.auth import get_current_user, require_role
 from app.telegram_service import create_telegram_service
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/bots/{bot_id}/channels", tags=["channels"])
-
-# Esquema de seguridad HTTP Bearer
-security = HTTPBearer()
-
-
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> User:
-    """Dependency para obtener el usuario actual desde el token JWT"""
-    token = credentials.credentials
-    user = await get_current_user_from_token(token)
-
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    return user
+router = APIRouter(
+    prefix="/api/bots/{bot_id}/channels",
+    tags=["channels"],
+    dependencies=[Depends(require_role("super_admin"))],
+)
 
 
 async def verify_bot_access(bot_id: str, current_user: User):
-    """Verificar acceso al bot"""
+    """Verificar que el bot exista (configuración técnica — sólo administración
+    general llega hasta acá, ver dependency del router)."""
     bot_service = get_bot_service()
-    bot = await bot_service.get_bot_by_owner(bot_id, current_user.username)
+    bot = await bot_service.get_bot(bot_id)
 
     if not bot:
         raise HTTPException(

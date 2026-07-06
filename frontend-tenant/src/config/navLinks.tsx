@@ -1,0 +1,33 @@
+import type { ReactNode } from 'react';
+import type { UserRole } from '../types/auth.types';
+
+export interface NavLink {
+  to: string;
+  label: string;
+  icon: ReactNode;
+  /** Si se omite, el link es visible para cualquier rol autenticado. */
+  roles?: UserRole[];
+}
+
+export const NAV_LINKS: NavLink[] = [
+  {
+    to: '/dashboard', label: 'Dashboard',
+    icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3v18h18M7 15l4-6 3 4 5-8" />,
+  },
+  {
+    to: '/clients', label: 'Contactos',
+    icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-3.13a4 4 0 10-4-4 4 4 0 004 4zm6 0a4 4 0 10-3.5-5.9" />,
+  },
+  {
+    to: '/conversations', label: 'Conversaciones',
+    icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />,
+  },
+  {
+    to: '/modules', label: 'Módulos', roles: ['admin'],
+    icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />,
+  },
+  {
+    to: '/training', label: 'Entrenamiento', roles: ['admin'],
+    icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.42A12.083 12.083 0 0112 20.055 12.083 12.083 0 015.84 10.58L12 14zm0 0v6" />,
+  },
+];

@@ -7,20 +7,15 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 // Pages
 import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
-import { Register } from './pages/Register';
 import { ChatPage } from './pages/ChatPage';
-import { Dashboard } from './pages/Dashboard';
-import { Conversations } from './pages/Conversations';
-import { ConversationView } from './pages/ConversationView';
 import { Bots } from './pages/Bots';
 import { BotDetail } from './pages/BotDetail';
-import { BotClients } from './pages/BotClients';
 import { BotChannels } from './pages/BotChannels';
 import { BotAppointments } from './pages/BotAppointments';
-import { Clients } from './pages/Clients';
-import PwaSubscriptions from './pages/PwaSubscriptions';
 import { UserLandingPage } from './pages/UserLandingPage';
 import { BotDocuments } from './pages/BotDocuments';
+import { Tenants } from './pages/admin/Tenants';
+import { TenantDetail } from './pages/admin/TenantDetail';
 
 function App() {
   return (
@@ -32,50 +27,33 @@ function App() {
             {/* Rutas públicas */}
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
             <Route path="/chat/c/:channelId" element={<ChatPage />} />
             <Route path="/chat/:botId" element={<ChatPage />} />
             <Route path="/u/:username" element={<UserLandingPage />} />
 
-            {/* Rutas protegidas */}
+            {/* Administración general — sólo super_admin */}
             <Route
-              path="/clients"
+              path="/admin/tenants"
               element={
-                <ProtectedRoute>
-                  <Clients />
+                <ProtectedRoute roles={['super_admin']}>
+                  <Tenants />
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/dashboard"
+              path="/admin/tenants/:tenantId"
               element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/conversations"
-              element={
-                <ProtectedRoute>
-                  <Conversations />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/conversations/:id"
-              element={
-                <ProtectedRoute>
-                  <ConversationView />
+                <ProtectedRoute roles={['super_admin']}>
+                  <TenantDetail />
                 </ProtectedRoute>
               }
             />
 
-            {/* Rutas de Bots */}
+            {/* Configuración técnica de bots — sólo super_admin (servicio gestionado) */}
             <Route
               path="/bots"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute roles={['super_admin']}>
                   <Bots />
                 </ProtectedRoute>
               }
@@ -83,23 +61,15 @@ function App() {
             <Route
               path="/bots/:botId"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute roles={['super_admin']}>
                   <BotDetail />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/bots/:botId/clients"
-              element={
-                <ProtectedRoute>
-                  <BotClients />
                 </ProtectedRoute>
               }
             />
             <Route
               path="/bots/:botId/channels"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute roles={['super_admin']}>
                   <BotChannels />
                 </ProtectedRoute>
               }
@@ -107,23 +77,15 @@ function App() {
             <Route
               path="/bots/:botId/appointments"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute roles={['super_admin']}>
                   <BotAppointments />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/bots/:botId/pwa/:channelId"
-              element={
-                <ProtectedRoute>
-                  <PwaSubscriptions />
                 </ProtectedRoute>
               }
             />
             <Route
               path="/bots/:botId/documents"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute roles={['super_admin']}>
                   <BotDocuments />
                 </ProtectedRoute>
               }

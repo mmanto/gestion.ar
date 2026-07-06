@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import type { AuthProvider } from '../../types/auth.types';
 
@@ -32,7 +32,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       if (onSuccess) {
         onSuccess();
       } else {
-        navigate('/clients');
+        navigate('/admin/tenants');
       }
     } catch (err: unknown) {
       const e = err as { message?: string; response?: { data?: { detail?: string } } };
@@ -60,7 +60,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       if (onSuccess) {
         onSuccess();
       } else {
-        navigate('/clients');
+        navigate('/admin/tenants');
       }
     } catch (err: unknown) {
       type AxiosLike = { response?: { status: number; data?: { detail?: string } }; request?: unknown };
@@ -93,7 +93,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
 
       {/* Descripción */}
       <p className="text-sm" style={{ color: MUTED_FG }}>
-        Accede a tu cuenta para gestionar las conversaciones con los contactos.
+        Acceso para administración general de la plataforma.
       </p>
 
       {/* Error */}
@@ -222,20 +222,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         </p>
         <p className="mt-1" style={{ color: MUTED_FG }}>
           • <strong>Usuario:</strong> admin &nbsp;/&nbsp; <strong>Contraseña:</strong> admin123
-        </p>
-      </div>
-
-      {/* Registro */}
-      <div className="flex flex-col items-center text-sm mt-2">
-        <p style={{ color: MUTED_FG }}>
-          ¿No tienes cuenta?{' '}
-          <Link
-            to="/register"
-            className="font-medium hover:underline"
-            style={{ color: PRIMARY }}
-          >
-            Regístrate
-          </Link>
         </p>
       </div>
 

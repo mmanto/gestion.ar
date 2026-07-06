@@ -9,7 +9,7 @@ export const Login: React.FC = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/clients');
+      navigate('/admin/tenants');
     }
   }, [isAuthenticated, navigate]);
 

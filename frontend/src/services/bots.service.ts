@@ -23,6 +23,7 @@ const botsService = {
     if (filters.page) params.append('page', filters.page.toString());
     if (filters.limit) params.append('limit', filters.limit.toString());
     if (filters.status) params.append('status', filters.status);
+    if (filters.tenant_id) params.append('tenant_id', filters.tenant_id);
 
     const response = await api.get<BotsResponse>(`/bots?${params.toString()}`);
     return response.data;

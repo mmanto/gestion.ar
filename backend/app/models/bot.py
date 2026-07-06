@@ -81,6 +81,15 @@ class BotConfig(BaseModel):
         default=None,
         description="Configuración del flujo de captura de datos progresivo (Fase 2)"
     )
+    custom_facts: Dict[str, str] = Field(
+        default_factory=dict,
+        description=(
+            "Datos puntuales editables por el admin del tenant (ej. "
+            "honorarios a informar), interpolados en el system_prompt por "
+            "build_effective_system_prompt. El prompt en sí sigue siendo "
+            "responsabilidad de administración general."
+        )
+    )
 
 
 class BotChannelConfig(BaseModel):
@@ -100,6 +109,7 @@ class BotBase(BaseModel):
 
 class BotCreate(BotBase):
     """Modelo para crear un bot"""
+    tenant_id: str = Field(..., description="Tenant para el que se configura este bot")
     config: Optional[BotConfig] = None
     channels: Optional[List[BotChannelConfig]] = None
 
@@ -118,7 +128,8 @@ class BotUpdate(BaseModel):
 class Bot(BotBase):
     """Modelo completo de Bot"""
     bot_id: str
-    owner_id: str = Field(..., description="ID del usuario propietario")
+    owner_id: str = Field(..., description="Usuario de administración general que configuró el bot")
+    tenant_id: str = Field(..., description="Tenant al que pertenece el bot")
     status: BotStatus = BotStatus.ACTIVE
     config: BotConfig = Field(default_factory=BotConfig)
     channels: List[BotChannelConfig] = Field(default_factory=list, description="Configuración inline de canales (legacy)")

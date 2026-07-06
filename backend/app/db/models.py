@@ -24,6 +24,60 @@ from sqlalchemy.dialects.postgresql import JSONB
 from app.db.database import Base
 
 
+class Tenant(Base):
+    __tablename__ = "tenants"
+
+    tenant_id = Column(Text, primary_key=True)
+    name = Column(Text, nullable=False)
+    # Dominio propio del tenant (ej. "ius.com.mx") — no un subdominio de
+    # gestion.ar, cada proyecto gestionado tiene su propio dominio (ver
+    # docs/dev/DECISIONS.md, estrategia multi-tenant).
+    domain = Column(Text, nullable=True)
+    status = Column(Text, nullable=False, default="active", server_default="active")
+    branding = Column(JSONB, nullable=False, default=dict, server_default="{}")
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("ix_tenants_domain", "domain", unique=True, postgresql_where=text("domain IS NOT NULL")),
+        Index("ix_tenants_status", "status"),
+        CheckConstraint("status IN ('active', 'suspended', 'trial')", name="ck_tenants_status"),
+    )
+
+
+class Module(Base):
+    """Catálogo de módulos otorgables a un bot (ver bot_modules). Semilla vía
+    migración — la modularización real del código sigue siendo trabajo
+    futuro; hoy esto es sólo la capa de entitlement."""
+
+    __tablename__ = "modules"
+
+    module_key = Column(Text, primary_key=True)
+    name = Column(Text, nullable=False)
+    description = Column(Text, nullable=True)
+
+
+class BotModule(Base):
+    """Otorgamiento (super_admin) y habilitación (admin del tenant) de un
+    módulo para un bot puntual. `enabled` sólo puede ser true si `granted` es
+    true — reforzado también a nivel API."""
+
+    __tablename__ = "bot_modules"
+
+    bot_id = Column(Text, ForeignKey("bots.bot_id", ondelete="CASCADE"), primary_key=True)
+    module_key = Column(Text, ForeignKey("modules.module_key"), primary_key=True)
+    granted = Column(Boolean, nullable=False, default=False, server_default="false")
+    enabled = Column(Boolean, nullable=False, default=False, server_default="false")
+    granted_by = Column(Text, ForeignKey("users.username"), nullable=True)
+    granted_at = Column(DateTime(timezone=True), nullable=True)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    __table_args__ = (
+        CheckConstraint("NOT enabled OR granted", name="ck_bot_modules_enabled_requires_granted"),
+        Index("ix_bot_modules_module_key", "module_key"),
+    )
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -36,6 +90,9 @@ class User(Base):
     google_id = Column(Text, nullable=True)
     nango_connection_id = Column(Text, nullable=True)
     gmail_sender_email = Column(Text, nullable=True)
+    # tenant_id nullable: super_admin no pertenece a ningún tenant.
+    tenant_id = Column(Text, ForeignKey("tenants.tenant_id"), nullable=True)
+    role = Column(Text, nullable=False, default="admin", server_default="admin")
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (
@@ -46,6 +103,13 @@ class User(Base):
             "auth_provider",
             "provider_user_id",
         ),
+        Index("ix_users_tenant_id", "tenant_id"),
+        CheckConstraint("role IN ('super_admin', 'admin', 'operativo')", name="ck_users_role"),
+        CheckConstraint(
+            "(role = 'super_admin' AND tenant_id IS NULL) OR "
+            "(role IN ('admin', 'operativo') AND tenant_id IS NOT NULL)",
+            name="ck_users_role_tenant_consistency",
+        ),
     )
 
 
@@ -53,7 +117,10 @@ class Bot(Base):
     __tablename__ = "bots"
 
     bot_id = Column(Text, primary_key=True)
+    # Quién de administración general configuró técnicamente este bot
+    # (auditoría interna) — la autorización real es por tenant_id.
     owner_id = Column(Text, ForeignKey("users.username"), nullable=False)
+    tenant_id = Column(Text, ForeignKey("tenants.tenant_id"), nullable=False)
     name = Column(Text, nullable=False)
     description = Column(Text, nullable=True)
     business_type = Column(Text, nullable=False)
@@ -71,6 +138,7 @@ class Bot(Base):
 
     __table_args__ = (
         Index("ix_bots_owner_id", "owner_id"),
+        Index("ix_bots_tenant_id", "tenant_id"),
         Index("ix_bots_status", "status"),
         Index("ix_bots_created_at", "created_at"),
     )
@@ -81,6 +149,7 @@ class Channel(Base):
 
     channel_id = Column(Text, primary_key=True)
     bot_id = Column(Text, ForeignKey("bots.bot_id", ondelete="CASCADE"), nullable=False)
+    tenant_id = Column(Text, ForeignKey("tenants.tenant_id"), nullable=False)
     channel_type = Column(Text, nullable=False)
     name = Column(Text, nullable=False)
     status = Column(Text, nullable=False, default="pending")
@@ -102,6 +171,7 @@ class Channel(Base):
     # confirman.
     __table_args__ = (
         Index("ix_channels_bot_id", "bot_id"),
+        Index("ix_channels_tenant_id", "tenant_id"),
         Index("ix_channels_bot_id_channel_type", "bot_id", "channel_type"),
         Index("ix_channels_status", "status"),
         Index(
@@ -116,6 +186,7 @@ class Client(Base):
 
     client_id = Column(Text, primary_key=True)
     bot_id = Column(Text, ForeignKey("bots.bot_id", ondelete="CASCADE"), nullable=False)
+    tenant_id = Column(Text, ForeignKey("tenants.tenant_id"), nullable=False)
     external_id = Column(Text, nullable=False)
     source = Column(Text, nullable=False)
     name = Column(Text, nullable=True)
@@ -132,6 +203,7 @@ class Client(Base):
 
     __table_args__ = (
         Index("ix_clients_bot_id_external_id", "bot_id", "external_id", unique=True),
+        Index("ix_clients_tenant_id", "tenant_id"),
         Index("ix_clients_bot_id_status", "bot_id", "status"),
         Index("ix_clients_last_contact_at", "last_contact_at"),
         Index("ix_clients_score", "score"),
@@ -143,6 +215,7 @@ class Conversation(Base):
 
     conversation_id = Column(Text, primary_key=True)
     bot_id = Column(Text, ForeignKey("bots.bot_id"), nullable=True)
+    tenant_id = Column(Text, ForeignKey("tenants.tenant_id"), nullable=True)
     client_id = Column(Text, ForeignKey("clients.client_id"), nullable=True)
     user_id = Column(Text, nullable=False)
     channel = Column(Text, nullable=True)
@@ -159,6 +232,7 @@ class Conversation(Base):
 
     __table_args__ = (
         Index("ix_conversations_bot_id", "bot_id"),
+        Index("ix_conversations_tenant_id", "tenant_id"),
         Index("ix_conversations_client_id", "client_id"),
         Index("ix_conversations_user_id", "user_id"),
         Index("ix_conversations_source", "source"),
@@ -191,6 +265,7 @@ class PushSubscription(Base):
 
     subscription_id = Column(Text, primary_key=True)
     bot_id = Column(Text, ForeignKey("bots.bot_id", ondelete="CASCADE"), nullable=False)
+    tenant_id = Column(Text, ForeignKey("tenants.tenant_id"), nullable=False)
     channel_id = Column(Text, ForeignKey("channels.channel_id"), nullable=True)
     client_id = Column(Text, ForeignKey("clients.client_id"), nullable=True)
     endpoint = Column(Text, nullable=False, unique=True)
@@ -204,6 +279,7 @@ class PushSubscription(Base):
 
     __table_args__ = (
         Index("ix_push_subscriptions_bot_id", "bot_id"),
+        Index("ix_push_subscriptions_tenant_id", "tenant_id"),
         Index("ix_push_subscriptions_bot_id_channel_id", "bot_id", "channel_id"),
         Index("ix_push_subscriptions_bot_id_is_active", "bot_id", "is_active"),
         Index(

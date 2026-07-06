@@ -1,7 +1,6 @@
 from fastapi import FastAPI, HTTPException, Form, Request, Query, Header, Depends, status
 from fastapi.responses import PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 import os
 import json
@@ -17,10 +16,10 @@ from app.telegram_service import get_telegram_service
 from app.auth_service import (
     authenticate_user,
     create_access_token,
-    get_current_user_from_token,
     User,
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
+from app.dependencies.auth import get_current_user
 from app.connection_manager import connection_manager
 from app.routers import bot_router, client_router, channel_router
 from app.services.user_service import get_user_service
@@ -39,6 +38,8 @@ from app.routers.google_oauth_router import router as google_oauth_router
 from app.routers.appointments_router import router as appointments_router
 from app.routers.appointments_webhook_router import router as appointments_webhook_router
 from app.routers.document_router import router as document_router
+from app.routers.tenant_admin_router import router as tenant_admin_router
+from app.routers.tenant_router import router as tenant_router
 from app.telegram_handlers import (
     handle_telegram_command,
     handle_telegram_text_message,
@@ -77,40 +78,8 @@ app.include_router(google_oauth_router)      # Login/conexión OAuth (Google/Mic
 app.include_router(appointments_router)      # CRUD de turnos scoped por bot
 app.include_router(appointments_webhook_router)  # Webhook de devbout-appointments
 app.include_router(document_router)          # Documentos RAG scoped por bot
-
-# ==================== SEGURIDAD Y AUTENTICACIÓN ====================
-
-# Esquema de seguridad HTTP Bearer
-security = HTTPBearer()
-
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> User:
-    """
-    Dependency para obtener el usuario actual desde el token JWT
-
-    Args:
-        credentials: Credenciales HTTP Bearer (token JWT)
-
-    Returns:
-        Usuario actual
-
-    Raises:
-        HTTPException: Si el token es inválido o el usuario no existe
-    """
-    token = credentials.credentials
-
-    # Verificar token
-    user = await get_current_user_from_token(token)
-
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    return user
+app.include_router(tenant_admin_router)      # Administración general: tenants, usuarios, módulos
+app.include_router(tenant_router)            # Backoffice de tenant: bots (read-only), módulos, entrenamiento
 
 # ==================== MODELOS ====================
 
@@ -191,7 +160,7 @@ async def login(
     # Crear token de acceso
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username},
+        data={"sub": user.username, "tenant_id": user.tenant_id, "role": user.role},
         expires_delta=access_token_expires
     )
 
@@ -200,7 +169,9 @@ async def login(
         "token_type": "bearer",
         "user": {
             "username": user.username,
-            "email": user.email
+            "email": user.email,
+            "tenant_id": user.tenant_id,
+            "role": user.role,
         }
     }
 
@@ -217,48 +188,24 @@ async def get_me(current_user: User = Depends(get_current_user)):
     """
     return {
         "username": current_user.username,
-        "email": current_user.email
+        "email": current_user.email,
+        "tenant_id": current_user.tenant_id,
+        "role": current_user.role,
     }
 
 
-@app.post("/api/auth/register", response_model=Dict[str, Any])
-async def register(
-    username: str = Form(...),
-    password: str = Form(...),
-    email: Optional[str] = Form(None)
-):
+@app.post("/api/auth/register")
+async def register():
     """
-    Registrar un nuevo usuario en el sistema
-
-    Args:
-        username: Nombre de usuario único
-        password: Contraseña
-        email: Email opcional
-
-    Returns:
-        Datos del usuario creado
-
-    Raises:
-        HTTPException: Si el username ya existe
+    Endpoint deprecado: no hay autoregistro público. Los tenants y sus
+    usuarios (UsuarioAdmin/Usuario) los crea administración general desde
+    /api/admin/tenants y /api/admin/users.
     """
-    user_service = get_user_service()
-
-    try:
-        user = await user_service.create_user(username, password, email)
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
-
-    return {
-        "success": True,
-        "message": "Usuario creado exitosamente",
-        "user": {
-            "username": user.username,
-            "email": user.email
-        }
-    }
+    raise HTTPException(
+        status_code=410,
+        detail="Endpoint deprecado. El alta de usuarios la hace administración "
+               "general vía /api/admin/users."
+    )
 
 # ==================== ENDPOINTS RAG ====================
 # Movidos a app/routers/document_router.py, scoped por bot_id:
@@ -292,8 +239,8 @@ async def get_all_clients(
     """
     try:
         bot_service = get_bot_service()
-        bots_result = await bot_service.get_bots_by_owner(
-            owner_id=current_user.username, skip=0, limit=1000
+        bots_result = await bot_service.get_bots_by_tenant(
+            tenant_id=current_user.tenant_id, skip=0, limit=1000
         )
         bot_ids = [b.bot_id for b in bots_result["bots"]]
 
@@ -360,10 +307,10 @@ async def get_conversations(
 
         # Obtener bot_ids del usuario autenticado para filtrar sus conversaciones
         bot_service = get_bot_service()
-        bots_result = await bot_service.get_bots_by_owner(
-            owner_id=current_user.username, skip=0, limit=1000
+        bots_result = await bot_service.get_bots_by_tenant(
+            tenant_id=current_user.tenant_id, skip=0, limit=1000
         )
-        owner_bot_ids = [b.bot_id for b in bots_result["bots"]]
+        tenant_bot_ids = [b.bot_id for b in bots_result["bots"]]
 
         # Calcular skip para paginación
         skip = (page - 1) * limit
@@ -378,7 +325,7 @@ async def get_conversations(
             search=search,
             sort_by=sort_by,
             order=order,
-            bot_ids=owner_bot_ids
+            bot_ids=tenant_bot_ids
         )
 
         return {
@@ -411,12 +358,12 @@ async def get_timeline_stats(
         conv_service = get_conversation_service()
 
         bot_service = get_bot_service()
-        bots_result = await bot_service.get_bots_by_owner(
-            owner_id=current_user.username, skip=0, limit=1000
+        bots_result = await bot_service.get_bots_by_tenant(
+            tenant_id=current_user.tenant_id, skip=0, limit=1000
         )
-        owner_bot_ids = [b.bot_id for b in bots_result["bots"]]
+        tenant_bot_ids = [b.bot_id for b in bots_result["bots"]]
 
-        timeline = await conv_service.get_timeline_stats(days=days, bot_ids=owner_bot_ids)
+        timeline = await conv_service.get_timeline_stats(days=days, bot_ids=tenant_bot_ids)
 
         return {
             "success": True,
@@ -448,12 +395,12 @@ async def get_conversation_stats(
         conv_service = get_conversation_service()
 
         bot_service = get_bot_service()
-        bots_result = await bot_service.get_bots_by_owner(
-            owner_id=current_user.username, skip=0, limit=1000
+        bots_result = await bot_service.get_bots_by_tenant(
+            tenant_id=current_user.tenant_id, skip=0, limit=1000
         )
-        owner_bot_ids = [b.bot_id for b in bots_result["bots"]]
+        tenant_bot_ids = [b.bot_id for b in bots_result["bots"]]
 
-        stats = await conv_service.get_conversation_stats(bot_ids=owner_bot_ids)
+        stats = await conv_service.get_conversation_stats(bot_ids=tenant_bot_ids)
 
         return {
             "success": True,
@@ -495,8 +442,8 @@ async def get_conversation_by_id(
         conv_bot_id = conversation.get("bot_id")
         if conv_bot_id:
             bot_service = get_bot_service()
-            owner_bot = await bot_service.get_bot_by_owner(conv_bot_id, current_user.username)
-            if not owner_bot:
+            conv_bot = await bot_service.get_bot(conv_bot_id)
+            if not conv_bot or conv_bot.tenant_id != current_user.tenant_id:
                 raise HTTPException(
                     status_code=404,
                     detail=f"Conversación {conversation_id} no encontrada"
@@ -541,8 +488,8 @@ async def send_agent_message(
         conv_bot_id = conversation.get("bot_id")
         if conv_bot_id:
             bot_service = get_bot_service()
-            owner_bot = await bot_service.get_bot_by_owner(conv_bot_id, current_user.username)
-            if not owner_bot:
+            conv_bot = await bot_service.get_bot(conv_bot_id)
+            if not conv_bot or conv_bot.tenant_id != current_user.tenant_id:
                 raise HTTPException(status_code=404, detail="Conversación no encontrada")
 
         msg = await conv_service.add_message(

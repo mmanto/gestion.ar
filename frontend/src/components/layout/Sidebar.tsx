@@ -54,7 +54,7 @@ export const Sidebar: React.FC = () => {
             collapsed ? 'md:px-2' : ''
           }`}
         >
-          <Link to="/clients">
+          <Link to="/admin/tenants">
             <span
               className="font-editorial text-[22px] font-light uppercase tracking-[0.08em] select-none"
               style={{ color: 'white' }}

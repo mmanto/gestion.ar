@@ -93,7 +93,7 @@ export const KeroSidebar: React.FC = () => {
             collapsed ? 'px-2' : 'px-5'
           }`}
         >
-          <Link to="/clients">
+          <Link to="/admin/tenants">
             <span className="font-editorial text-[22px] font-light uppercase tracking-[0.08em] text-gray-800 select-none">
               {collapsed ? 'G' : 'GESTIONA'}
             </span>
@@ -129,7 +129,7 @@ export const KeroSidebar: React.FC = () => {
         }`}
       >
         <div className="flex items-center justify-center gap-2 px-5 h-20 border-b border-gray-100 flex-shrink-0">
-          <Link to="/clients">
+          <Link to="/admin/tenants">
             <span className="font-editorial text-[22px] font-light uppercase tracking-[0.08em] text-gray-800 select-none">
               GESTIONA
             </span>

@@ -1,0 +1,75 @@
+# docker-compose.tenants.local.yml — Simulación local de multi-tenant por dominio
+# (Fase 7). NO usar en producción: el traefik acá no tiene TLS/ACME, solo
+# rutea por Host en :80 para poder probar con dominios *.test resueltos a
+# 127.0.0.1 vía /etc/hosts.
+#
+# Setup:
+#   1. Agregar a /etc/hosts:
+#        127.0.0.1 erma.com.test
+#        127.0.0.1 ius.mx.test
+#   2. docker compose -f docker-compose.yml -f docker-compose.tenants.local.yml up -d --build
+#   3. Abrir http://erma.com.test o http://ius.mx.test
+#
+# Para bajar solo esto: docker compose -f docker-compose.yml -f docker-compose.tenants.local.yml down
+
+services:
+  traefik-local:
+    image: traefik:v3.6
+    container_name: gestionar_traefik_local
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=traefik_public
+      - --entrypoints.web.address=:80
+      - --log.level=INFO
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - traefik_public
+
+  frontend-tenant-erma:
+    build:
+      context: ./frontend-tenant
+      dockerfile: Dockerfile
+    container_name: gestionar_frontend_tenant_erma
+    environment:
+      - TENANT_ID=tenant_78f507331c18
+    restart: unless-stopped
+    networks:
+      - default
+      - traefik_public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_public"
+      - "traefik.http.routers.tenant-erma.rule=Host(`erma.com.test`)"
+      - "traefik.http.routers.tenant-erma.entrypoints=web"
+      - "traefik.http.services.tenant-erma.loadbalancer.server.port=80"
+
+  frontend-tenant-ius:
+    build:
+      context: ./frontend-tenant
+      dockerfile: Dockerfile
+    container_name: gestionar_frontend_tenant_ius
+    environment:
+      - TENANT_ID=tenant_6a10b2076443
+    restart: unless-stopped
+    networks:
+      - default
+      - traefik_public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_public"
+      - "traefik.http.routers.tenant-ius.rule=Host(`ius.mx.test`)"
+      - "traefik.http.routers.tenant-ius.entrypoints=web"
+      - "traefik.http.services.tenant-ius.loadbalancer.server.port=80"
+
+networks:
+  default:
+    name: gestionar_network
+    external: true
+  traefik_public:
+    name: traefik_public
+    external: true

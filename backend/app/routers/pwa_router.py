@@ -4,9 +4,9 @@ Endpoints públicos para suscripción desde el navegador, y endpoints JWT para a
 """
 
 from fastapi import APIRouter, HTTPException, Depends, Query, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from app.auth_service import get_current_user_from_token, User
+from app.auth_service import User
+from app.dependencies.auth import get_current_user
 from app.models.push_subscription import (
     PushSubscriptionCreate,
     SendNotificationRequest,
@@ -16,29 +16,14 @@ from app.services.bot_service import get_bot_service
 from app.services.channel_service import get_channel_service
 
 router = APIRouter(prefix="/api/pwa", tags=["pwa"])
-security = HTTPBearer()
-
-
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-) -> User:
-    """Dependency JWT: extrae el usuario actual del token"""
-    token = credentials.credentials
-    user = await get_current_user_from_token(token)
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenciales inválidas",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return user
 
 
 async def verify_bot_ownership(bot_id: str, current_user: User):
-    """Verifica que el usuario autenticado es el propietario del bot"""
+    """Verifica que el bot pertenezca al tenant del usuario autenticado
+    (operación del día a día — accesible a admin y operativo del tenant)."""
     bot_service = get_bot_service()
-    bot = await bot_service.get_bot_by_owner(bot_id, current_user.username)
-    if not bot:
+    bot = await bot_service.get_bot(bot_id)
+    if not bot or bot.tenant_id != current_user.tenant_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Bot no encontrado"

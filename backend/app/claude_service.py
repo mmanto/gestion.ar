@@ -254,17 +254,45 @@ def _json_to_text(obj, indent: int = 0) -> str:
     return "\n".join(lines)
 
 
+def _append_custom_facts(prompt: str, custom_facts: dict) -> str:
+    """Interpola los datos puntuales editables por el admin del tenant
+    (ej. honorarios) al final del prompt armado por administración general.
+    Soporta placeholders `{{clave}}` en el prompt; cualquier clave no
+    referenciada se agrega igual como una sección final de datos vigentes."""
+    if not custom_facts:
+        return prompt
+
+    result = prompt
+    unused = {}
+    for key, value in custom_facts.items():
+        placeholder = "{{" + key + "}}"
+        if placeholder in result:
+            result = result.replace(placeholder, value)
+        else:
+            unused[key] = value
+
+    if unused:
+        facts_lines = "\n".join(f"- {k}: {v}" for k, v in unused.items())
+        result += f"\n\nDatos actualizados a informar:\n{facts_lines}"
+
+    return result
+
+
 def build_effective_system_prompt(bot_config) -> str:
     """
     Construye el system prompt efectivo para un bot.
     Si el bot tiene ius_config cargado, lo inyecta completo como JSON de configuración.
     Si system_prompt es JSON libre válido, lo convierte a texto legible.
     De lo contrario, devuelve bot_config.system_prompt tal cual.
+    En todos los casos, interpola custom_facts (datos puntuales editables por
+    el admin del tenant, ej. honorarios) al final.
     """
+    custom_facts = getattr(bot_config, "custom_facts", None) or {}
+
     ius = bot_config.ius_config
     if ius:
         import json as _json
-        return (
+        prompt = (
             "Eres IUS, un asistente de IA legal laboral. "
             "Lee el JSON de configuración completo antes de responder y sigue estrictamente "
             "el orden de ejecución definido en HOW_TO_USE.\n"
@@ -273,16 +301,17 @@ def build_effective_system_prompt(bot_config) -> str:
             "Usa saltos de línea simples para separar párrafos.\n\n"
             + _json.dumps(ius, ensure_ascii=False, indent=2)
         )
+        return _append_custom_facts(prompt, custom_facts)
 
     raw = bot_config.system_prompt
     try:
         import json as _json
         parsed = _json.loads(raw)
         if isinstance(parsed, (dict, list)):
-            return _json_to_text(parsed)
+            return _append_custom_facts(_json_to_text(parsed), custom_facts)
     except (ValueError, TypeError):
         pass
-    return raw
+    return _append_custom_facts(raw, custom_facts)
 
 
 def get_effective_welcome_message(bot_config) -> str:
