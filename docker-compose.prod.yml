@@ -44,14 +44,23 @@ services:
       dockerfile: Dockerfile
       args:
         - VITE_API_URL=/api
+    # OJO: Compose mergea "labels" por clave, no reemplaza la lista entera.
+    # docker-compose.yml (base) ya define un router/service "gestionar" para
+    # este mismo servicio (Host dev.gestionar.kairosgroup.ar) — hay que
+    # REUSAR ese mismo nombre acá para que el Host() nuevo pise al viejo por
+    # clave, en vez de crear un segundo router/service en paralelo (eso hace
+    # que Traefik no pueda linkear ninguno de los dos: "cannot be linked
+    # automatically with multiple Services").
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.intellify-admin.rule=Host(`admin.intellify.pro`)"
-      - "traefik.http.routers.intellify-admin.entrypoints=websecure"
-      - "traefik.http.routers.intellify-admin.tls.certresolver=letsencrypt"
-      - "traefik.http.services.intellify-admin.loadbalancer.server.port=80"
+      - "traefik.http.routers.gestionar.rule=Host(`admin.intellify.pro`)"
+      - "traefik.http.routers.gestionar.entrypoints=websecure"
+      - "traefik.http.routers.gestionar.tls.certresolver=letsencrypt"
+      - "traefik.http.services.gestionar.loadbalancer.server.port=80"
 
-# En prod se usa el Traefik externo del infra — la red debe ser la global
+# El Traefik real es el servicio "traefik" embebido en docker-compose.yml
+# (perfil "traefik") — la red traefik_public ya existe, se referencia como
+# externa acá para no intentar recrearla.
 networks:
   traefik_public:
     external: true
