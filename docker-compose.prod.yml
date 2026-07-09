@@ -1,11 +1,21 @@
 # docker-compose.prod.yml — Overrides de producción
-# Uso: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Uso: docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile traefik up -d --build
 #
 # Requiere en el servidor:
-#   - .env              → REGISTRY_IMAGE=registry.gitlab.com/NAMESPACE/PROJECT
+#   - .env              → REGISTRY_IMAGE, DB_USER, DB_PASSWORD, DB_NAME (ver .env.example)
 #   - backend/.env.prod → credenciales reales
 #   - docs/             → directorio (puede estar vacío)
-#   - Traefik externo corriendo con red traefik_public
+#
+# El Traefik en uso HOY es el servicio "traefik" embebido en docker-compose.yml
+# (perfil "traefik", container gestionar_traefik, challenge TLS-ALPN-01 vía
+# --certificatesresolvers.letsencrypt.acme.tlschallenge=true) — por eso hace
+# falta pasar --profile traefik en el comando de arriba, si no Compose lo deja
+# fuera del scope por defecto (igual sigue corriendo si ya estaba arriba, pero
+# es más prolijo incluirlo explícitamente).
+#
+# infra/traefik/ (standalone, HTTP-01) es una alternativa documentada pero NO
+# es la que corre en este servidor — no migrar a esa sin coordinarlo antes,
+# ya que implicaría liberar los puertos 80/443 del Traefik embebido primero.
 
 services:
   app:

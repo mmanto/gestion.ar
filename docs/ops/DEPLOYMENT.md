@@ -27,7 +27,7 @@ cp backend/.env.example backend/.env.prod
 nano backend/.env.prod  # completar ANTHROPIC_API_KEY, SECRET_KEY, VAPID_*, etc.
 
 # 4. Build y levantar
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile traefik up -d --build
 
 # 5. Verificar estado
 docker compose ps
@@ -50,7 +50,7 @@ cd /opt/app
 git pull origin main
 
 # Rebuild servicios modificados (el servicio del backend se llama "app", no "backend")
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build app frontend
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile traefik up -d --build app frontend
 
 # Verificar que todo levantó
 docker compose ps
@@ -171,10 +171,12 @@ Traefik.
 
 **Nuance de TLS**: el registro DNS wildcard `*.intellify.pro` es solo una
 comodidad para no tener que crear un registro DNS por cada tenant nuevo. El
-certresolver `letsencrypt` de Traefik usa HTTP-01 (no DNS-01), así que **no**
-emite certificados wildcard — cada `Host()` concreto sigue necesitando su
-propio service block acá y dispara su propia emisión de certificado la
-primera vez que recibe tráfico HTTPS.
+certresolver `letsencrypt` de Traefik en este servidor usa el challenge
+TLS-ALPN (`acme.tlschallenge=true` en el servicio `traefik` embebido de
+`docker-compose.yml`), no DNS-01, así que **no** emite certificados wildcard
+— cada `Host()` concreto sigue necesitando su propio service block acá y
+dispara su propia emisión de certificado la primera vez que recibe tráfico
+HTTPS en el puerto 443.
 
 ### Levantar los tenants ya definidos
 
