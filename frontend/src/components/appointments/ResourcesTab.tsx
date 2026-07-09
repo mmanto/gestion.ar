@@ -80,7 +80,7 @@ export const ResourcesTab = ({ botId, onResourcesChanged }: Props) => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-xl font-semibold text-gray-900">Recursos</h2>
-          <p className="text-gray-600 mt-1">Consultorios, canchas, mesas u otro recurso reservable</p>
+          <p className="text-gray-800 mt-1">Consultorios, canchas, mesas u otro recurso reservable</p>
         </div>
         <Button onClick={openCreate}>Nuevo Recurso</Button>
       </div>
@@ -92,10 +92,10 @@ export const ResourcesTab = ({ botId, onResourcesChanged }: Props) => {
       )}
 
       {loading ? (
-        <p className="text-gray-500">Cargando...</p>
+        <p className="text-gray-700">Cargando...</p>
       ) : resources.length === 0 ? (
         <Card>
-          <p className="text-gray-500 text-center">No hay recursos configurados todavía.</p>
+          <p className="text-gray-700 text-center">No hay recursos configurados todavía.</p>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -111,7 +111,7 @@ export const ResourcesTab = ({ botId, onResourcesChanged }: Props) => {
                   {resource.is_active ? 'Activo' : 'Inactivo'}
                 </span>
               </div>
-              <div className="text-sm text-gray-500 space-y-1 mb-4">
+              <div className="text-sm text-gray-700 space-y-1 mb-4">
                 {resource.category && <p>Categoría: {resource.category}</p>}
                 <p>Capacidad: {resource.capacity}</p>
                 {resource.timezone && <p>Zona horaria: {resource.timezone}</p>}

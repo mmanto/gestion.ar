@@ -45,7 +45,7 @@ const MessageBubble = ({ message, showMetadata = false }: MessageBubbleProps) =>
             <span className="text-xs text-teal-600 font-medium mb-0.5 px-1">Agente humano</span>
           )}
           {!isUser && !isAgent && (
-            <span className="text-xs text-gray-600 font-medium mb-0.5 px-1">Agente</span>
+            <span className="text-xs text-gray-800 font-medium mb-0.5 px-1">Agente</span>
           )}
           <div className={`rounded-2xl px-4 py-2 ${bubbleClass}`}>
             <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
@@ -57,10 +57,10 @@ const MessageBubble = ({ message, showMetadata = false }: MessageBubbleProps) =>
               isUser ? 'justify-end' : 'justify-start'
             }`}
           >
-            <span className="text-xs text-gray-500">{formatTime(message.timestamp)}</span>
+            <span className="text-xs text-gray-700">{formatTime(message.timestamp)}</span>
 
             {showMetadata && message.metadata && (
-              <div className="flex items-center gap-1 text-xs text-gray-500">
+              <div className="flex items-center gap-1 text-xs text-gray-700">
                 <Info className="w-3 h-3" />
                 {message.metadata.tokens_used && (
                   <span>{message.metadata.tokens_used} tokens</span>

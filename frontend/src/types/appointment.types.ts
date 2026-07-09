@@ -9,14 +9,12 @@ export interface AppointmentsConfig {
   resource_ids: string[];
   service_ids: string[];
   default_service_id: string | null;
-  enabled_in_chat: boolean;
 }
 
 export interface AppointmentsConfigUpdate {
   resource_ids?: string[];
   service_ids?: string[];
   default_service_id?: string | null;
-  enabled_in_chat?: boolean;
 }
 
 export interface Resource {

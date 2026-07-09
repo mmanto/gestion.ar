@@ -8,9 +8,12 @@ import { Button } from '../components/common/Button';
 import { useAccentTheme } from '../hooks/useAccentTheme';
 import { BotEditForm } from '../components/bots/BotEditForm';
 import botsService from '../services/bots.service';
-import chatService from '../services/chat.service';
+import tenantAdminService from '../services/tenantAdmin.service';
+import { publicService } from '../services/public.service';
+import { ModuleCard, type ModuleConfigLink } from '../components/bots/ModuleCard';
 import { formatNumber } from '../utils/formatters';
 import type { Bot, BotStats, BotStatus, BotUpdate } from '../types/bot.types';
+import type { BotModuleInfo } from '../types/tenant.types';
 
 const statusColors: Record<BotStatus, string> = {
   active: 'bg-green-200 text-green-950',
@@ -36,9 +39,40 @@ export const BotDetail = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [showQrModal, setShowQrModal] = useState(false);
-  const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
-  const [qrLoading, setQrLoading] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [modules, setModules] = useState<BotModuleInfo[]>([]);
+  const [modulesUpdating, setModulesUpdating] = useState<string | null>(null);
+
+  const loadModules = async () => {
+    if (!botId) return;
+    try {
+      setModules(await tenantAdminService.getBotModules(botId));
+    } catch (err) {
+      console.error('Error cargando módulos:', err);
+    }
+  };
+
+  useEffect(() => {
+    loadModules();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [botId]);
+
+  const handleToggleGrant = async (moduleKey: string, granted: boolean) => {
+    if (!botId) return;
+    setModulesUpdating(moduleKey);
+    try {
+      if (granted) {
+        await tenantAdminService.revokeModule(botId, moduleKey);
+      } else {
+        await tenantAdminService.grantModule(botId, moduleKey);
+      }
+      await loadModules();
+    } catch (err) {
+      console.error('Error actualizando módulo:', err);
+    } finally {
+      setModulesUpdating(null);
+    }
+  };
 
   useEffect(() => {
     const fetchBot = async () => {
@@ -98,23 +132,21 @@ export const BotDetail = () => {
     setSaveError(null);
   };
 
-  const handleGenerateQr = async () => {
+  const handleCopyChatLink = async () => {
     if (!botId) return;
-    setQrLoading(true);
     try {
-      const url = await chatService.getQrCodeUrl(botId, window.location.origin);
-      if (qrImageUrl) URL.revokeObjectURL(qrImageUrl);
-      setQrImageUrl(url);
-      setShowQrModal(true);
+      let publicUrl = window.location.origin;
+      try {
+        publicUrl = await publicService.getPublicUrl();
+      } catch {
+        // Sin URL pública configurada — se usa el origin actual como fallback
+      }
+      await navigator.clipboard.writeText(`${publicUrl}/chat/${botId}`);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
     } catch (err) {
-      console.error('Error generando QR:', err);
-    } finally {
-      setQrLoading(false);
+      console.error('Error copiando el link:', err);
     }
-  };
-
-  const handleCloseQr = () => {
-    setShowQrModal(false);
   };
 
   if (loading) {
@@ -136,12 +168,17 @@ export const BotDetail = () => {
     );
   }
 
+  const moduleConfigLinks: Record<string, ModuleConfigLink> = {
+    appointments: { path: `/bots/${bot.bot_id}/appointments`, label: 'Configurar' },
+    lead_funnel: { label: 'Configurar', onClick: () => setIsEditing(true) },
+  };
+
   return (
     <AppLayout>
       <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
           {/* Breadcrumb */}
           <nav className="mb-4">
-            <ol className="flex items-center space-x-2 text-base text-gray-700">
+            <ol className="flex items-center space-x-2 text-base text-gray-900">
               <li>
                 <Link to="/bots" className="hover:underline" style={{ color: accent }}>
                   Agentes
@@ -194,8 +231,8 @@ export const BotDetail = () => {
                     </span>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" onClick={handleGenerateQr} disabled={qrLoading}>
-                      {qrLoading ? 'Generando...' : 'QR Code'}
+                    <Button variant="outline" onClick={handleCopyChatLink}>
+                      {linkCopied ? '¡Copiado!' : 'Copiar link del chat'}
                     </Button>
                     <Button variant="primary" onClick={() => setIsEditing(true)}>
                       Editar
@@ -210,23 +247,23 @@ export const BotDetail = () => {
               {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <Card shadow="none">
-                  <p className="text-base text-gray-700 mb-1">Clientes</p>
+                  <p className="text-base text-gray-900 mb-1">Clientes</p>
                   <p className="text-3xl font-normal text-gray-900">{bot.total_clients}</p>
                 </Card>
                 <Card shadow="none">
-                  <p className="text-base text-gray-700 mb-1">Uso de tokens</p>
+                  <p className="text-base text-gray-900 mb-1">Uso de tokens</p>
                   <p className="text-3xl font-normal text-gray-900">
                     {formatNumber(stats?.total_tokens_used ?? 0)}
                   </p>
                 </Card>
                 <Card shadow="none">
-                  <p className="text-base text-gray-700 mb-1">Suscripción</p>
+                  <p className="text-base text-gray-900 mb-1">Suscripción</p>
                   <p className="text-3xl font-normal text-gray-900">Plan Pro</p>
                 </Card>
               </div>
 
               {/* Quick Actions */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <Link to={`/bots/${bot.bot_id}/channels`}>
                   <Card shadow="none">
                     <h3 className="text-lg font-normal text-gray-900 mb-2">
@@ -234,17 +271,6 @@ export const BotDetail = () => {
                     </h3>
                     <p className="text-gray-800">
                       Configura los canales de comunicacion (WhatsApp, Telegram)
-                    </p>
-                  </Card>
-                </Link>
-
-                <Link to={`/bots/${bot.bot_id}/appointments`}>
-                  <Card shadow="none">
-                    <h3 className="text-lg font-normal text-gray-900 mb-2">
-                      Turnos
-                    </h3>
-                    <p className="text-gray-800">
-                      Recursos, servicios, disponibilidad y turnos reservados
                     </p>
                   </Card>
                 </Link>
@@ -270,15 +296,15 @@ export const BotDetail = () => {
                     <h3 className="font-medium text-gray-900 mb-2">Parámetros del Modelo</h3>
                     <div className="text-base text-gray-800 bg-gray-100 p-3 rounded-lg space-y-1">
                       <div className="flex justify-between">
-                        <span className="text-gray-700">RAG habilitado:</span>
+                        <span className="text-gray-900">RAG habilitado:</span>
                         <span className="text-gray-900">{bot.config.use_rag ? 'Si' : 'No'}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-700">Max tokens:</span>
+                        <span className="text-gray-900">Max tokens:</span>
                         <span className="text-gray-900">{bot.config.max_tokens}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-700">Temperatura:</span>
+                        <span className="text-gray-900">Temperatura:</span>
                         <span className="text-gray-900">{bot.config.temperature}</span>
                       </div>
                     </div>
@@ -313,11 +339,11 @@ export const BotDetail = () => {
                     <h3 className="font-medium text-gray-900 mb-2">Rate Limiting</h3>
                     <div className="text-base text-gray-800 bg-gray-100 p-3 rounded-lg space-y-1">
                       <p>
-                        <span className="text-gray-700">Mensajes:</span>{' '}
+                        <span className="text-gray-900">Mensajes:</span>{' '}
                         {bot.config.rate_limit_messages}
                       </p>
                       <p>
-                        <span className="text-gray-700">Ventana:</span>{' '}
+                        <span className="text-gray-900">Ventana:</span>{' '}
                         {bot.config.rate_limit_window} segundos
                       </p>
                     </div>
@@ -330,7 +356,7 @@ export const BotDetail = () => {
                       </h3>
                       <div className="text-base text-gray-800 bg-gray-100 p-3 rounded-lg">
                         <p>
-                          <span className="text-gray-700">Resultados:</span>{' '}
+                          <span className="text-gray-900">Resultados:</span>{' '}
                           {bot.config.rag_results_count}
                         </p>
                       </div>
@@ -349,50 +375,34 @@ export const BotDetail = () => {
                 </div>
               </Card>
 
+              {/* Módulos */}
+              <Card className="mb-6" shadow="none">
+                <h2 className="text-xl font-normal text-gray-900 mb-1">Módulos</h2>
+                <p className="text-gray-900 mb-4">
+                  Otorgá los módulos que este agente puede usar. El tenant sólo podrá
+                  habilitar/deshabilitar los módulos ya otorgados acá.
+                </p>
+                <div className="space-y-3">
+                  {modules.map((m) => (
+                    <ModuleCard
+                      key={m.module_key}
+                      module={m}
+                      onToggleGrant={handleToggleGrant}
+                      updating={modulesUpdating === m.module_key}
+                      configLink={moduleConfigLinks[m.module_key]}
+                    />
+                  ))}
+                </div>
+              </Card>
+
               {/* Metadata */}
-              <div className="text-base text-gray-700">
+              <div className="text-base text-gray-900">
                 <p>Creado: {new Date(bot.created_at).toLocaleDateString()}</p>
                 <p>Actualizado: {new Date(bot.updated_at).toLocaleDateString()}</p>
               </div>
             </>
           )}
       </div>
-
-      {/* Modal QR Code */}
-      {showQrModal && qrImageUrl && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-          onClick={handleCloseQr}
-        >
-          <div
-            className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-semibold text-gray-900 mb-1 text-center">
-              Chat QR — {bot?.name}
-            </h3>
-            <p className="text-sm text-gray-700 text-center mb-5">
-              Escanea para iniciar una conversación
-            </p>
-            <img
-              src={qrImageUrl}
-              alt="QR Code"
-              className="mx-auto w-56 h-56 object-contain rounded-lg"
-            />
-            <p className="text-xs text-gray-500 text-center mt-3 break-all">
-              {window.location.origin}/chat/{botId}
-            </p>
-            <div className="flex gap-3 mt-6">
-              <a href={qrImageUrl} download={`qr-${botId}.png`} className="flex-1">
-                <Button variant="primary" fullWidth>Descargar PNG</Button>
-              </a>
-              <Button variant="outline" fullWidth onClick={handleCloseQr}>
-                Cerrar
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </AppLayout>
   );
 };

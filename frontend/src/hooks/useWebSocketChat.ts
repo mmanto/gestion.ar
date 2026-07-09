@@ -7,6 +7,7 @@ interface UseWebSocketChatReturn {
   isTyping: boolean;
   error: string | null;
   botName: string;
+  tenantName: string;
   sendMessage: (content: string) => void;
 }
 
@@ -52,6 +53,7 @@ export function useWebSocketChat(id: string, mode: 'bot' | 'channel' = 'bot'): U
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [botName, setBotName] = useState('');
+  const [tenantName, setTenantName] = useState('');
 
   const wsUrl = useMemo(() => buildWsUrl(id, mode), [id, mode]);
 
@@ -84,6 +86,7 @@ export function useWebSocketChat(id: string, mode: 'bot' | 'channel' = 'bot'): U
       switch (data.type) {
         case 'welcome': {
           setBotName(data.bot_name);
+          setTenantName(data.tenant_name);
           const msgs: ChatMessage[] = [];
 
           if (data.history && data.history.length > 0) {
@@ -192,5 +195,5 @@ export function useWebSocketChat(id: string, mode: 'bot' | 'channel' = 'bot'): U
     wsRef.current.send(JSON.stringify(payload));
   }, []);
 
-  return { messages, isConnected, isTyping, error, botName, sendMessage };
+  return { messages, isConnected, isTyping, error, botName, tenantName, sendMessage };
 }

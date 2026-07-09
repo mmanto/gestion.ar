@@ -17,7 +17,7 @@ function BotCard({ bot, isMobile, publicUrl }: { bot: PublicBotWithChannels; isM
               d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z" />
           </svg>
         </div>
-        <p className="mt-1 text-sm text-gray-500">Asistente en comunicación</p>
+        <p className="mt-1 text-sm text-gray-700">Asistente en comunicación</p>
       </div>
 
       {isMobile ? (
@@ -32,9 +32,9 @@ function BotCard({ bot, isMobile, publicUrl }: { bot: PublicBotWithChannels; isM
           <img
             src={publicService.getQrCodeUrl(primaryChannel.channel_id, publicUrl)}
             alt={`QR code para chatear con ${bot.name}`}
-            className="w-48 h-48 rounded-lg border border-gray-100"
+            className="w-48 h-48 rounded-lg border border-gray-200"
           />
-          <p className="text-sm text-gray-500 text-center">
+          <p className="text-sm text-gray-700 text-center">
             Escanea el código con tu teléfono para chatear
           </p>
         </div>
@@ -109,7 +109,7 @@ export function UserLandingPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-500 text-lg">{error}</p>
+          <p className="text-gray-700 text-lg">{error}</p>
         </div>
       </div>
     );
@@ -119,7 +119,7 @@ export function UserLandingPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-500 text-lg">No hay servicios disponibles en este momento.</p>
+          <p className="text-gray-700 text-lg">No hay servicios disponibles en este momento.</p>
         </div>
       </div>
     );

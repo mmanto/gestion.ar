@@ -34,7 +34,7 @@ export const Card: React.FC<CardProps> = ({
   return (
     <div
       className={`
-        bg-white rounded-lg border border-gray-200
+        bg-white rounded-lg border border-gray-300
         ${paddingStyles[padding]}
         ${shadowStyles[shadow]}
         ${hoverStyles}

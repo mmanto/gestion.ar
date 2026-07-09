@@ -62,11 +62,11 @@ const ConversationList = ({
           <tr>
             <td>
               <EmptyState
-                icon={<MessageSquare className="w-8 h-8 text-gray-600" />}
+                icon={<MessageSquare className="w-8 h-8 text-gray-800" />}
                 title="No hay conversaciones"
                 description="No se encontraron conversaciones con los filtros aplicados"
                 titleClassName="text-gray-900 text-xl"
-                descriptionClassName="text-gray-700 text-base"
+                descriptionClassName="text-gray-900 text-base"
               />
             </td>
           </tr>
@@ -99,7 +99,7 @@ const ConversationList = ({
             >
               <TableCell>
                 <div className="font-medium text-gray-900">{conversation.user_id}</div>
-                <div className="text-sm text-gray-700">{conversation.conversation_id.slice(0, 8)}...</div>
+                <div className="text-sm text-gray-900">{conversation.conversation_id.slice(0, 8)}...</div>
               </TableCell>
               <TableCell>
                 {getPlatformBadge(conversation.metadata?.source)}
@@ -118,7 +118,7 @@ const ConversationList = ({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 bg-white border border-gray-200 sm:px-6 rounded-lg">
+        <div className="flex items-center justify-between px-4 py-3 bg-white border border-gray-300 sm:px-6 rounded-lg">
           <div className="flex justify-between items-center w-full">
             <div>
               <p className="text-base text-gray-900">

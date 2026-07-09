@@ -21,7 +21,7 @@ export const Landing: React.FC = () => {
   if (error || !tenant) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <p className="text-gray-500 text-center max-w-md">
+        <p className="text-gray-700 text-center max-w-md">
           {error || 'No se pudo cargar este sitio.'}
         </p>
       </div>
@@ -32,7 +32,7 @@ export const Landing: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <header className="border-b border-gray-100 px-6 py-4 flex items-center gap-3">
+      <header className="border-b border-gray-200 px-6 py-4 flex items-center gap-3">
         {tenant.branding.logo_url ? (
           <img src={tenant.branding.logo_url} alt={tenant.name} className="h-10 w-10 rounded object-contain" />
         ) : (
@@ -52,7 +52,7 @@ export const Landing: React.FC = () => {
             {tenant.name}
           </h1>
           {tenant.branding.tagline && (
-            <p className="text-lg text-gray-600 mb-8">{tenant.branding.tagline}</p>
+            <p className="text-lg text-gray-800 mb-8">{tenant.branding.tagline}</p>
           )}
           <Link
             to="/login"
@@ -64,7 +64,7 @@ export const Landing: React.FC = () => {
         </div>
       </main>
 
-      <footer className="border-t border-gray-100 px-6 py-4 text-center text-xs text-gray-400">
+      <footer className="border-t border-gray-200 px-6 py-4 text-center text-xs text-gray-400">
         {tenant.name} © {new Date().getFullYear()}
       </footer>
     </div>

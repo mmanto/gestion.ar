@@ -1,17 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Users } from 'lucide-react';
+import { Users, MessageCircle } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { LoadingPage } from '../components/common/Spinner';
 import { PageHeader } from '../components/common/PageHeader';
 import { Alert } from '../components/common/Alert';
 import { EmptyState } from '../components/common/EmptyState';
 import { Button } from '../components/common/Button';
+import { Drawer } from '../components/common/Drawer';
 import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '../components/common/Table';
+import MessagesList from '../components/messages/MessagesList';
 import { useAuth } from '../hooks/useAuth';
 import clientsService from '../services/clients.service';
 import botsService from '../services/bots.service';
 import type { Client, ClientStatus, ClientFilters } from '../types/client.types';
 import type { TenantBotSummary } from '../types/bot.types';
+import type { ConversationMessage } from '../types/conversation.types';
 
 const ScoreBadge = ({ score }: { score: number }) => {
   const color =
@@ -58,6 +61,13 @@ export const Clients = () => {
   const [pages, setPages] = useState(0);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState<ClientFilters>({ limit: 20 });
+
+  // Drawer de conversación
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [conversationMessages, setConversationMessages] = useState<ConversationMessage[]>([]);
+  const [conversationLoading, setConversationLoading] = useState(false);
+  const [conversationError, setConversationError] = useState<string | null>(null);
 
   // Carga bots para mostrar nombre del bot junto a cada cliente
   useEffect(() => {
@@ -117,6 +127,30 @@ export const Clients = () => {
     }
   };
 
+  const handleOpenConversation = async (client: Client) => {
+    setSelectedClient(client);
+    setDrawerOpen(true);
+    setConversationMessages([]);
+    setConversationError(null);
+    setConversationLoading(true);
+    try {
+      const response = await clientsService.getClientConversations(client.bot_id, client.client_id, { limit: 50 });
+      const allMessages = response.conversations
+        .flatMap((conv) => conv.messages)
+        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      setConversationMessages(allMessages);
+    } catch (err) {
+      setConversationError('Error cargando la conversación');
+      console.error('Error fetching client conversations:', err);
+    } finally {
+      setConversationLoading(false);
+    }
+  };
+
+  const handleCloseDrawer = () => {
+    setDrawerOpen(false);
+  };
+
   const handleStatusFilter = (newStatus: ClientStatus | '') => {
     setPage(1);
     setFilters((prev) => ({ ...prev, status: newStatus }));
@@ -172,11 +206,11 @@ export const Clients = () => {
                 <tr>
                   <td colSpan={8}>
                     <EmptyState
-                      icon={<Users className="w-8 h-8 text-gray-600" />}
+                      icon={<Users className="w-8 h-8 text-gray-800" />}
                       title="No hay contactos todavía"
                       description="Los clientes aparecerán aquí cuando interactúen con tus agentes"
                       titleClassName="text-gray-900 text-xl"
-                      descriptionClassName="text-gray-700 text-base"
+                      descriptionClassName="text-gray-900 text-base"
                     />
                   </td>
                 </tr>
@@ -247,14 +281,23 @@ export const Clients = () => {
                       })}
                     </TableCell>
                     <TableCell align="right" className="font-medium">
-                      {canBlock && (
-                        <Button
-                          variant="outline"
-                          onClick={() => handleToggleBlock(client)}
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleOpenConversation(client)}
+                          title="Ver conversación"
+                          className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
                         >
-                          {client.status === 'blocked' ? 'Desbloquear' : 'Bloquear'}
-                        </Button>
-                      )}
+                          <MessageCircle className="w-4 h-4" />
+                        </button>
+                        {canBlock && (
+                          <Button
+                            variant="outline"
+                            onClick={() => handleToggleBlock(client)}
+                          >
+                            {client.status === 'blocked' ? 'Desbloquear' : 'Bloquear'}
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -285,6 +328,24 @@ export const Clients = () => {
             </div>
           )}
         </div>
+
+        <Drawer
+          open={drawerOpen}
+          onClose={handleCloseDrawer}
+          title={selectedClient ? selectedClient.name || selectedClient.external_id : ''}
+        >
+          {conversationLoading ? (
+            <div className="flex-1 flex items-center justify-center">
+              <p className="text-gray-700 text-sm">Cargando conversación...</p>
+            </div>
+          ) : conversationError ? (
+            <div className="flex-1 flex items-center justify-center px-6">
+              <p className="text-red-600 text-sm">{conversationError}</p>
+            </div>
+          ) : (
+            <MessagesList messages={conversationMessages} />
+          )}
+        </Drawer>
     </AppLayout>
   );
 };

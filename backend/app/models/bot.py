@@ -112,6 +112,10 @@ class BotCreate(BotBase):
     tenant_id: str = Field(..., description="Tenant para el que se configura este bot")
     config: Optional[BotConfig] = None
     channels: Optional[List[BotChannelConfig]] = None
+    module_keys: Optional[List[str]] = Field(
+        default=None,
+        description="Módulos a otorgar (granted) al bot en el momento de creación, ej. ['appointments']",
+    )
 
 
 class BotUpdate(BaseModel):

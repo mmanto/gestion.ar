@@ -4,11 +4,36 @@
 
 export type TenantStatus = 'active' | 'suspended' | 'trial';
 export type TenantUserRole = 'admin' | 'operativo';
+export type PlanPeriodicity = 'monthly' | 'annual';
 
 export interface TenantBranding {
   logo_url?: string;
   primary_color?: string;
   tagline?: string;
+}
+
+export interface Plan {
+  plan_id: string;
+  name: string;
+  description?: string | null;
+  amount: number;
+  periodicity: PlanPeriodicity;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PlanCreate {
+  name: string;
+  description?: string;
+  amount: number;
+  periodicity: PlanPeriodicity;
+}
+
+export interface PlanUpdate {
+  name?: string;
+  description?: string;
+  amount?: number;
+  periodicity?: PlanPeriodicity;
 }
 
 export interface Tenant {
@@ -17,6 +42,7 @@ export interface Tenant {
   domain?: string | null;
   status: TenantStatus;
   branding: TenantBranding;
+  plan_id: string;
   created_at: string;
   updated_at: string;
 }
@@ -26,6 +52,7 @@ export interface TenantCreate {
   domain?: string;
   status?: TenantStatus;
   branding?: TenantBranding;
+  plan_id: string;
 }
 
 export interface TenantUpdate {
@@ -33,6 +60,7 @@ export interface TenantUpdate {
   domain?: string;
   status?: TenantStatus;
   branding?: TenantBranding;
+  plan_id?: string;
 }
 
 export interface TenantsResponse {

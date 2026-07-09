@@ -15,7 +15,7 @@ export const TemplatePicker: React.FC = () => {
             className={`flex-1 text-xs font-medium py-1.5 rounded-md border transition-colors ${
               templateId === t.id
                 ? 'border-primary text-primary bg-primary-50'
-                : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
             }`}
           >
             {t.label}

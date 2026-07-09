@@ -8,7 +8,7 @@ import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import tenantAdminService from '../../services/tenantAdmin.service';
 import botsService from '../../services/bots.service';
-import type { Tenant, TenantStatus, TenantUser, TenantUserRole, BotModuleInfo, ModuleInfo } from '../../types/tenant.types';
+import type { Plan, Tenant, TenantStatus, TenantUser, TenantUserRole, BotModuleInfo, ModuleInfo } from '../../types/tenant.types';
 import type { Bot } from '../../types/bot.types';
 
 const statusLabels: Record<TenantStatus, string> = {
@@ -35,21 +35,24 @@ export const TenantDetail = () => {
   const [expandedBotId, setExpandedBotId] = useState<string | null>(null);
   const [botModules, setBotModules] = useState<Record<string, BotModuleInfo[]>>({});
   const [allModules, setAllModules] = useState<ModuleInfo[]>([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
 
   const load = useCallback(async () => {
     if (!tenantId) return;
     try {
       setLoading(true);
-      const [tenantData, usersData, botsData, modulesData] = await Promise.all([
+      const [tenantData, usersData, botsData, modulesData, plansData] = await Promise.all([
         tenantAdminService.getTenant(tenantId),
         tenantAdminService.listUsers(tenantId, 1, 100),
         botsService.getBots({ tenant_id: tenantId, limit: 100 }),
         tenantAdminService.listModules(),
+        tenantAdminService.listPlans(),
       ]);
       setTenant(tenantData);
       setUsers(usersData.users);
       setBots(botsData.bots);
       setAllModules(modulesData);
+      setPlans(plansData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error cargando el tenant');
     } finally {
@@ -64,6 +67,12 @@ export const TenantDetail = () => {
   const handleStatusChange = async (status: TenantStatus) => {
     if (!tenantId) return;
     const updated = await tenantAdminService.updateTenant(tenantId, { status });
+    setTenant(updated);
+  };
+
+  const handlePlanChange = async (planId: string) => {
+    if (!tenantId) return;
+    const updated = await tenantAdminService.updateTenant(tenantId, { plan_id: planId });
     setTenant(updated);
   };
 
@@ -132,7 +141,7 @@ export const TenantDetail = () => {
           titleClassName="font-light uppercase tracking-[0.08em]"
           descriptionClassName="text-gray-800"
           actions={
-            <Link to="/admin/tenants" className="text-sm text-gray-600 hover:underline">
+            <Link to="/admin/tenants" className="text-sm text-gray-800 hover:underline">
               ← Volver a Tenants
             </Link>
           }
@@ -151,13 +160,29 @@ export const TenantDetail = () => {
                 className={`px-3 py-1.5 rounded-full text-sm font-medium border ${
                   tenant.status === s
                     ? 'bg-gray-900 text-white border-gray-900'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    : 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50'
                 }`}
               >
                 {statusLabels[s]}
               </button>
             ))}
           </div>
+        </Card>
+
+        {/* Plan */}
+        <Card shadow="none" className="mb-8">
+          <h3 className="text-base font-semibold text-gray-900 mb-3">Plan</h3>
+          <select
+            value={tenant.plan_id}
+            onChange={(e) => handlePlanChange(e.target.value)}
+            className="w-full max-w-sm px-3 py-2 border border-gray-300 rounded-lg"
+          >
+            {plans.map((p) => (
+              <option key={p.plan_id} value={p.plan_id}>
+                {p.name} — ${p.amount.toLocaleString('es-AR')}/{p.periodicity === 'monthly' ? 'mes' : 'año'}
+              </option>
+            ))}
+          </select>
         </Card>
 
         {/* Usuarios */}
@@ -169,7 +194,7 @@ export const TenantDetail = () => {
         </div>
         <Card shadow="none" padding="none" className="mb-8 overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600 text-left">
+            <thead className="bg-gray-50 text-gray-800 text-left">
               <tr>
                 <th className="px-4 py-2">Usuario</th>
                 <th className="px-4 py-2">Email</th>
@@ -180,10 +205,10 @@ export const TenantDetail = () => {
             </thead>
             <tbody>
               {users.map((u) => (
-                <tr key={u.username} className="border-t border-gray-100">
+                <tr key={u.username} className="border-t border-gray-200">
                   <td className="px-4 py-2 font-medium text-gray-900">{u.username}</td>
-                  <td className="px-4 py-2 text-gray-700">{u.email || '—'}</td>
-                  <td className="px-4 py-2 text-gray-700 capitalize">
+                  <td className="px-4 py-2 text-gray-900">{u.email || '—'}</td>
+                  <td className="px-4 py-2 text-gray-900 capitalize">
                     {u.role === 'admin' ? 'UsuarioAdmin' : 'Usuario'}
                   </td>
                   <td className="px-4 py-2">
@@ -192,7 +217,7 @@ export const TenantDetail = () => {
                     </span>
                   </td>
                   <td className="px-4 py-2 text-right whitespace-nowrap">
-                    <button onClick={() => handleToggleDisabled(u)} className="text-xs text-gray-600 hover:underline mr-3">
+                    <button onClick={() => handleToggleDisabled(u)} className="text-xs text-gray-800 hover:underline mr-3">
                       {u.disabled ? 'Habilitar' : 'Deshabilitar'}
                     </button>
                     <button onClick={() => handleDeleteUser(u.username)} className="text-xs text-red-600 hover:underline">
@@ -212,17 +237,18 @@ export const TenantDetail = () => {
           </table>
         </Card>
 
-        {/* Bots + módulos */}
-        <h3 className="text-base font-semibold text-gray-900 mb-3 mt-8">Bots ({bots.length})</h3>
+        {/* Agente + módulos */}
+        <h3 className="text-base font-semibold text-gray-900 mb-3 mt-8">Agente</h3>
         <div className="space-y-3">
           {bots.map((bot) => (
             <Card key={bot.bot_id} shadow="none">
               <div className="flex items-center justify-between">
                 <div>
-                  <Link to={`/bots/${bot.bot_id}`} className="font-medium text-gray-900 hover:underline">
-                    {bot.name}
+                  <span className="font-medium text-gray-900">{bot.name}</span>
+                  <span className="ml-2 text-xs text-gray-700">{bot.business_type}</span>
+                  <Link to={`/bots/${bot.bot_id}`} className="ml-2 text-xs text-primary-700 hover:underline">
+                    Ver agente
                   </Link>
-                  <span className="ml-2 text-xs text-gray-500">{bot.business_type}</span>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => toggleBotModules(bot.bot_id)}>
                   {expandedBotId === bot.bot_id ? 'Ocultar módulos' : 'Módulos'}
@@ -230,7 +256,7 @@ export const TenantDetail = () => {
               </div>
 
               {expandedBotId === bot.bot_id && (
-                <div className="mt-4 border-t border-gray-100 pt-4 space-y-2">
+                <div className="mt-4 border-t border-gray-200 pt-4 space-y-2">
                   {(botModules[bot.bot_id] || allModules.map((m) => ({
                     bot_id: bot.bot_id, module_key: m.module_key, granted: false, enabled: false,
                     module_name: m.name, module_description: m.description,
@@ -238,7 +264,7 @@ export const TenantDetail = () => {
                     <div key={mod.module_key} className="flex items-center justify-between text-sm">
                       <div>
                         <p className="font-medium text-gray-900">{mod.module_name || mod.module_key}</p>
-                        {mod.module_description && <p className="text-gray-500 text-xs">{mod.module_description}</p>}
+                        {mod.module_description && <p className="text-gray-700 text-xs">{mod.module_description}</p>}
                         {mod.enabled && <span className="text-xs text-green-700">habilitado por el tenant</span>}
                       </div>
                       <Button
@@ -257,7 +283,7 @@ export const TenantDetail = () => {
           {bots.length === 0 && (
             <Card shadow="none">
               <p className="text-center text-gray-400 py-6">
-                Este tenant todavía no tiene bots. Creá uno desde{' '}
+                Este tenant todavía no tiene un agente asociado. Creá uno desde{' '}
                 <Link to="/bots" className="underline">Agentes</Link>.
               </p>
             </Card>
@@ -271,7 +297,7 @@ export const TenantDetail = () => {
             <h2 className="text-xl font-bold text-gray-900 mb-4">Nuevo usuario</h2>
             <form onSubmit={handleCreateUser}>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Usuario *</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">Usuario *</label>
                 <input
                   type="text"
                   value={newUser.username}
@@ -281,7 +307,7 @@ export const TenantDetail = () => {
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña *</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">Contraseña *</label>
                 <input
                   type="password"
                   value={newUser.password}
@@ -292,7 +318,7 @@ export const TenantDetail = () => {
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">Email</label>
                 <input
                   type="email"
                   value={newUser.email}
@@ -301,7 +327,7 @@ export const TenantDetail = () => {
                 />
               </div>
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Rol *</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">Rol *</label>
                 <select
                   value={newUser.role}
                   onChange={(e) => setNewUser({ ...newUser, role: e.target.value as TenantUserRole })}

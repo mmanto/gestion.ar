@@ -98,7 +98,7 @@ export const AppointmentsTab = ({ botId }: Props) => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-xl font-semibold text-gray-900">Turnos</h2>
-          <p className="text-gray-600 mt-1">Turnos reservados para este agente</p>
+          <p className="text-gray-800 mt-1">Turnos reservados para este agente</p>
         </div>
         <Button onClick={() => setShowModal(true)} disabled={resources.length === 0}>
           Cargar turno manual
@@ -139,16 +139,16 @@ export const AppointmentsTab = ({ botId }: Props) => {
       )}
 
       {loading ? (
-        <p className="text-gray-500">Cargando...</p>
+        <p className="text-gray-700">Cargando...</p>
       ) : appointments.length === 0 ? (
         <Card>
-          <p className="text-gray-500 text-center">No hay turnos que coincidan con el filtro.</p>
+          <p className="text-gray-700 text-center">No hay turnos que coincidan con el filtro.</p>
         </Card>
       ) : (
         <Card padding="none">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-gray-500 border-b border-gray-100">
+              <tr className="text-left text-gray-700 border-b border-gray-200">
                 <th className="py-3 px-4">Inicio</th>
                 <th className="py-3 px-4">Fin</th>
                 <th className="py-3 px-4">Cliente</th>
@@ -203,7 +203,7 @@ export const AppointmentsTab = ({ botId }: Props) => {
           >
             Anterior
           </button>
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-gray-800">
             Página {page} de {pages} ({total} turnos)
           </span>
           <button
@@ -222,7 +222,7 @@ export const AppointmentsTab = ({ botId }: Props) => {
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Cargar turno manual</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Recurso</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">Recurso</label>
                 <select
                   value={formData.resource_id}
                   onChange={(e) => setFormData({ ...formData, resource_id: e.target.value })}
@@ -237,7 +237,7 @@ export const AppointmentsTab = ({ botId }: Props) => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Servicio (opcional)</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">Servicio (opcional)</label>
                 <select
                   value={formData.service_id}
                   onChange={(e) => setFormData({ ...formData, service_id: e.target.value })}

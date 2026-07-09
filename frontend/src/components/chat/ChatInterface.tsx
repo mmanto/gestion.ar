@@ -16,7 +16,7 @@ interface ChatInterfaceProps {
 export function ChatInterface({ botId, channelId }: ChatInterfaceProps) {
   const id = channelId ?? botId ?? '';
   const mode = channelId ? 'channel' : 'bot';
-  const { messages, isConnected, isTyping, error, botName, sendMessage } =
+  const { messages, isConnected, isTyping, error, tenantName, sendMessage } =
     useWebSocketChat(id, mode);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -25,9 +25,19 @@ export function ChatInterface({ botId, channelId }: ChatInterfaceProps) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
+  // Título de la pestaña/PWA = nombre del tenant, no "Asistente" genérico
+  useEffect(() => {
+    if (!tenantName) return;
+    const previousTitle = document.title;
+    document.title = tenantName;
+    return () => {
+      document.title = previousTitle;
+    };
+  }, [tenantName]);
+
   return (
     <div className="flex flex-col h-screen max-w-2xl mx-auto w-full bg-white shadow-xl">
-      <ChatHeader botName={botName} isConnected={isConnected} />
+      <ChatHeader tenantName={tenantName} isConnected={isConnected} />
 
       {/* Error banner */}
       {error && (
@@ -70,7 +80,7 @@ export function ChatInterface({ botId, channelId }: ChatInterfaceProps) {
                   className={`rounded-2xl px-4 py-2.5 text-sm shadow-sm whitespace-pre-wrap break-words ${
                     isUser
                       ? 'bg-indigo-600 text-white rounded-br-sm'
-                      : 'bg-white text-gray-800 border border-gray-200 rounded-bl-sm'
+                      : 'bg-white text-gray-800 border border-gray-300 rounded-bl-sm'
                   }`}
                 >
                   {msg.content}

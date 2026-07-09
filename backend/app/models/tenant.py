@@ -26,6 +26,7 @@ class TenantCreate(BaseModel):
     domain: Optional[str] = Field(None, description="Dominio propio del tenant, ej. ius.com.mx")
     status: TenantStatus = TenantStatus.ACTIVE
     branding: Dict[str, Any] = Field(default_factory=dict)
+    plan_id: str = Field(..., description="Plan de suscripción al que queda dado de alta el tenant")
 
 
 class TenantUpdate(BaseModel):
@@ -33,6 +34,7 @@ class TenantUpdate(BaseModel):
     domain: Optional[str] = None
     status: Optional[TenantStatus] = None
     branding: Optional[Dict[str, Any]] = None
+    plan_id: Optional[str] = None
 
 
 class Tenant(BaseModel):
@@ -41,6 +43,7 @@ class Tenant(BaseModel):
     domain: Optional[str] = None
     status: TenantStatus
     branding: Dict[str, Any] = Field(default_factory=dict)
+    plan_id: str
     created_at: str
     updated_at: str
 

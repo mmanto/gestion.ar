@@ -45,7 +45,7 @@ export const Spinner: React.FC<SpinnerProps> = ({
         ></path>
       </svg>
       {message && (
-        <p className="mt-2 text-sm text-gray-600">{message}</p>
+        <p className="mt-2 text-sm text-gray-800">{message}</p>
       )}
     </div>
   );

@@ -44,7 +44,7 @@ const MessagesList = ({ messages, showMetadata = false }: MessagesListProps) => 
 
   if (messages.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-500">
+      <div className="flex items-center justify-center h-64 text-gray-700">
         <div className="text-center">
           <p className="text-lg font-medium">No hay mensajes en esta conversación</p>
           <p className="text-sm mt-1">Los mensajes aparecerán aquí cuando se envíen.</p>
@@ -66,7 +66,7 @@ const MessagesList = ({ messages, showMetadata = false }: MessagesListProps) => 
             {/* Date Separator */}
             {showDateSeparator && (
               <div className="flex items-center justify-center my-6">
-                <div className="bg-gray-200 text-gray-600 text-xs font-medium px-3 py-1 rounded-full">
+                <div className="bg-gray-200 text-gray-800 text-xs font-medium px-3 py-1 rounded-full">
                   {formatDateSeparator(message.timestamp)}
                 </div>
               </div>

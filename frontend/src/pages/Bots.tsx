@@ -10,7 +10,7 @@ import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { useBots } from '../hooks/useBots';
 import type { Bot, BotStatus } from '../types/bot.types';
-import type { Tenant } from '../types/tenant.types';
+import type { ModuleInfo, Tenant } from '../types/tenant.types';
 import botsService from '../services/bots.service';
 import tenantAdminService from '../services/tenantAdmin.service';
 
@@ -33,6 +33,8 @@ export const Bots = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [modules, setModules] = useState<ModuleInfo[]>([]);
+  const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const [newBot, setNewBot] = useState({
     tenant_id: '',
     name: '',
@@ -42,7 +44,14 @@ export const Bots = () => {
 
   useEffect(() => {
     tenantAdminService.listTenants(1, 200).then((r) => setTenants(r.tenants)).catch(() => {});
+    tenantAdminService.listModules().then(setModules).catch(() => {});
   }, []);
+
+  const toggleModule = (moduleKey: string) => {
+    setSelectedModules((prev) =>
+      prev.includes(moduleKey) ? prev.filter((k) => k !== moduleKey) : [...prev, moduleKey]
+    );
+  };
 
   const handleCreateBot = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,9 +59,10 @@ export const Bots = () => {
 
     try {
       setCreating(true);
-      await botsService.createBot(newBot);
+      await botsService.createBot({ ...newBot, module_keys: selectedModules });
       setShowCreateModal(false);
       setNewBot({ tenant_id: '', name: '', description: '', business_type: '' });
+      setSelectedModules([]);
       refetch();
     } catch (err) {
       console.error('Error creating bot:', err);
@@ -86,11 +96,11 @@ export const Bots = () => {
           {bots.length === 0 ? (
             <Card shadow="none">
               <EmptyState
-                icon={<BotIcon className="w-8 h-8 text-gray-600" />}
+                icon={<BotIcon className="w-8 h-8 text-gray-800" />}
                 title="Todavía no tenés agentes"
                 description="Creá tu primer agente para empezar"
                 titleClassName="text-gray-900 text-xl"
-                descriptionClassName="text-gray-700 text-base"
+                descriptionClassName="text-gray-900 text-base"
                 action={
                   <Button variant="primary" onClick={() => setShowCreateModal(true)}>
                     Crear tu primer agente
@@ -133,19 +143,19 @@ export const Bots = () => {
                         <p className="font-semibold text-gray-900">
                           {bot.total_clients}
                         </p>
-                        <p className="text-gray-700">Clientes</p>
+                        <p className="text-gray-900">Clientes</p>
                       </div>
                       <div>
                         <p className="font-semibold text-gray-900">
                           {bot.total_conversations}
                         </p>
-                        <p className="text-gray-700">Chats</p>
+                        <p className="text-gray-900">Chats</p>
                       </div>
                       <div>
                         <p className="font-semibold text-gray-900">
                           {bot.total_messages}
                         </p>
-                        <p className="text-gray-700">Mensajes</p>
+                        <p className="text-gray-900">Mensajes</p>
                       </div>
                     </div>
                   </Card>
@@ -177,7 +187,7 @@ export const Bots = () => {
             <h2 className="text-xl font-bold text-gray-900 mb-4">Crear Nuevo Agente</h2>
             <form onSubmit={handleCreateBot}>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-900 mb-1">
                   Tenant *
                 </label>
                 <select
@@ -193,7 +203,7 @@ export const Bots = () => {
                 </select>
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-900 mb-1">
                   Nombre del Agente *
                 </label>
                 <input
@@ -206,7 +216,7 @@ export const Bots = () => {
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-900 mb-1">
                   Tipo de Negocio *
                 </label>
                 <input
@@ -221,7 +231,7 @@ export const Bots = () => {
                 />
               </div>
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-900 mb-1">
                   Descripción
                 </label>
                 <textarea
@@ -234,6 +244,34 @@ export const Bots = () => {
                   placeholder="Descripción opcional del agente"
                 />
               </div>
+              {modules.length > 0 && (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-900 mb-1">
+                    Módulos a otorgar
+                  </label>
+                  <div className="space-y-2">
+                    {modules.map((m) => (
+                      <label key={m.module_key} className="flex items-start gap-2 text-sm text-gray-800">
+                        <input
+                          type="checkbox"
+                          className="mt-1"
+                          checked={selectedModules.includes(m.module_key)}
+                          onChange={() => toggleModule(m.module_key)}
+                        />
+                        <span>
+                          {m.name}
+                          {m.description && (
+                            <span className="block text-xs text-gray-700">{m.description}</span>
+                          )}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-700 mt-1">
+                    El tenant sólo podrá habilitar/deshabilitar los módulos otorgados acá.
+                  </p>
+                </div>
+              )}
               <div className="flex justify-end gap-3">
                 <Button type="button" variant="outline" onClick={() => setShowCreateModal(false)}>
                   Cancelar

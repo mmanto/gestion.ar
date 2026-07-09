@@ -35,7 +35,7 @@ export function ChatInputBar({ onSend, disabled = false }: ChatInputBarProps) {
   };
 
   return (
-    <div className="flex items-end gap-2 px-4 py-3 bg-white border-t border-gray-200">
+    <div className="flex items-end gap-2 px-4 py-3 bg-white border-t border-gray-300">
       <textarea
         ref={textareaRef}
         value={text}

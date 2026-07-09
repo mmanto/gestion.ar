@@ -97,7 +97,7 @@ export default function PwaSubscriptions() {
         <div className="flex items-center gap-3 mb-6">
           <button
             onClick={() => navigate(`/bots/${botId}/channels`)}
-            className="text-gray-600 hover:text-gray-800 transition-colors"
+            className="text-gray-800 hover:text-gray-800 transition-colors"
             aria-label="Volver"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -118,12 +118,12 @@ export default function PwaSubscriptions() {
           {/* Estadísticas */}
           {stats && (
             <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <p className="text-sm text-gray-700 uppercase tracking-wide">Suscriptores activos</p>
+              <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4">
+                <p className="text-sm text-gray-900 uppercase tracking-wide">Suscriptores activos</p>
                 <p className="text-3xl font-normal mt-1" style={{ color: accent }}>{stats.active_subscriptions}</p>
               </div>
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <p className="text-sm text-gray-700 uppercase tracking-wide">Total histórico</p>
+              <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4">
+                <p className="text-sm text-gray-900 uppercase tracking-wide">Total histórico</p>
                 <p className="text-3xl font-normal text-gray-800 mt-1">{stats.total_subscriptions}</p>
               </div>
             </div>
@@ -131,11 +131,11 @@ export default function PwaSubscriptions() {
 
           {/* Formulario de envío */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-5">
               <h2 className="text-lg font-normal text-gray-900 mb-4">Enviar notificación</h2>
               <form onSubmit={handleSendNotification} className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">Título</label>
                   <input
                     type="text"
                     value={notifForm.title}
@@ -145,7 +145,7 @@ export default function PwaSubscriptions() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Mensaje</label>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">Mensaje</label>
                   <textarea
                     value={notifForm.body}
                     onChange={(e) => setNotifForm((f) => ({ ...f, body: e.target.value }))}
@@ -156,7 +156,7 @@ export default function PwaSubscriptions() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">URL al hacer clic</label>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">URL al hacer clic</label>
                   <input
                     type="text"
                     value={notifForm.url ?? ''}
@@ -187,8 +187,8 @@ export default function PwaSubscriptions() {
 
           {/* Lista de suscripciones */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-200">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-300">
                 <h2 className="text-lg font-normal text-gray-900">
                   Suscriptores activos ({subscriptions.length})
                 </h2>
@@ -200,18 +200,18 @@ export default function PwaSubscriptions() {
                 </div>
               ) : subscriptions.length === 0 ? (
                 <EmptyState
-                  icon={<BellOff className="w-8 h-8 text-gray-600" />}
+                  icon={<BellOff className="w-8 h-8 text-gray-800" />}
                   title="Aún no hay suscriptores"
                   description="Los visitantes que activen notificaciones aparecerán aquí"
                   titleClassName="text-gray-900 text-xl"
-                  descriptionClassName="text-gray-700 text-base"
+                  descriptionClassName="text-gray-900 text-base"
                 />
               ) : (
                 <div className="divide-y divide-gray-100">
                   {subscriptions.map((sub) => (
                     <div key={sub.subscription_id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors">
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-mono text-gray-700 truncate" title={sub.endpoint}>
+                        <p className="text-sm font-mono text-gray-900 truncate" title={sub.endpoint}>
                           {sub.endpoint.replace('https://', '').substring(0, 60)}...
                         </p>
                         <div className="flex items-center gap-3 mt-1">
@@ -221,7 +221,7 @@ export default function PwaSubscriptions() {
                             </span>
                           )}
                           {sub.last_used_at && (
-                            <span className="text-sm text-gray-600">
+                            <span className="text-sm text-gray-800">
                               Último uso:{' '}
                               {format(new Date(sub.last_used_at), 'dd/MM/yy HH:mm', { locale: es })}
                             </span>

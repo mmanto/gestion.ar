@@ -16,7 +16,6 @@ class AppointmentsConfigUpdate(BaseModel):
     resource_ids: Optional[List[str]] = None
     service_ids: Optional[List[str]] = None
     default_service_id: Optional[str] = None
-    enabled_in_chat: Optional[bool] = None
 
 
 class ResourceCreateRequest(BaseModel):

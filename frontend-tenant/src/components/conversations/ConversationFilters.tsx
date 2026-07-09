@@ -79,7 +79,7 @@ const ConversationFilters = ({ onFiltersChange, totalResults }: ConversationFilt
       </div>
 
       {/* Results count */}
-      <div className="text-sm text-gray-600">
+      <div className="text-sm text-gray-800">
         {totalResults} {totalResults === 1 ? 'conversación encontrada' : 'conversaciones encontradas'}
       </div>
 
@@ -89,7 +89,7 @@ const ConversationFilters = ({ onFiltersChange, totalResults }: ConversationFilt
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Platform Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Plataforma</label>
+              <label className="block text-sm font-medium text-gray-900 mb-1">Plataforma</label>
               <select
                 value={platform}
                 onChange={(e) => handlePlatformChange(e.target.value)}
@@ -103,7 +103,7 @@ const ConversationFilters = ({ onFiltersChange, totalResults }: ConversationFilt
 
             {/* Sort By */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Ordenar por</label>
+              <label className="block text-sm font-medium text-gray-900 mb-1">Ordenar por</label>
               <select
                 value={sortBy}
                 onChange={(e) => handleSortChange(e.target.value)}
@@ -118,7 +118,7 @@ const ConversationFilters = ({ onFiltersChange, totalResults }: ConversationFilt
 
             {/* Order */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Orden</label>
+              <label className="block text-sm font-medium text-gray-900 mb-1">Orden</label>
               <select
                 value={order}
                 onChange={(e) => handleOrderChange(e.target.value as 'asc' | 'desc')}

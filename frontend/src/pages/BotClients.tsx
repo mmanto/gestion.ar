@@ -110,7 +110,7 @@ export const BotClients = () => {
         <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
           {/* Breadcrumb */}
           <nav className="mb-4">
-            <ol className="flex items-center space-x-2 text-base text-gray-700">
+            <ol className="flex items-center space-x-2 text-base text-gray-900">
               <li>
                 <Link to="/bots" className="hover:underline" style={{ color: accent }}>
                   Agentes
@@ -159,7 +159,7 @@ export const BotClients = () => {
                 <tr>
                   <td colSpan={7}>
                     <EmptyState
-                      icon={<Users className="w-8 h-8 text-gray-600" />}
+                      icon={<Users className="w-8 h-8 text-gray-800" />}
                       title="No hay clientes para este agente"
                       titleClassName="text-gray-900 text-xl"
                     />

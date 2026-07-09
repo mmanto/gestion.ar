@@ -163,7 +163,7 @@ export const BotDocuments = () => {
 
         {/* Breadcrumb */}
         <nav className="mb-4">
-          <ol className="flex items-center space-x-2 text-base text-gray-700">
+          <ol className="flex items-center space-x-2 text-base text-gray-900">
             <li>
               <Link to="/bots" className="hover:underline" style={{ color: accent }}>
                 Agentes
@@ -191,11 +191,11 @@ export const BotDocuments = () => {
               <div className="hidden sm:flex gap-6 text-center">
                 <div>
                   <p className="text-2xl font-normal" style={{ color: accent }}>{documents.length}</p>
-                  <p className="text-sm text-gray-700 mt-0.5">documentos</p>
+                  <p className="text-sm text-gray-900 mt-0.5">documentos</p>
                 </div>
-                <div className="border-l border-gray-200 pl-6">
+                <div className="border-l border-gray-300 pl-6">
                   <p className="text-2xl font-normal text-gray-800">{stats.total_chunks}</p>
-                  <p className="text-sm text-gray-700 mt-0.5">fragmentos totales</p>
+                  <p className="text-sm text-gray-900 mt-0.5">fragmentos totales</p>
                 </div>
               </div>
             ) : undefined
@@ -205,12 +205,12 @@ export const BotDocuments = () => {
         <div className="space-y-6">
 
           {/* Upload zone */}
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+          <div className="bg-white rounded-lg border border-gray-300 shadow-sm p-6">
             <h2 className="text-base font-semibold text-gray-800 mb-4">Subir documento</h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Título (opcional)</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">Título (opcional)</label>
                 <input
                   type="text"
                   value={uploadTitle}
@@ -220,7 +220,7 @@ export const BotDocuments = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">Categoría</label>
                 <select
                   value={uploadCategory}
                   onChange={(e) => setUploadCategory(e.target.value)}
@@ -263,14 +263,14 @@ export const BotDocuments = () => {
                 </div>
               ) : (
                 <>
-                  <svg className="mx-auto h-10 w-10 text-gray-500 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="mx-auto h-10 w-10 text-gray-700 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                       d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
                   <p className="text-base font-medium text-gray-800">
                     Arrastrá un archivo o <span style={{ color: accent }}>hacé click para seleccionar</span>
                   </p>
-                  <p className="text-sm text-gray-600 mt-1">PDF, DOCX, TXT · Sin límite de tamaño</p>
+                  <p className="text-sm text-gray-800 mt-1">PDF, DOCX, TXT · Sin límite de tamaño</p>
                 </>
               )}
             </div>
@@ -291,7 +291,7 @@ export const BotDocuments = () => {
                   <tr>
                     <td>
                       <EmptyState
-                        icon={<FileText className="w-8 h-8 text-gray-600" />}
+                        icon={<FileText className="w-8 h-8 text-gray-800" />}
                         title="No hay documentos cargados todavía"
                         titleClassName="text-gray-900 text-xl"
                       />
@@ -316,7 +316,7 @@ export const BotDocuments = () => {
                     <TableRow key={doc.doc_id}>
                       <TableCell>
                         <p className="font-medium text-gray-900 truncate max-w-xs">{doc.title || doc.doc_id}</p>
-                        <p className="text-sm text-gray-600 truncate max-w-xs">{doc.doc_id}</p>
+                        <p className="text-sm text-gray-800 truncate max-w-xs">{doc.doc_id}</p>
                       </TableCell>
                       <TableCell>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-base font-medium ${TYPE_COLORS[doc.type] || 'bg-gray-200 text-gray-900'}`}>
@@ -325,12 +325,12 @@ export const BotDocuments = () => {
                       </TableCell>
                       <TableCell textClassName="text-gray-800" className="capitalize">{doc.category}</TableCell>
                       <TableCell className="font-medium">{doc.chunks_count}</TableCell>
-                      <TableCell textClassName="text-gray-700">{formatDate(doc.uploaded_at)}</TableCell>
+                      <TableCell textClassName="text-gray-900">{formatDate(doc.uploaded_at)}</TableCell>
                       <TableCell align="right">
                         <button
                           onClick={() => setConfirmDelete(doc)}
                           disabled={deleting === doc.doc_id}
-                          className="p-1.5 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
+                          className="p-1.5 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
                           title="Eliminar documento"
                         >
                           {deleting === doc.doc_id ? (
@@ -366,7 +366,7 @@ export const BotDocuments = () => {
               </div>
               <div>
                 <h3 className="text-base font-semibold text-gray-900">Eliminar documento</h3>
-                <p className="text-sm text-gray-700 mt-0.5">Esta acción no se puede deshacer</p>
+                <p className="text-sm text-gray-900 mt-0.5">Esta acción no se puede deshacer</p>
               </div>
             </div>
             <p className="text-base text-gray-800 mb-5">

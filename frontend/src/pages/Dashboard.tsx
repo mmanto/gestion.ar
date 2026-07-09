@@ -46,11 +46,11 @@ export const Dashboard = () => {
           {!stats || !timeline ? (
             <Card shadow="none">
               <EmptyState
-                icon={<BarChart3 className="w-8 h-8 text-gray-600" />}
+                icon={<BarChart3 className="w-8 h-8 text-gray-800" />}
                 title="Todavía no hay datos"
                 description="Las métricas aparecerán cuando tus agentes empiecen a recibir conversaciones"
                 titleClassName="text-gray-900 text-xl"
-                descriptionClassName="text-gray-700 text-base"
+                descriptionClassName="text-gray-900 text-base"
               />
             </Card>
           ) : (

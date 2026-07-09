@@ -8,6 +8,7 @@ from typing import Optional
 from app.models.client import ClientUpdate, ClientStatus
 from app.services.client_service import get_client_service
 from app.services.bot_service import get_bot_service
+from app.conversation_service import get_conversation_service
 from app.auth_service import User
 from app.dependencies.auth import get_current_user, require_role
 
@@ -198,13 +199,19 @@ async def get_client_conversations(
             detail="Cliente no encontrado"
         )
 
-    # TODO: Integrar con conversation_service para obtener conversaciones filtradas
-    # Por ahora retornamos una estructura vacía
+    conv_service = get_conversation_service()
+    result = await conv_service.get_all_conversations(
+        bot_id=bot_id,
+        client_id=client_id,
+        skip=(page - 1) * limit,
+        limit=limit,
+    )
+
     return {
         "success": True,
-        "conversations": [],
-        "total": 0,
-        "page": page,
-        "pages": 0,
-        "limit": limit
+        "conversations": result["conversations"],
+        "total": result["total"],
+        "page": result["page"],
+        "pages": result["pages"],
+        "limit": result["limit"],
     }

@@ -76,19 +76,19 @@ export const AvailabilityTab = ({ botId }: Props) => {
     <div>
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-gray-900">Disponibilidad</h2>
-        <p className="text-gray-600 mt-1">Horarios semanales en los que un recurso acepta turnos</p>
+        <p className="text-gray-800 mt-1">Horarios semanales en los que un recurso acepta turnos</p>
       </div>
 
       {loadingResources ? (
-        <p className="text-gray-500">Cargando recursos...</p>
+        <p className="text-gray-700">Cargando recursos...</p>
       ) : resources.length === 0 ? (
         <Card>
-          <p className="text-gray-500 text-center">Primero creá un recurso en la pestaña "Recursos".</p>
+          <p className="text-gray-700 text-center">Primero creá un recurso en la pestaña "Recursos".</p>
         </Card>
       ) : (
         <>
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Recurso</label>
+            <label className="block text-sm font-medium text-gray-900 mb-1">Recurso</label>
             <select
               value={selectedResourceId}
               onChange={(e) => setSelectedResourceId(e.target.value)}
@@ -111,13 +111,13 @@ export const AvailabilityTab = ({ botId }: Props) => {
           <Card className="mb-6">
             <h3 className="font-semibold text-gray-900 mb-4">Reglas actuales</h3>
             {loadingRules ? (
-              <p className="text-gray-500">Cargando...</p>
+              <p className="text-gray-700">Cargando...</p>
             ) : rules.length === 0 ? (
-              <p className="text-gray-500">Sin reglas de disponibilidad todavía.</p>
+              <p className="text-gray-700">Sin reglas de disponibilidad todavía.</p>
             ) : (
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-gray-500 border-b border-gray-100">
+                  <tr className="text-left text-gray-700 border-b border-gray-200">
                     <th className="py-2">Día</th>
                     <th className="py-2">Desde</th>
                     <th className="py-2">Hasta</th>
@@ -149,7 +149,7 @@ export const AvailabilityTab = ({ botId }: Props) => {
             <h3 className="font-semibold text-gray-900 mb-4">Agregar regla</h3>
             <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Día</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">Día</label>
                 <select
                   value={formData.weekday}
                   onChange={(e) => setFormData({ ...formData, weekday: Number(e.target.value) })}

@@ -35,13 +35,13 @@ export function AppointmentCalendarWidget({ widget, onSelectDay }: Props) {
   const capitalizedLabel = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-3 w-full max-w-[320px] shadow-sm">
+    <div className="bg-white border border-gray-300 rounded-xl p-3 w-full max-w-[320px] shadow-sm">
       <div className="flex items-center justify-between mb-2">
         <button
           type="button"
           onClick={() => setViewMonth((m) => startOfMonth(new Date(m.getFullYear(), m.getMonth() - 1, 1)))}
           disabled={!canGoPrev}
-          className="w-7 h-7 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent"
+          className="w-7 h-7 flex items-center justify-center rounded-full text-gray-700 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent"
           aria-label="Mes anterior"
         >
           ‹
@@ -51,7 +51,7 @@ export function AppointmentCalendarWidget({ widget, onSelectDay }: Props) {
           type="button"
           onClick={() => setViewMonth((m) => startOfMonth(new Date(m.getFullYear(), m.getMonth() + 1, 1)))}
           disabled={!canGoNext}
-          className="w-7 h-7 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent"
+          className="w-7 h-7 flex items-center justify-center rounded-full text-gray-700 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent"
           aria-label="Mes siguiente"
         >
           ›

@@ -1,5 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import type { Bot, BotUpdate, BotStatus, BotConfig, FlowStep, FlowConfig } from '../../types/bot.types';
+import type { JsonObject, ValidationReport } from '../../types/ius.types';
+import { parseFlowConfigJson } from '../../utils/flowConfigValidation';
+import { JsonTreeEditor } from './JsonTreeEditor';
+import { validateIusConfig } from '../../services/iusValidation.service';
 
 interface BotEditFormProps {
   bot: Bot;
@@ -31,7 +35,13 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [iusError, setIusError] = useState<string | null>(null);
-  const [iusJustLoaded, setIusJustLoaded] = useState(false);
+  const [iusDirty, setIusDirty] = useState(false);
+  const [iusValidation, setIusValidation] = useState<ValidationReport | null>(null);
+  const [iusValidating, setIusValidating] = useState<'structural' | 'semantic' | null>(null);
+  const [iusValidationError, setIusValidationError] = useState<string | null>(null);
+  const [showFlowJson, setShowFlowJson] = useState(false);
+  const [flowJsonText, setFlowJsonText] = useState('');
+  const [flowJsonError, setFlowJsonError] = useState<string | null>(null);
   const [isJsonPrompt, setIsJsonPrompt] = useState(() => {
     try { const p = JSON.parse(bot.config.system_prompt); return typeof p === 'object' && p !== null; } catch { return false; }
   });
@@ -63,7 +73,8 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
           return;
         }
         setIusError(null);
-        setIusJustLoaded(true);
+        setIusDirty(true);
+        setIusValidation(null);
         updateConfig('ius_config', parsed);
       } catch {
         setIusError('Error al parsear el archivo. Asegurate de que sea un JSON válido.');
@@ -76,7 +87,28 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
   const removeIusConfig = () => {
     updateConfig('ius_config', null);
     setIusError(null);
-    setIusJustLoaded(false);
+    setIusDirty(false);
+    setIusValidation(null);
+    setIusValidationError(null);
+  };
+
+  const handleIusTreeChange = (newValue: JsonObject) => {
+    updateConfig('ius_config', newValue);
+    setIusDirty(true);
+  };
+
+  const runIusValidation = async (semantic: boolean) => {
+    if (!formData.config.ius_config) return;
+    setIusValidating(semantic ? 'semantic' : 'structural');
+    setIusValidationError(null);
+    try {
+      const report = await validateIusConfig(formData.config.ius_config as JsonObject, semantic);
+      setIusValidation(report);
+    } catch (err) {
+      setIusValidationError(err instanceof Error ? err.message : 'Error validando la configuración');
+    } finally {
+      setIusValidating(null);
+    }
   };
 
   const validate = (): boolean => {
@@ -119,7 +151,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
 
     if (!validate()) return;
 
-    setIusJustLoaded(false);
+    setIusDirty(false);
 
     const updateData: BotUpdate = {
       name: formData.name,
@@ -169,6 +201,28 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
     });
   };
 
+  const refreshFlowJsonFromState = () => {
+    setFlowJsonText(JSON.stringify(getOrInitFlow(), null, 2));
+    setFlowJsonError(null);
+  };
+
+  const toggleFlowJson = () => {
+    if (!showFlowJson) {
+      refreshFlowJsonFromState();
+    }
+    setShowFlowJson((v) => !v);
+  };
+
+  const applyFlowJson = () => {
+    const result = parseFlowConfigJson(flowJsonText);
+    if (!result.valid || !result.value) {
+      setFlowJsonError(result.errors.join(' '));
+      return;
+    }
+    updateConfig('flow', result.value);
+    setFlowJsonError(null);
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Informacion Basica */}
@@ -177,7 +231,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Nombre *
             </label>
             <input
@@ -192,7 +246,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Tipo de Negocio *
             </label>
             <input
@@ -211,7 +265,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Descripcion
             </label>
             <textarea
@@ -225,7 +279,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Estado
             </label>
             <select
@@ -253,7 +307,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               System Prompt
             </label>
             <textarea
@@ -269,7 +323,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Mensaje de Bienvenida
             </label>
             <textarea
@@ -282,7 +336,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Mensaje de Fallback
             </label>
             <textarea
@@ -304,7 +358,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Max Tokens (1-4096)
             </label>
             <input
@@ -323,7 +377,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Temperatura (0-2)
             </label>
             <input
@@ -359,14 +413,14 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
               onChange={(e) => updateConfig('use_rag', e.target.checked)}
               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
             />
-            <label htmlFor="use_rag" className="ml-2 text-sm text-gray-700">
+            <label htmlFor="use_rag" className="ml-2 text-sm text-gray-900">
               Habilitar RAG (Retrieval Augmented Generation)
             </label>
           </div>
 
           {formData.config.use_rag && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-900 mb-1">
                 Cantidad de Resultados RAG (1-20)
               </label>
               <input
@@ -395,7 +449,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Limite de Mensajes
             </label>
             <input
@@ -412,13 +466,13 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
             {errors.rate_limit_messages && (
               <p className="mt-1 text-sm text-red-600">{errors.rate_limit_messages}</p>
             )}
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-gray-700">
               Numero maximo de mensajes permitidos
             </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Ventana de Tiempo (segundos)
             </label>
             <input
@@ -435,7 +489,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
             {errors.rate_limit_window && (
               <p className="mt-1 text-sm text-red-600">{errors.rate_limit_window}</p>
             )}
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-gray-700">
               Periodo de tiempo para el limite de mensajes
             </p>
           </div>
@@ -447,7 +501,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
         <h2 className="text-xl font-semibold text-gray-900 mb-1">
           Flujo de Captura de Datos
         </h2>
-        <p className="text-sm text-gray-500 mb-4">
+        <p className="text-sm text-gray-700 mb-4">
           Guia al visitante a traves de preguntas para capturar sus datos de contacto antes de responder con IA.
         </p>
 
@@ -460,13 +514,13 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
               onChange={(e) => updateFlow({ enabled: e.target.checked })}
               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
             />
-            <label htmlFor="flow_enabled" className="ml-2 text-sm text-gray-700">
+            <label htmlFor="flow_enabled" className="ml-2 text-sm text-gray-900">
               Habilitar flujo conversacional de captura de datos
             </label>
           </div>
 
           {formData.config.flow?.enabled && (
-            <div className="space-y-4 border-t border-gray-200 pt-4">
+            <div className="space-y-4 border-t border-gray-300 pt-4">
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -475,13 +529,13 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
                   onChange={(e) => updateFlow({ skip_if_known: e.target.checked })}
                   className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                 />
-                <label htmlFor="skip_if_known" className="ml-2 text-sm text-gray-700">
+                <label htmlFor="skip_if_known" className="ml-2 text-sm text-gray-900">
                   Omitir preguntas si el dato ya se conoce (clientes recurrentes)
                 </label>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-900 mb-1">
                   Mensaje al completar el flujo
                 </label>
                 <textarea
@@ -496,17 +550,59 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
               {/* Steps list */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-900">
                     Pasos del Flujo
                   </label>
-                  <button
-                    type="button"
-                    onClick={addFlowStep}
-                    className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
-                  >
-                    + Agregar Paso
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={toggleFlowJson}
+                      className="text-sm text-gray-800 hover:text-gray-800 font-medium"
+                    >
+                      {showFlowJson ? 'Ocultar JSON' : 'Editar como JSON'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={addFlowStep}
+                      className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                    >
+                      + Agregar Paso
+                    </button>
+                  </div>
                 </div>
+
+                {showFlowJson && (
+                  <div className="mb-4 space-y-2 bg-gray-50 border border-gray-300 rounded-lg p-3">
+                    <p className="text-xs text-gray-700">
+                      Pegá un JSON con la forma de <code className="bg-gray-100 px-1 rounded">FlowConfig</code> (steps,
+                      completion_message, skip_if_known) y aplicalo, o copiá el actual para reutilizarlo en otro
+                      agente.
+                    </p>
+                    <textarea
+                      value={flowJsonText}
+                      onChange={(e) => setFlowJsonText(e.target.value)}
+                      rows={10}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-indigo-500"
+                    />
+                    {flowJsonError && <p className="text-xs text-red-600">{flowJsonError}</p>}
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={applyFlowJson}
+                        className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                      >
+                        Aplicar JSON
+                      </button>
+                      <button
+                        type="button"
+                        onClick={refreshFlowJsonFromState}
+                        className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                      >
+                        Actualizar con valores actuales
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {(formData.config.flow?.steps ?? []).length === 0 && (
                   <p className="text-sm text-gray-400 italic">
@@ -516,9 +612,9 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
 
                 <div className="space-y-3">
                   {(formData.config.flow?.steps ?? []).map((step, index) => (
-                    <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-3">
+                    <div key={index} className="border border-gray-300 rounded-lg p-4 space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
                           Paso {index + 1}
                         </span>
                         <button
@@ -532,7 +628,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                          <label className="block text-xs font-medium text-gray-800 mb-1">
                             Campo a capturar
                           </label>
                           <select
@@ -559,7 +655,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                          <label className="block text-xs font-medium text-gray-800 mb-1">
                             Tipo de campo
                           </label>
                           <select
@@ -578,7 +674,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
                       </div>
 
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                        <label className="block text-xs font-medium text-gray-800 mb-1">
                           Pregunta al visitante
                         </label>
                         <input
@@ -592,7 +688,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
 
                       {step.field_type === 'choice' && (
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                          <label className="block text-xs font-medium text-gray-800 mb-1">
                             Opciones (una por linea)
                           </label>
                           <textarea
@@ -618,7 +714,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
                             onChange={(e) => updateFlowStep(index, { required: e.target.checked })}
                             className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                           />
-                          <label htmlFor={`step_req_${index}`} className="ml-1.5 text-xs text-gray-600">
+                          <label htmlFor={`step_req_${index}`} className="ml-1.5 text-xs text-gray-800">
                             Requerido
                           </label>
                         </div>
@@ -635,31 +731,31 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
       {/* Agente IUS */}
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-1">
-          <h2 className="text-xl font-semibold text-gray-900">Agente IUS</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Archivo de configuración</h2>
           {formData.config.ius_config ? (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
               Configurado
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
               <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
               Sin configurar
             </span>
           )}
         </div>
-        <p className="text-sm text-gray-500 mb-4">
-          Carga el archivo <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">ius_system_prompt.json</code> para activar el agente calificador de casos laborales. Si está configurado, reemplaza el System Prompt como instrucción principal del agente.
+        <p className="text-sm text-gray-700 mb-4">
+          Carga el archivo <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">system_prompt.json</code> para activar el agente calificador de casos laborales. Si está configurado, reemplaza el System Prompt como instrucción principal del agente.
         </p>
 
-        {/* Aviso: archivo cargado pero no guardado */}
-        {iusJustLoaded && (
+        {/* Aviso: cambios sin guardar */}
+        {iusDirty && (
           <div className="mb-4 flex items-start gap-2 bg-amber-50 border border-amber-300 rounded-lg p-3">
             <svg className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <p className="text-sm text-amber-700">
-              Archivo cargado. Hacé click en <strong>Guardar Cambios</strong> para persistir la configuración.
+              Tenés cambios sin guardar. Hacé click en <strong>Guardar Cambios</strong> para persistir la configuración.
             </p>
           </div>
         )}
@@ -688,6 +784,66 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
           </div>
         )}
 
+        {/* Editor de árbol JSON */}
+        {formData.config.ius_config && (
+          <div className="mb-4 border border-gray-200 rounded-lg p-3 max-h-[28rem] overflow-y-auto">
+            <JsonTreeEditor
+              value={formData.config.ius_config as JsonObject}
+              onChange={handleIusTreeChange}
+            />
+          </div>
+        )}
+
+        {/* Validación */}
+        {formData.config.ius_config && (
+          <div className="mb-4">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => runIusValidation(false)}
+                disabled={iusValidating !== null}
+                className="px-3 py-1.5 text-xs border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 font-medium text-gray-800"
+              >
+                {iusValidating === 'structural' ? 'Validando...' : 'Validar estructura'}
+              </button>
+              <button
+                type="button"
+                onClick={() => runIusValidation(true)}
+                disabled={iusValidating !== null}
+                className="px-3 py-1.5 text-xs border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 font-medium text-gray-800"
+              >
+                {iusValidating === 'semantic' ? 'Analizando...' : 'Analizar coherencia (IA)'}
+              </button>
+            </div>
+
+            {iusValidationError && (
+              <p className="mt-2 text-xs text-red-600">{iusValidationError}</p>
+            )}
+
+            {iusValidation && (
+              <div className="mt-3 space-y-1.5">
+                {[...iusValidation.structural, ...iusValidation.semantic].length === 0 ? (
+                  <p className="text-xs text-green-700">Sin observaciones.</p>
+                ) : (
+                  [...iusValidation.structural, ...iusValidation.semantic].map((issue, i) => {
+                    const color =
+                      issue.severity === 'error'
+                        ? 'bg-red-50 border-red-200 text-red-700'
+                        : issue.severity === 'warning'
+                        ? 'bg-amber-50 border-amber-200 text-amber-700'
+                        : 'bg-blue-50 border-blue-200 text-blue-700';
+                    return (
+                      <div key={i} className={`text-xs border rounded p-2 ${color}`}>
+                        <span className="font-mono font-medium">{issue.field}</span>: {issue.message}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Error */}
         {iusError && (
           <div className="mb-4 flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg p-3">
@@ -709,12 +865,12 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-sm font-medium text-gray-900 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
           </svg>
-          {formData.config.ius_config ? 'Reemplazar ius_system_prompt.json' : 'Cargar ius_system_prompt.json'}
+          {formData.config.ius_config ? 'Reemplazar system_prompt.json' : 'Cargar system_prompt.json'}
         </button>
       </div>
 
@@ -724,7 +880,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+          className="px-4 py-2 border border-gray-300 text-gray-900 rounded-lg hover:bg-gray-50 disabled:opacity-50"
         >
           Cancelar
         </button>

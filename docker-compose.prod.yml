@@ -22,10 +22,10 @@ services:
       - traefik_public
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.gestionar-api.rule=Host(`api.gestionar.kairosgroup.ar`)"
-      - "traefik.http.routers.gestionar-api.entrypoints=websecure"
-      - "traefik.http.routers.gestionar-api.tls.certresolver=letsencrypt"
-      - "traefik.http.services.gestionar-api.loadbalancer.server.port=8000"
+      - "traefik.http.routers.intellify-api.rule=Host(`api.intellify.pro`)"
+      - "traefik.http.routers.intellify-api.entrypoints=websecure"
+      - "traefik.http.routers.intellify-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.intellify-api.loadbalancer.server.port=8000"
 
   frontend:
     image: ${REGISTRY_IMAGE}/frontend:${IMAGE_TAG:-latest}
@@ -36,10 +36,10 @@ services:
         - VITE_API_URL=/api
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.gestionar.rule=Host(`gestionar.kairosgroup.ar`)"
-      - "traefik.http.routers.gestionar.entrypoints=websecure"
-      - "traefik.http.routers.gestionar.tls.certresolver=letsencrypt"
-      - "traefik.http.services.gestionar.loadbalancer.server.port=80"
+      - "traefik.http.routers.intellify-admin.rule=Host(`admin.intellify.pro`)"
+      - "traefik.http.routers.intellify-admin.entrypoints=websecure"
+      - "traefik.http.routers.intellify-admin.tls.certresolver=letsencrypt"
+      - "traefik.http.services.intellify-admin.loadbalancer.server.port=80"
 
 # En prod se usa el Traefik externo del infra — la red debe ser la global
 networks:

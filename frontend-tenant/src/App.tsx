@@ -15,6 +15,7 @@ import { Conversations } from './pages/Conversations';
 import { ConversationView } from './pages/ConversationView';
 import { Modules } from './pages/Modules';
 import { TrainingSettings } from './pages/TrainingSettings';
+import { Settings } from './pages/Settings';
 
 function App() {
   return (
@@ -78,6 +79,16 @@ function App() {
                   element={
                     <ProtectedRoute roles={['admin']}>
                       <TrainingSettings />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Ajustes de cuenta — admin y operativo */}
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute roles={['admin', 'operativo']}>
+                      <Settings />
                     </ProtectedRoute>
                   }
                 />

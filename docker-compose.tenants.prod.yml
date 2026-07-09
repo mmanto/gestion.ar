@@ -1,0 +1,57 @@
+# docker-compose.tenants.prod.yml — Tenants con dominio propio (Fase 7, productivo)
+# Uso: docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+#        -f docker-compose.tenants.prod.yml up -d --build <service>
+#
+# Un service block por tenant. Todos comparten la misma imagen
+# (frontend-tenant/Dockerfile) y se diferencian solo por el env var
+# TENANT_ID (inyectado en runtime por frontend-tenant/docker-entrypoint.sh,
+# nunca horneado en el build) y por el Host() del label de Traefik.
+#
+# Alta de un tenant nuevo:
+#   1. Crear el tenant/bot/canal en el panel admin (admin.intellify.pro) y
+#      capturar el tenant_id.
+#   2. Copiar un service block completo, renombrar el service key y el
+#      container_name, y setear TENANT_ID + Host().
+#      - Subdominio propio (cubierto por el wildcard *.intellify.pro): usar
+#        Host(`<slug>.intellify.pro`).
+#      - Dominio propio del cliente: el cliente apunta su DNS (A/CNAME) a
+#        este mismo servidor, y acá se usa Host(`su-dominio.com`) en vez de
+#        un subdominio de intellify.pro. No requiere ningún cambio de código.
+#   3. docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+#        -f docker-compose.tenants.prod.yml up -d --build <nuevo-service>
+#
+# Nota TLS: el wildcard *.intellify.pro es solo DNS. El certresolver
+# letsencrypt usa HTTP-01 (no DNS-01), así que no emite certificados
+# wildcard — cada Host() concreto de acá dispara su propia emisión de
+# certificado la primera vez que recibe tráfico HTTPS.
+
+services:
+  frontend-tenant-ius:
+    build:
+      context: ./frontend-tenant
+      dockerfile: Dockerfile
+    container_name: gestionar_frontend_tenant_ius
+    environment:
+      - TENANT_ID=${TENANT_ID_IUS}
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - default
+      - traefik_public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_public"
+      - "traefik.http.routers.tenant-ius.rule=Host(`ius.intellify.pro`)"
+      - "traefik.http.routers.tenant-ius.entrypoints=websecure"
+      - "traefik.http.routers.tenant-ius.tls.certresolver=letsencrypt"
+      - "traefik.http.services.tenant-ius.loadbalancer.server.port=80"
+
+networks:
+  default:
+    name: gestionar_network
+    external: true
+  traefik_public:
+    name: traefik_public
+    external: true

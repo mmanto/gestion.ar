@@ -14,7 +14,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   title,
   description,
   action,
-  titleClassName = 'text-gray-700 text-lg',
+  titleClassName = 'text-gray-900 text-lg',
   descriptionClassName = 'text-gray-400 text-sm',
 }) => {
   return (

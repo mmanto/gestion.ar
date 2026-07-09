@@ -170,7 +170,7 @@ export const ChannelEditForm = ({ channel, onSave, onCancel, saving }: ChannelEd
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Nombre *
             </label>
             <input
@@ -185,7 +185,7 @@ export const ChannelEditForm = ({ channel, onSave, onCancel, saving }: ChannelEd
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Estado
             </label>
             <select
@@ -204,7 +204,7 @@ export const ChannelEditForm = ({ channel, onSave, onCancel, saving }: ChannelEd
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Webhook URL
             </label>
             <input
@@ -219,22 +219,22 @@ export const ChannelEditForm = ({ channel, onSave, onCancel, saving }: ChannelEd
             {errors.webhook_url && (
               <p className="mt-1 text-sm text-red-600">{errors.webhook_url}</p>
             )}
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-gray-700">
               URL donde se enviaran las notificaciones del canal
             </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Tipo de Canal
             </label>
             <input
               type="text"
               value={channel.channel_type === 'whatsapp' ? 'WhatsApp' : 'Telegram'}
               disabled
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-gray-700">
               El tipo de canal no puede ser modificado
             </p>
           </div>
@@ -247,7 +247,7 @@ export const ChannelEditForm = ({ channel, onSave, onCancel, saving }: ChannelEd
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Configuracion de WhatsApp
             {formData.whatsapp_config.provider && (
-              <span className="ml-2 text-sm font-normal text-gray-500">
+              <span className="ml-2 text-sm font-normal text-gray-700">
                 ({whatsappProviderLabels[formData.whatsapp_config.provider]})
               </span>
             )}
@@ -257,7 +257,7 @@ export const ChannelEditForm = ({ channel, onSave, onCancel, saving }: ChannelEd
           {formData.whatsapp_config.provider === 'meta' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-900 mb-1">
                   Phone Number ID *
                 </label>
                 <input
@@ -275,7 +275,7 @@ export const ChannelEditForm = ({ channel, onSave, onCancel, saving }: ChannelEd
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-900 mb-1">
                   Access Token *
                 </label>
                 <input
@@ -293,7 +293,7 @@ export const ChannelEditForm = ({ channel, onSave, onCancel, saving }: ChannelEd
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-900 mb-1">
                   Verify Token
                 </label>
                 <input
@@ -306,7 +306,7 @@ export const ChannelEditForm = ({ channel, onSave, onCancel, saving }: ChannelEd
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-900 mb-1">
                   API Version
                 </label>
                 <input
@@ -319,7 +319,7 @@ export const ChannelEditForm = ({ channel, onSave, onCancel, saving }: ChannelEd
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-900 mb-1">
                   Business Account ID
                 </label>
                 <input
@@ -332,7 +332,7 @@ export const ChannelEditForm = ({ channel, onSave, onCancel, saving }: ChannelEd
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-900 mb-1">
                   App Secret
                 </label>
                 <input
@@ -350,7 +350,7 @@ export const ChannelEditForm = ({ channel, onSave, onCancel, saving }: ChannelEd
           {formData.whatsapp_config.provider === 'twilio' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-900 mb-1">
                   Account SID *
                 </label>
                 <input
@@ -368,7 +368,7 @@ export const ChannelEditForm = ({ channel, onSave, onCancel, saving }: ChannelEd
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-900 mb-1">
                   Auth Token *
                 </label>
                 <input
@@ -386,7 +386,7 @@ export const ChannelEditForm = ({ channel, onSave, onCancel, saving }: ChannelEd
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-900 mb-1">
                   Numero de Telefono *
                 </label>
                 <input
@@ -401,13 +401,13 @@ export const ChannelEditForm = ({ channel, onSave, onCancel, saving }: ChannelEd
                 {errors.phone_number && (
                   <p className="mt-1 text-sm text-red-600">{errors.phone_number}</p>
                 )}
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-gray-700">
                   Formato: whatsapp:+1234567890
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-900 mb-1">
                   Messaging Service SID
                 </label>
                 <input
@@ -432,7 +432,7 @@ export const ChannelEditForm = ({ channel, onSave, onCancel, saving }: ChannelEd
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-900 mb-1">
                 Bot Token *
               </label>
               <input
@@ -450,7 +450,7 @@ export const ChannelEditForm = ({ channel, onSave, onCancel, saving }: ChannelEd
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-900 mb-1">
                 Bot Username
               </label>
               <input
@@ -463,7 +463,7 @@ export const ChannelEditForm = ({ channel, onSave, onCancel, saving }: ChannelEd
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-900 mb-1">
                 Webhook Secret
               </label>
               <input
@@ -484,7 +484,7 @@ export const ChannelEditForm = ({ channel, onSave, onCancel, saving }: ChannelEd
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+          className="px-4 py-2 border border-gray-300 text-gray-900 rounded-lg hover:bg-gray-50 disabled:opacity-50"
         >
           Cancelar
         </button>

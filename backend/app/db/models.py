@@ -24,6 +24,25 @@ from sqlalchemy.dialects.postgresql import JSONB
 from app.db.database import Base
 
 
+class Plan(Base):
+    """Plan de suscripción ofrecido a los tenants (ver estrategia de
+    facturación, docs/dev/DECISIONS.md)."""
+
+    __tablename__ = "plans"
+
+    plan_id = Column(Text, primary_key=True)
+    name = Column(Text, nullable=False)
+    description = Column(Text, nullable=True)
+    amount = Column(Numeric, nullable=False)
+    periodicity = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    __table_args__ = (
+        CheckConstraint("periodicity IN ('monthly', 'annual')", name="ck_plans_periodicity"),
+    )
+
+
 class Tenant(Base):
     __tablename__ = "tenants"
 
@@ -35,12 +54,17 @@ class Tenant(Base):
     domain = Column(Text, nullable=True)
     status = Column(Text, nullable=False, default="active", server_default="active")
     branding = Column(JSONB, nullable=False, default=dict, server_default="{}")
+    # Todo tenant está suscripto a un plan específico (ver estrategia de
+    # facturación) — FK a plans, no nullable (se backfillea en la migración
+    # que introduce esta columna).
+    plan_id = Column(Text, ForeignKey("plans.plan_id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     __table_args__ = (
         Index("ix_tenants_domain", "domain", unique=True, postgresql_where=text("domain IS NOT NULL")),
         Index("ix_tenants_status", "status"),
+        Index("ix_tenants_plan_id", "plan_id"),
         CheckConstraint("status IN ('active', 'suspended', 'trial')", name="ck_tenants_status"),
     )
 

@@ -70,6 +70,7 @@ export interface BotCreate {
   business_type: string;
   config?: Partial<BotConfig>;
   channels?: BotChannelConfig[];
+  module_keys?: string[];
 }
 
 export interface BotUpdate {

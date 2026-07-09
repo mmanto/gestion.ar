@@ -70,7 +70,7 @@ export function ChatInterface({ botId, channelId }: ChatInterfaceProps) {
                   className={`rounded-2xl px-4 py-2.5 text-sm shadow-sm whitespace-pre-wrap break-words ${
                     isUser
                       ? 'bg-indigo-600 text-white rounded-br-sm'
-                      : 'bg-white text-gray-800 border border-gray-200 rounded-bl-sm'
+                      : 'bg-white text-gray-800 border border-gray-300 rounded-bl-sm'
                   }`}
                 >
                   {msg.content}

@@ -6,7 +6,7 @@ interface TableProps {
 }
 
 export const Table: React.FC<TableProps> = ({ children, className = '' }) => (
-  <div className={`overflow-x-auto bg-white rounded-lg border border-gray-200 shadow-sm ${className}`}>
+  <div className={`overflow-x-auto bg-white rounded-lg border border-gray-300 shadow-sm ${className}`}>
     <table className="min-w-full divide-y divide-gray-200">{children}</table>
   </div>
 );

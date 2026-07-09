@@ -23,6 +23,7 @@ export interface WsWelcomeMessage {
   conversation_id: string;
   message: string;
   bot_name: string;
+  tenant_name: string;
   history?: WsHistoryMessage[];
 }
 

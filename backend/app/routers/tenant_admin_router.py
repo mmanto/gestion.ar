@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.auth_service import User, get_password_hash
 from app.dependencies.auth import get_current_user, require_role
+from app.models.plan import PlanCreate, PlanUpdate
 from app.models.tenant import (
     ModuleOut,
     Tenant,
@@ -21,6 +22,7 @@ from app.models.tenant import (
 )
 from app.services.bot_service import get_bot_service
 from app.services.module_service import get_module_service
+from app.services.plan_service import get_plan_service
 from app.services.tenant_service import get_tenant_service
 from app.services.user_service import get_user_service
 
@@ -39,6 +41,47 @@ def _user_out(user_in_db) -> TenantUserOut:
         role=user_in_db.role,
         disabled=user_in_db.disabled,
     )
+
+
+# ── Planes ───────────────────────────────────────────────────────────────────
+
+@router.post("/plans", response_model=dict, status_code=status.HTTP_201_CREATED)
+async def create_plan(data: PlanCreate):
+    plan = await get_plan_service().create_plan(data)
+    return {"success": True, "plan": plan.model_dump()}
+
+
+@router.get("/plans", response_model=dict)
+async def list_plans():
+    plans = await get_plan_service().list_plans()
+    return {"success": True, "plans": [p.model_dump() for p in plans]}
+
+
+@router.get("/plans/{plan_id}", response_model=dict)
+async def get_plan(plan_id: str):
+    plan = await get_plan_service().get_plan(plan_id)
+    if not plan:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Plan no encontrado")
+    return {"success": True, "plan": plan.model_dump()}
+
+
+@router.patch("/plans/{plan_id}", response_model=dict)
+async def update_plan(plan_id: str, data: PlanUpdate):
+    plan = await get_plan_service().update_plan(plan_id, data)
+    if not plan:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Plan no encontrado")
+    return {"success": True, "plan": plan.model_dump()}
+
+
+@router.delete("/plans/{plan_id}", response_model=dict)
+async def delete_plan(plan_id: str):
+    deleted = await get_plan_service().delete_plan(plan_id)
+    if not deleted:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "No se pudo eliminar: el plan no existe o tiene tenants suscriptos",
+        )
+    return {"success": True, "message": "Plan eliminado"}
 
 
 # ── Tenants ──────────────────────────────────────────────────────────────────

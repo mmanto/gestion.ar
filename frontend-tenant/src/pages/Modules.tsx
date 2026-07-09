@@ -78,18 +78,18 @@ export const Modules = () => {
         {bots.length === 0 ? (
           <Card shadow="none">
             <EmptyState
-              icon={<Blocks className="w-8 h-8 text-gray-600" />}
+              icon={<Blocks className="w-8 h-8 text-gray-800" />}
               title="Todavía no tenés agentes configurados"
               description="Contactá a soporte para que configuren tu primer agente"
               titleClassName="text-gray-900 text-xl"
-              descriptionClassName="text-gray-700 text-base"
+              descriptionClassName="text-gray-900 text-base"
             />
           </Card>
         ) : (
           <>
             {bots.length > 1 && (
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Agente</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">Agente</label>
                 <select
                   value={selectedBotId || ''}
                   onChange={(e) => setSelectedBotId(e.target.value)}
@@ -109,7 +109,7 @@ export const Modules = () => {
                     <div>
                       <p className="font-medium text-gray-900">{mod.module_name || mod.module_key}</p>
                       {mod.module_description && (
-                        <p className="text-sm text-gray-500">{mod.module_description}</p>
+                        <p className="text-sm text-gray-700">{mod.module_description}</p>
                       )}
                       {!mod.granted && (
                         <p className="text-xs text-gray-400 mt-1">No otorgado — contactá a soporte para activarlo</p>

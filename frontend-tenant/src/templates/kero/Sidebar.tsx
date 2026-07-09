@@ -31,7 +31,7 @@ export const KeroSidebar: React.FC = () => {
           className={`flex items-center gap-3 h-[2.2rem] px-4 rounded-full text-sm font-medium transition-colors ${
             isActive(to)
               ? 'text-[#da624a] bg-[#da624a]/10'
-              : 'text-gray-700 hover:text-[#da624a] hover:bg-[#da624a]/5'
+              : 'text-gray-900 hover:text-[#da624a] hover:bg-[#da624a]/5'
           }`}
         >
           <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -55,7 +55,7 @@ export const KeroSidebar: React.FC = () => {
           } ${
             isActive(to)
               ? 'text-[#da624a] bg-[#da624a]/10'
-              : 'text-gray-700 hover:text-[#da624a] hover:bg-[#da624a]/5'
+              : 'text-gray-900 hover:text-[#da624a] hover:bg-[#da624a]/5'
           }`}
         >
           <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -72,7 +72,7 @@ export const KeroSidebar: React.FC = () => {
       {/* Botón hamburguesa — mobile */}
       <button
         onClick={() => setMobileOpen(v => !v)}
-        className="md:hidden fixed top-3 left-3 z-[60] p-2 rounded-lg bg-white text-gray-700 shadow-md hover:bg-gray-50 transition-colors"
+        className="md:hidden fixed top-3 left-3 z-[60] p-2 rounded-lg bg-white text-gray-900 shadow-md hover:bg-gray-50 transition-colors"
         aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
       >
         {mobileOpen
@@ -96,7 +96,7 @@ export const KeroSidebar: React.FC = () => {
         }`}
       >
         <div
-          className={`flex items-center justify-center gap-2 h-20 border-b border-gray-100 flex-shrink-0 transition-all duration-300 ${
+          className={`flex items-center justify-center gap-2 h-20 border-b border-gray-200 flex-shrink-0 transition-all duration-300 ${
             collapsed ? 'px-2' : 'px-5'
           }`}
         >
@@ -107,12 +107,12 @@ export const KeroSidebar: React.FC = () => {
           </Link>
         </div>
         {desktopNavItems}
-        <div className="border-t border-gray-100 flex-shrink-0 px-4 py-3">
+        <div className="border-t border-gray-200 flex-shrink-0 px-4 py-3">
           <button
             onClick={toggleCollapsed}
             aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
             title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-            className={`w-full flex items-center gap-3 rounded-full text-sm font-medium text-gray-700 hover:text-[#da624a] hover:bg-[#da624a]/5 transition-colors ${
+            className={`w-full flex items-center gap-3 rounded-full text-sm font-medium text-gray-900 hover:text-[#da624a] hover:bg-[#da624a]/5 transition-colors ${
               collapsed ? 'justify-center w-11 h-11 mx-auto' : 'h-[2.2rem] px-4'
             }`}
           >
@@ -135,7 +135,7 @@ export const KeroSidebar: React.FC = () => {
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-center gap-2 px-5 h-20 border-b border-gray-100 flex-shrink-0">
+        <div className="flex items-center justify-center gap-2 px-5 h-20 border-b border-gray-200 flex-shrink-0">
           <Link to="/dashboard">
             <span className="font-editorial text-[22px] font-light uppercase tracking-[0.08em] text-gray-800 select-none">
               {tenantName}

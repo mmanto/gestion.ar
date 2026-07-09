@@ -30,6 +30,9 @@ from zoneinfo import ZoneInfo
 
 from app.integrations.appointments_client import AppointmentsClient, SlotUnavailableError, get_appointments_client
 from app.models.bot import Bot
+from app.services.module_service import get_module_service
+
+MODULE_KEY = "appointments"
 
 BOOKING_KEYWORDS = ("turno", "turnos", "cita", "citas", "reservar", "agendar", "reserva", "/turno")
 CANCEL_WORDS = ("cancelar", "cancela", "/cancelar")
@@ -372,7 +375,8 @@ async def start_booking(bot: Bot, client_id: Optional[str]) -> tuple[Optional["B
     resource_ids = config.get("resource_ids") or []
     service_id = config.get("default_service_id")
 
-    if not config.get("enabled_in_chat") or not resource_ids:
+    module_enabled = await get_module_service().is_enabled(bot.bot_id, MODULE_KEY)
+    if not module_enabled or not resource_ids:
         return None, {
             "message": "Por el momento no ofrecemos reserva de turnos por este medio. Contactanos directamente para coordinar.",
             "done": True,

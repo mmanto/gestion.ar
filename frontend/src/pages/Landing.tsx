@@ -229,7 +229,7 @@ export const Landing: React.FC = () => {
             <h2 className="text-h2 text-gray-900 mb-6">
               ¿Te suena familiar?
             </h2>
-            <p className="text-body text-gray-500 max-w-2xl mx-auto">
+            <p className="text-body text-gray-700 max-w-2xl mx-auto">
               Estos son los problemas más comunes que enfrentan los negocios hoy
             </p>
           </div>
@@ -271,7 +271,7 @@ export const Landing: React.FC = () => {
                   <span style={{ color: '#1a3a6e' }}>{item.icon}</span>
                 </div>
                 <h3 className="text-h3 text-gray-900 mb-3">{item.title}</h3>
-                <p className="text-body-small text-gray-500">{item.desc}</p>
+                <p className="text-body-small text-gray-700">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -315,7 +315,7 @@ export const Landing: React.FC = () => {
                   {step.num}
                 </div>
                 <h3 className="text-h3 text-gray-900 mb-4">{step.title}</h3>
-                <p className="text-body-small text-gray-500 max-w-xs">{step.desc}</p>
+                <p className="text-body-small text-gray-700 max-w-xs">{step.desc}</p>
               </div>
             ))}
           </div>
@@ -333,7 +333,7 @@ export const Landing: React.FC = () => {
               <h2 className="text-h2 text-gray-900 mb-6">
                 Donde ya están tus clientes
               </h2>
-              <p className="text-body text-gray-600 max-w-md">
+              <p className="text-body text-gray-800 max-w-md">
                 No le pidas a tus clientes que descarguen una app nueva. El agente se integra directamente con las plataformas que ya usan todos los días.
               </p>
             </div>
@@ -392,7 +392,7 @@ export const Landing: React.FC = () => {
                         </span>
                       )}
                     </div>
-                    <p className="text-body-small text-gray-500">{channel.desc}</p>
+                    <p className="text-body-small text-gray-700">{channel.desc}</p>
                   </div>
                 </div>
               ))}
@@ -415,12 +415,12 @@ export const Landing: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((f) => (
-              <div key={f.title} className="rounded-3xl p-10 border border-gray-100 hover:shadow-md transition-shadow">
+              <div key={f.title} className="rounded-3xl p-10 border border-gray-200 hover:shadow-md transition-shadow">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6" style={{ backgroundColor: '#EEF8FC', color: '#2793b4' }}>
                   {f.icon}
                 </div>
                 <h3 className="text-h3 text-gray-900 mb-3">{f.title}</h3>
-                <p className="text-body-small text-gray-500">{f.desc}</p>
+                <p className="text-body-small text-gray-700">{f.desc}</p>
               </div>
             ))}
           </div>
@@ -434,9 +434,9 @@ export const Landing: React.FC = () => {
             <h2 className="text-h2 text-gray-900 mb-6">
               Una inversión que se paga sola
             </h2>
-            <p className="text-body text-gray-500 max-w-2xl mx-auto">
+            <p className="text-body text-gray-700 max-w-2xl mx-auto">
               Con un solo cliente adicional al mes, el agente cubre completamente su costo.{' '}
-              <strong className="text-gray-700">Todo lo demás es rentabilidad.</strong>
+              <strong className="text-gray-900">Todo lo demás es rentabilidad.</strong>
             </p>
           </div>
 
@@ -452,7 +452,7 @@ export const Landing: React.FC = () => {
                   'Más de 10 horas semanales perdidas',
                   'Conversaciones dispersas en distintos canales',
                 ].map((item) => (
-                  <li key={item} className="flex items-start gap-4 text-body-small text-gray-500">
+                  <li key={item} className="flex items-start gap-4 text-body-small text-gray-700">
                     <span className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                       <XIcon className="w-3.5 h-3.5 text-gray-400" />
                     </span>
@@ -464,7 +464,7 @@ export const Landing: React.FC = () => {
 
             {/* Con el agente */}
             <div className="rounded-3xl p-10 shadow-sm" style={{ backgroundColor: '#D6E4F8' }}>
-              <p className="text-label text-gray-600 mb-8">Con el agente</p>
+              <p className="text-label text-gray-800 mb-8">Con el agente</p>
               <ul className="space-y-5">
                 {[
                   'Respuestas automáticas en segundos, 24/7',
@@ -473,9 +473,9 @@ export const Landing: React.FC = () => {
                   'Más del 70% de ahorro en tiempo operativo',
                   'Todo unificado en un solo panel',
                 ].map((item) => (
-                  <li key={item} className="flex items-start gap-4 text-body-small text-gray-700">
+                  <li key={item} className="flex items-start gap-4 text-body-small text-gray-900">
                     <span className="w-6 h-6 rounded-full bg-white/70 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <CheckIcon className="w-3.5 h-3.5 text-gray-700" />
+                      <CheckIcon className="w-3.5 h-3.5 text-gray-900" />
                     </span>
                     {item}
                   </li>
@@ -496,7 +496,7 @@ export const Landing: React.FC = () => {
             {industries.map((industry) => (
               <span
                 key={industry}
-                className="text-body-small px-5 py-2.5 rounded-full text-gray-700"
+                className="text-body-small px-5 py-2.5 rounded-full text-gray-900"
                 style={{ backgroundColor: '#EDF2FA' }}
               >
                 {industry}
@@ -528,7 +528,7 @@ export const Landing: React.FC = () => {
               </p>
               <ul className="mt-8 space-y-4 mb-10">
                 {planFeatures.map((f) => (
-                  <li key={f} className="flex items-center gap-3 text-body-small text-gray-600">
+                  <li key={f} className="flex items-center gap-3 text-body-small text-gray-800">
                     <CheckIcon className="w-4 h-4 flex-shrink-0" style={{ color: '#2793b4' }} />
                     {f}
                   </li>
@@ -551,7 +551,7 @@ export const Landing: React.FC = () => {
               </p>
               <ul className="mt-8 space-y-4 mb-10">
                 {planFeatures.map((f) => (
-                  <li key={f} className="flex items-center gap-3 text-body-small text-gray-600">
+                  <li key={f} className="flex items-center gap-3 text-body-small text-gray-800">
                     <CheckIcon className="w-4 h-4 flex-shrink-0" style={{ color: '#2793b4' }} />
                     {f}
                   </li>

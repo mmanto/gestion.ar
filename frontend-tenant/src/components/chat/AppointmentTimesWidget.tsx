@@ -13,7 +13,7 @@ export function AppointmentTimesWidget({ widget, onSelectTime, onBack }: Props) 
   const capitalizedLabel = dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-3 w-full max-w-[320px] shadow-sm">
+    <div className="bg-white border border-gray-300 rounded-xl p-3 w-full max-w-[320px] shadow-sm">
       <p className="text-sm font-semibold text-gray-800 mb-2">{capitalizedLabel}</p>
       <div className="flex flex-wrap gap-2 mb-3">
         {widget.slots.map((slot) => (
@@ -27,7 +27,7 @@ export function AppointmentTimesWidget({ widget, onSelectTime, onBack }: Props) 
           </button>
         ))}
       </div>
-      <button type="button" onClick={onBack} className="text-xs text-gray-500 hover:text-gray-700">
+      <button type="button" onClick={onBack} className="text-xs text-gray-700 hover:text-gray-900">
         ‹ Volver al calendario
       </button>
     </div>

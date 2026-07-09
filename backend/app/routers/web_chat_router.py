@@ -24,6 +24,8 @@ from app.services.bot_service import get_bot_service
 from app.services.channel_service import get_channel_service
 from app.services.client_service import get_client_service
 from app.services.conversation_flow_service import create_flow_state, FlowState
+from app.services.module_service import get_module_service
+from app.services.tenant_service import get_tenant_service
 from app.services.appointment_booking_service import BookingState, detects_booking_intent, start_booking
 from app.models.client import ClientUpdate
 
@@ -96,6 +98,9 @@ async def websocket_chat(websocket: WebSocket, bot_id: str, device_id: Optional[
         await websocket.close(code=4004)
         return
 
+    tenant = await get_tenant_service().get_tenant(bot.tenant_id)
+    tenant_name = tenant.name if tenant else bot.name
+
     # Usar device_id estable del cliente si lo envía, o generar uno nuevo
     session_id = device_id if device_id else str(uuid.uuid4())
     web_client_id: Optional[str] = None
@@ -126,6 +131,7 @@ async def websocket_chat(websocket: WebSocket, bot_id: str, device_id: Optional[
             "conversation_id": conversation_id,
             "message": get_effective_welcome_message(bot.config),
             "bot_name": bot.name,
+            "tenant_name": tenant_name,
         }
     )
 
@@ -280,6 +286,9 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
         await websocket.close(code=4004)
         return
 
+    tenant = await get_tenant_service().get_tenant(bot.tenant_id)
+    tenant_name = tenant.name if tenant else bot.name
+
     # Actualizar contador de actividad del canal
     await channel_service.increment_message_counters(channel_id, received=0, sent=0)
 
@@ -330,6 +339,7 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
             "conversation_id": conversation_id,
             "message": get_effective_welcome_message(bot.config),
             "bot_name": bot.name,
+            "tenant_name": tenant_name,
             "history": history_messages,
         }
     )
@@ -344,7 +354,12 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
 
     # === Fase 2: Inicializar flujo de captura si está configurado ===
     flow_state: Optional[FlowState] = None
-    if bot.config.flow and bot.config.flow.enabled and bot.config.flow.steps:
+    if (
+        bot.config.flow
+        and bot.config.flow.enabled
+        and bot.config.flow.steps
+        and await get_module_service().is_enabled(bot.bot_id, "lead_funnel")
+    ):
         # Obtener datos existentes del cliente para saltar pasos ya completados
         existing_data = None
         if channel_client_id:

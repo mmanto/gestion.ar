@@ -237,7 +237,7 @@ export const BotChannels = () => {
       <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
           {/* Breadcrumb */}
           <nav className="mb-4">
-            <ol className="flex items-center space-x-2 text-base text-gray-700">
+            <ol className="flex items-center space-x-2 text-base text-gray-900">
               <li>
                 <Link to="/bots" className="hover:underline" style={{ color: accent }}>
                   Agentes
@@ -272,7 +272,7 @@ export const BotChannels = () => {
           {channels.length === 0 ? (
             <Card>
               <EmptyState
-                icon={<Radio className="w-8 h-8 text-gray-600" />}
+                icon={<Radio className="w-8 h-8 text-gray-800" />}
                 title="No hay canales configurados"
                 titleClassName="text-gray-900 text-xl"
                 action={
@@ -310,7 +310,7 @@ export const BotChannels = () => {
             <form onSubmit={handleCreate}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-900 mb-1">
                     Tipo de Canal
                   </label>
                   <select
@@ -328,7 +328,7 @@ export const BotChannels = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-900 mb-1">
                     Nombre
                   </label>
                   <input
@@ -342,7 +342,7 @@ export const BotChannels = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-900 mb-1">
                     Webhook URL
                   </label>
                   <input
@@ -352,7 +352,7 @@ export const BotChannels = () => {
                     className="w-full border border-gray-300 rounded-lg px-3 py-2"
                     placeholder="https://tu-dominio.com/webhook (opcional)"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-700 mt-1">
                     Dejar vacío para generar automáticamente. Esta es la URL que debes configurar en Twilio/Meta.
                   </p>
                 </div>
@@ -361,7 +361,7 @@ export const BotChannels = () => {
                   <>
                     {/* Selector de proveedor */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-900 mb-1">
                         Proveedor
                       </label>
                       <select
@@ -383,7 +383,7 @@ export const BotChannels = () => {
                     {formData.whatsapp_provider === 'meta' && (
                       <>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                          <label className="block text-sm font-medium text-gray-900 mb-1">
                             Phone Number ID
                           </label>
                           <input
@@ -408,7 +408,7 @@ export const BotChannels = () => {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                          <label className="block text-sm font-medium text-gray-900 mb-1">
                             Access Token
                           </label>
                           <input
@@ -433,7 +433,7 @@ export const BotChannels = () => {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                          <label className="block text-sm font-medium text-gray-900 mb-1">
                             Verify Token
                           </label>
                           <input
@@ -463,7 +463,7 @@ export const BotChannels = () => {
                     {formData.whatsapp_provider === 'twilio' && (
                       <>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                          <label className="block text-sm font-medium text-gray-900 mb-1">
                             Account SID
                           </label>
                           <input
@@ -488,7 +488,7 @@ export const BotChannels = () => {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                          <label className="block text-sm font-medium text-gray-900 mb-1">
                             Auth Token
                           </label>
                           <input
@@ -513,7 +513,7 @@ export const BotChannels = () => {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                          <label className="block text-sm font-medium text-gray-900 mb-1">
                             Número de Teléfono
                           </label>
                           <input
@@ -536,7 +536,7 @@ export const BotChannels = () => {
                             placeholder="whatsapp:+14155238886"
                             required
                           />
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-gray-700 mt-1">
                             Formato: whatsapp:+1234567890
                           </p>
                         </div>
@@ -569,7 +569,7 @@ export const BotChannels = () => {
                 {formData.channel_type === 'telegram' && (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-900 mb-1">
                         Bot Token
                       </label>
                       <input
@@ -589,7 +589,7 @@ export const BotChannels = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-900 mb-1">
                         Bot Username
                       </label>
                       <input
@@ -609,7 +609,7 @@ export const BotChannels = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-900 mb-1">
                         Webhook Secret
                       </label>
                       <input
@@ -657,11 +657,11 @@ export const BotChannels = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
             <h2 className="text-xl font-bold mb-1 text-center">QR - {qrChannel.name}</h2>
-            <p className="text-sm text-gray-500 mb-4 text-center">Escanea para abrir el chat web</p>
+            <p className="text-sm text-gray-700 mb-4 text-center">Escanea para abrir el chat web</p>
 
             {/* URL base editable */}
             <div className="mb-4">
-              <label className="block text-xs font-medium text-gray-600 mb-1">
+              <label className="block text-xs font-medium text-gray-800 mb-1">
                 URL base (ngrok, dominio, etc.)
               </label>
               <div className="flex gap-2">
@@ -794,7 +794,7 @@ const ChannelCard = ({ channel, botId, username, onActivate, onDeactivate, onDel
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900">{channel.name}</h3>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-700">
               {channelTypeLabels[channel.channel_type]}
               {channel.channel_type === 'whatsapp' && channel.whatsapp_config?.provider && (
                 <span className="ml-1">
@@ -811,18 +811,18 @@ const ChannelCard = ({ channel, botId, username, onActivate, onDeactivate, onDel
 
       <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
         <div>
-          <span className="text-gray-500">Mensajes Recibidos:</span>
+          <span className="text-gray-700">Mensajes Recibidos:</span>
           <span className="ml-2 font-medium">{channel.total_messages_received}</span>
         </div>
         <div>
-          <span className="text-gray-500">Mensajes Enviados:</span>
+          <span className="text-gray-700">Mensajes Enviados:</span>
           <span className="ml-2 font-medium">{channel.total_messages_sent}</span>
         </div>
       </div>
 
       <div className="mt-4">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-gray-700">
             {isWebChannel || isPwaChannel ? 'WebSocket URL:' : 'Webhook URL:'}
           </span>
           {!isWebChannel && !isPwaChannel && (

@@ -1,9 +1,11 @@
-import { useNavigate } from 'react-router-dom';
-import { MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
+import { MessageSquare, MessageCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../common/Button';
+import { Drawer } from '../common/Drawer';
 import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '../common/Table';
 import { EmptyState } from '../common/EmptyState';
 import { Spinner } from '../common/Spinner';
+import MessagesList from '../messages/MessagesList';
 import { formatDate, formatCurrency, formatNumber, truncateText } from '../../utils/formatters';
 import type { Conversation } from '../../types/conversation.types';
 
@@ -22,7 +24,17 @@ const ConversationList = ({
   onPageChange,
   loading = false,
 }: ConversationListProps) => {
-  const navigate = useNavigate();
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const handleOpenConversation = (conversation: Conversation) => {
+    setSelectedConversation(conversation);
+    setDrawerOpen(true);
+  };
+
+  const handleCloseDrawer = () => {
+    setDrawerOpen(false);
+  };
 
   const getPlatformBadge = (platform?: string) => {
     const colors = {
@@ -62,11 +74,11 @@ const ConversationList = ({
           <tr>
             <td>
               <EmptyState
-                icon={<MessageSquare className="w-8 h-8 text-gray-600" />}
+                icon={<MessageSquare className="w-8 h-8 text-gray-800" />}
                 title="No hay conversaciones"
                 description="No se encontraron conversaciones con los filtros aplicados"
                 titleClassName="text-gray-900 text-xl"
-                descriptionClassName="text-gray-700 text-base"
+                descriptionClassName="text-gray-900 text-base"
               />
             </td>
           </tr>
@@ -88,18 +100,15 @@ const ConversationList = ({
             <TableHeaderCell>Tokens</TableHeaderCell>
             <TableHeaderCell>Costo</TableHeaderCell>
             <TableHeaderCell>Actualizado</TableHeaderCell>
+            <TableHeaderCell align="right">Acciones</TableHeaderCell>
           </tr>
         </TableHead>
         <TableBody>
           {conversations.map((conversation) => (
-            <TableRow
-              key={conversation.conversation_id}
-              onClick={() => navigate(`/conversations/${conversation.conversation_id}`)}
-              className="cursor-pointer"
-            >
+            <TableRow key={conversation.conversation_id}>
               <TableCell>
                 <div className="font-medium text-gray-900">{conversation.user_id}</div>
-                <div className="text-sm text-gray-700">{conversation.conversation_id.slice(0, 8)}...</div>
+                <div className="text-sm text-gray-900">{conversation.conversation_id.slice(0, 8)}...</div>
               </TableCell>
               <TableCell>
                 {getPlatformBadge(conversation.metadata?.source)}
@@ -111,6 +120,15 @@ const ConversationList = ({
               <TableCell>{formatNumber(conversation.total_tokens_used)}</TableCell>
               <TableCell>{formatCurrency(conversation.total_cost_usd)}</TableCell>
               <TableCell>{formatDate(conversation.updated_at)}</TableCell>
+              <TableCell align="right">
+                <button
+                  onClick={() => handleOpenConversation(conversation)}
+                  title="Ver conversación"
+                  className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                </button>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -118,7 +136,7 @@ const ConversationList = ({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 bg-white border border-gray-200 sm:px-6 rounded-lg">
+        <div className="flex items-center justify-between px-4 py-3 bg-white border border-gray-300 sm:px-6 rounded-lg">
           <div className="flex justify-between items-center w-full">
             <div>
               <p className="text-base text-gray-900">
@@ -149,6 +167,14 @@ const ConversationList = ({
           </div>
         </div>
       )}
+
+      <Drawer
+        open={drawerOpen}
+        onClose={handleCloseDrawer}
+        title={selectedConversation ? selectedConversation.user_id : ''}
+      >
+        <MessagesList messages={selectedConversation?.messages ?? []} />
+      </Drawer>
     </div>
   );
 };

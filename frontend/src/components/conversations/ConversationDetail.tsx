@@ -64,7 +64,7 @@ const ConversationDetail = ({ conversation, showMetadata = true }: ConversationD
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white border-b border-gray-300 px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <Button
@@ -78,7 +78,7 @@ const ConversationDetail = ({ conversation, showMetadata = true }: ConversationD
             </Button>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{conversation.user_id}</h1>
-              <p className="text-sm text-gray-500">ID: {conversation.conversation_id}</p>
+              <p className="text-sm text-gray-700">ID: {conversation.conversation_id}</p>
             </div>
           </div>
           <div>{getPlatformBadge(conversation.metadata?.source)}</div>
@@ -90,7 +90,7 @@ const ConversationDetail = ({ conversation, showMetadata = true }: ConversationD
             <div className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4 text-primary" />
               <div>
-                <p className="text-xs text-gray-600">Mensajes</p>
+                <p className="text-xs text-gray-800">Mensajes</p>
                 <p className="text-lg font-semibold">{formatNumber(messages.length)}</p>
               </div>
             </div>
@@ -99,7 +99,7 @@ const ConversationDetail = ({ conversation, showMetadata = true }: ConversationD
             <div className="flex items-center gap-2">
               <Cpu className="w-4 h-4 text-accent" />
               <div>
-                <p className="text-xs text-gray-600">Tokens</p>
+                <p className="text-xs text-gray-800">Tokens</p>
                 <p className="text-lg font-semibold">{formatNumber(conversation.total_tokens_used)}</p>
               </div>
             </div>
@@ -108,7 +108,7 @@ const ConversationDetail = ({ conversation, showMetadata = true }: ConversationD
             <div className="flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-pink-600" />
               <div>
-                <p className="text-xs text-gray-600">Costo</p>
+                <p className="text-xs text-gray-800">Costo</p>
                 <p className="text-lg font-semibold">{formatCurrency(conversation.total_cost_usd)}</p>
               </div>
             </div>
@@ -117,7 +117,7 @@ const ConversationDetail = ({ conversation, showMetadata = true }: ConversationD
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-secondary" />
               <div>
-                <p className="text-xs text-gray-600">Actualizado</p>
+                <p className="text-xs text-gray-800">Actualizado</p>
                 <p className="text-xs font-semibold">{formatDate(conversation.updated_at)}</p>
               </div>
             </div>
@@ -131,7 +131,7 @@ const ConversationDetail = ({ conversation, showMetadata = true }: ConversationD
       </div>
 
       {/* Agent Composer */}
-      <div className="bg-white border-t border-gray-200 px-4 py-3">
+      <div className="bg-white border-t border-gray-300 px-4 py-3">
         <div className="flex items-end gap-2">
           <textarea
             ref={textareaRef}

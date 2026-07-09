@@ -7,6 +7,9 @@ import api from './api';
 import type {
   BotModuleInfo,
   ModuleInfo,
+  Plan,
+  PlanCreate,
+  PlanUpdate,
   Tenant,
   TenantCreate,
   TenantsResponse,
@@ -18,6 +21,30 @@ import type {
 } from '../types/tenant.types';
 
 const tenantAdminService = {
+  async listPlans(): Promise<Plan[]> {
+    const response = await api.get<{ success: boolean; plans: Plan[] }>('/admin/plans');
+    return response.data.plans;
+  },
+
+  async getPlan(planId: string): Promise<Plan> {
+    const response = await api.get<{ success: boolean; plan: Plan }>(`/admin/plans/${planId}`);
+    return response.data.plan;
+  },
+
+  async createPlan(data: PlanCreate): Promise<Plan> {
+    const response = await api.post<{ success: boolean; plan: Plan }>('/admin/plans', data);
+    return response.data.plan;
+  },
+
+  async updatePlan(planId: string, data: PlanUpdate): Promise<Plan> {
+    const response = await api.patch<{ success: boolean; plan: Plan }>(`/admin/plans/${planId}`, data);
+    return response.data.plan;
+  },
+
+  async deletePlan(planId: string): Promise<void> {
+    await api.delete(`/admin/plans/${planId}`);
+  },
+
   async listTenants(page = 1, limit = 50): Promise<TenantsResponse> {
     const response = await api.get<TenantsResponse>(`/admin/tenants?page=${page}&limit=${limit}`);
     return response.data;

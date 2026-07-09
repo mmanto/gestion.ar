@@ -10,7 +10,7 @@ export function ChatPage() {
 
   if (!botId && !channelId) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 text-gray-500">
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 text-gray-700">
         Chat no encontrado
       </div>
     );

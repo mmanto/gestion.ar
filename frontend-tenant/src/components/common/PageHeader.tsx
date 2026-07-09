@@ -15,7 +15,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   description,
   actions,
   titleClassName = 'font-bold',
-  descriptionClassName = 'text-gray-600',
+  descriptionClassName = 'text-gray-800',
 }) => {
   return (
     <div className="flex items-start justify-between mb-8">

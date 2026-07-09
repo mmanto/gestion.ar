@@ -27,6 +27,15 @@ class ModuleService:
             result = await session.execute(select(ModuleModel))
             return [_to_module(r) for r in result.scalars().all()]
 
+    async def is_enabled(self, bot_id: str, module_key: str) -> bool:
+        """Chequeo liviano para gatear funcionalidad real (ej. reserva de
+        turnos). `enabled=True` implica `granted=True` (CHECK
+        ck_bot_modules_enabled_requires_granted), así que alcanza con leer
+        `enabled`."""
+        async with AsyncSessionLocal() as session:
+            row = await session.get(BotModuleModel, (bot_id, module_key))
+            return bool(row and row.enabled)
+
     async def get_bot_modules(self, bot_id: str) -> List[BotModuleOut]:
         """Todos los módulos del catálogo, con su estado granted/enabled para
         este bot (aunque nunca se haya otorgado — enabled/granted=False)."""

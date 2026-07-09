@@ -1,7 +1,7 @@
 export function TypingIndicator() {
   return (
     <div className="flex justify-start px-4 py-2">
-      <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
+      <div className="bg-white border border-gray-300 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
         <div className="flex gap-1 items-center h-4">
           {[0, 1, 2].map((i) => (
             <span

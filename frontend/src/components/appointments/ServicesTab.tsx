@@ -63,8 +63,8 @@ const ServiceResources = ({ botId, service }: { botId: string; service: Service 
   };
 
   return (
-    <div className="mt-3 pt-3 border-t border-gray-100">
-      <p className="text-xs font-medium text-gray-500 mb-2">Recursos que ofrecen este servicio</p>
+    <div className="mt-3 pt-3 border-t border-gray-200">
+      <p className="text-xs font-medium text-gray-700 mb-2">Recursos que ofrecen este servicio</p>
       {attached.length === 0 ? (
         <p className="text-xs text-gray-400 mb-2">Ninguno asociado todavía</p>
       ) : (
@@ -75,7 +75,7 @@ const ServiceResources = ({ botId, service }: { botId: string; service: Service 
               <button
                 onClick={() => handleDetach(r.id)}
                 disabled={busy}
-                className="text-gray-500 hover:text-red-600"
+                className="text-gray-700 hover:text-red-600"
                 aria-label={`Quitar ${r.name}`}
               >
                 ×
@@ -175,7 +175,7 @@ export const ServicesTab = ({ botId, onServicesChanged }: Props) => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-xl font-semibold text-gray-900">Servicios</h2>
-          <p className="text-gray-600 mt-1">Lo que se reserva (consulta, alquiler, clase, etc.)</p>
+          <p className="text-gray-800 mt-1">Lo que se reserva (consulta, alquiler, clase, etc.)</p>
         </div>
         <Button onClick={openCreate}>Nuevo Servicio</Button>
       </div>
@@ -187,10 +187,10 @@ export const ServicesTab = ({ botId, onServicesChanged }: Props) => {
       )}
 
       {loading ? (
-        <p className="text-gray-500">Cargando...</p>
+        <p className="text-gray-700">Cargando...</p>
       ) : services.length === 0 ? (
         <Card>
-          <p className="text-gray-500 text-center">No hay servicios configurados todavía.</p>
+          <p className="text-gray-700 text-center">No hay servicios configurados todavía.</p>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -207,7 +207,7 @@ export const ServicesTab = ({ botId, onServicesChanged }: Props) => {
                   </Button>
                 </div>
               </div>
-              <div className="text-sm text-gray-500 space-y-1">
+              <div className="text-sm text-gray-700 space-y-1">
                 <p>Duración: {service.duration_minutes} min</p>
                 {(service.buffer_before_minutes > 0 || service.buffer_after_minutes > 0) && (
                   <p>

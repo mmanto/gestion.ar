@@ -172,11 +172,11 @@ export const Clients = () => {
                 <tr>
                   <td colSpan={8}>
                     <EmptyState
-                      icon={<Users className="w-8 h-8 text-gray-600" />}
+                      icon={<Users className="w-8 h-8 text-gray-800" />}
                       title="No hay contactos todavía"
                       description="Los clientes aparecerán aquí cuando interactúen con tus agentes"
                       titleClassName="text-gray-900 text-xl"
-                      descriptionClassName="text-gray-700 text-base"
+                      descriptionClassName="text-gray-900 text-base"
                     />
                   </td>
                 </tr>

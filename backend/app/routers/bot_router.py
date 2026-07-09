@@ -8,13 +8,16 @@ ni configura sus propios bots; sólo prende/apaga módulos ya otorgados
 """
 
 from fastapi import APIRouter, HTTPException, Depends, Query, status
-from typing import Optional
+from pydantic import BaseModel
+from typing import Any, Dict, Optional
 
 from app.models.bot import BotCreate, BotUpdate, BotStatus
 from app.services.bot_service import get_bot_service
+from app.services.module_service import get_module_service
+from app.services.ius_validator import validate_structure, validate_semantics
 from app.auth_service import User
 from app.dependencies.auth import get_current_user, require_role
-from app.claude_service import build_effective_system_prompt
+from app.claude_service import build_effective_system_prompt, get_claude_service
 
 router = APIRouter(
     prefix="/api/bots",
@@ -41,6 +44,9 @@ async def create_bot(
     bot = await bot_service.create_bot(
         bot_data, owner_id=current_user.username, tenant_id=bot_data.tenant_id
     )
+
+    for module_key in bot_data.module_keys or []:
+        await get_module_service().grant_module(bot.bot_id, module_key, granted_by=current_user.username)
 
     return {
         "success": True,
@@ -75,6 +81,36 @@ async def get_bots(
         "pages": result["pages"],
         "limit": result["limit"]
     }
+
+
+class ValidateIusConfigRequest(BaseModel):
+    config: Dict[str, Any]
+    semantic: bool = False
+
+
+@router.post("/validate-ius-config", response_model=dict)
+async def validate_ius_config(body: ValidateIusConfigRequest):
+    """
+    Valida el JSON de configuración libre de un agente (ius_config) antes de
+    guardarlo. Los chequeos estructurales (genéricos + campos conocidos por
+    el runtime) siempre corren; el análisis semántico vía LLM es opcional
+    porque implica una llamada a la API de Claude.
+    """
+    structural = validate_structure(body.config)
+    semantic = []
+    if body.semantic:
+        try:
+            claude_client = get_claude_service().client
+        except Exception as e:
+            semantic = [{
+                "field": "$",
+                "message": f"No se pudo inicializar el servicio de IA: {e}",
+                "severity": "error",
+            }]
+        else:
+            semantic = await validate_semantics(body.config, claude_client)
+
+    return {"success": True, "structural": structural, "semantic": semantic}
 
 
 @router.get("/{bot_id}", response_model=dict)

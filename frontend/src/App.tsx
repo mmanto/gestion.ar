@@ -16,6 +16,8 @@ import { UserLandingPage } from './pages/UserLandingPage';
 import { BotDocuments } from './pages/BotDocuments';
 import { Tenants } from './pages/admin/Tenants';
 import { TenantDetail } from './pages/admin/TenantDetail';
+import { Plans } from './pages/admin/Plans';
+import { Settings } from './pages/Settings';
 
 function App() {
   return (
@@ -45,6 +47,14 @@ function App() {
               element={
                 <ProtectedRoute roles={['super_admin']}>
                   <TenantDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/plans"
+              element={
+                <ProtectedRoute roles={['super_admin']}>
+                  <Plans />
                 </ProtectedRoute>
               }
             />
@@ -87,6 +97,16 @@ function App() {
               element={
                 <ProtectedRoute roles={['super_admin']}>
                   <BotDocuments />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Ajustes de cuenta — cualquier usuario autenticado */}
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <Settings />
                 </ProtectedRoute>
               }
             />

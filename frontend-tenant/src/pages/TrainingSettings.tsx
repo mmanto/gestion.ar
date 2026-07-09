@@ -96,18 +96,18 @@ export const TrainingSettings = () => {
         {bots.length === 0 ? (
           <Card shadow="none">
             <EmptyState
-              icon={<GraduationCap className="w-8 h-8 text-gray-600" />}
+              icon={<GraduationCap className="w-8 h-8 text-gray-800" />}
               title="Todavía no tenés agentes configurados"
               description="Contactá a soporte para que configuren tu primer agente"
               titleClassName="text-gray-900 text-xl"
-              descriptionClassName="text-gray-700 text-base"
+              descriptionClassName="text-gray-900 text-base"
             />
           </Card>
         ) : (
           <>
             {bots.length > 1 && (
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Agente</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">Agente</label>
                 <select
                   value={selectedBotId || ''}
                   onChange={(e) => setSelectedBotId(e.target.value)}
@@ -125,7 +125,7 @@ export const TrainingSettings = () => {
                 <Card key={key} shadow="none">
                   <div className="flex items-center gap-3">
                     <div className="flex-1">
-                      <p className="text-xs font-medium text-gray-500 mb-1">{key}</p>
+                      <p className="text-xs font-medium text-gray-700 mb-1">{key}</p>
                       <input
                         type="text"
                         value={value}
