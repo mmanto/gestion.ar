@@ -136,5 +136,14 @@ secrets:
 networks:
   default:
     name: gestionar_network
+  # external: true — esta red la puede compartir más de un proyecto en el
+  # mismo servidor (Traefik standalone de infra/traefik/ + otros compose
+  # projects). Si no se marca external acá, un simple "docker compose down"
+  # con SOLO este archivo (sin -f docker-compose.prod.yml) se cree dueño de
+  # la red y la recrea, huerfanando cualquier contenedor externo que ya
+  # estuviera conectado (así se cayó el Traefik de producción una vez).
+  # Para uso local: crear la red una vez a mano con
+  #   docker network create traefik_public
   traefik_public:
     name: traefik_public
+    external: true
