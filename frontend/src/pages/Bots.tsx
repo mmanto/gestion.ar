@@ -43,7 +43,7 @@ export const Bots = () => {
   });
 
   useEffect(() => {
-    tenantAdminService.listTenants(1, 200).then((r) => setTenants(r.tenants)).catch(() => {});
+    tenantAdminService.listTenants(1, 100).then((r) => setTenants(r.tenants)).catch(() => {});
     tenantAdminService.listModules().then(setModules).catch(() => {});
   }, []);
 

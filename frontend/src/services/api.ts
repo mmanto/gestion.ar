@@ -1,5 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import type { InternalAxiosRequestConfig } from 'axios';
+import { toastBus } from './toastBus';
+import { getErrorMessage } from '../utils/errorMessage';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -32,9 +34,25 @@ api.interceptors.response.use(
   (error: AxiosError) => {
     // Si recibimos 401, limpiar token y redirigir a login
     if (error.response?.status === 401) {
+      const onLoginPage = window.location.pathname === '/login';
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      // En /login el formulario ya muestra su propio mensaje inline para este
+      // mismo status (credenciales incorrectas); en cualquier otra pantalla es
+      // una sesión vencida y el usuario necesita saber por qué lo mandamos afuera.
+      if (!onLoginPage) {
+        toastBus.emit('Tu sesión expiró. Iniciá sesión nuevamente.', 'error');
+        // Pequeño delay para que el toast alcance a pintarse antes del reload
+        // (window.location.href navega de inmediato y se lleva el DOM puesto).
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 1200);
+      }
+    } else {
+      // Notificar siempre al usuario: sin esto, errores como validaciones (422)
+      // o conflictos (400/409) quedaban silenciosos si la pantalla que hizo el
+      // request no los manejaba explícitamente.
+      toastBus.emit(getErrorMessage(error), 'error');
     }
     return Promise.reject(error);
   }

@@ -32,6 +32,6 @@ Los tokens están definidos en `frontend/tailwind.config.js`. Documentar aquí l
 - [ ] Badge / Status indicator
 - [ ] Modal / Dialog
 - [ ] Table con paginación
-- [ ] Toast / Notification
+- [x] Toast / Notification — `frontend/src/context/ToastContext.tsx` + `frontend/src/components/common/ToastContainer.tsx`. Se dispara manualmente con `useToast().showToast()` o automáticamente para cualquier error de API vía el interceptor de `frontend/src/services/api.ts`
 - [ ] Sidebar Navigation
 - [ ] Chat bubble (inbound / outbound / agent)
