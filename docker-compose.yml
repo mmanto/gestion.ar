@@ -92,6 +92,11 @@ services:
       - "traefik.http.services.gestionar.loadbalancer.server.port=80"
 
   # Traefik — solo activo con: docker compose --profile traefik up -d
+  # ADVERTENCIA: en el servidor de producción de intellify.pro NO usar este
+  # perfil. Ese servidor ya corre un Traefik standalone compartido
+  # (infra/traefik/, container "traefik") bindeado a 80/443 para varios
+  # proyectos del mismo host — levantar este servicio ahí compite por esos
+  # puertos y rompe el routing de todos. Ver docs/ops/DEPLOYMENT.md.
   traefik:
     image: traefik:v3.6
     container_name: gestionar_traefik

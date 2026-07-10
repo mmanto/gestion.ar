@@ -1,21 +1,21 @@
 # docker-compose.prod.yml — Overrides de producción
-# Uso: docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile traefik up -d --build
+# Uso: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 #
 # Requiere en el servidor:
 #   - .env              → REGISTRY_IMAGE, DB_USER, DB_PASSWORD, DB_NAME (ver .env.example)
 #   - backend/.env.prod → credenciales reales
 #   - docs/             → directorio (puede estar vacío)
+#   - Traefik standalone de infra/traefik/ corriendo (container "traefik",
+#     HTTP-01, red traefik_public) — este es el reverse proxy real del
+#     servidor, compartido con otros proyectos (cooperschol, insurance-api).
 #
-# El Traefik en uso HOY es el servicio "traefik" embebido en docker-compose.yml
-# (perfil "traefik", container gestionar_traefik, challenge TLS-ALPN-01 vía
-# --certificatesresolvers.letsencrypt.acme.tlschallenge=true) — por eso hace
-# falta pasar --profile traefik en el comando de arriba, si no Compose lo deja
-# fuera del scope por defecto (igual sigue corriendo si ya estaba arriba, pero
-# es más prolijo incluirlo explícitamente).
-#
-# infra/traefik/ (standalone, HTTP-01) es una alternativa documentada pero NO
-# es la que corre en este servidor — no migrar a esa sin coordinarlo antes,
-# ya que implicaría liberar los puertos 80/443 del Traefik embebido primero.
+# IMPORTANTE: NO pasar --profile traefik en el comando de arriba. Este
+# compose file también trae un servicio "traefik" embebido (perfil
+# "traefik", container gestionar_traefik) pensado solo para levantar el
+# stack de forma aislada en otro servidor — en ESTE servidor ya corre el
+# Traefik standalone de infra/traefik/ bindeado a 80/443, y si el embebido
+# intenta arrancar compite por esos mismos puertos y rompe el routing de
+# TODOS los proyectos del servidor, no solo de este.
 
 services:
   app:
@@ -58,9 +58,8 @@ services:
       - "traefik.http.routers.gestionar.tls.certresolver=letsencrypt"
       - "traefik.http.services.gestionar.loadbalancer.server.port=80"
 
-# El Traefik real es el servicio "traefik" embebido en docker-compose.yml
-# (perfil "traefik") — la red traefik_public ya existe, se referencia como
-# externa acá para no intentar recrearla.
+# El Traefik real es el standalone de infra/traefik/ — la red traefik_public
+# ya existe, se referencia como externa acá para no intentar recrearla.
 networks:
   traefik_public:
     external: true
