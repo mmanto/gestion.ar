@@ -44,17 +44,26 @@ curl -I https://admin.intellify.pro
 
 ```bash
 ssh deploy@<IP_SERVIDOR>
-cd /opt/app
+cd /opt/gestion.ar
+./deploy.sh
+```
 
-# Pull cambios
-git pull origin main
+`deploy.sh` hace `git pull` + `docker compose -f docker-compose.yml -f
+docker-compose.prod.yml up -d --build` + health check de `api.intellify.pro`
+y `admin.intellify.pro`. Existe porque un deploy manual sin los dos `-f`
+(solo `docker-compose.yml`, sin el override de prod) rompió producción varias
+veces: sin `docker-compose.prod.yml` los contenedores levantan con los
+labels de Traefik viejos (o sin ninguno) y con `backend/.env.dev` en vez de
+`.env.prod` — **usar siempre `./deploy.sh`, no el comando de `docker compose`
+a mano.**
 
-# Rebuild servicios modificados (el servicio del backend se llama "app", no "backend")
+Para debug manual puntual (rebuild de un solo servicio, por ejemplo), el
+comando completo sigue siendo:
+
+```bash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build app frontend
-
-# Verificar que todo levantó
-docker compose ps
-docker compose logs --tail=50 app
+docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
+docker compose -f docker-compose.yml -f docker-compose.prod.yml logs --tail=50 app
 ```
 
 ---
