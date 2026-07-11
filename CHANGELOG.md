@@ -25,6 +25,7 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 - Aislamiento de datos por agente en RAG (ChromaDB): cada documento ahora pertenece a un único bot_id, tanto en la ingesta como en la búsqueda/listado/borrado (antes la knowledge base era global y compartida entre todos los agentes)
 - El entrenamiento configurado por agente (system_prompt/ius_config) ahora se aplica también en WhatsApp y Telegram (antes solo se usaba en el canal Web; los demás canales respondían con un prompt genérico igual para todos los agentes)
 - Los endpoints de documentos (`/api/documents/*`, `/api/rag/*`) ahora requieren autenticación y ownership del bot; varios de ellos no requerían login en absoluto
+- Service Worker de `frontend-tenant` (`public/sw.js`) cacheaba `tenant-config.js` con estrategia cache-first pese a que nginx lo sirve con `Cache-Control: no-store` — si un navegador lo pedía antes de que `TENANT_ID_<SLUG>` quedara bien seteado, quedaba pegado a esa respuesta vacía para siempre ("este contenedor no tiene un tenant configurado") aunque el servidor ya sirviera la config correcta. Ahora se excluye de la caché del SW y se bumpeó `CACHE_NAME` para invalidar las entradas ya guardadas
 
 ### Eliminado
 - `/api/documents/*` y `/api/rag/*` (globales, sin bot_id) → reemplazados por `/api/bots/{bot_id}/documents/*`

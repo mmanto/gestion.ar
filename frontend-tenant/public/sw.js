@@ -6,7 +6,7 @@
  *  3. Clic en notificación → abrir URL del chat
  */
 
-const CACHE_NAME = 'ius-pwa-v3';
+const CACHE_NAME = 'ius-pwa-v4';
 
 // Assets de la shell de la aplicación a pre-cachear en install
 const SHELL_ASSETS = [
@@ -56,6 +56,15 @@ self.addEventListener('fetch', (event) => {
 
   // No interceptar requests a la API ni WebSocket
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/ws/')) {
+    return;
+  }
+
+  // No interceptar tenant-config.js: se regenera en cada arranque del
+  // contenedor (docker-entrypoint.sh) y nginx ya lo manda con
+  // Cache-Control: no-store — si el SW lo cachea igual (cache-first, sin
+  // content-hash en el nombre) queda pegado a la respuesta de la primera
+  // vez que el navegador lo pidió, aunque el servidor después la corrija.
+  if (url.pathname === '/tenant-config.js') {
     return;
   }
 

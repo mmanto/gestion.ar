@@ -38,7 +38,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       const e = err as { message?: string; response?: { data?: { detail?: string } } };
       if (e?.message !== 'cancelled') {
         const name = provider === 'google' ? 'Google' : 'Microsoft';
-        setError(e?.response?.data?.detail || `No se pudo iniciar sesión con ${name}. Intenta nuevamente`);
+        setError(e?.response?.data?.detail || e?.message || `No se pudo iniciar sesión con ${name}. Intenta nuevamente`);
       }
       setOauthLoading(null);
     }
@@ -63,7 +63,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         navigate('/admin/tenants');
       }
     } catch (err: unknown) {
-      type AxiosLike = { response?: { status: number; data?: { detail?: string } }; request?: unknown };
+      type AxiosLike = { response?: { status: number; data?: { detail?: string } }; request?: unknown; message?: string };
       const e = err as AxiosLike;
       if (e.response) {
         if (e.response.status === 401) {
@@ -76,7 +76,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       } else if (e.request) {
         setError('Error de conexión. Verifica tu conexión a internet');
       } else {
-        setError('Error inesperado. Intenta nuevamente');
+        setError(e.message || 'Error inesperado. Intenta nuevamente');
       }
     } finally {
       setLoading(false);

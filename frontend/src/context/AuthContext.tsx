@@ -6,6 +6,15 @@ import authService from '../services/auth.service';
 // eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Esta app (panel principal) es de uso exclusivo de administración general
+// (ver ProtectedRoute). Un usuario 'admin'/'operativo' de tenant que loguea
+// acá válidamente pero no puede acceder a ninguna ruta protegida generaba un
+// loop infinito Login -> /admin/tenants -> Login (pantalla en blanco) — por
+// eso el rol se valida acá, antes de establecer la sesión.
+const ALLOWED_ROLE = 'super_admin';
+const ROLE_NOT_ALLOWED_MESSAGE =
+  'Esta cuenta no tiene acceso a este panel. Ingresá desde el backoffice de tu organización.';
+
 interface AuthProviderProps {
   children: ReactNode;
 }
@@ -30,11 +39,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Verificar que el token sigue siendo válido
         try {
           const verifiedUser = await authService.verifyToken();
+          if (verifiedUser.role !== ALLOWED_ROLE) {
+            throw new Error(ROLE_NOT_ALLOWED_MESSAGE);
+          }
           setToken(storedToken);
           setUser(verifiedUser);
           setIsAuthenticated(true);
         } catch {
-          // Token inválido o expirado
+          // Token inválido/expirado, o rol sin acceso a esta app
           authService.clearAuth();
           setToken(null);
           setUser(null);
@@ -59,6 +71,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await authService.login(credentials);
 
+      if (response.user.role !== ALLOWED_ROLE) {
+        throw new Error(ROLE_NOT_ALLOWED_MESSAGE);
+      }
+
       // Guardar token y usuario
       authService.saveToken(response.access_token);
       authService.saveUser(response.user);
@@ -78,6 +94,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     authService.saveToken(appToken);
     // El finalize no devuelve el usuario completo; lo obtenemos de /auth/me.
     const verifiedUser = await authService.verifyToken();
+    if (verifiedUser.role !== ALLOWED_ROLE) {
+      authService.clearAuth();
+      throw new Error(ROLE_NOT_ALLOWED_MESSAGE);
+    }
     authService.saveUser(verifiedUser);
     setToken(appToken);
     setUser(verifiedUser);
