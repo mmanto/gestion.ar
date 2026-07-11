@@ -2,8 +2,9 @@
 # Uso: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 #
 # Requiere en el servidor:
-#   - .env              → REGISTRY_IMAGE, DB_USER, DB_PASSWORD, DB_NAME (ver .env.example)
-#   - backend/.env.prod → credenciales reales
+#   - .env.prod → REGISTRY_IMAGE, DB_USER, DB_PASSWORD, DB_NAME y credenciales
+#     reales (ver .env.example). Pasar --env-file .env.prod al comando de
+#     arriba, o usar ./deploy.sh que ya lo hace.
 #   - docs/             → directorio (puede estar vacío)
 #   - Traefik standalone de infra/traefik/ corriendo (container "traefik",
 #     HTTP-01, red traefik_public) — este es el reverse proxy real del
@@ -21,7 +22,7 @@ services:
   app:
     image: ${REGISTRY_IMAGE}/backend:${IMAGE_TAG:-latest}
     env_file:
-      - ./backend/.env.prod
+      - ./.env.prod
     environment:
       - REDIS_URL=redis://redis:6379
       - CHROMA_PATH=/app/chroma_db
@@ -43,7 +44,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=/api
+        - VITE_API_URL=${VITE_API_URL}
     # OJO: Compose mergea "labels" por clave, no reemplaza la lista entera.
     # docker-compose.yml (base) ya define un router/service "gestionar" para
     # este mismo servicio (Host dev.gestionar.kairosgroup.ar) — hay que

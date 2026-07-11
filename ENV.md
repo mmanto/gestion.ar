@@ -1,9 +1,10 @@
 # ENV.md — Variables de entorno
 
-Todas las variables de entorno requeridas por el proyecto.
-Copiar `backend/.env.example` a `backend/.env.dev` o `backend/.env.prod` y completar los valores.
+Todas las variables de entorno requeridas por el proyecto (backend, frontend
+y frontend-tenant comparten un único archivo por entorno).
+Copiar `.env.example` (raíz del repo) a `.env.dev` o `.env.prod` y completar los valores.
 
-> Nunca commitear archivos `.env` con credenciales reales. Solo `.env.example`.
+> Nunca commitear archivos `.env.dev` / `.env.prod` con credenciales reales. Solo `.env.example`.
 
 ---
 
@@ -18,14 +19,20 @@ Copiar `backend/.env.example` a `backend/.env.dev` o `backend/.env.prod` y compl
 
 ## Base de datos
 
+Postgres es la base de datos principal (ver ADR-006). `DB_NAME`/`DB_USER`/`DB_PASSWORD`
+se usan para sustituir `${...}` dentro de `docker-compose.yml`/`docker-compose.prod.yml`
+(arman `DATABASE_URL` ahí mismo, no hace falta setear `DATABASE_URL` a mano).
+
 | Variable | Requerida | Descripción | Ejemplo |
 |---|---|---|---|
-| `MONGODB_URI` | ✅ | URL de conexión MongoDB | `mongodb://mongo:27017/gestionar_dev` |
+| `DB_NAME` | ✅ | Nombre de la base Postgres | `gestionar` |
+| `DB_USER` | ✅ | Usuario Postgres | `gestionar_user` |
+| `DB_PASSWORD` | ✅ | Password Postgres | — |
 | `REDIS_URL` | ✅ | URL de conexión Redis | `redis://redis:6379` |
 | `CHROMA_PATH` | ✅ | Path de ChromaDB dentro del contenedor | `/app/chroma_db` |
 
-> En Docker, usar nombres de servicios (`mongo`, `redis`) en lugar de `localhost`.
-> MongoDB se expone en el host en el puerto `27018` para evitar colisiones. Redis en `6380`.
+> En Docker, usar nombres de servicios (`postgres`, `redis`) en lugar de `localhost`.
+> Postgres se expone en el host en el puerto `5433` para evitar colisiones. Redis en `6380`.
 
 ---
 
@@ -107,13 +114,40 @@ Copiar `backend/.env.example` a `backend/.env.dev` o `backend/.env.prod` y compl
 
 ---
 
-## Frontend (Vite)
-
-Variables con prefijo `VITE_` son expuestas al cliente.
+## URLs públicas
 
 | Variable | Requerida | Descripción | Ejemplo |
 |---|---|---|---|
-| `VITE_API_URL` | ✅ | URL base del backend | `http://localhost:8000` |
+| `WEBHOOK_BASE_URL` | ✅ | URL pública del **backend** (callbacks de WhatsApp/Telegram) | `https://api.tudominio.com` |
+| `FRONTEND_URL` | ✅ | URL pública del **frontend** (link de chat, redirects OAuth) | `https://tudominio.com` |
+
+> Son dominios distintos en producción. Confundirlos rompe el botón "Copiar link" del detalle del agente y los redirects de OAuth.
+
+---
+
+## Frontend (Vite)
+
+Variables con prefijo `VITE_` son expuestas al cliente. `frontend/` y
+`frontend-tenant/` leen el mismo archivo (`envDir` apunta a la raíz del
+repo), por eso el nombre de marca tiene una clave por app.
+
+| Variable | Requerida | Descripción | Ejemplo |
+|---|---|---|---|
+| `VITE_API_URL` | ✅ | URL base del backend (misma para ambas apps) | `http://localhost:8000` / `/api` |
+| `VITE_APP_NAME` | ❌ | Nombre de marca de `frontend/` (panel admin) | `Asistente` |
+| `VITE_TENANT_APP_NAME` | ❌ | Nombre de marca de `frontend-tenant/` | `Backoffice` |
+| `VITE_NANGO_CONNECT_URL` | ❌ | URL de Nango Connect visible desde el browser | `http://localhost:3009` |
+| `VITE_NANGO_API_URL` | ❌ | URL de la API de Nango visible desde el browser | `http://localhost:3003` |
+
+---
+
+## Docker Compose / Registry (solo `.env.prod`)
+
+| Variable | Requerida | Descripción | Ejemplo |
+|---|---|---|---|
+| `REGISTRY_IMAGE` | ✅ | Registry + namespace de las imágenes | `registry.gitlab.com/NAMESPACE/PROJECT` |
+| `IMAGE_TAG` | ❌ | Tag a deployar (default `latest`) | `v1.2.3` |
+| `TENANT_ID_IUS` | ❌ | Tenant ID por cada tenant con dominio propio (`docker-compose.tenants.prod.yml`) | `tenant_78f507331c18` |
 
 ---
 

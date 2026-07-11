@@ -24,7 +24,7 @@ echo -e "${GREEN}▶ Copiando archivos de configuración...${NC}"
 # Copiar desde el repo local (ajustar si usás git clone en su lugar)
 # git clone https://gitlab.com/NAMESPACE/PROJECT.git "$DEPLOY_PATH"
 
-cat > "$DEPLOY_PATH/.env" << EOF
+cat > "$DEPLOY_PATH/.env.prod" << EOF
 REGISTRY_IMAGE=$REGISTRY_IMAGE
 EOF
 
@@ -34,9 +34,9 @@ echo -e "${YELLOW}
   1. Copiá docker-compose.yml y docker-compose.prod.yml al servidor:
        scp docker-compose.yml docker-compose.prod.yml $USER@HOST:$DEPLOY_PATH/
 
-  2. Creá backend/.env.prod en el servidor con tus credenciales reales:
-       mkdir -p $DEPLOY_PATH/backend
-       nano $DEPLOY_PATH/backend/.env.prod
+  2. Completá $DEPLOY_PATH/.env.prod con el resto de las credenciales reales
+     (ANTHROPIC_API_KEY, SECRET_KEY, DB_USER, DB_PASSWORD, VAPID_*, etc. — ver .env.example):
+       nano $DEPLOY_PATH/.env.prod
 
   3. En GitLab → Settings → CI/CD → Variables, agregá:
        SSH_PRIVATE_KEY   (Type: File)  → tu clave privada SSH

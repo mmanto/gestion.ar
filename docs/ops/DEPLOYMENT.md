@@ -23,11 +23,11 @@ ssh deploy@<IP_SERVIDOR>
 git clone <repo-url> /opt/app && cd /opt/app
 
 # 3. Configurar variables de entorno de producción
-cp backend/.env.example backend/.env.prod
-nano backend/.env.prod  # completar ANTHROPIC_API_KEY, SECRET_KEY, VAPID_*, etc.
+cp .env.example .env.prod
+nano .env.prod  # completar ANTHROPIC_API_KEY, SECRET_KEY, DB_USER, DB_PASSWORD, VAPID_*, etc.
 
 # 4. Build y levantar
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 # 5. Verificar estado
 docker compose ps
@@ -48,22 +48,23 @@ cd /opt/gestion.ar
 ./deploy.sh
 ```
 
-`deploy.sh` hace `git pull` + `docker compose -f docker-compose.yml -f
-docker-compose.prod.yml up -d --build` + health check de `api.intellify.pro`
-y `admin.intellify.pro`. Existe porque un deploy manual sin los dos `-f`
-(solo `docker-compose.yml`, sin el override de prod) rompió producción varias
-veces: sin `docker-compose.prod.yml` los contenedores levantan con los
-labels de Traefik viejos (o sin ninguno) y con `backend/.env.dev` en vez de
-`.env.prod` — **usar siempre `./deploy.sh`, no el comando de `docker compose`
-a mano.**
+`deploy.sh` hace `git pull` + `docker compose --env-file .env.prod -f
+docker-compose.yml -f docker-compose.prod.yml up -d --build` + health check
+de `api.intellify.pro` y `admin.intellify.pro`. Existe porque un deploy
+manual sin los dos `-f` (solo `docker-compose.yml`, sin el override de prod)
+rompió producción varias veces: sin `docker-compose.prod.yml` los
+contenedores levantan con los labels de Traefik viejos (o sin ninguno) y con
+`.env.dev` en vez de `.env.prod` — **usar siempre `./deploy.sh`, no el
+comando de `docker compose` a mano.**
 
 Para debug manual puntual (rebuild de un solo servicio, por ejemplo), el
-comando completo sigue siendo:
+comando completo sigue siendo (nunca omitir `--env-file .env.prod`: sin él,
+Docker Compose no sustituye `${REGISTRY_IMAGE}`/`${DB_USER}`/etc. del YAML):
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build app frontend
-docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
-docker compose -f docker-compose.yml -f docker-compose.prod.yml logs --tail=50 app
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml up -d --build app frontend
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml ps
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml logs --tail=50 app
 ```
 
 ---
@@ -138,10 +139,10 @@ docker compose exec app bash
 
 ## Variables de entorno en producción
 
-Ver `ENV.md`. Las variables se setean en `backend/.env.prod` (no commiteado) y se pasan via Docker Compose.
+Ver `ENV.md`. Las variables se setean en `.env.prod` (raíz del repo, no commiteado) y se pasan via Docker Compose.
 
 Además de lo ya documentado en `ENV.md`, para la puesta en producción en
-`intellify.pro` `backend/.env.prod` debe tener:
+`intellify.pro` `.env.prod` debe tener:
 
 | Variable | Valor |
 |---|---|
@@ -158,10 +159,10 @@ subdominio de tenant.
 
 ```bash
 # Editar variables en producción
-nano /opt/app/backend/.env.prod
+nano /opt/app/.env.prod
 
 # Recrear containers con nuevas variables (sin rebuild de imagen)
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
 Ver `docker-compose.prod.yml` en la raíz del repositorio para la
@@ -196,7 +197,7 @@ certificado la primera vez que recibe tráfico HTTP/HTTPS.
 ### Levantar los tenants ya definidos
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml \
   -f docker-compose.tenants.prod.yml up -d --build
 ```
 
@@ -204,11 +205,11 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml \
 
 1. Crear el tenant (plan, tenant, usuario admin, bot, canal, módulos) desde
    `https://admin.intellify.pro` y capturar el `tenant_id` devuelto.
-2. Agregar `TENANT_ID_<SLUG>=<tenant_id>` a `.env` en el servidor.
+2. Agregar `TENANT_ID_<SLUG>=<tenant_id>` a `.env.prod` en el servidor.
 3. Copiar un service block en `docker-compose.tenants.prod.yml`, renombrar
    `service key`/`container_name`, usar `TENANT_ID_<SLUG>` y
    `Host(\`<slug>.intellify.pro\`)`.
-4. `docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.tenants.prod.yml up -d --build frontend-tenant-<slug>`
+4. `docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.tenants.prod.yml up -d --build frontend-tenant-<slug>`
 
 ### Dar de alta un tenant con dominio propio del cliente
 

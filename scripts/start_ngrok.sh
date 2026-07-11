@@ -146,17 +146,16 @@ EOF
 
 echo -e "${GREEN}✅ Info guardada en .ngrok_info${NC}"
 
-# Actualizar WEBHOOK_BASE_URL en backend/.env y reiniciar backend
-for envfile in backend/.env backend/.env.dev; do
-    if [ -f "$envfile" ]; then
-        if grep -q "^WEBHOOK_BASE_URL=" "$envfile"; then
-            sed -i "s|^WEBHOOK_BASE_URL=.*|WEBHOOK_BASE_URL=${NGROK_URL}|" "$envfile"
-        else
-            echo "WEBHOOK_BASE_URL=${NGROK_URL}" >> "$envfile"
-        fi
-        echo -e "${GREEN}✅ ${envfile} actualizado (WEBHOOK_BASE_URL=${NGROK_URL})${NC}"
+# Actualizar WEBHOOK_BASE_URL en .env.dev y reiniciar backend
+envfile=".env.dev"
+if [ -f "$envfile" ]; then
+    if grep -q "^WEBHOOK_BASE_URL=" "$envfile"; then
+        sed -i "s|^WEBHOOK_BASE_URL=.*|WEBHOOK_BASE_URL=${NGROK_URL}|" "$envfile"
+    else
+        echo "WEBHOOK_BASE_URL=${NGROK_URL}" >> "$envfile"
     fi
-done
+    echo -e "${GREEN}✅ ${envfile} actualizado (WEBHOOK_BASE_URL=${NGROK_URL})${NC}"
+fi
 
 if docker compose ps app 2>/dev/null | grep -q "Up"; then
     echo -e "${BLUE}   Reiniciando backend para aplicar nueva URL...${NC}"

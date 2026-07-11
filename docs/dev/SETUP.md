@@ -17,9 +17,10 @@
 git clone <repo-url>
 cd gestion.ar
 
-# 2. Configurar variables de entorno
-cp backend/.env.example backend/.env.dev
-# Editar backend/.env.dev con las credenciales reales (ver ENV.md)
+# 2. Configurar variables de entorno (un solo archivo en la raíz para todo:
+#    backend, frontend y frontend-tenant)
+cp .env.example .env.dev
+# Editar .env.dev con las credenciales reales (ver ENV.md)
 
 # 3. Levantar servicios de desarrollo
 docker compose up -d
@@ -29,11 +30,14 @@ docker compose ps
 curl http://localhost:8000/api/health
 ```
 
-> MongoDB queda accesible en el host en el puerto `27018`. Redis en `6380` (para evitar colisiones con instancias locales).
+> Postgres queda accesible en el host en el puerto `5433`. Redis en `6380` (para evitar colisiones con instancias locales).
 
 ---
 
 ## Desarrollo sin Docker
+
+Backend y frontend leen el mismo `.env.dev` de la raíz del repo (el backend vía
+`python-dotenv`/env del shell, el frontend vía `envDir` en `vite.config.ts`).
 
 ### Backend
 
@@ -43,11 +47,12 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements-dev.txt
 
-# Copiar .env.dev y cargar variables
-cp .env.example .env.dev
-source .env.dev  # o usar direnv
+# Cargar variables desde la raíz del repo
+cd ..
+set -a; source .env.dev; set +a
 
 # Levantar servidor de desarrollo
+cd backend
 uvicorn app.main:app --reload --port 8000
 ```
 
@@ -56,10 +61,7 @@ uvicorn app.main:app --reload --port 8000
 ```bash
 cd frontend
 npm install
-cp .env.example .env.local
-# Editar .env.local: VITE_API_URL=http://localhost:8000
-
-npm run dev   # http://localhost:5173
+npm run dev   # http://localhost:5173 — lee .env.dev de la raíz automáticamente
 ```
 
 ---

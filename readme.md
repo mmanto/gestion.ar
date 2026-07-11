@@ -60,8 +60,8 @@ Bot multi-canal con IA (Claude API) y RAG para atención al cliente, gestión de
 # Clonar y configurar entorno
 git clone <repo-url>
 cd gestion.ar
-cp backend/.env.example backend/.env.dev
-# Completar variables en backend/.env.dev (ver ENV.md)
+cp .env.example .env.dev
+# Completar variables en .env.dev (ver ENV.md)
 
 # Levantar con Docker
 docker compose up -d

@@ -162,7 +162,7 @@ docker cp gestion_mongo:/dump_$(date +%Y%m%d) ./backups/mongo_$(date +%Y%m%d)
 - [ ] Docker Engine + Docker Compose v2 instalados
 - [ ] Dominio con registro A apuntando a la IP del servidor
 - [ ] Firewall: puertos 22 (SSH), 80 y 443 abiertos únicamente
-- [ ] Archivo `backend/.env.prod` con todas las variables (ver `ENV.md`)
-- [ ] `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build`
+- [ ] Archivo `.env.prod` (raíz del repo) con todas las variables (ver `ENV.md`)
+- [ ] `docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml up -d --build`
 - [ ] Registrar webhooks en Meta for Developers y Telegram BotFather
 - [ ] Verificar health: `curl https://tudominio.com/api/health`

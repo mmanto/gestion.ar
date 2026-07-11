@@ -14,13 +14,13 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "backend"))
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv("backend/.env")
+load_dotenv(".env.dev")
 
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET")
 
 if not BOT_TOKEN:
-    print("❌ Error: TELEGRAM_BOT_TOKEN not found in backend/.env")
+    print("❌ Error: TELEGRAM_BOT_TOKEN not found in .env.dev")
     sys.exit(1)
 
 if not WEBHOOK_SECRET:

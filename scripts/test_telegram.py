@@ -11,7 +11,7 @@ import httpx
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv("backend/.env")
+load_dotenv(".env.dev")
 
 BASE_URL = "http://localhost:8000"
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")

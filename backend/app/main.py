@@ -830,7 +830,7 @@ async def startup_event():
         print("✅ LLM Service inicializado")
     except ValueError as e:
         print(f"⚠️  LLM no configurado: {e}")
-        print("   Revisá LLM_PROVIDER y las credenciales en backend/.env")
+        print("   Revisá LLM_PROVIDER y las credenciales en .env.dev (o .env.prod)")
     except Exception as e:
         print(f"⚠️  Error inicializando LLM: {e}")
 
@@ -840,7 +840,7 @@ async def startup_event():
         print("✅ WhatsApp Service inicializado")
         if not whatsapp.access_token or not whatsapp.phone_number_id:
             print("⚠️  WhatsApp API no configurado completamente")
-            print("   Para usar WhatsApp, configura WHATSAPP_TOKEN y WHATSAPP_PHONE_ID en backend/.env")
+            print("   Para usar WhatsApp, configura WHATSAPP_TOKEN y WHATSAPP_PHONE_ID en .env.dev (o .env.prod)")
     except Exception as e:
         print(f"⚠️  Error inicializando WhatsApp: {e}")
 
@@ -850,7 +850,7 @@ async def startup_event():
         print("✅ Telegram Service inicializado")
         if not telegram.bot_token:
             print("⚠️  Telegram Bot no configurado completamente")
-            print("   Para usar Telegram, configura TELEGRAM_BOT_TOKEN en backend/.env")
+            print("   Para usar Telegram, configura TELEGRAM_BOT_TOKEN en .env.dev (o .env.prod)")
     except Exception as e:
         print(f"⚠️  Error inicializando Telegram: {e}")
 
@@ -864,7 +864,7 @@ async def startup_event():
             print(f"🔑 VAPID Public Key: {pub_key[:20]}...")
         else:
             print("⚠️  Push Notifications no configuradas (sin VAPID keys)")
-            print("   Genera las claves y agrega VAPID_PRIVATE_KEY y VAPID_PUBLIC_KEY al backend/.env")
+            print("   Genera las claves y agrega VAPID_PRIVATE_KEY y VAPID_PUBLIC_KEY al .env.dev (o .env.prod)")
     except Exception as e:
         print(f"⚠️  Error inicializando Push Service: {e}")
 

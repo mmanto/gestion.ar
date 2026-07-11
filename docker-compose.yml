@@ -42,7 +42,7 @@ services:
         - github_token
     container_name: gestionar_app
     env_file:
-      - ./backend/.env.dev
+      - ./.env.dev
     environment:
       - REDIS_URL=redis://redis:6379
       - CHROMA_PATH=/app/chroma_db

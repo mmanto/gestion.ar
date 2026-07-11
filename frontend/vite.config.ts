@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -22,6 +23,10 @@ const proxyConfig = {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  // .env.dev / .env.prod viven en la raíz del repo (npm run dev/build pasan
+  // --mode dev / --mode prod). Solo aplica fuera de Docker: en docker-compose
+  // las vars ya llegan como process.env vía env_file, sin pasar por archivos.
+  envDir: path.resolve(__dirname, '..'),
   server: {
     host: '0.0.0.0',
     port: 5173,

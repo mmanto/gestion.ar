@@ -61,7 +61,7 @@ class ClaudeService:
         if not self.api_key or self.api_key == "sk-ant-api03-YOUR_API_KEY_HERE":
             raise ValueError(
                 "ANTHROPIC_API_KEY no configurada. "
-                "Por favor agrega tu API key en backend/.env"
+                "Por favor agrega tu API key en .env.dev (o .env.prod)"
             )
 
         self.client = Anthropic(api_key=self.api_key)

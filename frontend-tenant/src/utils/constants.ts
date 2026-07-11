@@ -1,5 +1,5 @@
 // Configuración de la aplicación
-export const APP_NAME = import.meta.env.VITE_APP_NAME || 'Asistente';
+export const APP_NAME = import.meta.env.VITE_TENANT_APP_NAME || 'Asistente';
 export const API_URL = import.meta.env.VITE_API_URL || '';
 
 // Plataformas de mensajería

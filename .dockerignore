@@ -6,7 +6,8 @@ backend/*.pyo
 backend/**/*.pyo
 backend/*.pyd
 backend/**/*.pyd
-backend/.env
+.env.dev
+.env.prod
 backend/venv/
 backend/**/.pytest_cache
 backend/**/*.log

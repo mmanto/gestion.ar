@@ -44,12 +44,12 @@ venv.bak/
 *.swn
 .DS_Store
 
-# Environment variables
+# Environment variables (solo .env.example queda commiteado, ver ENV.md)
 .env
 .env.local
 .env.*.local
-backend/.env.dev
-backend/.env.prod
+.env.dev
+.env.prod
 
 # Docker
 docker-compose.override.yml

@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -23,6 +24,9 @@ const proxyConfig = {
 // apps en paralelo durante desarrollo local.
 export default defineConfig({
   plugins: [react()],
+  // .env.dev / .env.prod viven en la raíz del repo (npm run dev/build pasan
+  // --mode dev / --mode prod).
+  envDir: path.resolve(__dirname, '..'),
   server: {
     host: '0.0.0.0',
     port: 5174,
