@@ -19,7 +19,9 @@ export const Sidebar: React.FC = () => {
 
   if (!isAuthenticated) return null;
 
-  const visibleLinks = NAV_LINKS.filter((link) => !link.roles || (user && link.roles.includes(user.role)));
+  const visibleLinks = NAV_LINKS.filter(
+    (item) => item.type === 'separator' || !item.roles || (user && item.roles.includes(user.role))
+  );
 
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + '/');
@@ -71,25 +73,29 @@ export const Sidebar: React.FC = () => {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-          {visibleLinks.map(({ to, label, icon }) => (
-            <Link
-              key={to}
-              to={to}
-              title={collapsed ? label : undefined}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                collapsed ? 'md:justify-center md:px-0' : ''
-              } ${
-                isActive(to)
-                  ? 'text-white bg-white/15'
-                  : 'text-white/70 hover:text-white hover:bg-white/10'
-              }`}
-            >
-              <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                {icon}
-              </svg>
-              <span className={collapsed ? 'md:hidden' : ''}>{label}</span>
-            </Link>
-          ))}
+          {visibleLinks.map((item, idx) =>
+            item.type === 'separator' ? (
+              <div key={`sep-${idx}`} className="my-2 border-t border-white/10" />
+            ) : (
+              <Link
+                key={item.to}
+                to={item.to}
+                title={collapsed ? item.label : undefined}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  collapsed ? 'md:justify-center md:px-0' : ''
+                } ${
+                  isActive(item.to)
+                    ? 'text-white bg-white/15'
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  {item.icon}
+                </svg>
+                <span className={collapsed ? 'md:hidden' : ''}>{item.label}</span>
+              </Link>
+            )
+          )}
         </nav>
 
         <div className="hidden md:block border-t border-white/10 flex-shrink-0 px-3 py-2">

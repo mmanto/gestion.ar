@@ -20,50 +20,60 @@ export const KeroSidebar: React.FC = () => {
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + '/');
 
-  const visibleLinks = NAV_LINKS.filter((link) => !link.roles || (user && link.roles.includes(user.role)));
+  const visibleLinks = NAV_LINKS.filter(
+    (item) => item.type === 'separator' || !item.roles || (user && item.roles.includes(user.role))
+  );
 
   const navItems = (
     <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1.5">
-      {visibleLinks.map(({ to, label, icon }) => (
-        <Link
-          key={to}
-          to={to}
-          className={`flex items-center gap-3 h-[2.2rem] px-4 rounded-full text-sm font-medium transition-colors ${
-            isActive(to)
-              ? 'text-[#da624a] bg-[#da624a]/10'
-              : 'text-gray-900 hover:text-[#da624a] hover:bg-[#da624a]/5'
-          }`}
-        >
-          <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            {icon}
-          </svg>
-          {label}
-        </Link>
-      ))}
+      {visibleLinks.map((item, idx) =>
+        item.type === 'separator' ? (
+          <div key={`sep-${idx}`} className="my-2 border-t border-gray-200" />
+        ) : (
+          <Link
+            key={item.to}
+            to={item.to}
+            className={`flex items-center gap-3 h-[2.2rem] px-4 rounded-full text-sm font-medium transition-colors ${
+              isActive(item.to)
+                ? 'text-[#da624a] bg-[#da624a]/10'
+                : 'text-gray-900 hover:text-[#da624a] hover:bg-[#da624a]/5'
+            }`}
+          >
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              {item.icon}
+            </svg>
+            {item.label}
+          </Link>
+        )
+      )}
     </nav>
   );
 
   const desktopNavItems = (
     <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1.5">
-      {visibleLinks.map(({ to, label, icon }) => (
-        <Link
-          key={to}
-          to={to}
-          title={collapsed ? label : undefined}
-          className={`flex items-center rounded-full text-sm font-medium transition-colors ${
-            collapsed ? 'justify-center w-11 h-11 mx-auto' : 'gap-3 h-[2.2rem] px-4'
-          } ${
-            isActive(to)
-              ? 'text-[#da624a] bg-[#da624a]/10'
-              : 'text-gray-900 hover:text-[#da624a] hover:bg-[#da624a]/5'
-          }`}
-        >
-          <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            {icon}
-          </svg>
-          {!collapsed && label}
-        </Link>
-      ))}
+      {visibleLinks.map((item, idx) =>
+        item.type === 'separator' ? (
+          <div key={`sep-${idx}`} className={collapsed ? 'my-2 mx-2 border-t border-gray-200' : 'my-2 border-t border-gray-200'} />
+        ) : (
+          <Link
+            key={item.to}
+            to={item.to}
+            title={collapsed ? item.label : undefined}
+            className={`flex items-center rounded-full text-sm font-medium transition-colors ${
+              collapsed ? 'justify-center w-11 h-11 mx-auto' : 'gap-3 h-[2.2rem] px-4'
+            } ${
+              isActive(item.to)
+                ? 'text-[#da624a] bg-[#da624a]/10'
+                : 'text-gray-900 hover:text-[#da624a] hover:bg-[#da624a]/5'
+            }`}
+          >
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              {item.icon}
+            </svg>
+            {!collapsed && item.label}
+          </Link>
+        )
+      )}
     </nav>
   );
 

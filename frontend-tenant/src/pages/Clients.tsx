@@ -164,7 +164,7 @@ export const Clients = () => {
     <AppLayout>
         <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
           <PageHeader
-            title="Contactos"
+            title="Prospectos"
             description={`${total} contacto${total !== 1 ? 's' : ''} en total`}
             titleClassName="font-light uppercase tracking-[0.08em]"
             descriptionClassName="text-gray-800"

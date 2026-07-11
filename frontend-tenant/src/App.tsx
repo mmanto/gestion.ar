@@ -10,9 +10,12 @@ import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
 import { ChatPage } from './pages/ChatPage';
 import { Dashboard } from './pages/Dashboard';
+import { Customers } from './pages/Customers';
 import { Clients } from './pages/Clients';
 import { Conversations } from './pages/Conversations';
 import { ConversationView } from './pages/ConversationView';
+import { Records } from './pages/Records';
+import { Reports } from './pages/Reports';
 import { Modules } from './pages/Modules';
 import { TrainingSettings } from './pages/TrainingSettings';
 import { Settings } from './pages/Settings';
@@ -41,10 +44,34 @@ function App() {
                   }
                 />
                 <Route
+                  path="/customers"
+                  element={
+                    <ProtectedRoute roles={['admin', 'operativo']}>
+                      <Customers />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
                   path="/clients"
                   element={
                     <ProtectedRoute roles={['admin', 'operativo']}>
                       <Clients />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/records"
+                  element={
+                    <ProtectedRoute roles={['admin', 'operativo']}>
+                      <Records />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/reports"
+                  element={
+                    <ProtectedRoute roles={['admin', 'operativo']}>
+                      <Reports />
                     </ProtectedRoute>
                   }
                 />
