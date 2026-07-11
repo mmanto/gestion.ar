@@ -17,8 +17,8 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-echo "==> git pull"
-git pull origin main
+# echo "==> git pull"
+# git pull origin main
 
 echo "==> docker compose up (docker-compose.yml + docker-compose.prod.yml)"
 docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml up -d --build
