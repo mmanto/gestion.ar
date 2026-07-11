@@ -317,8 +317,11 @@ def build_effective_system_prompt(bot_config) -> str:
 def get_effective_welcome_message(bot_config) -> str:
     """
     Retorna el mensaje de bienvenida efectivo para un bot.
-    Si hay ius_config cargado, usa agent_identity.presentacion como bienvenida.
-    De lo contrario, retorna bot_config.welcome_message.
+    Si hay ius_config cargado, busca el saludo en dos esquemas conocidos:
+    agent_identity.presentacion (docs/ius_system_prompt.json) o, si no está,
+    flow[0].msg (el "flow" es un campo propio del JSON de ius_config, no
+    confundir con bot_config.flow / FlowConfig). De lo contrario, retorna
+    bot_config.welcome_message.
     """
     ius = bot_config.ius_config
     if ius:
@@ -326,6 +329,14 @@ def get_effective_welcome_message(bot_config) -> str:
         msg = identity.get("presentacion", "")
         if msg:
             return msg
+
+        ius_flow = ius.get("flow")
+        if isinstance(ius_flow, list) and ius_flow:
+            first_step = ius_flow[0]
+            if isinstance(first_step, dict):
+                msg = first_step.get("msg", "")
+                if msg:
+                    return msg
     return bot_config.welcome_message
 
 
