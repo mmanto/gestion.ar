@@ -42,8 +42,8 @@ async def get_public_tenant_info(tenant_id: str):
 
 @router.get("/app-url")
 async def get_app_url(request: Request):
-    """Devuelve la URL pública configurada (WEBHOOK_BASE_URL)."""
-    url = os.getenv("WEBHOOK_BASE_URL", str(request.base_url).rstrip("/"))
+    """Devuelve la URL pública del frontend (FRONTEND_URL)."""
+    url = os.getenv("FRONTEND_URL", str(request.base_url).rstrip("/"))
     return {"url": url}
 
 
