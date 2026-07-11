@@ -1,5 +1,6 @@
-import { MessageSquare, MessagesSquare, Cpu, DollarSign } from 'lucide-react';
+import { MessagesSquare, Cpu, DollarSign } from 'lucide-react';
 import { Card } from '../common/Card';
+import ContactRequestsCard from './ContactRequestsCard';
 import { formatNumber, formatCurrency } from '../../utils/formatters';
 import type { ConversationStats } from '../../types/conversation.types';
 
@@ -9,13 +10,6 @@ interface StatsCardsProps {
 
 const StatsCards = ({ stats }: StatsCardsProps) => {
   const cards = [
-    {
-      title: 'Total Conversaciones',
-      value: formatNumber(stats.total_conversations),
-      icon: MessageSquare,
-      color: 'text-primary',
-      bgColor: 'bg-primary-50',
-    },
     {
       title: 'Total Mensajes',
       value: formatNumber(stats.total_messages),
@@ -41,6 +35,7 @@ const StatsCards = ({ stats }: StatsCardsProps) => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <ContactRequestsCard />
       {cards.map((card) => {
         const Icon = card.icon;
         return (
