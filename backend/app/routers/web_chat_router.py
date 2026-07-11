@@ -353,9 +353,14 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
     ]
 
     # === Fase 2: Inicializar flujo de captura si está configurado ===
+    # Si el bot tiene ius_config cargado, ese JSON es el guión completo de la
+    # conversación y tiene prioridad: el flujo fijo de captura no debe
+    # interceptar los mensajes (si no, build_effective_system_prompt nunca
+    # se llega a usar).
     flow_state: Optional[FlowState] = None
     if (
-        bot.config.flow
+        not bot.config.ius_config
+        and bot.config.flow
         and bot.config.flow.enabled
         and bot.config.flow.steps
         and await get_module_service().is_enabled(bot.bot_id, "lead_funnel")
