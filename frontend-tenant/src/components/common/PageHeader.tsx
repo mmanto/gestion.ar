@@ -18,7 +18,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   descriptionClassName = 'text-gray-800',
 }) => {
   return (
-    <div className="flex items-start justify-between mb-8">
+    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
       <div>
         <h1 className={`text-3xl text-gray-900 ${titleClassName}`}>{title}</h1>
         {description && <p className={`mt-1 ${descriptionClassName}`}>{description}</p>}

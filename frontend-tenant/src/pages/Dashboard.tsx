@@ -1,22 +1,18 @@
 import { useEffect, useState } from 'react';
-import { BarChart3 } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { LoadingPage } from '../components/common/Spinner';
 import { PageHeader } from '../components/common/PageHeader';
 import { Alert } from '../components/common/Alert';
-import { EmptyState } from '../components/common/EmptyState';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import StatsCards from '../components/dashboard/StatsCards';
-import ActivityChart from '../components/dashboard/ActivityChart';
-import ChartsSection from '../components/dashboard/ChartsSection';
 import { useStats } from '../hooks/useStats';
 import botsService from '../services/bots.service';
 import { publicService } from '../services/public.service';
 import type { TenantBotSummary } from '../types/bot.types';
 
 export const Dashboard = () => {
-  const { stats, timeline, loading, error } = useStats();
+  const { stats, loading, error } = useStats();
   const [bots, setBots] = useState<TenantBotSummary[]>([]);
   const [selectedBotId, setSelectedBotId] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -101,30 +97,7 @@ export const Dashboard = () => {
             </Card>
           )}
 
-          {!stats || !timeline ? (
-            <Card shadow="none">
-              <EmptyState
-                icon={<BarChart3 className="w-8 h-8 text-gray-800" />}
-                title="Todavía no hay datos"
-                description="Las métricas aparecerán cuando tus agentes empiecen a recibir conversaciones"
-                titleClassName="text-gray-900 text-xl"
-                descriptionClassName="text-gray-900 text-base"
-              />
-            </Card>
-          ) : (
-            <>
-              {/* Stats Cards */}
-              <StatsCards stats={stats} />
-
-              {/* Activity Chart */}
-              <div className="mt-6">
-                <ActivityChart timeline={timeline} />
-              </div>
-
-              {/* Additional Charts */}
-              <ChartsSection stats={stats} timeline={timeline} />
-            </>
-          )}
+          {stats && <StatsCards stats={stats} />}
         </div>
     </AppLayout>
   );
