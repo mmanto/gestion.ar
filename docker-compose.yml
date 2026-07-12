@@ -50,6 +50,7 @@ services:
     volumes:
       - chroma_data:/app/chroma_db
       - ./docs:/app/documents
+      - uploads_data:/app/uploads
     depends_on:
       redis:
         condition: service_healthy
@@ -128,6 +129,7 @@ services:
 volumes:
   chroma_data:
   postgres_data:
+  uploads_data:
 
 secrets:
   github_token:
