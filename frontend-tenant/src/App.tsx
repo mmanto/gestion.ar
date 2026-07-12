@@ -16,6 +16,7 @@ import { Conversations } from './pages/Conversations';
 import { ConversationView } from './pages/ConversationView';
 import { Records } from './pages/Records';
 import { Reports } from './pages/Reports';
+import { ProspectDetail } from './pages/ProspectDetail';
 import { Modules } from './pages/Modules';
 import { TrainingSettings } from './pages/TrainingSettings';
 import { Settings } from './pages/Settings';
@@ -72,6 +73,14 @@ function App() {
                   element={
                     <ProtectedRoute roles={['admin', 'operativo']}>
                       <Reports />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/prospects/:id"
+                  element={
+                    <ProtectedRoute roles={['admin', 'operativo']}>
+                      <ProspectDetail />
                     </ProtectedRoute>
                   }
                 />

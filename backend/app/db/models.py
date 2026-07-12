@@ -234,6 +234,30 @@ class Client(Base):
     )
 
 
+class Prospect(Base):
+    """Entidad propia de prospección (grilla de Escritorio) — conceptualmente
+    distinta de Client (contacto/lead que ya interactuó con un bot): por ahora
+    comparte forma con Client pero no tiene bot_id ni métricas de conversación,
+    y se espera que evolucione con campos propios de embudo de ventas."""
+
+    __tablename__ = "prospects"
+
+    prospect_id = Column(Text, primary_key=True)
+    tenant_id = Column(Text, ForeignKey("tenants.tenant_id"), nullable=False)
+    estado = Column(Text, nullable=False, default="nuevo")
+    nombre = Column(Text, nullable=False)
+    fecha_interaccion = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    canal = Column(Text, nullable=True)
+    whatsapp = Column(Text, nullable=True)
+    email = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("ix_prospects_tenant_id", "tenant_id"),
+        Index("ix_prospects_fecha_interaccion", "fecha_interaccion"),
+    )
+
+
 class Conversation(Base):
     __tablename__ = "conversations"
 

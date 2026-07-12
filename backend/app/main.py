@@ -40,6 +40,7 @@ from app.routers.appointments_webhook_router import router as appointments_webho
 from app.routers.document_router import router as document_router
 from app.routers.tenant_admin_router import router as tenant_admin_router
 from app.routers.tenant_router import router as tenant_router
+from app.routers.prospect_router import router as prospect_router
 from app.telegram_handlers import (
     handle_telegram_command,
     handle_telegram_text_message,
@@ -80,6 +81,7 @@ app.include_router(appointments_webhook_router)  # Webhook de devbout-appointmen
 app.include_router(document_router)          # Documentos RAG scoped por bot
 app.include_router(tenant_admin_router)      # Administración general: tenants, usuarios, módulos
 app.include_router(tenant_router)            # Backoffice de tenant: bots (read-only), módulos, entrenamiento
+app.include_router(prospect_router)          # Prospectos (entidad propia, tenant-scoped)
 
 # ==================== MODELOS ====================
 

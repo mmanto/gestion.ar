@@ -6,6 +6,7 @@ import { Alert } from '../components/common/Alert';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import StatsCards from '../components/dashboard/StatsCards';
+import ProspectsGrid from '../components/dashboard/ProspectsGrid';
 import { useStats } from '../hooks/useStats';
 import botsService from '../services/bots.service';
 import { publicService } from '../services/public.service';
@@ -98,6 +99,8 @@ export const Dashboard = () => {
           )}
 
           {stats && <StatsCards stats={stats} />}
+
+          <ProspectsGrid />
         </div>
     </AppLayout>
   );
