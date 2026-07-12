@@ -60,6 +60,9 @@ class TenantUserCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=6)
     email: Optional[str] = None
+    nombre: Optional[str] = None
+    apellido: Optional[str] = None
+    avatar_url: Optional[str] = None
     tenant_id: str
     role: UserRole = UserRole.OPERATIVO
 
@@ -71,11 +74,17 @@ class TenantUserUpdate(BaseModel):
     role: Optional[UserRole] = None
     disabled: Optional[bool] = None
     email: Optional[str] = None
+    nombre: Optional[str] = None
+    apellido: Optional[str] = None
+    avatar_url: Optional[str] = None
 
 
 class TenantUserOut(BaseModel):
     username: str
     email: Optional[str] = None
+    nombre: Optional[str] = None
+    apellido: Optional[str] = None
+    avatar_url: Optional[str] = None
     tenant_id: Optional[str] = None
     role: str
     disabled: bool

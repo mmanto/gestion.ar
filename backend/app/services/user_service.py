@@ -17,6 +17,9 @@ class UserInDB(BaseModel):
     """Usuario almacenado en la base de datos"""
     username: str
     email: Optional[str] = None
+    nombre: Optional[str] = None
+    apellido: Optional[str] = None
+    avatar_url: Optional[str] = None
     hashed_password: str
     disabled: bool = False
     tenant_id: Optional[str] = None
@@ -27,6 +30,9 @@ def _to_user_in_db(row: UserModel) -> UserInDB:
     return UserInDB(
         username=row.username,
         email=row.email,
+        nombre=row.nombre,
+        apellido=row.apellido,
+        avatar_url=row.avatar_url,
         hashed_password=row.hashed_password,
         disabled=row.disabled,
         tenant_id=row.tenant_id,
@@ -56,6 +62,9 @@ class UserService:
         username: str,
         password: str,
         email: Optional[str] = None,
+        nombre: Optional[str] = None,
+        apellido: Optional[str] = None,
+        avatar_url: Optional[str] = None,
         tenant_id: Optional[str] = None,
         role: str = "admin",
     ) -> UserInDB:
@@ -66,6 +75,9 @@ class UserService:
             username: Nombre de usuario único
             password: Contraseña en texto plano (se hashea internamente)
             email: Email opcional
+            nombre: Nombre de pila opcional
+            apellido: Apellido opcional
+            avatar_url: URL de la imagen de avatar, opcional
             tenant_id: Tenant al que pertenece (None sólo para super_admin)
             role: 'super_admin' | 'admin' | 'operativo'
 
@@ -84,6 +96,9 @@ class UserService:
             session.add(UserModel(
                 username=username,
                 email=email,
+                nombre=nombre,
+                apellido=apellido,
+                avatar_url=avatar_url,
                 hashed_password=hashed,
                 disabled=False,
                 tenant_id=tenant_id,
@@ -92,7 +107,8 @@ class UserService:
             await session.commit()
 
         return UserInDB(
-            username=username, email=email, hashed_password=hashed, disabled=False,
+            username=username, email=email, nombre=nombre, apellido=apellido,
+            avatar_url=avatar_url, hashed_password=hashed, disabled=False,
             tenant_id=tenant_id, role=role,
         )
 
@@ -113,6 +129,9 @@ class UserService:
         return User(
             username=user.username,
             email=user.email,
+            nombre=user.nombre,
+            apellido=user.apellido,
+            avatar_url=user.avatar_url,
             disabled=user.disabled,
             tenant_id=user.tenant_id,
             role=user.role,
@@ -258,9 +277,13 @@ class UserService:
         role: Optional[str] = None,
         disabled: Optional[bool] = None,
         email: Optional[str] = None,
+        nombre: Optional[str] = None,
+        apellido: Optional[str] = None,
+        avatar_url: Optional[str] = None,
     ) -> Optional[UserInDB]:
-        """Actualiza rol/estado/email de un usuario (super_admin). El rol
-        nunca lo puede fijar el propio usuario — sólo administración general."""
+        """Actualiza rol/estado/email/nombre de un usuario (super_admin). El
+        rol nunca lo puede fijar el propio usuario — sólo administración
+        general (para nombre/apellido/avatar, ver update_own_profile)."""
         async with AsyncSessionLocal() as session:
             row = await session.get(UserModel, username)
             if not row:
@@ -271,9 +294,48 @@ class UserService:
                 row.disabled = disabled
             if email is not None:
                 row.email = email
+            if nombre is not None:
+                row.nombre = nombre
+            if apellido is not None:
+                row.apellido = apellido
+            if avatar_url is not None:
+                row.avatar_url = avatar_url
             await session.commit()
             await session.refresh(row)
             return _to_user_in_db(row)
+
+    async def update_own_profile(
+        self,
+        username: str,
+        nombre: Optional[str] = None,
+        apellido: Optional[str] = None,
+        avatar_url: Optional[str] = None,
+    ) -> Optional[User]:
+        """Actualiza el propio nombre/apellido/avatar (cualquier usuario
+        autenticado, sin pasar por administración general — a diferencia de
+        role/disabled en update_user)."""
+        async with AsyncSessionLocal() as session:
+            row = await session.get(UserModel, username)
+            if not row:
+                return None
+            if nombre is not None:
+                row.nombre = nombre
+            if apellido is not None:
+                row.apellido = apellido
+            if avatar_url is not None:
+                row.avatar_url = avatar_url
+            await session.commit()
+            await session.refresh(row)
+            return User(
+                username=row.username,
+                email=row.email,
+                nombre=row.nombre,
+                apellido=row.apellido,
+                avatar_url=row.avatar_url,
+                disabled=row.disabled,
+                tenant_id=row.tenant_id,
+                role=row.role,
+            )
 
     async def delete_user(self, username: str) -> bool:
         """Elimina un usuario. Falla (False) si tiene bots asociados

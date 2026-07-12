@@ -3,6 +3,9 @@ export type UserRole = 'super_admin' | 'admin' | 'operativo';
 export interface User {
   username: string;
   email?: string;
+  nombre?: string;
+  apellido?: string;
+  avatar_url?: string;
   tenant_id?: string | null;
   role: UserRole;
 }

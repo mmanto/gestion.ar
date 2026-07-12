@@ -107,6 +107,9 @@ class User(Base):
 
     username = Column(Text, primary_key=True)
     email = Column(Text, nullable=True)
+    nombre = Column(Text, nullable=True)
+    apellido = Column(Text, nullable=True)
+    avatar_url = Column(Text, nullable=True)
     hashed_password = Column(Text, nullable=False)
     disabled = Column(Boolean, nullable=False, default=False)
     auth_provider = Column(Text, nullable=True)

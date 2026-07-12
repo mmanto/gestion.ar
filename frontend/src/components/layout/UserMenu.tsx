@@ -46,6 +46,9 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
     navigate('/login');
   };
 
+  const fullName = [user?.nombre, user?.apellido].filter(Boolean).join(' ') || user?.username || '';
+  const avatarInitial = (user?.nombre || user?.username || '?').charAt(0).toUpperCase();
+
   const isLight = variant === 'light';
 
   const triggerClass = isLight
@@ -72,12 +75,14 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
     <div className="relative" ref={menuRef}>
       <button onClick={() => setMenuOpen(v => !v)} className={triggerClass}>
         <div className={avatarWrapClass}>
-          <span className={avatarTextClass}>
-            {user?.username?.charAt(0).toUpperCase()}
-          </span>
+          {user?.avatar_url ? (
+            <img src={user.avatar_url} alt={fullName} className="w-full h-full rounded-full object-cover" />
+          ) : (
+            <span className={avatarTextClass}>{avatarInitial}</span>
+          )}
         </div>
         <span className={usernameClass}>
-          {user?.username}
+          {fullName}
         </span>
         <svg className={chevronClass} fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -99,13 +104,17 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
               Salir
             </button>
             <div className="flex items-center gap-3 pr-16">
-              <div className="w-12 h-12 bg-white/20 ring-2 ring-white/30 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="font-editorial font-semibold text-2xl tracking-[0.08em] text-white">
-                  {user?.username?.charAt(0).toUpperCase()}
-                </span>
+              <div className="w-12 h-12 bg-white/20 ring-2 ring-white/30 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                {user?.avatar_url ? (
+                  <img src={user.avatar_url} alt={fullName} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="font-editorial font-semibold text-2xl tracking-[0.08em] text-white">
+                    {avatarInitial}
+                  </span>
+                )}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-white truncate">{user?.username}</p>
+                <p className="text-sm font-semibold text-white truncate">{fullName}</p>
                 {user?.email && (
                   <p className="text-xs text-white/70 truncate">{user.email}</p>
                 )}

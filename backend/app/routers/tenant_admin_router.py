@@ -37,6 +37,9 @@ def _user_out(user_in_db) -> TenantUserOut:
     return TenantUserOut(
         username=user_in_db.username,
         email=user_in_db.email,
+        nombre=user_in_db.nombre,
+        apellido=user_in_db.apellido,
+        avatar_url=user_in_db.avatar_url,
         tenant_id=user_in_db.tenant_id,
         role=user_in_db.role,
         disabled=user_in_db.disabled,
@@ -142,6 +145,9 @@ async def create_tenant_user(data: TenantUserCreate):
             username=data.username,
             password=data.password,
             email=data.email,
+            nombre=data.nombre,
+            apellido=data.apellido,
+            avatar_url=data.avatar_url,
             tenant_id=data.tenant_id,
             role=data.role.value if hasattr(data.role, "value") else data.role,
         )
@@ -182,6 +188,9 @@ async def update_tenant_user(username: str, data: TenantUserUpdate):
         role=data.role.value if data.role and hasattr(data.role, "value") else data.role,
         disabled=data.disabled,
         email=data.email,
+        nombre=data.nombre,
+        apellido=data.apellido,
+        avatar_url=data.avatar_url,
     )
     if not user:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado")

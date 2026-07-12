@@ -172,6 +172,9 @@ async def login(
         "user": {
             "username": user.username,
             "email": user.email,
+            "nombre": user.nombre,
+            "apellido": user.apellido,
+            "avatar_url": user.avatar_url,
             "tenant_id": user.tenant_id,
             "role": user.role,
         }
@@ -191,8 +194,49 @@ async def get_me(current_user: User = Depends(get_current_user)):
     return {
         "username": current_user.username,
         "email": current_user.email,
+        "nombre": current_user.nombre,
+        "apellido": current_user.apellido,
+        "avatar_url": current_user.avatar_url,
         "tenant_id": current_user.tenant_id,
         "role": current_user.role,
+    }
+
+
+class ProfileUpdateRequest(BaseModel):
+    nombre: Optional[str] = None
+    apellido: Optional[str] = None
+    avatar_url: Optional[str] = None
+
+
+@app.patch("/api/auth/me")
+async def update_me(
+    data: ProfileUpdateRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Actualiza nombre/apellido/avatar del propio usuario autenticado
+    (a diferencia de rol/estado, que solo puede fijarlos administración
+    general vía /api/admin/users).
+    """
+    from app.services.user_service import get_user_service
+    user_service = get_user_service()
+    updated = await user_service.update_own_profile(
+        username=current_user.username,
+        nombre=data.nombre,
+        apellido=data.apellido,
+        avatar_url=data.avatar_url,
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    return {
+        "username": updated.username,
+        "email": updated.email,
+        "nombre": updated.nombre,
+        "apellido": updated.apellido,
+        "avatar_url": updated.avatar_url,
+        "tenant_id": updated.tenant_id,
+        "role": updated.role,
     }
 
 
