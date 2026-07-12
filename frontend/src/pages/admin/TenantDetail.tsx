@@ -6,6 +6,7 @@ import { PageHeader } from '../../components/common/PageHeader';
 import { Alert } from '../../components/common/Alert';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
+import { AvatarPicker } from '../../components/common/AvatarPicker';
 import tenantAdminService from '../../services/tenantAdmin.service';
 import botsService from '../../services/bots.service';
 import type { Plan, Tenant, TenantStatus, TenantUser, TenantUserRole, BotModuleInfo, ModuleInfo } from '../../types/tenant.types';
@@ -412,13 +413,11 @@ export const TenantDetail = () => {
                 </div>
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-900 mb-1">URL de avatar</label>
-                <input
-                  type="url"
+                <label className="block text-sm font-medium text-gray-900 mb-1">Avatar</label>
+                <AvatarPicker
                   value={newUser.avatar_url}
-                  onChange={(e) => setNewUser({ ...newUser, avatar_url: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  onChange={(url) => setNewUser({ ...newUser, avatar_url: url })}
+                  fallbackLabel={newUser.nombre || newUser.username}
                 />
               </div>
               <div className="mb-6">
@@ -480,13 +479,11 @@ export const TenantDetail = () => {
                 </div>
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-900 mb-1">URL de avatar</label>
-                <input
-                  type="url"
+                <label className="block text-sm font-medium text-gray-900 mb-1">Avatar</label>
+                <AvatarPicker
                   value={editForm.avatar_url}
-                  onChange={(e) => setEditForm({ ...editForm, avatar_url: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  onChange={(url) => setEditForm({ ...editForm, avatar_url: url })}
+                  fallbackLabel={editForm.nombre || editingUser?.username || ''}
                 />
               </div>
               <div className="mb-6">

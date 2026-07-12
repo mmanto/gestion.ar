@@ -19,6 +19,7 @@ import { Reports } from './pages/Reports';
 import { ProspectDetail } from './pages/ProspectDetail';
 import { Modules } from './pages/Modules';
 import { TrainingSettings } from './pages/TrainingSettings';
+import { Users } from './pages/Users';
 import { Settings } from './pages/Settings';
 
 function App() {
@@ -115,6 +116,14 @@ function App() {
                   element={
                     <ProtectedRoute roles={['admin']}>
                       <TrainingSettings />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/users"
+                  element={
+                    <ProtectedRoute roles={['admin']}>
+                      <Users />
                     </ProtectedRoute>
                   }
                 />
