@@ -36,14 +36,20 @@ se usan para sustituir `${...}` dentro de `docker-compose.yml`/`docker-compose.p
 
 ---
 
-## LLM (Anthropic / Ollama)
+## LLM (Anthropic / Ollama / DeepSeek)
 
 | Variable | Requerida | Descripción | Ejemplo |
 |---|---|---|---|
 | `ANTHROPIC_API_KEY` | ✅* | API key de Anthropic | `sk-ant-api03-xxx` |
 | `CLAUDE_MODEL` | ❌ | Modelo Claude a usar | `claude-haiku-4-5-20251001` |
-| `LLM_PROVIDER` | ❌ | Proveedor de LLM | `claude` (default) / `ollama` |
+| `LLM_PROVIDER` | ❌ | Proveedor de LLM | `claude` (default) / `ollama` / `deepseek` |
 | `OLLAMA_BASE_URL` | ✅* | URL de Ollama (si LLM_PROVIDER=ollama) | `http://ollama:11434` |
+| `OLLAMA_MODEL` | ❌ | Modelo Ollama a usar | `qcwind/qwen3-8b-instruct-Q4-K-M:latest` |
+| `OLLAMA_TIMEOUT` | ❌ | Timeout en segundos para Ollama | `120` |
+| `DEEPSEEK_API_KEY` | ✅* | API key de DeepSeek (si LLM_PROVIDER=deepseek) | `sk-xxx` |
+| `DEEPSEEK_MODEL` | ❌ | Modelo DeepSeek a usar | `deepseek-chat` (default) / `deepseek-reasoner` |
+| `DEEPSEEK_BASE_URL` | ❌ | URL base de la API de DeepSeek | `https://api.deepseek.com` (default) |
+| `DEEPSEEK_TIMEOUT` | ❌ | Timeout en segundos para DeepSeek | `90` (default) |
 
 > *Requerida según el `LLM_PROVIDER` elegido.
 

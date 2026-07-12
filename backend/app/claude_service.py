@@ -359,8 +359,9 @@ _llm_service = None
 def get_llm_service():
     """
     Retorna el servicio LLM activo según LLM_PROVIDER:
-      - 'claude'  → ClaudeService (Anthropic API, por defecto)
-      - 'ollama'  → OllamaService (modelo local)
+      - 'claude'    → ClaudeService (Anthropic API, por defecto)
+      - 'ollama'    → OllamaService (modelo local)
+      - 'deepseek'  → DeepSeekService (API hosted de DeepSeek)
     """
     global _llm_service
     if _llm_service is None:
@@ -368,6 +369,9 @@ def get_llm_service():
         if provider == "ollama":
             from app.ollama_service import OllamaService
             _llm_service = OllamaService()
+        elif provider == "deepseek":
+            from app.deepseek_service import DeepSeekService
+            _llm_service = DeepSeekService()
         else:
             _llm_service = get_claude_service()
     return _llm_service
