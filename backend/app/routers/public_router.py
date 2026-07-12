@@ -53,6 +53,8 @@ async def get_llm_info():
     provider = os.getenv("LLM_PROVIDER", "claude").lower()
     if provider == "ollama":
         model = os.getenv("OLLAMA_MODEL", "qcwind/qwen3-8b-instruct-Q4-K-M:latest")
+    elif provider == "deepseek":
+        model = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash")
     else:
         model = os.getenv("CLAUDE_MODEL", "claude-3-5-sonnet-20241022")
     return {"provider": provider, "model": model}

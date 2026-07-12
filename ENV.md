@@ -47,11 +47,15 @@ se usan para sustituir `${...}` dentro de `docker-compose.yml`/`docker-compose.p
 | `OLLAMA_MODEL` | ❌ | Modelo Ollama a usar | `qcwind/qwen3-8b-instruct-Q4-K-M:latest` |
 | `OLLAMA_TIMEOUT` | ❌ | Timeout en segundos para Ollama | `120` |
 | `DEEPSEEK_API_KEY` | ✅* | API key de DeepSeek (si LLM_PROVIDER=deepseek) | `sk-xxx` |
-| `DEEPSEEK_MODEL` | ❌ | Modelo DeepSeek a usar | `deepseek-chat` (default) / `deepseek-reasoner` |
+| `DEEPSEEK_MODEL` | ❌ | Modelo DeepSeek a usar | `deepseek-v4-flash` (default) / `deepseek-v4-pro` |
 | `DEEPSEEK_BASE_URL` | ❌ | URL base de la API de DeepSeek | `https://api.deepseek.com` (default) |
 | `DEEPSEEK_TIMEOUT` | ❌ | Timeout en segundos para DeepSeek | `90` (default) |
+| `DEEPSEEK_THINKING` | ❌ | Habilita el modo "thinking" (razonamiento) de DeepSeek | `disabled` (default) / `enabled` |
 
 > *Requerida según el `LLM_PROVIDER` elegido.
+>
+> Nota: `deepseek-chat`/`deepseek-reasoner` son alias legacy que DeepSeek da
+> de baja el 2026-07-24 — usar `deepseek-v4-flash`/`deepseek-v4-pro`.
 
 ---
 

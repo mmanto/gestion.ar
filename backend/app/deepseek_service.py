@@ -18,18 +18,33 @@ from app.claude_service import ChatMessage, ChatResponse
 class DeepSeekService:
     """Servicio para interacciones con la API hosted de DeepSeek."""
 
-    # Precios por millón de tokens (USD) — verificar contra
-    # https://api-docs.deepseek.com/quick_start/pricing antes de usar para facturación real.
+    # Precios por millón de tokens (USD), precio de input a "cache miss" —
+    # verificar contra https://api-docs.deepseek.com/quick_start/pricing antes
+    # de usar para facturación real (no distinguimos cache hit/miss acá).
+    #
+    # 'deepseek-chat'/'deepseek-reasoner' son alias legacy que DeepSeek da de
+    # baja el 2026-07-24 (hoy mapean a los modos non-thinking/thinking de
+    # deepseek-v4-flash) — se mantienen como fallback de pricing solo por si
+    # alguien fuerza ese DEEPSEEK_MODEL a mano, pero el default ya usa los
+    # nombres vigentes.
     PRICING = {
-        "deepseek-chat": {"input": 0.27, "output": 1.10},
-        "deepseek-reasoner": {"input": 0.55, "output": 2.19},
+        "deepseek-v4-flash": {"input": 0.14, "output": 0.28},
+        "deepseek-v4-pro": {"input": 0.435, "output": 0.87},
+        "deepseek-chat": {"input": 0.14, "output": 0.28},
+        "deepseek-reasoner": {"input": 0.435, "output": 0.87},
     }
 
     def __init__(self):
         self.api_key = os.getenv("DEEPSEEK_API_KEY")
         self.base_url = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com").rstrip("/")
-        self.model = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
+        self.model = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash")
         self.timeout = float(os.getenv("DEEPSEEK_TIMEOUT", "90"))
+        # "thinking" queda deshabilitado por default: si se omite, la API lo
+        # habilita sola con reasoning_effort "high" y el modelo gasta el
+        # presupuesto de max_tokens en razonamiento oculto antes de la
+        # respuesta visible — mismo problema que vimos con el modelo
+        # "thinking" de Ollama (ver ollama_service.py / bug de timeout).
+        self.thinking_enabled = os.getenv("DEEPSEEK_THINKING", "disabled").lower() == "enabled"
 
         if not self.api_key:
             raise ValueError(
@@ -38,12 +53,12 @@ class DeepSeekService:
             )
 
         print("✅ DeepSeek Service inicializado")
-        print(f"🐋 Modelo: {self.model}")
+        print(f"🐋 Modelo: {self.model} (thinking={'enabled' if self.thinking_enabled else 'disabled'})")
         print(f"🌐 URL: {self.base_url}")
 
     def calculate_cost(self, input_tokens: int, output_tokens: int) -> float:
         """Calcula el costo estimado de una llamada a la API"""
-        pricing = self.PRICING.get(self.model, self.PRICING["deepseek-chat"])
+        pricing = self.PRICING.get(self.model, self.PRICING["deepseek-v4-flash"])
         input_cost = (input_tokens / 1_000_000) * pricing["input"]
         output_cost = (output_tokens / 1_000_000) * pricing["output"]
         return input_cost + output_cost
@@ -63,12 +78,21 @@ class DeepSeekService:
             "messages": [{"role": "system", "content": system_prompt}] + messages,
             "max_tokens": max_tokens,
             "stream": False,
+            "thinking": {"type": "enabled" if self.thinking_enabled else "disabled"},
         }
         headers = {"Authorization": f"Bearer {self.api_key}"}
 
         with httpx.Client(timeout=self.timeout) as client:
             response = client.post(f"{self.base_url}/chat/completions", json=payload, headers=headers)
-            response.raise_for_status()
+            if response.is_error:
+                # response.raise_for_status() no incluye el body en el mensaje de la excepción
+                # (str(e) queda como "400 Bad Request for url: ..." sin el motivo real) — DeepSeek
+                # devuelve {"error": {"message": ..., "type": ...}} con el detalle, lo levantamos
+                # explícito para que quede en el log de web_chat_router.py en vez de tener que
+                # reproducir el request a mano para saber qué rechazó.
+                raise RuntimeError(
+                    f"DeepSeek API error {response.status_code}: {response.text}"
+                )
             data = response.json()
 
         message = data["choices"][0]["message"]
