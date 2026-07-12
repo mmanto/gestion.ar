@@ -1,6 +1,6 @@
 import { MessagesSquare, Cpu, DollarSign } from 'lucide-react';
-import { Card } from '../common/Card';
 import ContactRequestsCard from './ContactRequestsCard';
+import TrendStatCard from './TrendStatCard';
 import { formatNumber, formatCurrency } from '../../utils/formatters';
 import type { ConversationStats } from '../../types/conversation.types';
 
@@ -8,50 +8,35 @@ interface StatsCardsProps {
   stats: ConversationStats;
 }
 
-const StatsCards = ({ stats }: StatsCardsProps) => {
-  const cards = [
-    {
-      title: 'Total Mensajes',
-      value: formatNumber(stats.total_messages),
-      icon: MessagesSquare,
-      color: 'text-secondary',
-      bgColor: 'bg-secondary-50',
-    },
-    {
-      title: 'Tokens Usados',
-      value: formatNumber(stats.total_tokens_used),
-      icon: Cpu,
-      color: 'text-accent',
-      bgColor: 'bg-purple-50',
-    },
-    {
-      title: 'Costo Total',
-      value: formatCurrency(stats.total_cost_usd),
-      icon: DollarSign,
-      color: 'text-pink-600',
-      bgColor: 'bg-pink-50',
-    },
-  ];
+// TODO: variación semanal mock — /conversations/stats no expone todavía un
+// punto de comparación histórico (semana actual vs. anterior) para estas
+// métricas. Reemplazar por datos reales cuando el backend lo soporte.
+const MOCK_MESSAGES_WEEKLY_CHANGE = 8;
+const MOCK_TOKENS_WEEKLY_CHANGE = -5;
+const MOCK_COST_WEEKLY_CHANGE = 3;
 
+const StatsCards = ({ stats }: StatsCardsProps) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <ContactRequestsCard />
-      {cards.map((card) => {
-        const Icon = card.icon;
-        return (
-          <Card key={card.title} shadow="none">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-800">{card.title}</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{card.value}</p>
-              </div>
-              <div className={`p-3 rounded-lg ${card.bgColor}`}>
-                <Icon className={`w-6 h-6 ${card.color}`} />
-              </div>
-            </div>
-          </Card>
-        );
-      })}
+      <TrendStatCard
+        icon={MessagesSquare}
+        title="Total Mensajes"
+        value={formatNumber(stats.total_messages)}
+        weeklyChange={MOCK_MESSAGES_WEEKLY_CHANGE}
+      />
+      <TrendStatCard
+        icon={Cpu}
+        title="Tokens Usados"
+        value={formatNumber(stats.total_tokens_used)}
+        weeklyChange={MOCK_TOKENS_WEEKLY_CHANGE}
+      />
+      <TrendStatCard
+        icon={DollarSign}
+        title="Costo Total"
+        value={formatCurrency(stats.total_cost_usd)}
+        weeklyChange={MOCK_COST_WEEKLY_CHANGE}
+      />
     </div>
   );
 };
