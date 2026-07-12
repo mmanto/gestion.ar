@@ -21,19 +21,19 @@ const StatsCards = ({ stats }: StatsCardsProps) => {
       <ContactRequestsCard />
       <TrendStatCard
         icon={MessagesSquare}
-        title="Total Mensajes"
+        title="TOTAL MENSAJES"
         value={formatNumber(stats.total_messages)}
         weeklyChange={MOCK_MESSAGES_WEEKLY_CHANGE}
       />
       <TrendStatCard
         icon={Cpu}
-        title="Tokens Usados"
+        title="ALTA VIABILIDAD"
         value={formatNumber(stats.total_tokens_used)}
         weeklyChange={MOCK_TOKENS_WEEKLY_CHANGE}
       />
       <TrendStatCard
         icon={DollarSign}
-        title="Costo Total"
+        title="POTENCIALES"
         value={formatCurrency(stats.total_cost_usd)}
         weeklyChange={MOCK_COST_WEEKLY_CHANGE}
       />
