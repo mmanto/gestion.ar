@@ -75,28 +75,28 @@ export const Dashboard = () => {
             description="Resumen de actividad y métricas de tus agentes"
             titleClassName="font-semibold uppercase tracking-[0.08em]"
             descriptionClassName="text-gray-800"
-          />
-
-          {bots.length > 0 && (
-            <Card className="mb-6" shadow="none">
-              <div className="flex flex-col sm:flex-row sm:items-end gap-3">
-                {bots.length > 1 && (
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-900 mb-1">Agente</label>
-                    <select
-                      value={selectedBotId || ''}
-                      onChange={(e) => setSelectedBotId(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white"
-                    >
-                      {bots.map((b) => (
-                        <option key={b.bot_id} value={b.bot_id}>{b.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+            actions={
+              bots.length > 0 && (
                 <Button variant="outline" onClick={handleCopyChatLink}>
                   {linkCopied ? '¡Copiado!' : 'Copiar link del chat'}
                 </Button>
+              )
+            }
+          />
+
+          {bots.length > 1 && (
+            <Card className="mb-6" shadow="none">
+              <div className="max-w-xs">
+                <label className="block text-sm font-medium text-gray-900 mb-1">Agente</label>
+                <select
+                  value={selectedBotId || ''}
+                  onChange={(e) => setSelectedBotId(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white"
+                >
+                  {bots.map((b) => (
+                    <option key={b.bot_id} value={b.bot_id}>{b.name}</option>
+                  ))}
+                </select>
               </div>
             </Card>
           )}

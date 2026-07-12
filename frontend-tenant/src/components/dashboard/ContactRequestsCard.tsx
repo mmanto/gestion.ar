@@ -20,7 +20,7 @@ const ContactRequestsCard = ({
   weeklyChange = MOCK_WEEKLY_CHANGE,
 }: Partial<ContactRequestsCardProps>) => (
   <TrendStatCard
-    icon={Phone}
+    icon={<Phone className="w-5 h-5 text-primary" />}
     title="SOLICITAN CONTACTO"
     value={formatPercentage(percentage)}
     weeklyChange={weeklyChange}
