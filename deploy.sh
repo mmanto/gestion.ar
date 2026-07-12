@@ -109,15 +109,21 @@ TARGET="$1"
 
 # git pull antes de construir — requiere correr este script como el usuario
 # con permisos de git (no root/sudo: docker no debería necesitar sudo si el
-# usuario está en el grupo `docker`, ver setup del servidor). Si hay cambios
-# locales sin commitear, aborta en vez de arriesgarse a perderlos con el pull.
-echo "==> git pull"
+# usuario está en el grupo `docker`, ver setup del servidor).
+#
+# Forzado con fetch + reset --hard: descarta cualquier cambio local en
+# archivos VERSIONADOS (para que el servidor siempre quede idéntico a
+# origin, sin que un edit manual bloquee el deploy). Los .env.dev/.env.prod
+# NO se tocan porque están en .gitignore — git reset --hard nunca toca
+# archivos no versionados/ignorados, solo los que están bajo control de
+# git. Ojo: no usar `git clean` acá, eso sí borraría los .env.
+echo "==> git pull (forzado)"
 if [ -n "$(git status --porcelain)" ]; then
-  echo "Error: hay cambios locales sin commitear en $(pwd) — abortando para no perderlos." >&2
+  echo "Aviso: había cambios locales sin commitear en $(pwd), se descartan:" >&2
   git status --short >&2
-  exit 1
 fi
-git pull --ff-only
+git fetch origin
+git reset --hard "@{u}"
 
 if [ "$TARGET" = "all" ]; then
   # Slugs de tenant = nombres de service en docker-compose.tenants.prod.yml
