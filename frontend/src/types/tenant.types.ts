@@ -75,6 +75,9 @@ export interface TenantsResponse {
 export interface TenantUser {
   username: string;
   email?: string;
+  nombre?: string;
+  apellido?: string;
+  avatar_url?: string;
   tenant_id?: string | null;
   role: string;
   disabled: boolean;
@@ -84,6 +87,9 @@ export interface TenantUserCreate {
   username: string;
   password: string;
   email?: string;
+  nombre?: string;
+  apellido?: string;
+  avatar_url?: string;
   tenant_id: string;
   role: TenantUserRole;
 }
@@ -92,6 +98,9 @@ export interface TenantUserUpdate {
   role?: TenantUserRole;
   disabled?: boolean;
   email?: string;
+  nombre?: string;
+  apellido?: string;
+  avatar_url?: string;
 }
 
 export interface TenantUsersResponse {

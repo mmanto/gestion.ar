@@ -28,9 +28,17 @@ export const TenantDetail = () => {
 
   const [showUserModal, setShowUserModal] = useState(false);
   const [creatingUser, setCreatingUser] = useState(false);
-  const [newUser, setNewUser] = useState<{ username: string; password: string; email: string; role: TenantUserRole }>({
-    username: '', password: '', email: '', role: 'operativo',
+  const [newUser, setNewUser] = useState<{
+    username: string; password: string; email: string; nombre: string; apellido: string; avatar_url: string; role: TenantUserRole;
+  }>({
+    username: '', password: '', email: '', nombre: '', apellido: '', avatar_url: '', role: 'operativo',
   });
+
+  const [editingUser, setEditingUser] = useState<TenantUser | null>(null);
+  const [editForm, setEditForm] = useState<{ email: string; nombre: string; apellido: string; avatar_url: string; role: TenantUserRole }>({
+    email: '', nombre: '', apellido: '', avatar_url: '', role: 'operativo',
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const [expandedBotId, setExpandedBotId] = useState<string | null>(null);
   const [botModules, setBotModules] = useState<Record<string, BotModuleInfo[]>>({});
@@ -81,9 +89,16 @@ export const TenantDetail = () => {
     if (!tenantId || !newUser.username || !newUser.password) return;
     try {
       setCreatingUser(true);
-      await tenantAdminService.createUser({ ...newUser, tenant_id: tenantId, email: newUser.email || undefined });
+      await tenantAdminService.createUser({
+        ...newUser,
+        tenant_id: tenantId,
+        email: newUser.email || undefined,
+        nombre: newUser.nombre || undefined,
+        apellido: newUser.apellido || undefined,
+        avatar_url: newUser.avatar_url || undefined,
+      });
       setShowUserModal(false);
-      setNewUser({ username: '', password: '', email: '', role: 'operativo' });
+      setNewUser({ username: '', password: '', email: '', nombre: '', apellido: '', avatar_url: '', role: 'operativo' });
       load();
     } catch (err) {
       console.error('Error creating user:', err);
@@ -95,6 +110,38 @@ export const TenantDetail = () => {
   const handleToggleDisabled = async (user: TenantUser) => {
     await tenantAdminService.updateUser(user.username, { disabled: !user.disabled });
     load();
+  };
+
+  const openEditUser = (user: TenantUser) => {
+    setEditingUser(user);
+    setEditForm({
+      email: user.email || '',
+      nombre: user.nombre || '',
+      apellido: user.apellido || '',
+      avatar_url: user.avatar_url || '',
+      role: (user.role as TenantUserRole) || 'operativo',
+    });
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    try {
+      setSavingEdit(true);
+      await tenantAdminService.updateUser(editingUser.username, {
+        email: editForm.email || undefined,
+        nombre: editForm.nombre || undefined,
+        apellido: editForm.apellido || undefined,
+        avatar_url: editForm.avatar_url || undefined,
+        role: editForm.role,
+      });
+      setEditingUser(null);
+      load();
+    } catch (err) {
+      console.error('Error updating user:', err);
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   const handleDeleteUser = async (username: string) => {
@@ -197,6 +244,7 @@ export const TenantDetail = () => {
             <thead className="bg-gray-50 text-gray-800 text-left">
               <tr>
                 <th className="px-4 py-2">Usuario</th>
+                <th className="px-4 py-2">Nombre</th>
                 <th className="px-4 py-2">Email</th>
                 <th className="px-4 py-2">Rol</th>
                 <th className="px-4 py-2">Estado</th>
@@ -206,7 +254,21 @@ export const TenantDetail = () => {
             <tbody>
               {users.map((u) => (
                 <tr key={u.username} className="border-t border-gray-200">
-                  <td className="px-4 py-2 font-medium text-gray-900">{u.username}</td>
+                  <td className="px-4 py-2 font-medium text-gray-900">
+                    <div className="flex items-center gap-2">
+                      {u.avatar_url ? (
+                        <img src={u.avatar_url} alt="" className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
+                      ) : (
+                        <span className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-700 flex-shrink-0">
+                          {(u.nombre || u.username).charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                      {u.username}
+                    </div>
+                  </td>
+                  <td className="px-4 py-2 text-gray-900">
+                    {[u.nombre, u.apellido].filter(Boolean).join(' ') || '—'}
+                  </td>
                   <td className="px-4 py-2 text-gray-900">{u.email || '—'}</td>
                   <td className="px-4 py-2 text-gray-900 capitalize">
                     {u.role === 'admin' ? 'UsuarioAdmin' : 'Usuario'}
@@ -217,6 +279,9 @@ export const TenantDetail = () => {
                     </span>
                   </td>
                   <td className="px-4 py-2 text-right whitespace-nowrap">
+                    <button onClick={() => openEditUser(u)} className="text-xs text-gray-800 hover:underline mr-3">
+                      Editar
+                    </button>
                     <button onClick={() => handleToggleDisabled(u)} className="text-xs text-gray-800 hover:underline mr-3">
                       {u.disabled ? 'Habilitar' : 'Deshabilitar'}
                     </button>
@@ -228,7 +293,7 @@ export const TenantDetail = () => {
               ))}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-gray-400">
+                  <td colSpan={6} className="px-4 py-6 text-center text-gray-400">
                     Sin usuarios todavía
                   </td>
                 </tr>
@@ -326,6 +391,36 @@ export const TenantDetail = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 />
               </div>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">Nombre</label>
+                  <input
+                    type="text"
+                    value={newUser.nombre}
+                    onChange={(e) => setNewUser({ ...newUser, nombre: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">Apellido</label>
+                  <input
+                    type="text"
+                    value={newUser.apellido}
+                    onChange={(e) => setNewUser({ ...newUser, apellido: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-900 mb-1">URL de avatar</label>
+                <input
+                  type="url"
+                  value={newUser.avatar_url}
+                  onChange={(e) => setNewUser({ ...newUser, avatar_url: e.target.value })}
+                  placeholder="https://..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-900 mb-1">Rol *</label>
                 <select
@@ -343,6 +438,74 @@ export const TenantDetail = () => {
                 </Button>
                 <Button type="submit" variant="primary" loading={creatingUser}>
                   Crear usuario
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editingUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Editar {editingUser.username}</h2>
+            <form onSubmit={handleSaveEdit}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-900 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">Nombre</label>
+                  <input
+                    type="text"
+                    value={editForm.nombre}
+                    onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">Apellido</label>
+                  <input
+                    type="text"
+                    value={editForm.apellido}
+                    onChange={(e) => setEditForm({ ...editForm, apellido: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-900 mb-1">URL de avatar</label>
+                <input
+                  type="url"
+                  value={editForm.avatar_url}
+                  onChange={(e) => setEditForm({ ...editForm, avatar_url: e.target.value })}
+                  placeholder="https://..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-900 mb-1">Rol</label>
+                <select
+                  value={editForm.role}
+                  onChange={(e) => setEditForm({ ...editForm, role: e.target.value as TenantUserRole })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                >
+                  <option value="admin">UsuarioAdmin</option>
+                  <option value="operativo">Usuario (operativo)</option>
+                </select>
+              </div>
+              <div className="flex justify-end gap-3">
+                <Button type="button" variant="outline" onClick={() => setEditingUser(null)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" variant="primary" loading={savingEdit}>
+                  Guardar cambios
                 </Button>
               </div>
             </form>

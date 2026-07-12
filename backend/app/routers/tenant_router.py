@@ -6,6 +6,8 @@ general, ver bot_router.py/tenant_admin_router.py) — sólo puede:
 1. Ver un resumen de sus propios bots (read-only).
 2. Habilitar/deshabilitar módulos ya otorgados por administración general.
 3. Editar datos puntuales de entrenamiento (custom_facts, ej. honorarios).
+4. Gestionar (alta/edición) los usuarios de su propio tenant — nunca
+   super_admin, y siempre scoped a current_user.tenant_id.
 
 Ver estrategia multi-tenant en docs/dev/DECISIONS.md.
 """
@@ -15,9 +17,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.auth_service import User
 from app.dependencies.auth import get_current_user, require_role
 from app.models.bot import BotStatus, BotUpdate
-from app.models.tenant import CustomFactsUpdate, ModuleEnableRequest
+from app.models.tenant import CustomFactsUpdate, ModuleEnableRequest, TenantOwnUserCreate, TenantUserOut, TenantUserUpdate
 from app.services.bot_service import get_bot_service
 from app.services.module_service import get_module_service
+from app.services.user_service import get_user_service
 
 router = APIRouter(prefix="/api/tenant", tags=["tenant"])
 
@@ -103,3 +106,98 @@ async def update_custom_facts(
     updated = await bot_service.update_bot_admin(bot_id, BotUpdate(config=updated_config))
 
     return {"success": True, "custom_facts": updated.config.custom_facts}
+
+
+# ── Usuarios del propio tenant (UsuarioAdmin/Usuario) ───────────────────────
+# A diferencia de /api/admin/users (administración general, cualquier tenant),
+# estos endpoints están siempre scoped a current_user.tenant_id — un
+# UsuarioAdmin no puede ver ni tocar usuarios de otro tenant, ni crear un
+# super_admin.
+
+def _user_out(user_in_db) -> TenantUserOut:
+    return TenantUserOut(
+        username=user_in_db.username,
+        email=user_in_db.email,
+        nombre=user_in_db.nombre,
+        apellido=user_in_db.apellido,
+        avatar_url=user_in_db.avatar_url,
+        tenant_id=user_in_db.tenant_id,
+        role=user_in_db.role,
+        disabled=user_in_db.disabled,
+    )
+
+
+@router.get("/users", response_model=dict)
+async def get_tenant_users(
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
+    current_user: User = Depends(require_role("admin")),
+):
+    """Lista los usuarios del propio tenant."""
+    skip = (page - 1) * limit
+    result = await get_user_service().list_users(
+        tenant_id=current_user.tenant_id, skip=skip, limit=limit
+    )
+    return {
+        "success": True,
+        "users": [_user_out(u).model_dump() for u in result["users"]],
+        "total": result["total"],
+        "page": result["page"],
+        "pages": result["pages"],
+        "limit": result["limit"],
+    }
+
+
+@router.post("/users", response_model=dict, status_code=status.HTTP_201_CREATED)
+async def create_tenant_own_user(
+    data: TenantOwnUserCreate,
+    current_user: User = Depends(require_role("admin")),
+):
+    """Crea un usuario en el propio tenant. tenant_id se fuerza al del
+    usuario autenticado — no se acepta tenant_id en el body."""
+    if data.role == "super_admin":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "No se puede crear un super_admin desde el tenant")
+
+    user_service = get_user_service()
+    try:
+        user = await user_service.create_user(
+            username=data.username,
+            password=data.password,
+            email=data.email,
+            nombre=data.nombre,
+            apellido=data.apellido,
+            avatar_url=data.avatar_url,
+            tenant_id=current_user.tenant_id,
+            role=data.role.value if hasattr(data.role, "value") else data.role,
+        )
+    except ValueError as e:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e))
+
+    return {"success": True, "user": _user_out(user).model_dump()}
+
+
+@router.patch("/users/{username}", response_model=dict)
+async def update_tenant_own_user(
+    username: str,
+    data: TenantUserUpdate,
+    current_user: User = Depends(require_role("admin")),
+):
+    """Edita un usuario del propio tenant (nombre/apellido/avatar/email/rol/estado)."""
+    if data.role == "super_admin":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "No se puede asignar el rol super_admin desde el tenant")
+
+    user_service = get_user_service()
+    existing = await user_service.get_user_by_username(username)
+    if not existing or existing.tenant_id != current_user.tenant_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado")
+
+    user = await user_service.update_user(
+        username,
+        role=data.role.value if data.role and hasattr(data.role, "value") else data.role,
+        disabled=data.disabled,
+        email=data.email,
+        nombre=data.nombre,
+        apellido=data.apellido,
+        avatar_url=data.avatar_url,
+    )
+    return {"success": True, "user": _user_out(user).model_dump()}

@@ -70,6 +70,21 @@ class TenantUserCreate(BaseModel):
         use_enum_values = False
 
 
+class TenantOwnUserCreate(BaseModel):
+    """Alta de usuario desde el propio tenant (self-service) — sin tenant_id:
+    el backend lo fuerza al del usuario autenticado (ver tenant_router.py)."""
+    username: str = Field(..., min_length=3, max_length=50)
+    password: str = Field(..., min_length=6)
+    email: Optional[str] = None
+    nombre: Optional[str] = None
+    apellido: Optional[str] = None
+    avatar_url: Optional[str] = None
+    role: UserRole = UserRole.OPERATIVO
+
+    class Config:
+        use_enum_values = False
+
+
 class TenantUserUpdate(BaseModel):
     role: Optional[UserRole] = None
     disabled: Optional[bool] = None
