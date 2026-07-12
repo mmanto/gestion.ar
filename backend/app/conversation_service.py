@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel
-from sqlalchemy import func, or_, select
+from sqlalchemy import case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import AsyncSessionLocal
@@ -66,8 +66,25 @@ class ConversationService:
         )
         return [_to_message_dict(r) for r in result.scalars().all()]
 
-    async def _to_conversation_dict(self, session: AsyncSession, row: ConversationModel) -> Dict:
-        messages = await self._messages_for(session, row.conversation_id)
+    async def _messages_for_many(
+        self, session: AsyncSession, conversation_ids: List[str]
+    ) -> Dict[str, List[Dict]]:
+        """Trae los mensajes de varias conversaciones en una sola query (evita N+1
+        en listados — ver get_all_conversations/get_user_conversations)."""
+        if not conversation_ids:
+            return {}
+
+        result = await session.execute(
+            select(MessageModel)
+            .where(MessageModel.conversation_id.in_(conversation_ids))
+            .order_by(MessageModel.conversation_id, MessageModel.timestamp.asc())
+        )
+        messages_by_conversation: Dict[str, List[Dict]] = {cid: [] for cid in conversation_ids}
+        for row in result.scalars().all():
+            messages_by_conversation[row.conversation_id].append(_to_message_dict(row))
+        return messages_by_conversation
+
+    def _row_to_conversation_dict(self, row: ConversationModel, messages: List[Dict]) -> Dict:
         return {
             "conversation_id": row.conversation_id,
             "bot_id": row.bot_id,
@@ -81,6 +98,23 @@ class ConversationService:
             "total_cost_usd": float(row.total_cost_usd or 0),
             "metadata": row.metadata_ or {},
         }
+
+    async def _to_conversation_dict(self, session: AsyncSession, row: ConversationModel) -> Dict:
+        messages = await self._messages_for(session, row.conversation_id)
+        return self._row_to_conversation_dict(row, messages)
+
+    async def _to_conversation_dicts(
+        self, session: AsyncSession, rows: List[ConversationModel]
+    ) -> List[Dict]:
+        """Versión batch de _to_conversation_dict: una sola query de mensajes
+        para todas las filas en vez de una por conversación."""
+        messages_by_conversation = await self._messages_for_many(
+            session, [r.conversation_id for r in rows]
+        )
+        return [
+            self._row_to_conversation_dict(r, messages_by_conversation[r.conversation_id])
+            for r in rows
+        ]
 
     async def create_conversation(
         self,
@@ -298,7 +332,7 @@ class ConversationService:
                 .limit(limit)
             )
             rows = result.scalars().all()
-            return [await self._to_conversation_dict(session, r) for r in rows]
+            return await self._to_conversation_dicts(session, rows)
 
     async def get_conversation_stats(self, bot_ids: Optional[List[str]] = None) -> Dict:
         """
@@ -316,12 +350,24 @@ class ConversationService:
             base_filters.append(or_(ConversationModel.bot_id.in_(bot_ids), ConversationModel.bot_id.is_(None)))
 
         async with AsyncSessionLocal() as session:
-            total_conversations = (await session.execute(
-                select(func.count()).select_from(ConversationModel).where(*base_filters)
-            )).scalar_one()
+            # Todo lo que sale de la tabla conversations en una sola query
+            # (antes eran 5 idas y vueltas secuenciales — cada round-trip paga
+            # latencia fija sin importar el volumen de filas, así que con pocos
+            # registros el cuello de botella era la CANTIDAD de queries, no su costo).
+            conv_stats = (await session.execute(
+                select(
+                    func.count().label("total_conversations"),
+                    func.sum(ConversationModel.total_tokens_used).label("total_tokens"),
+                    func.sum(ConversationModel.total_cost_usd).label("total_cost"),
+                    func.count(func.distinct(ConversationModel.user_id)).label("active_users"),
+                    func.sum(case((ConversationModel.source == "whatsapp", 1), else_=0)).label("whatsapp_count"),
+                    func.sum(case((ConversationModel.source == "telegram", 1), else_=0)).label("telegram_count"),
+                ).select_from(ConversationModel).where(*base_filters)
+            )).one()
 
-            # total_messages: join a conversations, filtrado por bot_ids
-            # (antes usaba la colección Mongo vestigial sin filtrar por owner)
+            # total_messages requiere JOIN a una tabla distinta (grano de mensaje,
+            # no de conversación) — no se puede combinar en el aggregate de arriba
+            # sin multiplicar las filas de conversations por sus mensajes.
             total_messages = (await session.execute(
                 select(func.count(MessageModel.message_id))
                 .select_from(MessageModel)
@@ -329,32 +375,16 @@ class ConversationService:
                 .where(*base_filters)
             )).scalar_one()
 
-            tokens_cost = (await session.execute(
-                select(
-                    func.sum(ConversationModel.total_tokens_used),
-                    func.sum(ConversationModel.total_cost_usd),
-                ).where(*base_filters)
-            )).one()
-
-            active_users = (await session.execute(
-                select(func.count(func.distinct(ConversationModel.user_id))).where(*base_filters)
-            )).scalar_one()
-
-            whatsapp_count = (await session.execute(
-                select(func.count()).select_from(ConversationModel)
-                .where(*base_filters, ConversationModel.source == "whatsapp")
-            )).scalar_one()
-            telegram_count = (await session.execute(
-                select(func.count()).select_from(ConversationModel)
-                .where(*base_filters, ConversationModel.source == "telegram")
-            )).scalar_one()
+        total_conversations = conv_stats.total_conversations
+        whatsapp_count = conv_stats.whatsapp_count or 0
+        telegram_count = conv_stats.telegram_count or 0
 
         return {
             "total_conversations": total_conversations,
             "total_messages": total_messages,
-            "total_tokens_used": tokens_cost[0] or 0,
-            "total_cost_usd": round(float(tokens_cost[1] or 0), 6),
-            "active_users": active_users,
+            "total_tokens_used": conv_stats.total_tokens or 0,
+            "total_cost_usd": round(float(conv_stats.total_cost or 0), 6),
+            "active_users": conv_stats.active_users,
             "conversations_by_platform": {
                 "whatsapp": whatsapp_count,
                 "telegram": telegram_count,
@@ -437,7 +467,7 @@ class ConversationService:
                 select(ConversationModel).where(*filters).order_by(order_clause).offset(skip).limit(limit)
             )
             rows = result.scalars().all()
-            conversations = [await self._to_conversation_dict(session, r) for r in rows]
+            conversations = await self._to_conversation_dicts(session, rows)
 
         total_pages = (total + limit - 1) // limit if limit > 0 else 0
         current_page = (skip // limit) + 1 if limit > 0 else 1

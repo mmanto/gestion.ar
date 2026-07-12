@@ -21,7 +21,7 @@ const ContactRequestsCard = ({
 }: Partial<ContactRequestsCardProps>) => (
   <TrendStatCard
     icon={Phone}
-    title="Solicitan contacto"
+    title="SOLICITAN CONTACTO"
     value={formatPercentage(percentage)}
     weeklyChange={weeklyChange}
   />
