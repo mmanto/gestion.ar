@@ -257,7 +257,7 @@ export const BotChannels = () => {
           <PageHeader
             title="Canales"
             description="Gestiona los canales de comunicacion del agente"
-            titleClassName="font-light uppercase tracking-[0.08em]"
+            titleClassName="font-semibold uppercase tracking-[0.08em]"
             descriptionClassName="text-gray-800"
             actions={
               <Button variant="primary" onClick={() => setShowCreateModal(true)}>

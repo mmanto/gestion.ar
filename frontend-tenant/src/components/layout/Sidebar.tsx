@@ -63,7 +63,7 @@ export const Sidebar: React.FC = () => {
         >
           <Link to="/dashboard">
             <span
-              className="font-editorial text-[22px] font-light uppercase tracking-[0.08em] select-none"
+              className="font-editorial text-2xl font-semibold uppercase tracking-[0.08em] select-none"
               style={{ color: 'white' }}
             >
               {collapsed ? <span className="hidden md:inline">{tenantName.charAt(0).toUpperCase()}</span> : null}

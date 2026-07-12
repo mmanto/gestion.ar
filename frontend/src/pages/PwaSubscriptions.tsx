@@ -107,7 +107,7 @@ export default function PwaSubscriptions() {
           <PageHeader
             title="Suscripciones Push"
             description="Canal PWA — Notificaciones push (VAPID)"
-            titleClassName="font-light uppercase tracking-[0.08em] text-2xl"
+            titleClassName="font-semibold uppercase tracking-[0.08em] text-2xl"
             descriptionClassName="text-gray-800"
           />
         </div>

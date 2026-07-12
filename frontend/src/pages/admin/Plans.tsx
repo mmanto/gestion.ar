@@ -105,7 +105,7 @@ export const Plans = () => {
         <PageHeader
           title="Planes"
           description={`${plans.length} plan${plans.length !== 1 ? 'es' : ''} en total`}
-          titleClassName="font-light uppercase tracking-[0.08em]"
+          titleClassName="font-semibold uppercase tracking-[0.08em]"
           descriptionClassName="text-gray-800"
           actions={
             <Button variant="primary" onClick={openCreateModal}>

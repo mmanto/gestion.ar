@@ -138,7 +138,7 @@ export const TenantDetail = () => {
         <PageHeader
           title={tenant.name}
           description={tenant.domain || 'Sin dominio asignado'}
-          titleClassName="font-light uppercase tracking-[0.08em]"
+          titleClassName="font-semibold uppercase tracking-[0.08em]"
           descriptionClassName="text-gray-800"
           actions={
             <Link to="/admin/tenants" className="text-sm text-gray-800 hover:underline">

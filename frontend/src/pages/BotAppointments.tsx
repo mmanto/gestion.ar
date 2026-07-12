@@ -136,7 +136,7 @@ export const BotAppointments = () => {
         <PageHeader
           title="Turnos"
           description="Gestión de recursos, servicios, disponibilidad y turnos reservados"
-          titleClassName="font-light uppercase tracking-[0.08em]"
+          titleClassName="font-semibold uppercase tracking-[0.08em]"
           descriptionClassName="text-gray-800"
         />
 

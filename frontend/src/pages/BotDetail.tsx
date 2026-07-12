@@ -214,7 +214,7 @@ export const BotDetail = () => {
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="flex items-center gap-3 mb-2">
-                      <h1 className="text-3xl font-light uppercase tracking-[0.08em] text-gray-900">{bot.name}</h1>
+                      <h1 className="text-3xl font-semibold uppercase tracking-[0.08em] text-gray-900">{bot.name}</h1>
                       <span
                         className={`px-3 py-1 text-base font-medium rounded-full ${
                           statusColors[bot.status]

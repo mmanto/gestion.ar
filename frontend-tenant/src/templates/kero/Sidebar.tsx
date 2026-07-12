@@ -111,7 +111,7 @@ export const KeroSidebar: React.FC = () => {
           }`}
         >
           <Link to="/dashboard">
-            <span className="font-editorial text-[22px] font-light uppercase tracking-[0.08em] text-gray-800 select-none">
+            <span className="font-editorial text-2xl font-semibold uppercase tracking-[0.08em] text-gray-800 select-none">
               {collapsed ? tenantName.charAt(0).toUpperCase() : tenantName}
             </span>
           </Link>
@@ -147,7 +147,7 @@ export const KeroSidebar: React.FC = () => {
       >
         <div className="flex items-center justify-center gap-2 px-5 h-20 border-b border-gray-200 flex-shrink-0">
           <Link to="/dashboard">
-            <span className="font-editorial text-[22px] font-light uppercase tracking-[0.08em] text-gray-800 select-none">
+            <span className="font-editorial text-2xl font-semibold uppercase tracking-[0.08em] text-gray-800 select-none">
               {tenantName}
             </span>
           </Link>

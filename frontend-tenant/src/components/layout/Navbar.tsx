@@ -77,7 +77,7 @@ export const Navbar: React.FC = () => {
             {!isAuthenticated && (
               <Link to="/">
                 <span
-                  className="font-editorial text-[24px] font-light uppercase tracking-[0.08em] select-none"
+                  className="font-editorial text-2xl font-semibold uppercase tracking-[0.08em] select-none"
                   style={{ color: 'white' }}
                 >
                   {tenant?.name || 'Backoffice'}

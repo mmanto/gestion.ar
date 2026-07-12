@@ -57,8 +57,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
     : 'w-8 h-8 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0';
 
   const avatarTextClass = isLight
-    ? 'font-editorial font-light text-lg tracking-[0.08em] text-gray-900'
-    : 'font-editorial font-light text-lg tracking-[0.08em] text-white';
+    ? 'font-editorial font-semibold text-lg tracking-[0.08em] text-gray-900'
+    : 'font-editorial font-semibold text-lg tracking-[0.08em] text-white';
 
   const usernameClass = isLight
     ? 'hidden sm:block text-sm font-medium text-gray-900 max-w-[120px] truncate'
@@ -100,7 +100,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
             </button>
             <div className="flex items-center gap-3 pr-16">
               <div className="w-12 h-12 bg-white/20 ring-2 ring-white/30 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="font-editorial font-light text-2xl tracking-[0.08em] text-white">
+                <span className="font-editorial font-semibold text-2xl tracking-[0.08em] text-white">
                   {user?.username?.charAt(0).toUpperCase()}
                 </span>
               </div>

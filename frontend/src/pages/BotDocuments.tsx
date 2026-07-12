@@ -184,7 +184,7 @@ export const BotDocuments = () => {
         <PageHeader
           title="Base de conocimiento"
           description="Documentos usados por el RAG de este agente para responder consultas"
-          titleClassName="font-light uppercase tracking-[0.08em]"
+          titleClassName="font-semibold uppercase tracking-[0.08em]"
           descriptionClassName="text-gray-800"
           actions={
             stats ? (

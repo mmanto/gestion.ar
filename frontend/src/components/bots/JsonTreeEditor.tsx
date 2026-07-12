@@ -41,7 +41,7 @@ const TypeSelect = ({ value, onChange }: { value: JsonType; onChange: (t: JsonTy
   <select
     value={value}
     onChange={(e) => onChange(e.target.value as JsonType)}
-    className="shrink-0 px-1 py-1 border border-gray-200 rounded text-[11px] bg-white text-gray-600"
+    className="shrink-0 px-1 py-1 border border-gray-200 rounded text-xs bg-white text-gray-600"
   >
     {(Object.keys(typeLabels) as JsonType[]).map((t) => (
       <option key={t} value={t}>
@@ -241,7 +241,7 @@ const JsonEntryRow = ({
           <span className="w-10 shrink-0 px-1.5 py-1 text-xs font-mono text-gray-400">[{index}]</span>
         )}
 
-        <span className="mt-1 shrink-0 text-[10px] uppercase tracking-wide text-gray-400 w-12">
+        <span className="mt-1 shrink-0 text-xs uppercase tracking-wide text-gray-400 w-12">
           {typeLabels[type]}
         </span>
 

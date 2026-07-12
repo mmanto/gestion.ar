@@ -311,7 +311,7 @@ export const Landing: React.FC = () => {
               },
             ].map((step) => (
               <div key={step.num} className="flex flex-col items-center text-center">
-                <div className="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-light mb-8 z-10" style={{ backgroundColor: '#0D1B38', fontFamily: 'var(--font-editorial)', fontSize: '1.6rem', letterSpacing: '0.02em' }}>
+                <div className="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-semibold mb-8 z-10" style={{ backgroundColor: '#0D1B38', fontFamily: 'var(--font-editorial)', letterSpacing: '0.02em' }}>
                   {step.num}
                 </div>
                 <h3 className="text-h3 text-gray-900 mb-4">{step.title}</h3>
@@ -387,7 +387,7 @@ export const Landing: React.FC = () => {
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-h3 text-gray-900">{channel.name}</h3>
                       {channel.badge && (
-                        <span className="text-cta px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: '#0D1B38', fontSize: '10px' }}>
+                        <span className="text-xs font-medium uppercase tracking-wide px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: '#0D1B38' }}>
                           {channel.badge}
                         </span>
                       )}
@@ -541,7 +541,7 @@ export const Landing: React.FC = () => {
 
             {/* Plan Anual */}
             <div className="rounded-3xl p-10 bg-white shadow-sm relative overflow-hidden">
-              <div className="absolute top-5 right-5 text-cta px-3 py-1.5 rounded-full text-white" style={{ backgroundColor: '#37c88e', fontSize: '11px' }}>
+              <div className="absolute top-5 right-5 text-cta px-3 py-1.5 rounded-full text-white" style={{ backgroundColor: '#37c88e' }}>
                 Ahorrá 2 meses
               </div>
               <p className="text-label text-gray-400 mb-6">Plan Anual</p>

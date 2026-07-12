@@ -94,7 +94,7 @@ export const KeroSidebar: React.FC = () => {
           }`}
         >
           <Link to="/admin/tenants">
-            <span className="font-editorial text-[22px] font-light uppercase tracking-[0.08em] text-gray-800 select-none">
+            <span className="font-editorial text-2xl font-semibold uppercase tracking-[0.08em] text-gray-800 select-none">
               {collapsed ? 'G' : 'GESTIONA'}
             </span>
           </Link>
@@ -130,7 +130,7 @@ export const KeroSidebar: React.FC = () => {
       >
         <div className="flex items-center justify-center gap-2 px-5 h-20 border-b border-gray-200 flex-shrink-0">
           <Link to="/admin/tenants">
-            <span className="font-editorial text-[22px] font-light uppercase tracking-[0.08em] text-gray-800 select-none">
+            <span className="font-editorial text-2xl font-semibold uppercase tracking-[0.08em] text-gray-800 select-none">
               GESTIONA
             </span>
           </Link>

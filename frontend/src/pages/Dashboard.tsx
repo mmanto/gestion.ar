@@ -24,7 +24,7 @@ export const Dashboard = () => {
           <PageHeader
             title="Dashboard"
             description="Resumen de actividad y métricas de tus agentes"
-            titleClassName="font-light uppercase tracking-[0.08em]"
+            titleClassName="font-semibold uppercase tracking-[0.08em]"
             descriptionClassName="text-gray-800"
           />
           <Alert variant="error">Error: {error}</Alert>
@@ -39,7 +39,7 @@ export const Dashboard = () => {
           <PageHeader
             title="Dashboard"
             description="Resumen de actividad y métricas de tus agentes"
-            titleClassName="font-light uppercase tracking-[0.08em]"
+            titleClassName="font-semibold uppercase tracking-[0.08em]"
             descriptionClassName="text-gray-800"
           />
 

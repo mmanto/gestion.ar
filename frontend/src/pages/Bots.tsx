@@ -81,7 +81,7 @@ export const Bots = () => {
           <PageHeader
             title="Mis Agentes"
             description={`${total} agente${total !== 1 ? 's' : ''} en total`}
-            titleClassName="font-light uppercase tracking-[0.08em]"
+            titleClassName="font-semibold uppercase tracking-[0.08em]"
             descriptionClassName="text-gray-800"
             actions={
               <Button variant="primary" onClick={() => setShowCreateModal(true)}>

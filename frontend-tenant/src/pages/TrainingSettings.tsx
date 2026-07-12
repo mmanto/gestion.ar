@@ -86,7 +86,7 @@ export const TrainingSettings = () => {
         <PageHeader
           title="Entrenamiento"
           description="Editá datos puntuales que tu agente informa (ej. honorarios, horarios)"
-          titleClassName="font-light uppercase tracking-[0.08em]"
+          titleClassName="font-semibold uppercase tracking-[0.08em]"
           descriptionClassName="text-gray-800"
         />
 

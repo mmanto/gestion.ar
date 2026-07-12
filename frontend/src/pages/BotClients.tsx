@@ -130,7 +130,7 @@ export const BotClients = () => {
           <PageHeader
             title="Clientes"
             description={`${total} cliente${total !== 1 ? 's' : ''} de ${bot?.name}`}
-            titleClassName="font-light uppercase tracking-[0.08em]"
+            titleClassName="font-semibold uppercase tracking-[0.08em]"
             descriptionClassName="text-gray-800"
           />
 

@@ -48,7 +48,7 @@ export const Landing: React.FC = () => {
 
       <main className="flex-1 flex items-center justify-center px-6">
         <div className="max-w-lg text-center">
-          <h1 className="text-3xl sm:text-4xl font-light text-gray-900 mb-4">
+          <h1 className="text-3xl sm:text-4xl font-semibold text-gray-900 mb-4">
             {tenant.name}
           </h1>
           {tenant.branding.tagline && (

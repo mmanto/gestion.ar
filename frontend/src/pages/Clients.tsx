@@ -132,7 +132,7 @@ export const Clients = () => {
           <PageHeader
             title="Contactos"
             description={`${total} contacto${total !== 1 ? 's' : ''} en total`}
-            titleClassName="font-light uppercase tracking-[0.08em]"
+            titleClassName="font-semibold uppercase tracking-[0.08em]"
             descriptionClassName="text-gray-800"
           />
 

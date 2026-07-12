@@ -5,10 +5,35 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
+    // fontSize y fontWeight NO van dentro de "extend": son reemplazos
+    // completos de la escala default de Tailwind, apuntando a las variables
+    // CSS definidas en :root (src/index.css) — cambiar el look & feel de
+    // toda la app es cuestión de editar ese único archivo.
+    fontSize: {
+      xs:   'var(--text-xs)',
+      sm:   'var(--text-sm)',
+      base: 'var(--text-base)',
+      lg:   'var(--text-lg)',
+      xl:   'var(--text-xl)',
+      '2xl': 'var(--text-2xl)',
+      '3xl': 'var(--text-3xl)',
+      '4xl': 'var(--text-4xl)',
+      '5xl': 'var(--text-5xl)',
+      '6xl': 'var(--text-6xl)',
+      '7xl': 'var(--text-7xl)',
+    },
+    // Paleta limitada a 4 pesos — font-thin/extralight/light/extrabold/black
+    // quedan deshabilitados a propósito.
+    fontWeight: {
+      normal:   'var(--font-normal)',
+      medium:   'var(--font-medium)',
+      semibold: 'var(--font-semibold)',
+      bold:     'var(--font-bold)',
+    },
     extend: {
       fontFamily: {
-        sans:      ['Inter', 'Montserrat', 'system-ui', 'sans-serif'],
-        editorial: ["'Cormorant Garamond'", 'Georgia', 'serif'],
+        sans:      ['Montserrat', 'system-ui', 'sans-serif'],
+        editorial: ['Montserrat', 'system-ui', 'sans-serif'],
       },
       colors: {
         primary: {
