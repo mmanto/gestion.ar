@@ -6,9 +6,10 @@ Compatible con la misma interfaz que ClaudeService/OllamaService.
 """
 
 import os
+import json
 import asyncio
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Callable
 
 import httpx
 
@@ -68,45 +69,100 @@ class DeepSeekService:
         system_prompt: str,
         messages: list,
         max_tokens: int,
+        thinking: Optional[bool] = None,
+        tools: Optional[list] = None,
+        tool_executor: Optional[Callable[[str, dict], dict]] = None,
     ) -> dict:
         """
         Llamada síncrona a la API de DeepSeek. Se ejecuta vía asyncio.to_thread desde los routers.
         Retorna dict compatible con ClaudeService.sync_generate/OllamaService.sync_generate.
+
+        `thinking`: override puntual del DEEPSEEK_THINKING global (ver
+        bot.config.llm_thinking) — None respeta el default del proceso.
+
+        `tools`/`tool_executor`: soporte de tool calling (ver
+        prospect_auto_qualify_service.py). `tools` viene en shape neutro
+        [{name, description, parameters}] y se envuelve acá al formato
+        OpenAI-style que usa DeepSeek ({"type":"function","function":...}).
+        Si el modelo responde con `message.tool_calls`, se ejecuta
+        `tool_executor(name, args)` por cada uno y se le devuelve el
+        resultado como mensaje role="tool", repitiendo hasta que conteste
+        con texto plano (tope de 3 vueltas para evitar loops).
         """
-        payload = {
-            "model": self.model,
-            "messages": [{"role": "system", "content": system_prompt}] + messages,
-            "max_tokens": max_tokens,
-            "stream": False,
-            "thinking": {"type": "enabled" if self.thinking_enabled else "disabled"},
-        }
+        use_thinking = self.thinking_enabled if thinking is None else thinking
+        deepseek_tools = None
+        if tools:
+            deepseek_tools = [
+                {"type": "function", "function": {"name": t["name"], "description": t["description"], "parameters": t["parameters"]}}
+                for t in tools
+            ]
+
+        current_messages = [{"role": "system", "content": system_prompt}] + list(messages)
+        total_input_tokens = 0
+        total_output_tokens = 0
         headers = {"Authorization": f"Bearer {self.api_key}"}
 
-        with httpx.Client(timeout=self.timeout) as client:
-            response = client.post(f"{self.base_url}/chat/completions", json=payload, headers=headers)
-            if response.is_error:
-                # response.raise_for_status() no incluye el body en el mensaje de la excepción
-                # (str(e) queda como "400 Bad Request for url: ..." sin el motivo real) — DeepSeek
-                # devuelve {"error": {"message": ..., "type": ...}} con el detalle, lo levantamos
-                # explícito para que quede en el log de web_chat_router.py en vez de tener que
-                # reproducir el request a mano para saber qué rechazó.
-                raise RuntimeError(
-                    f"DeepSeek API error {response.status_code}: {response.text}"
-                )
-            data = response.json()
+        for _ in range(3):
+            payload = {
+                "model": self.model,
+                "messages": current_messages,
+                "max_tokens": max_tokens,
+                "stream": False,
+                "thinking": {"type": "enabled" if use_thinking else "disabled"},
+            }
+            if deepseek_tools:
+                payload["tools"] = deepseek_tools
 
-        message = data["choices"][0]["message"]
-        assistant_text = message["content"]
-        usage = data.get("usage", {})
-        input_tokens = usage.get("prompt_tokens", 0)
-        output_tokens = usage.get("completion_tokens", 0)
+            with httpx.Client(timeout=self.timeout) as client:
+                response = client.post(f"{self.base_url}/chat/completions", json=payload, headers=headers)
+                if response.is_error:
+                    # response.raise_for_status() no incluye el body en el mensaje de la excepción
+                    # (str(e) queda como "400 Bad Request for url: ..." sin el motivo real) — DeepSeek
+                    # devuelve {"error": {"message": ..., "type": ...}} con el detalle, lo levantamos
+                    # explícito para que quede en el log de web_chat_router.py en vez de tener que
+                    # reproducir el request a mano para saber qué rechazó.
+                    raise RuntimeError(
+                        f"DeepSeek API error {response.status_code}: {response.text}"
+                    )
+                data = response.json()
+
+            message = data["choices"][0]["message"]
+            usage = data.get("usage", {})
+            total_input_tokens += usage.get("prompt_tokens", 0)
+            total_output_tokens += usage.get("completion_tokens", 0)
+
+            tool_calls = message.get("tool_calls")
+            if not tool_calls or not tool_executor:
+                return {
+                    "response": message.get("content") or "",
+                    "tokens_used": total_input_tokens + total_output_tokens,
+                    "input_tokens": total_input_tokens,
+                    "output_tokens": total_output_tokens,
+                    "estimated_cost_usd": self.calculate_cost(total_input_tokens, total_output_tokens),
+                    "model": self.model,
+                }
+
+            current_messages.append(message)
+            for call in tool_calls:
+                function = call.get("function", {})
+                try:
+                    args = json.loads(function.get("arguments") or "{}")
+                    result = tool_executor(function.get("name"), args)
+                    content = json.dumps(result, ensure_ascii=False)
+                except Exception as e:
+                    content = f"Error ejecutando la tool: {e}"
+                current_messages.append({
+                    "role": "tool",
+                    "tool_call_id": call.get("id"),
+                    "content": content,
+                })
 
         return {
-            "response": assistant_text,
-            "tokens_used": input_tokens + output_tokens,
-            "input_tokens": input_tokens,
-            "output_tokens": output_tokens,
-            "estimated_cost_usd": self.calculate_cost(input_tokens, output_tokens),
+            "response": "",
+            "tokens_used": total_input_tokens + total_output_tokens,
+            "input_tokens": total_input_tokens,
+            "output_tokens": total_output_tokens,
+            "estimated_cost_usd": self.calculate_cost(total_input_tokens, total_output_tokens),
             "model": self.model,
         }
 
@@ -117,6 +173,9 @@ class DeepSeekService:
         system_prompt: Optional[str] = None,
         conversation_history: Optional[List[ChatMessage]] = None,
         max_tokens: int = 1024,
+        thinking: Optional[bool] = None,
+        tools: Optional[list] = None,
+        tool_executor: Optional[Callable[[str, dict], dict]] = None,
     ) -> ChatResponse:
         if not system_prompt:
             system_prompt = "Eres un asistente virtual inteligente y servicial."
@@ -129,7 +188,9 @@ class DeepSeekService:
                 messages.append({"role": msg.role, "content": msg.content})
         messages.append({"role": "user", "content": user_message})
 
-        result = await asyncio.to_thread(self.sync_generate, system_prompt, messages, max_tokens)
+        result = await asyncio.to_thread(
+            self.sync_generate, system_prompt, messages, max_tokens, thinking, tools, tool_executor
+        )
 
         return ChatResponse(
             response=result["response"],
@@ -148,10 +209,16 @@ class DeepSeekService:
         rag_context: str,
         system_prompt: Optional[str] = None,
         max_tokens: int = 1024,
+        thinking: Optional[bool] = None,
+        tools: Optional[list] = None,
+        tool_executor: Optional[Callable[[str, dict], dict]] = None,
     ) -> ChatResponse:
         return await self.generate_response(
             user_message=user_message,
             context=rag_context,
             system_prompt=system_prompt,
             max_tokens=max_tokens,
+            thinking=thinking,
+            tools=tools,
+            tool_executor=tool_executor,
         )

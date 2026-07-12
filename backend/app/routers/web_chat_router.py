@@ -27,6 +27,7 @@ from app.services.conversation_flow_service import create_flow_state, FlowState
 from app.services.module_service import get_module_service
 from app.services.tenant_service import get_tenant_service
 from app.services.appointment_booking_service import BookingState, detects_booking_intent, start_booking
+from app.services.prospect_auto_qualify_service import QUALIFICATION_TOOL_SPEC, build_qualification_tool_executor
 from app.models.client import ClientUpdate
 
 logger = logging.getLogger(__name__)
@@ -170,6 +171,19 @@ async def websocket_chat(websocket: WebSocket, bot_id: str, device_id: Optional[
                         user_text, bot_id=bot_id, n_results=bot.config.rag_results_count
                     )
 
+                # Tool calling de calificación por semáforo (ver
+                # prospect_auto_qualify_service.py) — solo si el bot tiene al
+                # menos un color habilitado para conversión automática.
+                qualify_tools, qualify_executor = (None, None)
+                if bot.config.auto_qualify_colors:
+                    qualify_tools = [QUALIFICATION_TOOL_SPEC]
+                    qualify_executor = build_qualification_tool_executor(
+                        tenant_id=bot.tenant_id,
+                        canal="web",
+                        telefono=None,
+                        allowed_colors=bot.config.auto_qualify_colors,
+                    )
+
                 # Llamar a Claude (es síncrono internamente; lo ejecutamos en un thread)
                 response = await asyncio.to_thread(
                     _sync_generate,
@@ -179,6 +193,9 @@ async def websocket_chat(websocket: WebSocket, bot_id: str, device_id: Optional[
                     build_effective_system_prompt(bot.config),
                     conversation_history,
                     bot.config.max_tokens,
+                    bot.config.llm_thinking or None,
+                    qualify_tools,
+                    qualify_executor,
                 )
 
                 # Actualizar historial en memoria
@@ -492,6 +509,16 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
                             user_text, bot_id=channel.bot_id, n_results=bot.config.rag_results_count
                         )
 
+                    qualify_tools, qualify_executor = (None, None)
+                    if bot.config.auto_qualify_colors:
+                        qualify_tools = [QUALIFICATION_TOOL_SPEC]
+                        qualify_executor = build_qualification_tool_executor(
+                            tenant_id=bot.tenant_id,
+                            canal=channel_source,
+                            telefono=None,
+                            allowed_colors=bot.config.auto_qualify_colors,
+                        )
+
                     response = await asyncio.to_thread(
                         _sync_generate,
                         claude,
@@ -500,6 +527,9 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
                         build_effective_system_prompt(bot.config),
                         conversation_history,
                         bot.config.max_tokens,
+                        bot.config.llm_thinking or None,
+                        qualify_tools,
+                        qualify_executor,
                     )
 
                     conversation_history.append(ChatMessage(role="user", content=user_text))
@@ -602,6 +632,9 @@ def _sync_generate(
     system_prompt: str,
     history: List[ChatMessage],
     max_tokens: int,
+    thinking: Optional[bool] = None,
+    tools: Optional[list] = None,
+    tool_executor=None,
 ) -> dict:
     """Wrapper síncrono para llamar al LLM activo desde asyncio.to_thread."""
     messages = [{"role": m.role, "content": m.content} for m in history]
@@ -611,4 +644,4 @@ def _sync_generate(
     if context:
         full_system_prompt += f"\n\nCONTEXTO RELEVANTE:\n{context}"
 
-    return llm.sync_generate(full_system_prompt, messages, max_tokens)
+    return llm.sync_generate(full_system_prompt, messages, max_tokens, thinking, tools, tool_executor)

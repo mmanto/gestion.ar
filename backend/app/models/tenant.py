@@ -4,7 +4,7 @@ general y el catálogo de módulos (ver estrategia multi-tenant).
 """
 
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -126,3 +126,7 @@ class ModuleEnableRequest(BaseModel):
 
 class CustomFactsUpdate(BaseModel):
     custom_facts: Dict[str, str]
+
+
+class AutoQualifyColorsUpdate(BaseModel):
+    colors: List[Literal["verde", "amarillo", "rojo"]] = Field(default_factory=list)

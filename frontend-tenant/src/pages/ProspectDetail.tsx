@@ -17,6 +17,12 @@ const Field = ({ label, value }: { label: string; value: string }) => (
   </div>
 );
 
+const semaforoDotClass: Record<string, string> = {
+  verde: 'bg-green-500',
+  amarillo: 'bg-yellow-500',
+  rojo: 'bg-red-500',
+};
+
 export const ProspectDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -57,7 +63,15 @@ export const ProspectDetail = () => {
           <Card shadow="none">
             <div className="flex items-start justify-between mb-6">
               <div>
-                <h2 className="text-2xl font-semibold text-gray-900">{prospect.nombre}</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-2xl font-semibold text-gray-900">{prospect.nombre}</h2>
+                  {prospect.color_semaforo && (
+                    <span
+                      title={`Calificación automática: ${prospect.color_semaforo}`}
+                      className={`w-3 h-3 rounded-full ${semaforoDotClass[prospect.color_semaforo] || 'bg-gray-400'}`}
+                    />
+                  )}
+                </div>
                 <p className="text-sm text-gray-700 mt-1">{prospect.prospect_id}</p>
               </div>
               {prospect.whatsapp && (
@@ -94,6 +108,13 @@ export const ProspectDetail = () => {
               <Field label="WhatsApp" value={prospect.whatsapp || ''} />
               <Field label="Email" value={prospect.email || ''} />
             </div>
+
+            {prospect.notas && (
+              <div className="mt-6">
+                <p className="text-sm font-medium text-gray-700">Notas (calificación automática)</p>
+                <p className="text-base text-gray-900 mt-1 whitespace-pre-wrap">{prospect.notas}</p>
+              </div>
+            )}
           </Card>
         )}
       </div>

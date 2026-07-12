@@ -22,6 +22,8 @@ def _to_prospect(row: ProspectModel) -> Prospect:
         canal=row.canal,
         whatsapp=row.whatsapp,
         email=row.email,
+        color_semaforo=row.color_semaforo,
+        notas=row.notas,
     )
 
 
@@ -41,6 +43,8 @@ class ProspectService:
                 canal=prospect_data.canal,
                 whatsapp=prospect_data.whatsapp,
                 email=prospect_data.email,
+                color_semaforo=prospect_data.color_semaforo,
+                notas=prospect_data.notas,
             )
             session.add(row)
             await session.commit()

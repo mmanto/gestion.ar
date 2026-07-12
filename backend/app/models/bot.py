@@ -2,7 +2,7 @@
 Bot models - Pydantic models for Bot entity
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Literal
 from pydantic import BaseModel, Field
 from enum import Enum
 
@@ -80,6 +80,27 @@ class BotConfig(BaseModel):
     flow: Optional[FlowConfig] = Field(
         default=None,
         description="Configuración del flujo de captura de datos progresivo (Fase 2)"
+    )
+    auto_qualify_colors: List[Literal["verde", "amarillo", "rojo"]] = Field(
+        default_factory=list,
+        description=(
+            "Colores del semáforo (ver ius_config.traffic_light/priority) para los que "
+            "el agente crea el Prospect automáticamente al determinarlos en la "
+            "conversación, vía tool calling. Vacío = deshabilitado. Específico de bots "
+            "tipo IUS; en bots sin ese concepto de semáforo simplemente no tiene efecto."
+        ),
+    )
+    llm_thinking: bool = Field(
+        default=False,
+        description=(
+            "Fuerza el modo 'thinking' del LLM para este bot en particular, "
+            "aunque DEEPSEEK_THINKING esté deshabilitado globalmente en el "
+            "servidor (solo tiene efecto con LLM_PROVIDER=deepseek; Claude y "
+            "Ollama lo ignoran). Pensado para bots con instrucciones densas "
+            "(ej. flows largos con reglas de prioridad superpuestas) donde el "
+            "modo rápido sin razonamiento no sigue instrucciones sutiles de "
+            "forma confiable."
+        ),
     )
     custom_facts: Dict[str, str] = Field(
         default_factory=dict,

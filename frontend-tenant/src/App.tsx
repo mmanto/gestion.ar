@@ -114,7 +114,7 @@ function App() {
                 <Route
                   path="/training"
                   element={
-                    <ProtectedRoute roles={['admin']}>
+                    <ProtectedRoute roles={['admin', 'operativo']}>
                       <TrainingSettings />
                     </ProtectedRoute>
                   }

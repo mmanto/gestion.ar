@@ -4,7 +4,9 @@ Servicio para interactuar con Claude API y generar respuestas con contexto RAG
 """
 
 import os
-from typing import Optional, List
+import json
+import asyncio
+from typing import Optional, List, Callable
 from datetime import datetime
 import anthropic
 from anthropic import Anthropic
@@ -92,7 +94,10 @@ class ClaudeService:
         context: Optional[str] = None,
         system_prompt: Optional[str] = None,
         conversation_history: Optional[List[ChatMessage]] = None,
-        max_tokens: int = 1024
+        max_tokens: int = 1024,
+        thinking: Optional[bool] = None,
+        tools: Optional[list] = None,
+        tool_executor: Optional[Callable[[str, dict], dict]] = None,
     ) -> ChatResponse:
         """
         Genera una respuesta usando Claude API
@@ -103,6 +108,10 @@ class ClaudeService:
             system_prompt: Prompt del sistema (opcional)
             conversation_history: Historial de conversación (opcional)
             max_tokens: Máximo de tokens a generar
+            thinking: sin efecto en Claude — solo lo usa DeepSeekService.
+                Se acepta acá para que el caller no necesite ramificar por
+                proveedor (ver bot.config.llm_thinking).
+            tools/tool_executor: ver sync_generate (tool calling).
 
         Returns:
             ChatResponse con la respuesta y metadatos
@@ -142,29 +151,20 @@ class ClaudeService:
                 "content": user_message
             })
 
-            # Llamar a la API de Claude
-            response = self.client.messages.create(
-                model=self.model,
-                max_tokens=max_tokens,
-                system=system_prompt,
-                messages=messages
+            # Reusa sync_generate (incluye el loop de tool calling) en vez de
+            # duplicar la llamada a la API acá; a diferencia de antes, ahora
+            # corre en un thread aparte para no bloquear el event loop
+            # durante la llamada de red (igual que Ollama/DeepSeekService).
+            result = await asyncio.to_thread(
+                self.sync_generate, system_prompt, messages, max_tokens, thinking, tools, tool_executor
             )
 
-            # Extraer respuesta
-            assistant_message = response.content[0].text
-
-            # Calcular tokens y costo
-            input_tokens = response.usage.input_tokens
-            output_tokens = response.usage.output_tokens
-            total_tokens = input_tokens + output_tokens
-            estimated_cost = self.calculate_cost(input_tokens, output_tokens)
-
             return ChatResponse(
-                response=assistant_message,
-                tokens_used=total_tokens,
-                input_tokens=input_tokens,
-                output_tokens=output_tokens,
-                estimated_cost_usd=estimated_cost,
+                response=result["response"],
+                tokens_used=result["tokens_used"],
+                input_tokens=result["input_tokens"],
+                output_tokens=result["output_tokens"],
+                estimated_cost_usd=result["estimated_cost_usd"],
                 model=self.model,
                 timestamp=datetime.utcnow().isoformat(),
                 context_used=context
@@ -193,26 +193,88 @@ precisa y amigable."""
         system_prompt: str,
         messages: list,
         max_tokens: int,
+        thinking: Optional[bool] = None,
+        tools: Optional[list] = None,
+        tool_executor: Optional[Callable[[str, dict], dict]] = None,
     ) -> dict:
         """
         Llamada síncrona a la API de Claude. Se ejecuta vía asyncio.to_thread.
         Retorna dict compatible con OllamaService.sync_generate.
+        `thinking` no tiene efecto acá — ver DeepSeekService.sync_generate.
+
+        `tools`/`tool_executor`: soporte de tool calling (ver
+        prospect_auto_qualify_service.py). `tools` viene en shape neutro
+        [{name, description, parameters}] y se convierte acá al formato de
+        Anthropic (input_schema). Si el modelo responde con stop_reason
+        "tool_use", se ejecuta `tool_executor(name, input)` por cada bloque
+        y se le devuelve el resultado como tool_result, repitiendo hasta que
+        conteste con texto plano (tope de 3 vueltas para evitar loops).
         """
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=max_tokens,
-            system=system_prompt,
-            messages=messages,
-        )
-        assistant_text = response.content[0].text
-        input_tokens = response.usage.input_tokens
-        output_tokens = response.usage.output_tokens
+        anthropic_tools = None
+        if tools:
+            anthropic_tools = [
+                {"name": t["name"], "description": t["description"], "input_schema": t["parameters"]}
+                for t in tools
+            ]
+
+        current_messages = list(messages)
+        total_input_tokens = 0
+        total_output_tokens = 0
+
+        for _ in range(3):
+            kwargs = {
+                "model": self.model,
+                "max_tokens": max_tokens,
+                "system": system_prompt,
+                "messages": current_messages,
+            }
+            if anthropic_tools:
+                kwargs["tools"] = anthropic_tools
+
+            response = self.client.messages.create(**kwargs)
+            total_input_tokens += response.usage.input_tokens
+            total_output_tokens += response.usage.output_tokens
+
+            if response.stop_reason != "tool_use" or not tool_executor:
+                assistant_text = "".join(
+                    block.text for block in response.content if block.type == "text"
+                )
+                return {
+                    "response": assistant_text,
+                    "tokens_used": total_input_tokens + total_output_tokens,
+                    "input_tokens": total_input_tokens,
+                    "output_tokens": total_output_tokens,
+                    "estimated_cost_usd": self.calculate_cost(total_input_tokens, total_output_tokens),
+                    "model": self.model,
+                }
+
+            current_messages.append({"role": "assistant", "content": response.content})
+            tool_result_blocks = []
+            for block in response.content:
+                if block.type != "tool_use":
+                    continue
+                try:
+                    result = tool_executor(block.name, block.input)
+                    tool_result_blocks.append({
+                        "type": "tool_result",
+                        "tool_use_id": block.id,
+                        "content": json.dumps(result, ensure_ascii=False),
+                    })
+                except Exception as e:
+                    tool_result_blocks.append({
+                        "type": "tool_result",
+                        "tool_use_id": block.id,
+                        "content": f"Error ejecutando la tool: {e}",
+                        "is_error": True,
+                    })
+            current_messages.append({"role": "user", "content": tool_result_blocks})
+
         return {
-            "response": assistant_text,
-            "tokens_used": input_tokens + output_tokens,
-            "input_tokens": input_tokens,
-            "output_tokens": output_tokens,
-            "estimated_cost_usd": self.calculate_cost(input_tokens, output_tokens),
+            "response": "",
+            "tokens_used": total_input_tokens + total_output_tokens,
+            "input_tokens": total_input_tokens,
+            "output_tokens": total_output_tokens,
+            "estimated_cost_usd": self.calculate_cost(total_input_tokens, total_output_tokens),
             "model": self.model,
         }
 
@@ -221,13 +283,19 @@ precisa y amigable."""
         user_message: str,
         rag_context: str,
         system_prompt: Optional[str] = None,
-        max_tokens: int = 1024
+        max_tokens: int = 1024,
+        thinking: Optional[bool] = None,
+        tools: Optional[list] = None,
+        tool_executor: Optional[Callable[[str, dict], dict]] = None,
     ) -> ChatResponse:
         return await self.generate_response(
             user_message=user_message,
             context=rag_context,
             system_prompt=system_prompt,
-            max_tokens=max_tokens
+            max_tokens=max_tokens,
+            thinking=thinking,
+            tools=tools,
+            tool_executor=tool_executor,
         )
 
 

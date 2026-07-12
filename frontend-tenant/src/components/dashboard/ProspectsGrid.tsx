@@ -16,6 +16,12 @@ const estadoColors: Record<string, string> = {
   descartado: 'bg-gray-200 text-gray-950',
 };
 
+const semaforoDotClass: Record<string, string> = {
+  verde: 'bg-green-500',
+  amarillo: 'bg-yellow-500',
+  rojo: 'bg-red-500',
+};
+
 const canalColors: Record<string, string> = {
   whatsapp: 'bg-green-200 text-green-950',
   telegram: 'bg-blue-200 text-blue-950',
@@ -106,7 +112,15 @@ const ProspectsGrid = () => {
                   </span>
                 </TableCell>
                 <TableCell>
-                  <p className="text-lg font-normal text-gray-900">{prospect.nombre}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-lg font-normal text-gray-900">{prospect.nombre}</p>
+                    {prospect.color_semaforo && (
+                      <span
+                        title={`Calificación automática: ${prospect.color_semaforo}`}
+                        className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${semaforoDotClass[prospect.color_semaforo] || 'bg-gray-400'}`}
+                      />
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell textClassName="text-gray-800">
                   {new Date(prospect.fecha_interaccion).toLocaleDateString('es-ES', {

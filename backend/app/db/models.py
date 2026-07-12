@@ -253,11 +253,20 @@ class Prospect(Base):
     canal = Column(Text, nullable=True)
     whatsapp = Column(Text, nullable=True)
     email = Column(Text, nullable=True)
+    # Sólo se completan en prospectos creados automáticamente por el agente
+    # (tool calling de calificación por semáforo, ver
+    # prospect_auto_qualify_service.py) — null en altas manuales.
+    color_semaforo = Column(Text, nullable=True)
+    notas = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (
         Index("ix_prospects_tenant_id", "tenant_id"),
         Index("ix_prospects_fecha_interaccion", "fecha_interaccion"),
+        CheckConstraint(
+            "color_semaforo IS NULL OR color_semaforo IN ('verde', 'amarillo', 'rojo')",
+            name="ck_prospects_color_semaforo",
+        ),
     )
 
 

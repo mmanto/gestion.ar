@@ -15,6 +15,7 @@ from app.claude_service import get_llm_service, build_effective_system_prompt
 from app.conversation_service import get_conversation_service
 from app.services.client_service import get_client_service
 from app.services.bot_service import get_bot_service
+from app.services.prospect_auto_qualify_service import QUALIFICATION_TOOL_SPEC, build_qualification_tool_executor
 
 logger = logging.getLogger(__name__)
 
@@ -196,12 +197,28 @@ async def handle_telegram_text_message(telegram, message_data: Dict) -> Dict:
         if bot and bot.config.use_rag:
             rag_context = rag.get_context(text, bot_id=bot_id, n_results=bot.config.rag_results_count)
 
+        # Tool calling de calificación por semáforo (ver
+        # prospect_auto_qualify_service.py) — solo si el bot tiene al menos
+        # un color habilitado para conversión automática.
+        qualify_tools, qualify_executor = (None, None)
+        if bot and bot.config.auto_qualify_colors:
+            qualify_tools = [QUALIFICATION_TOOL_SPEC]
+            qualify_executor = build_qualification_tool_executor(
+                tenant_id=bot.tenant_id,
+                canal="telegram",
+                telefono=str(chat_id),
+                allowed_colors=bot.config.auto_qualify_colors,
+            )
+
         # Generate response with Claude, usando el entrenamiento propio del bot
         response = await claude.generate_rag_response(
             user_message=text,
             rag_context=rag_context,
             system_prompt=build_effective_system_prompt(bot.config) if bot else None,
             max_tokens=(bot.config.max_tokens if bot else 1024),
+            thinking=(bot.config.llm_thinking or None) if bot else None,
+            tools=qualify_tools,
+            tool_executor=qualify_executor,
         )
 
         # Send response

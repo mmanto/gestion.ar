@@ -12,6 +12,10 @@ export interface Prospect {
   canal?: string;
   whatsapp?: string;
   email?: string;
+  /** Solo presente en prospectos creados automáticamente por el agente (ver
+   * prospect_auto_qualify_service.py) — null en altas manuales. */
+  color_semaforo?: 'verde' | 'amarillo' | 'rojo' | null;
+  notas?: string | null;
 }
 
 export interface ProspectsResponse {

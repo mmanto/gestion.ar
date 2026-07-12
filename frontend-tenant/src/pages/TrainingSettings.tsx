@@ -8,8 +8,14 @@ import { EmptyState } from '../components/common/EmptyState';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import botsService from '../services/bots.service';
-import modulesService from '../services/modules.service';
+import modulesService, { type SemaforoColor } from '../services/modules.service';
 import type { TenantBotSummary } from '../types/bot.types';
+
+const SEMAFORO_OPTIONS: { color: SemaforoColor; label: string; dotClass: string }[] = [
+  { color: 'verde', label: 'Verde', dotClass: 'bg-green-500' },
+  { color: 'amarillo', label: 'Amarillo', dotClass: 'bg-yellow-500' },
+  { color: 'rojo', label: 'Rojo', dotClass: 'bg-red-500' },
+];
 
 export const TrainingSettings = () => {
   const [bots, setBots] = useState<TenantBotSummary[]>([]);
@@ -17,6 +23,8 @@ export const TrainingSettings = () => {
   const [facts, setFacts] = useState<Record<string, string>>({});
   const [newKey, setNewKey] = useState('');
   const [newValue, setNewValue] = useState('');
+  const [autoQualifyColors, setAutoQualifyColors] = useState<SemaforoColor[]>([]);
+  const [savingColors, setSavingColors] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,11 +43,35 @@ export const TrainingSettings = () => {
   useEffect(() => {
     if (!selectedBotId) return;
     setLoading(true);
-    modulesService.getCustomFacts(selectedBotId)
-      .then(setFacts)
+    Promise.all([
+      modulesService.getCustomFacts(selectedBotId),
+      modulesService.getAutoQualifyColors(selectedBotId),
+    ])
+      .then(([customFacts, colors]) => {
+        setFacts(customFacts);
+        setAutoQualifyColors(colors);
+      })
       .catch((err) => setError(err instanceof Error ? err.message : 'Error cargando datos de entrenamiento'))
       .finally(() => setLoading(false));
   }, [selectedBotId]);
+
+  const toggleAutoQualifyColor = async (color: SemaforoColor) => {
+    if (!selectedBotId) return;
+    const updated = autoQualifyColors.includes(color)
+      ? autoQualifyColors.filter((c) => c !== color)
+      : [...autoQualifyColors, color];
+    setAutoQualifyColors(updated);
+    setSavingColors(true);
+    try {
+      const result = await modulesService.updateAutoQualifyColors(selectedBotId, updated);
+      setAutoQualifyColors(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error guardando');
+      setAutoQualifyColors(autoQualifyColors); // revertir ante error
+    } finally {
+      setSavingColors(false);
+    }
+  };
 
   const persist = async (updated: Record<string, string>) => {
     if (!selectedBotId) return;
@@ -119,6 +151,29 @@ export const TrainingSettings = () => {
                 </select>
               </div>
             )}
+
+            <Card shadow="none" className="mb-6">
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">Calificación automática (semáforo)</h3>
+              <p className="text-sm text-gray-700 mb-3">
+                Elegí para qué resultados el agente crea el prospecto de forma automática al
+                determinarlos en la conversación. Podés elegir uno, dos o los tres.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                {SEMAFORO_OPTIONS.map(({ color, label, dotClass }) => (
+                  <label key={color} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={autoQualifyColors.includes(color)}
+                      onChange={() => toggleAutoQualifyColor(color)}
+                      disabled={savingColors}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
+                    <span className={`w-2.5 h-2.5 rounded-full ${dotClass}`} />
+                    <span className="text-sm text-gray-900">{label}</span>
+                  </label>
+                ))}
+              </div>
+            </Card>
 
             <div className="space-y-3 mb-6">
               {Object.entries(facts).map(([key, value]) => (

@@ -7,7 +7,7 @@ Compatible con la misma interfaz que ClaudeService.
 import os
 import asyncio
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Callable
 
 import httpx
 
@@ -33,9 +33,17 @@ class OllamaService:
         system_prompt: str,
         messages: list,
         max_tokens: int,
+        thinking: Optional[bool] = None,
+        tools: Optional[list] = None,
+        tool_executor: Optional[Callable[[str, dict], dict]] = None,
     ) -> dict:
         """
         Llamada síncrona a Ollama. Se ejecuta vía asyncio.to_thread desde los routers.
+        `thinking` no tiene efecto acá — ver DeepSeekService.sync_generate.
+        `tools`/`tool_executor` tampoco: tool calling no está soportado acá
+        por ahora (modelos locales cuantizados no son confiables para esto).
+        Se aceptan por paridad de interfaz para que los routers no tengan
+        que ramificar por proveedor — ver ClaudeService/DeepSeekService.
         """
         payload = {
             "model": self.model,
@@ -69,6 +77,9 @@ class OllamaService:
         system_prompt: Optional[str] = None,
         conversation_history: Optional[List[ChatMessage]] = None,
         max_tokens: int = 1024,
+        thinking: Optional[bool] = None,
+        tools: Optional[list] = None,
+        tool_executor: Optional[Callable[[str, dict], dict]] = None,
     ) -> ChatResponse:
         if not system_prompt:
             system_prompt = "Eres un asistente virtual inteligente y servicial."
@@ -100,6 +111,9 @@ class OllamaService:
         rag_context: str,
         system_prompt: Optional[str] = None,
         max_tokens: int = 1024,
+        thinking: Optional[bool] = None,
+        tools: Optional[list] = None,
+        tool_executor: Optional[Callable[[str, dict], dict]] = None,
     ) -> ChatResponse:
         return await self.generate_response(
             user_message=user_message,

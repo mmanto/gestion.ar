@@ -33,6 +33,7 @@ export interface BotConfig {
   rag_results_count: number;
   rate_limit_messages: number;
   rate_limit_window: number;
+  llm_thinking?: boolean;
   flow?: FlowConfig | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ius_config?: Record<string, any> | null;

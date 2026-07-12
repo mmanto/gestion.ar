@@ -5,7 +5,9 @@ El tenant NO crea ni configura técnicamente sus bots (eso es administración
 general, ver bot_router.py/tenant_admin_router.py) — sólo puede:
 1. Ver un resumen de sus propios bots (read-only).
 2. Habilitar/deshabilitar módulos ya otorgados por administración general.
-3. Editar datos puntuales de entrenamiento (custom_facts, ej. honorarios).
+3. Editar datos puntuales de entrenamiento (custom_facts, ej. honorarios) y,
+   en bots tipo IUS, qué colores del semáforo cierra solo el agente
+   (auto_qualify_colors, ver prospect_auto_qualify_service.py).
 4. Gestionar (alta/edición) los usuarios de su propio tenant — nunca
    super_admin, y siempre scoped a current_user.tenant_id.
 
@@ -17,7 +19,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.auth_service import User
 from app.dependencies.auth import get_current_user, require_role
 from app.models.bot import BotStatus, BotUpdate
-from app.models.tenant import CustomFactsUpdate, ModuleEnableRequest, TenantOwnUserCreate, TenantUserOut, TenantUserUpdate
+from app.models.tenant import AutoQualifyColorsUpdate, CustomFactsUpdate, ModuleEnableRequest, TenantOwnUserCreate, TenantUserOut, TenantUserUpdate
 from app.services.bot_service import get_bot_service
 from app.services.module_service import get_module_service
 from app.services.user_service import get_user_service
@@ -85,7 +87,7 @@ async def set_module_enabled(
 
 
 @router.get("/bots/{bot_id}/training/custom-facts", response_model=dict)
-async def get_custom_facts(bot_id: str, current_user: User = Depends(require_role("admin"))):
+async def get_custom_facts(bot_id: str, current_user: User = Depends(require_role("admin", "operativo"))):
     """Datos puntuales de entrenamiento vigentes (ej. honorarios a informar)."""
     bot = await _verify_tenant_bot(bot_id, current_user)
     return {"success": True, "custom_facts": bot.config.custom_facts}
@@ -95,7 +97,7 @@ async def get_custom_facts(bot_id: str, current_user: User = Depends(require_rol
 async def update_custom_facts(
     bot_id: str,
     body: CustomFactsUpdate,
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_role("admin", "operativo")),
 ):
     """Edita datos puntuales de entrenamiento (ej. honorarios a informar).
     No toca system_prompt/ius_config/flow — eso es de administración general."""
@@ -106,6 +108,30 @@ async def update_custom_facts(
     updated = await bot_service.update_bot_admin(bot_id, BotUpdate(config=updated_config))
 
     return {"success": True, "custom_facts": updated.config.custom_facts}
+
+
+@router.get("/bots/{bot_id}/training/auto-qualify-colors", response_model=dict)
+async def get_auto_qualify_colors(bot_id: str, current_user: User = Depends(require_role("admin", "operativo"))):
+    """Colores del semáforo habilitados para conversión automática (crear Prospect
+    solo, ver prospect_auto_qualify_service.py) — específico de bots tipo IUS."""
+    bot = await _verify_tenant_bot(bot_id, current_user)
+    return {"success": True, "auto_qualify_colors": bot.config.auto_qualify_colors}
+
+
+@router.patch("/bots/{bot_id}/training/auto-qualify-colors", response_model=dict)
+async def update_auto_qualify_colors(
+    bot_id: str,
+    body: AutoQualifyColorsUpdate,
+    current_user: User = Depends(require_role("admin", "operativo")),
+):
+    """Edita los colores del semáforo para los que el agente crea el Prospect solo."""
+    bot = await _verify_tenant_bot(bot_id, current_user)
+
+    bot_service = get_bot_service()
+    updated_config = bot.config.model_copy(update={"auto_qualify_colors": body.colors})
+    updated = await bot_service.update_bot_admin(bot_id, BotUpdate(config=updated_config))
+
+    return {"success": True, "auto_qualify_colors": updated.config.auto_qualify_colors}
 
 
 # ── Usuarios del propio tenant (UsuarioAdmin/Usuario) ───────────────────────

@@ -398,6 +398,21 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
             )}
           </div>
         </div>
+
+        <div className="flex items-center mt-4">
+          <input
+            type="checkbox"
+            id="llm_thinking"
+            checked={formData.config.llm_thinking ?? false}
+            onChange={(e) => updateConfig('llm_thinking', e.target.checked)}
+            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+          />
+          <label htmlFor="llm_thinking" className="ml-2 text-sm text-gray-900">
+            Habilitar modo "thinking" (razonamiento) — solo aplica con DeepSeek. Útil para
+            bots con instrucciones densas (flows largos, reglas superpuestas) que necesitan
+            más capacidad de inferencia; aumenta costo y latencia por respuesta.
+          </label>
+        </div>
       </div>
 
       {/* Configuracion RAG */}

@@ -18,6 +18,8 @@ class ProspectCreate(BaseModel):
     canal: Optional[str] = None
     whatsapp: Optional[str] = None
     email: Optional[str] = None
+    color_semaforo: Optional[str] = None
+    notas: Optional[str] = None
 
 
 class Prospect(BaseModel):
@@ -30,6 +32,8 @@ class Prospect(BaseModel):
     canal: Optional[str] = None
     whatsapp: Optional[str] = None
     email: Optional[str] = None
+    color_semaforo: Optional[str] = None
+    notas: Optional[str] = None
 
     class Config:
         json_schema_extra = {
@@ -42,5 +46,7 @@ class Prospect(BaseModel):
                 "canal": "whatsapp",
                 "whatsapp": "+5491123456789",
                 "email": "juan@example.com",
+                "color_semaforo": "verde",
+                "notas": "Despido hace 2 días, cuenta con contrato y recibos de nómina.",
             }
         }
