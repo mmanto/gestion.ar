@@ -21,17 +21,30 @@ class AppointmentsClient:
         self._timeout = timeout
 
     async def _request(self, method: str, path: str, **kwargs) -> httpx.Response:
-        async with httpx.AsyncClient(base_url=self._base_url, timeout=self._timeout) as client:
-            resp = await client.request(
-                method,
-                path,
-                headers={"Authorization": f"Bearer {self._api_key}"},
-                **kwargs,
-            )
-            if resp.status_code == 409:
-                raise SlotUnavailableError(resp.json().get("detail", "Horario no disponible"))
-            resp.raise_for_status()
-            return resp
+        try:
+            async with httpx.AsyncClient(base_url=self._base_url, timeout=self._timeout) as client:
+                resp = await client.request(
+                    method,
+                    path,
+                    headers={"Authorization": f"Bearer {self._api_key}"},
+                    **kwargs,
+                )
+                if resp.status_code == 409:
+                    raise SlotUnavailableError(resp.json().get("detail", "Horario no disponible"))
+                resp.raise_for_status()
+                return resp
+        except httpx.ConnectError as exc:
+            raise httpx.HTTPStatusError(
+                f"No se puede conectar con el servicio de turnos ({self._base_url})",
+                request=exc.request,
+                response=httpx.Response(status_code=502),
+            ) from exc
+        except httpx.TimeoutException as exc:
+            raise httpx.HTTPStatusError(
+                f"Timeout al contactar el servicio de turnos ({self._base_url})",
+                request=exc.request,
+                response=httpx.Response(status_code=502),
+            ) from exc
 
     async def list_slots(
         self, resource_id: str, date_from: str, date_to: str, service_id: str | None = None

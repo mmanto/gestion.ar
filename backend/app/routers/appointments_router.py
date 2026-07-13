@@ -89,6 +89,11 @@ async def _verify_appointment_ownership(bot: Bot, appointment_id: str, client) -
     try:
         appointment = await client.get_appointment(appointment_id)
     except httpx.HTTPStatusError as exc:
+        if exc.response.status_code in (401, 403):
+            raise HTTPException(
+                status.HTTP_502_BAD_GATEWAY,
+                "Error interno del servicio de turnos",
+            ) from exc
         raise HTTPException(exc.response.status_code, "Turno no encontrado") from exc
     config = _get_appointments_config(bot)
     if str(appointment.get("resource_id")) not in config["resource_ids"]:
@@ -97,7 +102,13 @@ async def _verify_appointment_ownership(bot: Bot, appointment_id: str, client) -
 
 
 def _raise_upstream_error(exc: httpx.HTTPStatusError) -> None:
-    raise HTTPException(exc.response.status_code, exc.response.text) from exc
+    detail = exc.response.text[:500] if exc.response.text else "Error interno del servicio de turnos"
+    if exc.response.status_code in (401, 403):
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY,
+            detail,
+        ) from exc
+    raise HTTPException(exc.response.status_code, detail) from exc
 
 
 # ── Config del bot (qué resources/services le pertenecen) ──────────────────
