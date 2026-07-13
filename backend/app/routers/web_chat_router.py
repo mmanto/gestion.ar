@@ -144,6 +144,12 @@ async def websocket_chat(websocket: WebSocket, bot_id: str, device_id: Optional[
         ChatMessage(role="assistant", content=get_effective_welcome_message(bot.config))
     ]
 
+    # Reserva de turnos por chat (ver appointment_booking_service.py): mismo
+    # mecanismo que websocket_chat_by_channel — sin esto, ningún chat que
+    # acceda por /chat/{botId} (modo 'bot') puede iniciar una reserva.
+    booking_state: Optional[BookingState] = None
+
+
     try:
         while True:
             raw = await websocket.receive_text()
@@ -164,84 +170,118 @@ async def websocket_chat(websocket: WebSocket, bot_id: str, device_id: Optional[
             await websocket.send_json({"type": "typing", "status": True})
 
             try:
-                # Obtener contexto RAG si está habilitado
-                rag_context: Optional[str] = None
-                if bot.config.use_rag:
-                    rag_context = rag.get_context(
-                        user_text, bot_id=bot_id, n_results=bot.config.rag_results_count
-                    )
+                # === Reserva de turnos: si hay una mini-conversación de booking
+                # en curso para esta sesión, tiene prioridad sobre RAG. ===
+                booking_result: Optional[dict] = None
 
-                # Tool calling de calificación por semáforo (ver
-                # prospect_auto_qualify_service.py) — solo si el bot tiene al
-                # menos un color habilitado para conversión automática.
-                qualify_tools, qualify_executor = (None, None)
-                if bot.config.auto_qualify_colors:
-                    qualify_tools = [QUALIFICATION_TOOL_SPEC]
-                    qualify_executor = build_qualification_tool_executor(
-                        tenant_id=bot.tenant_id,
-                        canal="web",
-                        telefono=None,
-                        allowed_colors=bot.config.auto_qualify_colors,
-                    )
+                if booking_state is not None:
+                    booking_result = await booking_state.process_answer(user_text)
+                elif detects_booking_intent(user_text):
+                    booking_state, booking_result = await start_booking(bot, web_client_id)
 
-                # Llamar a Claude (es síncrono internamente; lo ejecutamos en un thread)
-                response = await asyncio.to_thread(
-                    _sync_generate,
-                    claude,
-                    user_text,
-                    rag_context,
-                    build_effective_system_prompt(bot.config),
-                    conversation_history,
-                    bot.config.max_tokens,
-                    bot.config.llm_thinking or None,
-                    qualify_tools,
-                    qualify_executor,
-                )
-
-                # Actualizar historial en memoria
-                conversation_history.append(ChatMessage(role="user", content=user_text))
-                conversation_history.append(
-                    ChatMessage(role="assistant", content=response["response"])
-                )
-
-                # Persistir en PostgreSQL — reutilizando la misma conversación
-                await conv_service.log_chat_interaction(
-                    user_id=session_id,
-                    user_message=user_text,
-                    assistant_response=response["response"],
-                    metadata={
-                        "model": response["model"],
-                        "tokens_used": response["tokens_used"],
-                        "input_tokens": response["input_tokens"],
-                        "output_tokens": response["output_tokens"],
-                        "estimated_cost_usd": response["estimated_cost_usd"],
-                        "rag_used": bool(rag_context),
-                        "source": "web",
-                    },
-                    conversation_id=conversation_id,
-                    bot_id=bot_id,
-                    client_id=web_client_id,
-                    channel="web",
-                )
-
-                # Actualizar contadores del cliente
-                if web_client_id:
-                    try:
-                        await get_client_service().increment_counters(web_client_id, messages=1)
-                    except Exception:
-                        pass
-
-                await websocket.send_json(
-                    {
-                        "type": "message",
-                        "role": "assistant",
-                        "content": response["response"],
-                        "metadata": {
-                            "tokens_used": response["tokens_used"],
-                            "model": response["model"],
+                if booking_result is not None:
+                    # Log de la interacción de booking
+                    await conv_service.log_chat_interaction(
+                        user_id=session_id,
+                        user_message=user_text,
+                        assistant_response=booking_result["message"],
+                        metadata={
+                            "source": "web",
+                            "booking_stage": booking_state.stage.value if booking_state else None,
+                            "widget_type": (booking_result.get("widget") or {}).get("widget_type"),
                         },
-                    }
-                )
+                        conversation_id=conversation_id,
+                        bot_id=bot_id,
+                        client_id=web_client_id,
+                        channel="web",
+                    )
+
+                    payload = {"type": "message", "role": "assistant", "content": booking_result["message"]}
+                    if booking_result.get("widget"):
+                        payload["metadata"] = booking_result["widget"]
+                    await websocket.send_json(payload)
+
+                    if booking_result["done"] or booking_result["cancelled"]:
+                        booking_state = None
+
+                else:
+                    # === Flujo normal: chat RAG ===
+                    # Obtener contexto RAG si está habilitado
+                    rag_context: Optional[str] = None
+                    if bot.config.use_rag:
+                        rag_context = rag.get_context(
+                            user_text, bot_id=bot_id, n_results=bot.config.rag_results_count
+                        )
+
+                    # Tool calling de calificación por semáforo
+                    qualify_tools, qualify_executor = (None, None)
+                    if bot.config.auto_qualify_colors:
+                        qualify_tools = [QUALIFICATION_TOOL_SPEC]
+                        qualify_executor = build_qualification_tool_executor(
+                            tenant_id=bot.tenant_id,
+                            canal="web",
+                            telefono=None,
+                            allowed_colors=bot.config.auto_qualify_colors,
+                        )
+
+                    # Llamar a Claude
+                    response = await asyncio.to_thread(
+                        _sync_generate,
+                        claude,
+                        user_text,
+                        rag_context,
+                        build_effective_system_prompt(bot.config),
+                        conversation_history,
+                        bot.config.max_tokens,
+                        bot.config.llm_thinking or None,
+                        qualify_tools,
+                        qualify_executor,
+                    )
+
+                    # Actualizar historial en memoria
+                    conversation_history.append(ChatMessage(role="user", content=user_text))
+                    conversation_history.append(
+                        ChatMessage(role="assistant", content=response["response"])
+                    )
+
+                    # Persistir en PostgreSQL
+                    await conv_service.log_chat_interaction(
+                        user_id=session_id,
+                        user_message=user_text,
+                        assistant_response=response["response"],
+                        metadata={
+                            "model": response["model"],
+                            "tokens_used": response["tokens_used"],
+                            "input_tokens": response["input_tokens"],
+                            "output_tokens": response["output_tokens"],
+                            "estimated_cost_usd": response["estimated_cost_usd"],
+                            "rag_used": bool(rag_context),
+                            "source": "web",
+                        },
+                        conversation_id=conversation_id,
+                        bot_id=bot_id,
+                        client_id=web_client_id,
+                        channel="web",
+                    )
+
+                    # Actualizar contadores del cliente
+                    if web_client_id:
+                        try:
+                            await get_client_service().increment_counters(web_client_id, messages=1)
+                        except Exception:
+                            pass
+
+                    await websocket.send_json(
+                        {
+                            "type": "message",
+                            "role": "assistant",
+                            "content": response["response"],
+                            "metadata": {
+                                "tokens_used": response["tokens_used"],
+                                "model": response["model"],
+                            },
+                        }
+                    )
 
             except Exception as e:
                 logger.error("Error generando respuesta (bot_id=%s): %s\n%s", bot_id, e, traceback.format_exc())

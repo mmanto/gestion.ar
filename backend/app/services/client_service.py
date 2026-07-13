@@ -10,7 +10,7 @@ from typing import Dict, List, Optional
 from sqlalchemy import func, or_, select
 
 from app.db.database import AsyncSessionLocal
-from app.db.models import Client as ClientModel
+from app.db.models import Bot as BotModel, Client as ClientModel
 from app.models.client import Client, ClientCreate, ClientSource, ClientStatus, ClientUpdate
 
 
@@ -66,8 +66,15 @@ class ClientService:
         client_id = f"client_{uuid.uuid4().hex[:12]}"
 
         async with AsyncSessionLocal() as session:
+            # Resolver tenant_id desde el bot (requerido por la FK NOT NULL)
+            bot_result = await session.execute(
+                select(BotModel.tenant_id).where(BotModel.bot_id == client_data.bot_id)
+            )
+            tenant_id = bot_result.scalars().first()
+
             row = ClientModel(
                 client_id=client_id,
+                tenant_id=tenant_id,
                 bot_id=client_data.bot_id,
                 external_id=client_data.external_id,
                 source=client_data.source.value if hasattr(client_data.source, 'value') else client_data.source,
