@@ -5,24 +5,26 @@
 # correctos, aislando las variables del host. Sin parámetros, muestra un menú
 # interactivo. Con parámetro, ejecuta la operación directo.
 #
-# Uso: ./scripts/stack-prod.sh [comando] [servicio]
+# Uso: ./stack.prod [comando] [servicio]
 #
 # Comandos:
-#   up            levantar todo (equivalente a docker compose up -d)
+#   up            levantar todo (docker compose up -d)
 #   down          detener todo
 #   restart       restart de un servicio o de todo
-#   rebuild       down + build + up (reconstruye imágenes y levanta)
+#   rebuild       down + build + up (reconstruye imagenes y levanta)
 #   logs          ver logs de un servicio (requiere nombre de servicio)
 #   ps            listar contenedores y su estado
 #   status        mostrar estado + health checks
 #   shell         abrir shell en un servicio (requiere nombre de servicio)
+#   clean         limpiar recursos (--images: tambien imagenes del proyecto)
 #
 # Ejemplos:
-#   ./scripts/stack-prod.sh              # menú interactivo
-#   ./scripts/stack-prod.sh up           # levantar todo
-#   ./scripts/stack-prod.sh logs app     # logs del backend
-#   ./scripts/stack-prod.sh restart frontend
-#   ./scripts/stack-prod.sh shell app
+#   ./stack.prod                         # menu interactivo
+#   ./stack.prod up                      # levantar todo
+#   ./stack.prod logs app                # logs del backend
+#   ./stack.prod restart frontend        # restart del frontend
+#   ./stack.prod shell ius               # shell en tenant ius
+#   ./stack.prod clean                   # limpiar recursos (seguro, sin datos)
 #
 # Requisitos:
 #   .env.prod presente en la raíz del repo
@@ -96,10 +98,11 @@ menu() {
   echo -e "${CYAN}║${NC} 6) ps          listar contenedores         ${CYAN}║${NC}"
   echo -e "${CYAN}║${NC} 7) status      estado + health checks      ${CYAN}║${NC}"
   echo -e "${CYAN}║${NC} 8) shell       abrir shell en servicio     ${CYAN}║${NC}"
+  echo -e "${CYAN}║${NC} c) clean       limpiar recursos            ${CYAN}║${NC}"
   echo -e "${CYAN}║${NC} q) salir                                  ${CYAN}║${NC}"
   echo -e "${CYAN}╚══════════════════════════════════════════════╝${NC}"
   echo ""
-  read -r -p "Opción: " choice
+  read -r -p "Opcion: " choice
 
   case "$choice" in
     1) cmd_up ;;
@@ -110,10 +113,12 @@ menu() {
     6) cmd_ps ;;
     7) cmd_status ;;
     8) read -r -p "Servicio (app, frontend, ${TENANTS[*]}): " svc; cmd_shell "$svc" ;;
+    c|C) read -r -p "Modo (Enter=ligero, images): " mode; cmd_clean "${mode:-light}" ;;
     q|Q) exit 0 ;;
-    *) echo -e "${RED}Opción inválida${NC}"; menu ;;
+    *) echo -e "${RED}Opcion invalida${NC}"; menu ;;
   esac
 }
+
 
 
 # Resuelve un nombre corto de servicio al nombre de contenedor en compose.
@@ -234,6 +239,84 @@ cmd_shell() {
   "${COMPOSE_CMD[@]}" exec "$container" sh
 }
 
+# ── Limpieza de recursos (PROD — conservador, NUNCA toca volumes) ─────────
+
+cmd_clean() {
+  local mode="${1:-light}"
+
+  if [[ "$mode" == "--help" || "$mode" == "-h" ]]; then
+    echo "Uso: $0 clean [--images]"
+    echo "  (sin flag)   Limpieza ligera: containers stopped, imagenes dangling, build cache"
+    echo "  --images     + baja el stack, borra TODAS las imagenes del proyecto y build cache"
+    echo "               (Requiere confirmacion. NUNCA borra volumes de datos.)"
+    return 0
+  fi
+
+  case "$mode" in
+    light|"")
+      echo -e "${YELLOW}==> Limpieza ligera (PROD — seguro, no toca datos)...${NC}"
+      echo ""
+
+      echo "  [1/3] Quitando contenedores stopped del proyecto..."
+      docker container prune -f --filter "label=com.docker.compose.project=gestionar" 2>/dev/null || true
+
+      echo "  [2/3] Quitando imagenes dangling..."
+      docker image prune -f 2>/dev/null || true
+
+      echo "  [3/3] Limpiando build cache (>48h)..."
+      docker builder prune -f --filter "until=48h" 2>/dev/null || true
+
+      echo ""
+      echo -e "${GREEN}==> Limpieza ligera completa.${NC}"
+      echo "  Volumes y servicios corriendo NO fueron afectados."
+      ;;
+
+    --images)
+      echo -e "${RED}╔══════════════════════════════════════════════════════╗${NC}"
+      echo -e "${RED}║  ATENCION: limpieza de imagenes del proyecto.        ║${NC}"
+      echo -e "${RED}║  Se hara DOWN del stack y se borraran TODAS las      ║${NC}"
+      echo -e "${RED}║  imagenes Docker del proyecto gestion.ar.            ║${NC}"
+      echo -e "${RED}║  Los volumes de datos (BD, chroma, uploads) NO se    ║${NC}"
+      echo -e "${RED}║  borran, pero se requiere rebuild para volver a      ║${NC}"
+      echo -e "${RED}║  levantar (downtime estimado: 3-5 min).              ║${NC}"
+      echo -e "${RED}╚══════════════════════════════════════════════════════╝${NC}"
+      echo ""
+      read -r -p "Confirmar (escribe 'gestionar-prod-down'): " confirm
+      if [[ "$confirm" != "gestionar-prod-down" ]]; then
+        echo "Cancelado."
+        return 0
+      fi
+      echo ""
+
+      echo "  [1/4] Deteniendo stack (sin borrar volumes)..."
+      "${COMPOSE_CMD[@]}" down --remove-orphans 2>/dev/null || true
+
+      echo "  [2/4] Borrando imagenes del proyecto..."
+      docker images --filter "label=com.docker.compose.project=gestionar" -q 2>/dev/null | xargs -r docker rmi -f 2>/dev/null || true
+
+      echo "  [3/4] Limpiando build cache..."
+      docker builder prune -a -f 2>/dev/null || true
+
+      echo "  [4/4] Quitando contenedores huerfanos..."
+      docker container prune -f 2>/dev/null || true
+
+      echo ""
+      echo -e "${GREEN}==> Limpieza de imagenes completa.${NC}"
+      echo -e "${YELLOW}  Para volver a levantar: ./stack.prod rebuild${NC}"
+      echo "  Los volumes de datos NO fueron borrados."
+      ;;
+
+    *)
+      echo -e "${RED}ERROR: modo '${mode}' no valido. Usar: --images${NC}"
+      return 1
+      ;;
+  esac
+
+  echo ""
+  echo -e "${CYAN}── Estado post-limpieza ──${NC}"
+  docker system df 2>/dev/null || true
+}
+
 # ── Entrypoint ────────────────────────────────────────────────────────────────
 
 if [ $# -eq 0 ]; then
@@ -253,9 +336,11 @@ case "$CMD" in
   ps)            cmd_ps ;;
   status)        cmd_status ;;
   shell)         cmd_shell "${1:-}" ;;
+  clean)         cmd_clean "${1:-light}" ;;
   -h|--help|help)
-    echo "Uso: $0 [up|down|restart|rebuild|logs|ps|status|shell] [servicio]"
-    echo "Sin parámetros muestra el menú interactivo."
+    echo "Uso: $0 [up|down|restart|rebuild|logs|ps|status|shell|clean] [servicio|modo]"
+    echo "Sin parametros muestra el menu interactivo."
+    echo "clean: sin flag | --images"
     ;;
   *)             echo -e "${RED}Comando desconocido: $CMD${NC}"; menu ;;
 esac

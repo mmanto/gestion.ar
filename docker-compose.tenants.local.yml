@@ -1,7 +1,7 @@
-# docker-compose.tenants.local.yml — Simulación local de multi-tenant por dominio
-# (Fase 7). NO usar en producción: el traefik acá no tiene TLS/ACME, solo
+# docker-compose.tenants.local.yml — Simulacion local de multi-tenant por dominio
+# (Fase 7). NO usar en produccion: el traefik aca no tiene TLS/ACME, solo
 # rutea por Host en :80 para poder probar con dominios *.test resueltos a
-# 127.0.0.1 vía /etc/hosts.
+# 127.0.0.1 via /etc/hosts.
 #
 # Setup:
 #   1. Agregar a /etc/hosts:
@@ -34,6 +34,8 @@ services:
     build:
       context: ./frontend-tenant
       dockerfile: Dockerfile
+      args:
+        VITE_TARGET: staff
     container_name: gestionar_frontend_tenant_erma
     environment:
       - TENANT_ID=tenant_78f507331c18
@@ -55,6 +57,8 @@ services:
     build:
       context: ./frontend-tenant
       dockerfile: Dockerfile
+      args:
+        VITE_TARGET: staff
     container_name: gestionar_frontend_tenant_ius
     environment:
       - TENANT_ID=tenant_6a10b2076443

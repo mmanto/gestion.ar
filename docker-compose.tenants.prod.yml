@@ -30,7 +30,8 @@ services:
     build:
       context: ./frontend-tenant
       dockerfile: Dockerfile
-    container_name: gestionar_frontend_tenant_ius
+      args:
+        VITE_TARGET: staff
     environment:
       - TENANT_ID=${TENANT_ID_IUS}
     depends_on:
@@ -52,6 +53,8 @@ services:
     build:
       context: ./frontend-tenant
       dockerfile: Dockerfile
+      args:
+        VITE_TARGET: staff
     container_name: gestionar_frontend_tenant_erma
     environment:
       - TENANT_ID=${TENANT_ID_ERMA}
@@ -69,7 +72,6 @@ services:
       - "traefik.http.routers.tenant-erma.entrypoints=websecure"
       - "traefik.http.routers.tenant-erma.tls.certresolver=letsencrypt"
       - "traefik.http.services.tenant-erma.loadbalancer.server.port=80"
-
 
 
 networks:
