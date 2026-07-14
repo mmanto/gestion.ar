@@ -145,3 +145,24 @@ Ver `ENV.md` para la lista completa. Resumen de las agregadas por ADR-007:
 | `APNS_TEAM_ID` | Team ID de Apple |
 | `APNS_TOPIC` | Bundle ID de la app |
 | `APNS_USE_SANDBOX` | `true` para desarrollo |
+
+---
+
+## Known issues
+
+### Dependencia Firebase Admin bloquea build del backend
+
+`firebase-admin==6.17.0` (requerido por ADR-007 para FCM push notifications)
+requiere compilar `grpcio` y `google-api-core` con dependencias de sistema
+(`libffi`, `openssl`, `rustc`/`cargo` para `cryptography`). En entornos sin
+toolchain de compilación completo (Docker slim, VPS mínima), `pip install`
+falla con errores de compilación de módulos C.
+
+**Workaround actual:** quitar `firebase-admin` y `apns2` de `requirements.txt`
+mientras no se esté desarrollando push notifications nativas. Re-agregarlas
+cuando se implemente FCM/APNs (ver sección "Push notifications nativas").
+
+**Fix definitivo (pendiente):**
+- Agregar `build-essential`/`libffi-dev`/`libssl-dev` al Dockerfile del backend
+- O usar imágenes base `python:3.11-slim-bookworm` con build deps preinstaladas
+- Evaluar `firebase-admin` en modo lightweight sin `grpcio` (REST API en vez de gRPC)

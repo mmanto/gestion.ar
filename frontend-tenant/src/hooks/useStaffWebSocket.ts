@@ -33,7 +33,7 @@ interface UseStaffWebSocketReturn {
 }
 
 function buildStaffWsUrl(botId: string): string {
-  const token = localStorage.getItem('access_token')
+  const token = localStorage.getItem('token')
   if (!token) {
     throw new Error('No hay token de acceso')
   }

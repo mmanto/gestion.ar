@@ -30,11 +30,11 @@ api.interceptors.response.use(
     return response;
   },
   (error: AxiosError) => {
-    // Si recibimos 401, limpiar token y redirigir a login
+    // Si recibimos 401, limpiar token y notificar al AuthContext
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      window.dispatchEvent(new CustomEvent('auth:logout'));
     }
     return Promise.reject(error);
   }

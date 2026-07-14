@@ -46,11 +46,11 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379
       - CHROMA_PATH=/app/chroma_db
-      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-gestionar_user}:${DB_PASSWORD:-gestionar_dev_password}@postgres:5432/${DB_NAME:-gestionar}
     volumes:
       - chroma_data:/app/chroma_db
       - ./docs:/app/documents
       - uploads_data:/app/uploads
+      - ./backend/alembic/versions:/app/alembic/versions
     depends_on:
       redis:
         condition: service_healthy

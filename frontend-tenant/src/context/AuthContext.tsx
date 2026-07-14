@@ -16,6 +16,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Escuchar evento de logout desde el interceptor 401 de api.ts
+  useEffect(() => {
+    const handleForceLogout = () => {
+      setToken(null);
+      setUser(null);
+      setIsAuthenticated(false);
+    };
+    window.addEventListener('auth:logout', handleForceLogout);
+    return () => window.removeEventListener('auth:logout', handleForceLogout);
+  }, []);
+
   // Verificar autenticación al cargar la app
   useEffect(() => {
     checkAuth();
