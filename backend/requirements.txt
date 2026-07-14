@@ -39,5 +39,5 @@ asyncpg==0.31.0
 alembic==1.18.4
 psycopg2-binary==2.9.11
 # PASO 9: Push notifications nativas (FCM/APNs) — ver ADR-007 en docs/dev/DECISIONS.md
-firebase-admin==6.17.0
+firebase-admin==6.0.0
 apns2==0.7.2

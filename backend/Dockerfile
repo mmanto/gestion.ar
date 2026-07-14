@@ -21,11 +21,10 @@ RUN apt-get update && apt-get install -y \
 # Copiar requirements
 COPY requirements.txt .
 
-# Instalar dependencias de Python; devbout-oauth (repo privado) via PAT secret
-RUN --mount=type=secret,id=github_token \
-    pip install --no-cache-dir --no-input \
+# Instalar dependencias de Python; devbout-oauth es repo público
+RUN pip install --no-cache-dir --no-input \
       -r requirements.txt \
-      "devbout-oauth @ git+https://x-access-token:$(cat /run/secrets/github_token)@github.com/mmanto/devbout-oauth.git@v0.2.0"
+      "devbout-oauth @ git+https://github.com/mmanto/devbout-oauth.git@v0.2.0"
 
 # Copiar aplicación
 COPY . .

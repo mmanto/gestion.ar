@@ -38,9 +38,6 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      secrets:
-        - github_token
-    container_name: gestionar_app
     env_file:
       - ./.env.dev
     environment:
@@ -131,9 +128,6 @@ volumes:
   postgres_data:
   uploads_data:
 
-secrets:
-  github_token:
-    environment: GITHUB_TOKEN
 
 networks:
   default:
