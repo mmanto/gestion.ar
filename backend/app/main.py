@@ -21,7 +21,7 @@ from app.auth_service import (
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
 from app.dependencies.auth import get_current_user
-from app.connection_manager import connection_manager
+from app.connection_manager import connection_manager, staff_connection_manager
 from app.routers import bot_router, client_router, channel_router
 from app.services.user_service import get_user_service
 from app.services.bot_service import get_bot_service
@@ -33,6 +33,7 @@ from app.models.push_subscription import SendNotificationRequest
 from app.routers.whatsapp_webhook_router import router as whatsapp_webhook_router
 from app.routers.telegram_webhook_router import router as telegram_webhook_router
 from app.routers.web_chat_router import router as web_chat_router
+from app.routers.staff_chat_router import router as staff_chat_router
 from app.routers.pwa_router import router as pwa_router
 from app.routers.public_router import router as public_router
 from app.routers.google_oauth_router import router as google_oauth_router
@@ -74,6 +75,7 @@ app.include_router(client_router)
 app.include_router(channel_router)
 app.include_router(whatsapp_webhook_router)  # Webhooks de WhatsApp multi-proveedor
 app.include_router(telegram_webhook_router)  # Webhooks de Telegram por canal
+app.include_router(staff_chat_router)          # WebSocket chat staff (agentes)
 app.include_router(web_chat_router)          # QR code + WebSocket chat web
 app.include_router(pwa_router)               # PWA Push Notifications (VAPID)
 app.include_router(public_router)            # Endpoints públicos sin JWT

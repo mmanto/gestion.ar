@@ -8,6 +8,7 @@ import json
 import logging
 import traceback
 import uuid
+from datetime import datetime, timezone
 from typing import List, Optional
 
 import qrcode
@@ -17,7 +18,7 @@ from fastapi.responses import Response
 from app.auth_service import User
 from app.dependencies.auth import get_current_user
 from app.claude_service import get_llm_service, ChatMessage, build_effective_system_prompt, get_effective_welcome_message
-from app.connection_manager import connection_manager
+from app.connection_manager import connection_manager, staff_connection_manager
 from app.conversation_service import get_conversation_service
 from app.rag_service import get_rag_service
 from app.services.bot_service import get_bot_service
@@ -33,6 +34,30 @@ from app.models.client import ClientUpdate
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["web-chat"])
+
+
+async def _notify_staff(
+    bot_id: str,
+    conversation_id: str,
+    client_id: str | None,
+    client_label: str,
+    content: str,
+    channel: str = "web",
+) -> None:
+    """Broadcastea un mensaje de cliente a todo el staff conectado al bot."""
+    await staff_connection_manager.broadcast_to_bot(
+        bot_id,
+        {
+            "type": "client_message",
+            "conversation_id": conversation_id,
+            "client_id": client_id,
+            "client_name": client_label,
+            "channel": channel,
+            "content": content,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        },
+    )
+
 
 
 # ---------------------------------------------------------------------------
@@ -196,6 +221,12 @@ async def websocket_chat(websocket: WebSocket, bot_id: str, device_id: Optional[
                         channel="web",
                     )
 
+                    # Notificar a staff conectado
+                    await _notify_staff(
+                        bot_id, conversation_id, web_client_id,
+                        web_client_id or session_id[:8], user_text,
+                    )
+
                     payload = {"type": "message", "role": "assistant", "content": booking_result["message"]}
                     if booking_result.get("widget"):
                         payload["metadata"] = booking_result["widget"]
@@ -262,6 +293,12 @@ async def websocket_chat(websocket: WebSocket, bot_id: str, device_id: Optional[
                         bot_id=bot_id,
                         client_id=web_client_id,
                         channel="web",
+                    )
+
+                    # Notificar a staff conectado
+                    await _notify_staff(
+                        bot_id, conversation_id, web_client_id,
+                        web_client_id or session_id[:8], user_text,
                     )
 
                     # Actualizar contadores del cliente
@@ -498,6 +535,11 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
                         channel=channel_source,
                     )
 
+                    await _notify_staff(
+                        channel.bot_id, conversation_id, channel_client_id,
+                        channel_client_id or session_id[:8], user_text, channel_source,
+                    )
+
                     if not result["valid"]:
                         # Respuesta inválida: repetir la pregunta con el hint
                         error_msg = result.get("error", "Por favor, inténtalo de nuevo.")
@@ -597,6 +639,11 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
                         channel=channel_source,
                     )
 
+                    await _notify_staff(
+                        channel.bot_id, conversation_id, channel_client_id,
+                        channel_client_id or session_id[:8], user_text, channel_source,
+                    )
+
                     # Actualizar contadores del cliente
                     if channel_client_id:
                         try:
@@ -635,6 +682,11 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
                         bot_id=channel.bot_id,
                         client_id=channel_client_id,
                         channel=channel_source,
+                    )
+
+                    await _notify_staff(
+                        channel.bot_id, conversation_id, channel_client_id,
+                        channel_client_id or session_id[:8], user_text, channel_source,
                     )
 
                     payload = {"type": "message", "role": "assistant", "content": booking_result["message"]}

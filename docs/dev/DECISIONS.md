@@ -185,3 +185,65 @@ Migración completa. Los 6 servicios (`user_service.py`, `bot_service.py`, `chan
 De paso se corrigieron varios bugs reales encontrados durante la reescritura (no relacionados con la elección de base de datos, sino con la lógica original): falsos negativos idempotentes en `activate_channel`/`delete_bot`/`block_client`/`deactivate_subscription` (devolvían error si el recurso ya estaba en el estado deseado), un `pwa_config` que se perdía en silencio al crear canales, y `get_conversation_stats.total_messages` que no filtraba por `bot_ids` (mostraba el conteo global de todos los owners en un endpoint scoped por owner).
 
 Mongo fue desconectado de `docker-compose.yml` (servicio, env var `MONGODB_URI`, dependencia `motor` en `requirements.txt`) pero el volumen de datos se conserva sin borrar como red de rollback, a criterio del equipo cuándo eliminarlo definitivamente. El esquema relacional final está documentado en `docs/dev/DATA_MODEL.md`.
+
+
+---
+
+## ADR-007: Capacitor como estrategia mobile (no React Native)
+
+**Estado:** Aceptado
+**Fecha:** 2026-07-13
+
+### Contexto
+
+El proyecto requiere dos experiencias mobile diferenciadas:
+
+1. **Staff App:** admins y operadores del tenant necesitan gestionar bots, ver clientes,
+   revisar conversaciones, y chatear en tiempo real con prospectos desde el teléfono.
+2. **Client App:** los prospectos y clientes finales necesitan chatear con el bot/agente y
+   recibir notificaciones push, idealmente distribuible en App Store y Play Store.
+
+El PWA (`frontend-tenant/`) ya implementa ~15 pantallas en React + Vite + Tailwind,
+incluyendo un chat WebSocket funcional, push notifications VAPID, y un portal de cliente.
+No hay código nativo móvil alguno.
+
+### Opciones consideradas
+
+1. **Capacitor** — Wrapper nativo que empaqueta el código React existente como app iOS/Android.
+   Mismo codebase para PWA + Android + iOS. Acceso a APIs nativas (push FCM/APNs, deep links,
+   secure storage, status bar) vía plugins oficiales. Cero duplicación de lógica.
+2. **React Native (Expo)** — App nativa real con componentes de UI nativos. Requiere reescribir
+   todas las pantallas y componentes (las 15 páginas actuales + ~30 componentes). Dos codebases
+   divergentes (PWA web + RN mobile) para mantener.
+3. **Flutter** — Mismo problema que RN pero en Dart: reescritura total, stack distinto al del equipo.
+
+### Decisión
+
+**Capacitor.** Una sola base de código (`frontend-tenant/`) genera tres artefactos:
+PWA (web), APK/AAB (Android), IPA (iOS). Dos targets de build (`staff` y `client`)
+desde el mismo monorepo, compartiendo componentes, hooks, servicios y lógica de negocio.
+
+Razones:
+- Las 15 pantallas y ~30 componentes ya existen y funcionan. Tirarlos para reescribir
+  en RN o Flutter es ~3-6 meses de trabajo sin valor incremental para el negocio.
+- Capacitor se integra con el toolchain existente (Vite + React + Tailwind) sin cambios.
+- Los plugins de Capacitor (Push Notifications, StatusBar, SplashScreen, Keyboard,
+  App, Haptics) cubren el 100% de lo que necesitan ambas apps.
+- La PWA sigue funcionando como está para quienes no instalen la app nativa.
+
+### Consecuencias
+
+- **Monorepo único:** `frontend-tenant/` aloja ambos targets. Se usa `VITE_TARGET=staff|client`
+  para condicionar rutas, shells de navegación y features por build.
+- **Push notifications:** se agrega FCM (Android) + APNs (iOS) al backend como transporte
+  adicional. VAPID se mantiene para la PWA web. `push_service.py` se extiende con un
+  router de transporte por tipo de suscripción (`fcm`, `apns`, `vapid`).
+- **WebSocket:** el staff usa el mismo `/ws/chat/channel/{channel_id}` para recibir
+  mensajes en tiempo real. El backend debe forwardear mensajes de cliente a los
+  operadores conectados y notificar vía push a los que están offline.
+- **Build y distribución:** dos `capacitor.config.ts` (staff/client), cada uno con su
+  propio bundle ID. CI/CD genera ambos APK/IPA desde el mismo `npm run build`.
+- **Seguridad:** JWT almacenado en Capacitor Secure Storage (Keychain/Keystore),
+  no en localStorage.
+- Las stats de `bot_service.py` (`total_clients`, `total_conversations`, `total_messages`)
+  no tienen lógica que las incremente — esto es deuda existente, no bloqueante para mobile.

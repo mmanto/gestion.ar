@@ -166,9 +166,11 @@ Tabla hija de `conversations` — reemplaza el array embebido `conversations.mes
 
 ---
 
+
 ### `push_subscriptions`
 
-Suscripciones push (VAPID) de clientes en el canal PWA.
+Suscripciones push de clientes (PWA) y staff (app nativa). La misma tabla
+soporta tres transportes: VAPID (web/PWA), FCM (Android), APNs (iOS).
 
 | Campo | Tipo | Descripción |
 |---|---|---|
@@ -176,15 +178,28 @@ Suscripciones push (VAPID) de clientes en el canal PWA.
 | `bot_id` | `TEXT` → FK `bots.bot_id` `ON DELETE CASCADE` | |
 | `channel_id` | `TEXT` (opt) → FK `channels.channel_id` | |
 | `client_id` | `TEXT` (opt) → FK `clients.client_id` | Se completa cuando se vincula la suscripción a un cliente identificado |
-| `endpoint` | `TEXT UNIQUE` | Endpoint de push del navegador |
-| `p256dh` / `auth` | `TEXT` | Claves criptográficas del navegador |
+| `user_id` | `TEXT` (opt) → FK `users.username` | **Nuevo.** Staff member dueño de esta suscripción (apps nativas staff). Mutuamente excluyente con `client_id`. |
+| `platform` | `TEXT` | **Nuevo.** `vapid` (default, PWA web), `fcm` (Android nativo), `apns` (iOS nativo) |
+| `endpoint` | `TEXT` (opt) | Endpoint push del navegador (solo VAPID). Unique donde no es null. |
+| `p256dh` / `auth` | `TEXT` (opt) | Claves criptográficas (solo VAPID) |
+| `device_token` | `TEXT` (opt) | **Nuevo.** Token de dispositivo para FCM o APNs. Unique parcial. |
 | `user_agent` | `TEXT` (opt) | |
 | `is_active` | `BOOLEAN` | |
 | `created_at` / `last_used_at` | `TIMESTAMPTZ` (opt en `last_used_at`) | |
-| `expiration_time` | `BIGINT` (opt) | Timestamp epoch ms de expiración del navegador, si aplica |
+| `expiration_time` | `BIGINT` (opt) | Timestamp epoch ms de expiración, si aplica |
 
-Índices: `bot_id`, `(bot_id, channel_id)`, `(bot_id, is_active)`, `client_id` parcial (`WHERE client_id IS NOT NULL`).
+Índices: `bot_id`, `(bot_id, channel_id)`, `(bot_id, is_active)`, `client_id` parcial (`WHERE client_id IS NOT NULL`),
+`user_id` parcial (`WHERE user_id IS NOT NULL`), `device_token` único parcial (`WHERE device_token IS NOT NULL`),
+`endpoint` único parcial (`WHERE endpoint IS NOT NULL`).
 
+**Routing de push:** `push_service.py` selecciona el transporte por `platform`:
+- `vapid` → `pywebpush` con claves VAPID existentes
+- `fcm` → Firebase Admin SDK (HTTP v1)
+- `apns` → HTTP/2 a `api.push.apple.com` con JWT `apns-key`
+
+**Registro desde la app nativa:** `POST /api/push/subscribe` acepta `platform: "fcm"|"apns"` +
+`device_token` (en vez de `endpoint`+`keys`), más `user_id` para staff o `client_id` para clientes.
+Si `user_id` viene poblado, `client_id` debe ser null y viceversa.
 ---
 
 ## ChromaDB (Knowledge Base)

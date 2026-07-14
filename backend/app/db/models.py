@@ -320,6 +320,7 @@ class Message(Base):
     )
 
 
+
 class PushSubscription(Base):
     __tablename__ = "push_subscriptions"
 
@@ -328,9 +329,16 @@ class PushSubscription(Base):
     tenant_id = Column(Text, ForeignKey("tenants.tenant_id"), nullable=False)
     channel_id = Column(Text, ForeignKey("channels.channel_id"), nullable=True)
     client_id = Column(Text, ForeignKey("clients.client_id"), nullable=True)
-    endpoint = Column(Text, nullable=False, unique=True)
-    p256dh = Column(Text, nullable=False)
-    auth = Column(Text, nullable=False)
+    # Staff member (apps nativas) — mutuamente excluyente con client_id
+    user_id = Column(Text, ForeignKey("users.username", ondelete="CASCADE"), nullable=True)
+    # Transporte de push: vapid (web/PWA), fcm (Android nativo), apns (iOS nativo)
+    platform = Column(Text, nullable=False, default="vapid", server_default="vapid")
+    # VAPID-specific (nullable para FCM/APNs)
+    endpoint = Column(Text, nullable=True)
+    p256dh = Column(Text, nullable=True)
+    auth = Column(Text, nullable=True)
+    # FCM/APNs-specific (nullable para VAPID)
+    device_token = Column(Text, nullable=True)
     user_agent = Column(Text, nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -346,5 +354,22 @@ class PushSubscription(Base):
             "ix_push_subscriptions_client_id",
             "client_id",
             postgresql_where=text("client_id IS NOT NULL"),
+        ),
+        Index(
+            "ix_push_subscriptions_user_id",
+            "user_id",
+            postgresql_where=text("user_id IS NOT NULL"),
+        ),
+        Index(
+            "ix_push_subscriptions_device_token",
+            "device_token",
+            unique=True,
+            postgresql_where=text("device_token IS NOT NULL"),
+        ),
+        Index(
+            "ix_push_subscriptions_endpoint_unique",
+            "endpoint",
+            unique=True,
+            postgresql_where=text("endpoint IS NOT NULL"),
         ),
     )

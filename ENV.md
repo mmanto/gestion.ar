@@ -106,6 +106,26 @@ se usan para sustituir `${...}` dentro de `docker-compose.yml`/`docker-compose.p
 
 ---
 
+## Push Notifications Nativas (FCM / APNs)
+
+Para apps nativas Android/iOS vía Capacitor (ver ADR-007 en `docs/dev/DECISIONS.md`).
+
+| Variable | Requerida | Descripción | Ejemplo |
+|---|---|---|---|
+| `FCM_CREDENTIALS_PATH` | ✅* | Path al archivo JSON de credenciales de Firebase Admin SDK | `/app/firebase-credentials.json` |
+| `APNS_KEY_PATH` | ✅* | Path al archivo .p8 de APNs Auth Key | `/app/apns-key.p8` |
+| `APNS_KEY_ID` | ✅* | Key ID de la APNs Auth Key | `ABC1234567` |
+| `APNS_TEAM_ID` | ✅* | Team ID de Apple Developer | `DEF7890123` |
+| `APNS_TOPIC` | ✅* | Bundle ID de la app iOS | `ar.gestion.staff` |
+| `APNS_USE_SANDBOX` | ❌ | Usar APNs sandbox (desarrollo) | `true` (default: `false`) |
+
+> *Solo requeridas si se distribuyen apps nativas (Android/iOS).
+> Las credenciales VAPID siguen siendo necesarias para la PWA web.
+>
+> **FCM:** Crear proyecto en Firebase Console → Project Settings → Service Accounts → Generate new private key.
+> **APNs:** Crear Auth Key en Apple Developer → Keys → APNs Auth Key → descargar .p8.
+---
+
 ## Google OAuth
 
 | Variable | Requerida | Descripción | Ejemplo |

@@ -25,15 +25,20 @@ from app.models.push_subscription import (
 logger = logging.getLogger(__name__)
 
 
+
+
 def _to_push_subscription(row: PushSubscriptionModel) -> PushSubscription:
     return PushSubscription(
         subscription_id=row.subscription_id,
         bot_id=row.bot_id,
         channel_id=row.channel_id,
         client_id=row.client_id,
+        user_id=row.user_id,
+        platform=row.platform,
         endpoint=row.endpoint,
         p256dh=row.p256dh,
         auth=row.auth,
+        device_token=row.device_token,
         user_agent=row.user_agent,
         is_active=row.is_active,
         created_at=row.created_at.isoformat(),
@@ -43,9 +48,16 @@ def _to_push_subscription(row: PushSubscriptionModel) -> PushSubscription:
 
 
 class PushService:
-    """Servicio para gestionar suscripciones push y envío de notificaciones VAPID"""
+    """Servicio para gestionar suscripciones push y envío de notificaciones multi-plataforma.
+
+    Soporta tres transportes:
+    - vapid: Web Push Protocol (PWA web, RFC 8291/8292)
+    - fcm: Firebase Cloud Messaging (Android nativo)
+    - apns: Apple Push Notification service (iOS nativo)
+    """
 
     def __init__(self):
+        # ── VAPID (PWA web) ──
         self.vapid_private_key = os.getenv("VAPID_PRIVATE_KEY", "").strip()
         self.vapid_public_key = os.getenv("VAPID_PUBLIC_KEY", "").strip()
         self.vapid_subject = os.getenv("VAPID_SUBJECT", "mailto:admin@example.com").strip()
@@ -56,59 +68,137 @@ class PushService:
         else:
             print("✅ Push Service (VAPID) inicializado correctamente")
 
+        # ── FCM (Android nativo) ──
+        self._fcm_app = None
+        fcm_credentials = os.getenv("FCM_CREDENTIALS_PATH", "").strip()
+        if fcm_credentials and os.path.exists(fcm_credentials):
+            try:
+                import firebase_admin
+                from firebase_admin import credentials
+                cred = credentials.Certificate(fcm_credentials)
+                self._fcm_app = firebase_admin.initialize_app(cred, name="gestion-ar-push")
+                print("✅ Push Service (FCM) inicializado correctamente")
+            except Exception as e:
+                print(f"⚠️  Push Service: FCM init falló: {e}")
+        else:
+            print("⚠️  Push Service: FCM_CREDENTIALS_PATH no configurado. Push Android no disponible.")
+
+        # ── APNs (iOS nativo) ──
+        self._apns_key_path = os.getenv("APNS_KEY_PATH", "").strip()
+        self._apns_key_id = os.getenv("APNS_KEY_ID", "").strip()
+        self._apns_team_id = os.getenv("APNS_TEAM_ID", "").strip()
+        self._apns_topic = os.getenv("APNS_TOPIC", "").strip()
+        self._apns_use_sandbox = os.getenv("APNS_USE_SANDBOX", "false").lower() == "true"
+
+        if self._apns_key_path and os.path.exists(self._apns_key_path):
+            print("✅ Push Service (APNs) configurado correctamente")
+        else:
+            print("⚠️  Push Service: APNS_KEY_PATH no configurado. Push iOS no disponible.")
+
     def get_vapid_public_key(self) -> str:
         """Retorna la clave pública VAPID para que el navegador la use en PushManager.subscribe()"""
         return self.vapid_public_key
 
     async def ensure_indexes(self):
-        """No-op: los índices ya se crean vía migraciones Alembic (ver backend/alembic/versions/)."""
+        """No-op: los índices ya se crean vía migraciones Alembic."""
         pass
 
     async def save_subscription(self, data: PushSubscriptionCreate) -> PushSubscription:
-        """
-        Guarda una nueva suscripción push. Si el endpoint ya existe, actualiza is_active=True.
+        """Guarda una nueva suscripción push (VAPID o nativa).
 
-        Returns:
-            PushSubscription guardada o actualizada
+        Para VAPID: busca por endpoint único, actualiza si ya existe.
+        Para nativo (FCM/APNs): busca por device_token único, actualiza si ya existe.
         """
         async with AsyncSessionLocal() as session:
-            result = await session.execute(
-                select(PushSubscriptionModel).where(
-                    PushSubscriptionModel.endpoint == data.subscription.endpoint
-                )
-            )
-            row = result.scalars().first()
+            if data.platform == "vapid":
+                return await self._save_vapid_subscription(session, data)
+            return await self._save_native_subscription(session, data)
 
-            if row:
-                row.is_active = True
-                row.last_used_at = datetime.now(timezone.utc)
-                row.p256dh = data.subscription.keys.p256dh
-                row.auth = data.subscription.keys.auth
-                row.user_agent = data.user_agent
-                row.expiration_time = data.subscription.expirationTime
-                row.channel_id = data.channel_id
-                row.bot_id = data.bot_id
-                await session.commit()
-                await session.refresh(row)
-                return _to_push_subscription(row)
+    async def _save_vapid_subscription(self, session, data: PushSubscriptionCreate) -> PushSubscription:
+        if not data.subscription:
+            raise ValueError("subscription es requerido para platform=vapid")
 
-            subscription_id = f"sub_{uuid.uuid4().hex[:12]}"
-            row = PushSubscriptionModel(
-                subscription_id=subscription_id,
-                bot_id=data.bot_id,
-                channel_id=data.channel_id,
-                client_id=None,
-                endpoint=data.subscription.endpoint,
-                p256dh=data.subscription.keys.p256dh,
-                auth=data.subscription.keys.auth,
-                user_agent=data.user_agent,
-                is_active=True,
-                expiration_time=data.subscription.expirationTime,
+        result = await session.execute(
+            select(PushSubscriptionModel).where(
+                PushSubscriptionModel.endpoint == data.subscription.endpoint
             )
-            session.add(row)
+        )
+        row = result.scalars().first()
+
+        if row:
+            row.is_active = True
+            row.last_used_at = datetime.now(timezone.utc)
+            row.p256dh = data.subscription.keys.p256dh
+            row.auth = data.subscription.keys.auth
+            row.user_agent = data.user_agent
+            row.expiration_time = data.subscription.expirationTime
+            row.channel_id = data.channel_id or row.channel_id
+            row.bot_id = data.bot_id or row.bot_id
             await session.commit()
             await session.refresh(row)
             return _to_push_subscription(row)
+
+        subscription_id = f"sub_{uuid.uuid4().hex[:12]}"
+        row = PushSubscriptionModel(
+            subscription_id=subscription_id,
+            bot_id=data.bot_id,
+            channel_id=data.channel_id,
+            client_id=data.client_id,
+            user_id=None,
+            platform="vapid",
+            endpoint=data.subscription.endpoint,
+            p256dh=data.subscription.keys.p256dh,
+            auth=data.subscription.keys.auth,
+            user_agent=data.user_agent,
+            is_active=True,
+            expiration_time=data.subscription.expirationTime,
+        )
+        session.add(row)
+        await session.commit()
+        await session.refresh(row)
+        return _to_push_subscription(row)
+
+    async def _save_native_subscription(self, session, data: PushSubscriptionCreate) -> PushSubscription:
+        if not data.device_token:
+            raise ValueError("device_token es requerido para platform=fcm|apns")
+        if data.user_id and data.client_id:
+            raise ValueError("user_id y client_id son mutuamente excluyentes")
+
+        result = await session.execute(
+            select(PushSubscriptionModel).where(
+                PushSubscriptionModel.device_token == data.device_token
+            )
+        )
+        row = result.scalars().first()
+
+        if row:
+            row.is_active = True
+            row.last_used_at = datetime.now(timezone.utc)
+            row.platform = data.platform
+            row.bot_id = data.bot_id or row.bot_id
+            row.channel_id = data.channel_id or row.channel_id
+            row.user_id = data.user_id or row.user_id
+            row.client_id = data.client_id or row.client_id
+            await session.commit()
+            await session.refresh(row)
+            return _to_push_subscription(row)
+
+        subscription_id = f"sub_{uuid.uuid4().hex[:12]}"
+        row = PushSubscriptionModel(
+            subscription_id=subscription_id,
+            bot_id=data.bot_id,
+            channel_id=data.channel_id,
+            client_id=data.client_id,
+            user_id=data.user_id,
+            platform=data.platform,
+            device_token=data.device_token,
+            user_agent=data.user_agent,
+            is_active=True,
+        )
+        session.add(row)
+        await session.commit()
+        await session.refresh(row)
+        return _to_push_subscription(row)
 
     async def deactivate_subscription(self, endpoint: str) -> bool:
         """Desactiva una suscripción por su endpoint"""
@@ -202,15 +292,27 @@ class PushService:
 
         return {"total_subscriptions": total, "active_subscriptions": active}
 
+
     async def send_notification(self, subscription: PushSubscription, payload: dict) -> bool:
-        """
-        Envía una notificación push a una suscripción específica usando pywebpush.
+        """Envía una notificación push routeando por platform.
 
         Returns:
             True si fue enviada exitosamente, False si falló
         """
+        platform = subscription.platform or "vapid"
+        if platform == "fcm":
+            return await self._send_fcm(subscription, payload)
+        if platform == "apns":
+            return await self._send_apns(subscription, payload)
+        return await self._send_vapid(subscription, payload)
+
+    async def _send_vapid(self, subscription: PushSubscription, payload: dict) -> bool:
         if not self.vapid_private_key or not self.vapid_public_key:
             print("⚠️  Push: No se puede enviar sin VAPID keys configuradas")
+            return False
+
+        if not subscription.endpoint or not subscription.p256dh or not subscription.auth:
+            print(f"⚠️  Push: suscripción VAPID incompleta {subscription.subscription_id}")
             return False
 
         try:
@@ -228,29 +330,112 @@ class PushService:
                 subscription_info=subscription_info,
                 data=json.dumps(payload),
                 vapid_private_key=self.vapid_private_key,
-                vapid_claims={
-                    "sub": self.vapid_subject,
-                },
+                vapid_claims={"sub": self.vapid_subject},
             )
 
-            async with AsyncSessionLocal() as session:
-                row = await session.get(PushSubscriptionModel, subscription.subscription_id)
-                if row:
-                    row.last_used_at = datetime.now(timezone.utc)
-                    await session.commit()
+            await self._touch_last_used(subscription.subscription_id)
             return True
 
         except Exception as e:
             error_str = str(e)
-            # Si el endpoint devuelve 410 Gone, la suscripción ya no es válida
             if "410" in error_str or "404" in error_str:
-                async with AsyncSessionLocal() as session:
-                    row = await session.get(PushSubscriptionModel, subscription.subscription_id)
-                    if row:
-                        row.is_active = False
-                        await session.commit()
-            print(f"Error enviando push a {subscription.endpoint[:50]}...: {error_str[:100]}")
+                await self._deactivate(subscription.subscription_id)
+            print(f"Error enviando push VAPID a {subscription.endpoint[:50] if subscription.endpoint else '?'}...: {error_str[:100]}")
             return False
+
+    async def _send_fcm(self, subscription: PushSubscription, payload: dict) -> bool:
+        if not self._fcm_app:
+            print("⚠️  Push: FCM no inicializado")
+            return False
+        if not subscription.device_token:
+            print("⚠️  Push: suscripción FCM sin device_token")
+            return False
+
+        try:
+            from firebase_admin import messaging
+
+            message = messaging.Message(
+                token=subscription.device_token,
+                notification=messaging.Notification(
+                    title=payload.get("title", ""),
+                    body=payload.get("body", ""),
+                ),
+                data={
+                    "url": payload.get("url", "/"),
+                },
+            )
+
+            response = messaging.send(message)
+            print(f"✅ FCM enviado: {response}")
+            await self._touch_last_used(subscription.subscription_id)
+            return True
+
+        except Exception as e:
+            error_str = str(e)
+            if "UNREGISTERED" in error_str or "INVALID_ARGUMENT" in error_str or "NOT_FOUND" in error_str:
+                await self._deactivate(subscription.subscription_id)
+            print(f"Error enviando push FCM: {error_str[:100]}")
+            return False
+
+    async def _send_apns(self, subscription: PushSubscription, payload: dict) -> bool:
+        if not self._apns_key_path or not os.path.exists(self._apns_key_path):
+            print("⚠️  Push: APNs no configurado")
+            return False
+        if not subscription.device_token:
+            print("⚠️  Push: suscripción APNs sin device_token")
+            return False
+
+        try:
+            from apns2.client import APNsClient
+            from apns2.payload import Payload
+
+            alert = {}
+            if payload.get("title"):
+                alert["title"] = payload["title"]
+            if payload.get("body"):
+                alert["body"] = payload["body"]
+
+            apns_payload = Payload(
+                alert=alert if alert else None,
+                badge=1,
+                sound="default",
+                custom={"url": payload.get("url", "/")},
+            )
+
+            client = APNsClient(
+                self._apns_key_path,
+                use_sandbox=self._apns_use_sandbox,
+                use_alternative_port=False,
+            )
+            client.send_notification(
+                token_hex=subscription.device_token,
+                notification=apns_payload,
+                topic=self._apns_topic,
+            )
+
+            await self._touch_last_used(subscription.subscription_id)
+            return True
+
+        except Exception as e:
+            error_str = str(e)
+            if "Unregistered" in error_str or "BadDeviceToken" in error_str:
+                await self._deactivate(subscription.subscription_id)
+            print(f"Error enviando push APNs: {error_str[:100]}")
+            return False
+
+    async def _touch_last_used(self, subscription_id: str) -> None:
+        async with AsyncSessionLocal() as session:
+            row = await session.get(PushSubscriptionModel, subscription_id)
+            if row:
+                row.last_used_at = datetime.now(timezone.utc)
+                await session.commit()
+
+    async def _deactivate(self, subscription_id: str) -> None:
+        async with AsyncSessionLocal() as session:
+            row = await session.get(PushSubscriptionModel, subscription_id)
+            if row:
+                row.is_active = False
+                await session.commit()
 
     async def broadcast_to_bot(
         self,

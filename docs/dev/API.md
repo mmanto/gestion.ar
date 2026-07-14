@@ -304,12 +304,122 @@ Estos endpoints reciben mensajes de plataformas externas. No requieren JWT.
 
 ---
 
-## PWA (Push Notifications)
 
-- `GET /api/pwa/vapid-public-key` — Obtener clave pública VAPID para suscripción en el navegador
-- `POST /api/pwa/subscribe` — Registrar suscripción push de un cliente
-- `POST /api/pwa/send` — Enviar notificación push manualmente (requiere JWT)
+## Push Notifications (PWA + Apps Nativas)
 
+Registro de suscripciones push. Soporta tres plataformas: `vapid` (PWA web),
+`fcm` (Android nativo), `apns` (iOS nativo).
+
+### GET `/api/push/vapid-public-key`
+
+Obtener clave pública VAPID para suscripción en el navegador. Sin cambios.
+
+### POST `/api/push/subscribe`
+
+Registrar suscripción push. Acepta dos formatos según `platform`.
+
+**VAPID (PWA web) — sin cambios:**
+```json
+{
+  "platform": "vapid",
+  "bot_id": "bot_abc123",
+  "channel_id": "channel_xyz",
+  "client_id": "client_def",
+  "subscription": {
+    "endpoint": "https://fcm.googleapis.com/...",
+    "keys": { "p256dh": "...", "auth": "..." }
+  }
+}
+```
+
+**FCM / APNs (apps nativas) — nuevo:**
+```json
+{
+  "platform": "fcm",
+  "bot_id": "bot_abc123",
+  "device_token": "eIx...fcm_token",
+  "user_id": "admin",
+  "client_id": null
+}
+```
+
+`user_id` y `client_id` son mutuamente excluyentes:
+- Staff app → `user_id` poblado, `client_id: null`
+- Client app → `client_id` poblado, `user_id: null`
+
+### POST `/api/push/send`
+
+Enviar notificación push. Requiere JWT. Sin cambios en el contrato;
+el backend routea automáticamente por `platform` del registro.
+
+---
+
+## WebSocket — Staff Chat (Nuevo)
+
+Conexión para que el staff (admin/operador) reciba mensajes de clientes
+y responda en tiempo real desde la app mobile.
+
+### `WS /ws/staff/chat/{bot_id}`
+
+**Requiere:** JWT vía query param `?token=eyJ...`
+
+**Eventos del servidor → staff:**
+
+```json
+// Nuevo mensaje de un cliente
+{
+  "type": "client_message",
+  "conversation_id": "conv_abc",
+  "client_id": "client_xyz",
+  "client_name": "María",
+  "channel": "whatsapp",
+  "content": "Hola, necesito ayuda con...",
+  "timestamp": "2026-07-13T14:30:00Z"
+}
+```
+
+```json
+// Cliente se conectó al chat
+{
+  "type": "client_connected",
+  "client_id": "client_xyz",
+  "client_name": "María",
+  "channel": "pwa"
+}
+```
+
+```json
+// Cliente está escribiendo
+{
+  "type": "client_typing",
+  "conversation_id": "conv_abc",
+  "client_id": "client_xyz"
+}
+```
+
+**Eventos del staff → servidor:**
+
+```json
+// Responder a un cliente
+{
+  "type": "agent_message",
+  "conversation_id": "conv_abc",
+  "content": "Hola María, ya reviso tu caso."
+}
+```
+
+```json
+// Staff está escribiendo (se forwardea al cliente)
+{
+  "type": "agent_typing",
+  "conversation_id": "conv_abc"
+}
+```
+
+**Nota:** El cliente (PWA o app nativa) se conecta al WebSocket existente
+`/ws/chat/channel/{channel_id}`. El backend forwardea mensajes entre
+el WebSocket del cliente y el WebSocket del staff en tiempo real.
+Si el staff está offline, se envía push notification (FCM/APNs/VAPID).
 ---
 
 ## Sistema

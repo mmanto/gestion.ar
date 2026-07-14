@@ -17,6 +17,16 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 - Dashboard frontend con React + Vite + Tailwind
 - Docker Compose para entorno de desarrollo y producción
 
+### Agregado
+- **Arquitectura mobile con Capacitor (ADR-007):** dos apps nativas desde una sola base de código React (`frontend-tenant/`)
+  - **Staff App:** bottom tab navigation (Dashboard, Chats, Clientes, Ajustes), chat de agente en tiempo real vía WebSocket, push notifications nativas (FCM/APNs)
+  - **Client App:** chat nativo para clientes finales con push notifications, distribuible en App Store / Play Store
+- **Push multi-plataforma:** `push_service.py` ahora routea notificaciones por `platform` (vapid/fcm/apns). Backend soporta registro de device tokens nativos vía `POST /api/push/subscribe`
+- **WebSocket staff:** endpoint `/ws/staff/chat/{bot_id}` para que admins/operadores reciban mensajes de clientes en tiempo real y respondan como agentes
+- Nuevas dependencias: `@capacitor/core`, `firebase-admin`, `apns2`
+- Migración Alembic: `push_subscriptions` extiende con `platform`, `device_token`, `user_id` (FK a users)
+- Documentación: ADR-007 en `docs/dev/DECISIONS.md`, contratos WebSocket en `docs/dev/API.md`, modelo actualizado en `docs/dev/DATA_MODEL.md`. Pendientes en `docs/dev/MOBILE.md`.
+
 ### Implementado
 - Sistema de notificaciones toast (`useToast`) enganchado al interceptor de errores de `api.ts`: cualquier error de una petición al backend (validación, conflicto, red, etc.) ahora se le informa siempre al usuario, en vez de quedar solo en la consola del navegador (ej. dar de alta un usuario con un nombre ya existente no mostraba ningún aviso)
 
