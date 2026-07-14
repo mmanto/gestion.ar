@@ -18,6 +18,7 @@
 #   status        mostrar estado + health checks
 #   shell         abrir shell en un servicio (requiere nombre de servicio)
 #   build-android build APK debug (staff|client|both) desde frontend-tenant
+#   clean         limpiar recursos (--deep: volumes+artefactos, --all: system prune)
 # Ejemplos:
 #   ./stack.dev                         # menu interactivo
 #   ./stack.dev up                      # levantar todo
@@ -25,10 +26,8 @@
 #   ./stack.dev restart frontend        # restart del frontend
 #   ./stack.dev logs ius                # logs del tenant ius
 #   ./stack.dev shell erma              # shell en tenant erma
-#
-# Requisitos:
-#   .env.dev presente en la raiz del repo
-#   docker compose disponible
+#   ./stack.dev build-android staff     # APK staff
+#   ./stack.dev clean                   # limpiar recursos
 #   docker network create traefik_public (una sola vez)
 #   /etc/hosts con: 127.0.0.1 erma.com.test ius.mx.test
 
@@ -129,6 +128,7 @@ menu() {
   echo -e "${CYAN}║${NC} 7) status        estado + health checks        ${CYAN}║${NC}"
   echo -e "${CYAN}║${NC} 8) shell         abrir shell en servicio       ${CYAN}║${NC}"
   echo -e "${CYAN}║${NC} 9) build-android build APK (staff/client)      ${CYAN}║${NC}"
+  echo -e "${CYAN}║${NC} c) clean         limpiar recursos              ${CYAN}║${NC}"
   echo -e "${CYAN}║${NC} q) salir                                      ${CYAN}║${NC}"
   echo -e "${CYAN}╚══════════════════════════════════════════════════╝${NC}"
   echo ""
@@ -144,6 +144,7 @@ menu() {
     7) cmd_status ;;
     8) read -r -p "Servicio (${CORE_SERVICES[*]} ${TENANTS[*]}): " svc; cmd_shell "$svc" ;;
     9) read -r -p "Target (staff|client|both): " target; cmd_build_android "$target" ;;
+    c|C) read -r -p "Modo (Enter=ligero, deep, all): " mode; cmd_clean "${mode:-light}" ;;
     q|Q) exit 0 ;;
     *) echo -e "${RED}Opcion invalida${NC}"; menu ;;
   esac
@@ -350,8 +351,134 @@ cmd_build_android() {
   ls -lh "$project_dir/android/app/build/outputs/apk/debug/"*.apk 2>/dev/null || true
 }
 
+
+# ── Limpieza de recursos ─────────────────────────────────────────────────
+
+cmd_clean() {
+  local mode="${1:-light}"
+  local project_dir="frontend-tenant"
+
+  if [[ "$mode" == "--help" || "$mode" == "-h" ]]; then
+    echo "Uso: $0 clean [--deep|--all]"
+    echo "  (sin flag)   Docker project prune (containers, images, build cache)"
+    echo "  --deep       + volumes (postgres_data, chroma_data, uploads_data) + APKs + node_modules"
+    echo "  --all        + docker system prune -a -f (AFECTA OTROS PROYECTOS!)"
+    return 0
+  fi
+
+  case "$mode" in
+    light|"")
+      echo -e "${YELLOW}==> Limpieza ligera: containers stopped, imagenes huerfanas, build cache...${NC}"
+      echo ""
+
+      # Detener el stack primero
+      echo "  [1/4] Deteniendo stack..."
+      "${COMPOSE_CMD[@]}" down --remove-orphans 2>/dev/null || true
+
+      # Quitar contenedores stopped del proyecto
+      echo "  [2/4] Quitando contenedores stopped del proyecto..."
+      docker container prune -f --filter "label=com.docker.compose.project=gestionar" 2>/dev/null || true
+
+      # Quitar imagenes huerfanas (dangling)
+      echo "  [3/4] Quitando imagenes dangling..."
+      docker image prune -f 2>/dev/null || true
+
+      # Limpiar build cache de Docker
+      echo "  [4/4] Limpiando build cache..."
+      docker builder prune -f --filter "until=24h" 2>/dev/null || true
+
+      echo ""
+      echo -e "${GREEN}==> Limpieza ligera completa.${NC}"
+      echo "  Volumes conservados. Para borrarlos: ./stack.dev clean --deep"
+      ;;
+
+    --deep)
+      echo -e "${RED}==> Limpieza profunda: volumes + artefactos de build.${NC}"
+      echo -e "${RED}    Se perdera la base de datos local (postgres_data), ChromaDB y uploads.${NC}"
+      echo ""
+      read -r -p "Confirmar (escribe 'borrar'): " confirm
+      if [[ "$confirm" != "borrar" ]]; then
+        echo "Cancelado."
+        return 0
+      fi
+      echo ""
+
+      # Detener y borrar todo (incluyendo volumes)
+      echo "  [1/6] Deteniendo stack y borrando volumes..."
+      "${COMPOSE_CMD[@]}" down -v --remove-orphans 2>/dev/null || true
+
+      # Borrar volumes explicitamente por si quedaron huerfanos
+      echo "  [2/6] Borrando volumes del proyecto..."
+      for vol in gestionar_postgres_data gestionar_chroma_data gestionar_uploads_data; do
+        docker volume rm "$vol" 2>/dev/null && echo "    - $vol" || true
+      done
+
+      # Imagenes del proyecto
+      echo "  [3/6] Borrando imagenes del proyecto..."
+      docker images --filter "label=com.docker.compose.project=gestionar" -q 2>/dev/null | xargs -r docker rmi -f 2>/dev/null || true
+
+      # Build cache completo
+      echo "  [4/6] Limpiando build cache completo..."
+      docker builder prune -a -f 2>/dev/null || true
+
+      # APKs generados
+      echo "  [5/6] Borrando APKs..."
+      rm -rf "$project_dir/android/app/build/outputs/apk/"* 2>/dev/null && echo "    - APKs borrados" || true
+
+      # node_modules (solo los montados en volumen, no los del host)
+      echo "  [6/6] Borrando node_modules (volume)..."
+      docker volume rm gestionar_frontend_node_modules 2>/dev/null && echo "    - frontend_node_modules" || true
+
+      echo ""
+      echo -e "${GREEN}==> Limpieza profunda completa.${NC}"
+      echo "  Para volver a empezar: ./stack.dev rebuild"
+      ;;
+
+    --all)
+      echo -e "${RED}╔══════════════════════════════════════════════════════╗${NC}"
+      echo -e "${RED}║  ATENCION: docker system prune -a -f                 ║${NC}"
+      echo -e "${RED}║  Borra TODOS los contenedores stopped, imagenes no    ║${NC}"
+      echo -e "${RED}║  usadas, redes y build cache DEL SISTEMA ENTERO.     ║${NC}"
+      echo -e "${RED}║  Afecta otros proyectos Docker en esta maquina.      ║${NC}"
+      echo -e "${RED}╚══════════════════════════════════════════════════════╝${NC}"
+      echo ""
+      read -r -p "Confirmar (escribe 'BORRAR TODO'): " confirm
+      if [[ "$confirm" != "BORRAR TODO" ]]; then
+        echo "Cancelado."
+        return 0
+      fi
+      echo ""
+
+      # Detener este stack
+      echo "  [1/2] Deteniendo stack..."
+      "${COMPOSE_CMD[@]}" down -v --remove-orphans 2>/dev/null || true
+
+      # System prune
+      echo "  [2/2] docker system prune -a -f..."
+      docker system prune -a -f --volumes 2>/dev/null || true
+
+      echo ""
+      echo -e "${GREEN}==> Limpieza total completa.${NC}"
+      ;;
+
+    *)
+      echo -e "${RED}ERROR: modo '${mode}' no valido. Usar: --deep | --all${NC}"
+      return 1
+      ;;
+  esac
+
+  # Mostrar espacio liberado
+  echo ""
+  echo -e "${CYAN}── Estado post-limpieza ──${NC}"
+  docker system df 2>/dev/null || true
+}
+
 # ── Entrypoint ────────────────────────────────────────────────────────────
 
+if [ $# -eq 0 ]; then
+  menu
+  exit 0
+fi
 
 CMD="$1"
 shift || true
@@ -366,12 +493,14 @@ case "$CMD" in
   status)        cmd_status ;;
   shell)         cmd_shell "${1:-}" ;;
   build-android) cmd_build_android "${1:-staff}" ;;
+  clean)         cmd_clean "${1:-light}" ;;
   -h|--help|help)
-    echo "Uso: $0 [up|down|restart|rebuild|logs|ps|status|shell|build-android] [servicio|target]"
+    echo "Uso: $0 [up|down|restart|rebuild|logs|ps|status|shell|build-android|clean] [servicio|target]"
     echo "Sin parametros muestra el menu interactivo."
     echo "Core: ${CORE_SERVICES[*]}"
     echo "Tenants: ${TENANTS[*]} (usa el nombre corto: erma, ius)"
     echo "build-android: staff | client | both (default: staff)"
+    echo "clean: sin flag | --deep | --all"
     ;;
   *)             echo -e "${RED}Comando desconocido: $CMD${NC}"; menu ;;
 esac
