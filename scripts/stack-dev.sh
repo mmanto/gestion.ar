@@ -31,8 +31,6 @@
 
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
-
 ENV_FILE=".env.dev"
 COMPOSE_FILES=(-f docker-compose.yml)
 
