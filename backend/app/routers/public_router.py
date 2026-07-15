@@ -42,9 +42,18 @@ async def get_public_tenant_info(tenant_id: str):
 
 @router.get("/app-url")
 async def get_app_url(request: Request):
-    """Devuelve la URL pública del frontend (FRONTEND_URL)."""
-    url = os.getenv("FRONTEND_URL", str(request.base_url).rstrip("/"))
-    return {"url": url}
+    """
+    Devuelve la URL pública del frontend que originó la request.
+
+    Cada tenant vive en su propio dominio (ver Fase 7 multi-tenant), así que
+    no se puede usar un único FRONTEND_URL global — se deriva del Host real
+    de la request (reenviado sin modificar por el nginx de cada tenant y por
+    Traefik) para que el link de "Copiar link del chat" apunte al dominio
+    del tenant que lo generó, no al panel admin.
+    """
+    scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+    host = request.headers.get("host", request.url.netloc)
+    return {"url": f"{scheme}://{host}"}
 
 
 @router.get("/llm-info")

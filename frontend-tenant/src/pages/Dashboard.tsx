@@ -6,7 +6,7 @@ import { Alert } from '../components/common/Alert';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import StatsCards from '../components/dashboard/StatsCards';
-import ProspectsGrid from '../components/dashboard/ProspectsGrid';
+import ClientsGrid from '../components/dashboard/ClientsGrid';
 import { useStats } from '../hooks/useStats';
 import botsService from '../services/bots.service';
 import { publicService } from '../services/public.service';
@@ -17,6 +17,7 @@ export const Dashboard = () => {
   const [bots, setBots] = useState<TenantBotSummary[]>([]);
   const [selectedBotId, setSelectedBotId] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
 
   useEffect(() => {
     botsService.getBots({ limit: 100 })
@@ -27,20 +28,42 @@ export const Dashboard = () => {
       .catch(() => {});
   }, []);
 
+  const copyText = async (text: string) => {
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+    // Fallback para contextos sin Clipboard API (ej. dominios .test sin HTTPS en dev)
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      if (!document.execCommand('copy')) throw new Error('execCommand copy falló');
+    } finally {
+      document.body.removeChild(textarea);
+    }
+  };
+
   const handleCopyChatLink = async () => {
     if (!selectedBotId) return;
+    setCopyError(false);
+    let publicUrl = window.location.origin;
     try {
-      let publicUrl = window.location.origin;
-      try {
-        publicUrl = await publicService.getPublicUrl();
-      } catch {
-        // Sin URL pública configurada — se usa el origin actual como fallback
-      }
-      await navigator.clipboard.writeText(`${publicUrl}/chat/${selectedBotId}`);
+      publicUrl = await publicService.getPublicUrl();
+    } catch {
+      // Sin URL pública configurada — se usa el origin actual como fallback
+    }
+    try {
+      await copyText(`${publicUrl}/chat/${selectedBotId}`);
       setLinkCopied(true);
       setTimeout(() => setLinkCopied(false), 2000);
     } catch (err) {
       console.error('Error copiando el link:', err);
+      setCopyError(true);
+      setTimeout(() => setCopyError(false), 3000);
     }
   };
 
@@ -81,6 +104,10 @@ export const Dashboard = () => {
             }
           />
 
+          {copyError && (
+            <Alert variant="error" className="mb-6">No se pudo copiar el link. Copialo manualmente desde la barra de direcciones.</Alert>
+          )}
+
           {bots.length > 1 && (
             <Card className="mb-6" shadow="none">
               <div className="max-w-xs">
@@ -100,7 +127,7 @@ export const Dashboard = () => {
 
           {stats && <StatsCards stats={stats} />}
 
-          <ProspectsGrid />
+          <ClientsGrid />
         </div>
     </AppLayout>
   );

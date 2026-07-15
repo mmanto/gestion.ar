@@ -34,7 +34,7 @@
 set -euo pipefail
 
 ENV_FILE=".env.dev"
-COMPOSE_FILES=(-f docker-compose.yml -f docker-compose.tenants.local.yml)
+COMPOSE_FILES=(-f docker-compose.yml -f docker-compose.override.yml -f docker-compose.tenants.local.yml)
 
 CORE_SERVICES=(app frontend postgres redis traefik-local)
 TENANTS=(erma ius)
