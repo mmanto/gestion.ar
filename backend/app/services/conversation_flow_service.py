@@ -162,6 +162,7 @@ class FlowState:
             "name": "name",
             "email": "email",
             "phone": "phone",
+            "dni": "dni",
             "case_type": None,  # Va a metadata
             "description": None,  # Va a metadata
         }

@@ -557,6 +557,7 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
                                     name=raw_update.get("name"),
                                     email=raw_update.get("email"),
                                     phone=raw_update.get("phone"),
+                                    dni=raw_update.get("dni"),
                                     metadata=raw_update.get("metadata"),
                                 )
                                 await get_client_service().update_client(

@@ -48,6 +48,7 @@ class ClientCreate(ClientBase):
     name: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
+    dni: Optional[str] = None
     metadata: Optional[Dict] = None
 
 
@@ -56,6 +57,7 @@ class ClientUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
+    dni: Optional[str] = None
     status: Optional[ClientStatus] = None
     score: Optional[float] = None
     metadata: Optional[Dict] = None
@@ -69,6 +71,7 @@ class Client(ClientBase):
     name: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
+    dni: Optional[str] = None
     status: ClientStatus = ClientStatus.ACTIVE
     first_contact_at: str
     last_contact_at: str

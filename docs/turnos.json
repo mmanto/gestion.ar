@@ -1,0 +1,28 @@
+{
+  "enabled": true,
+  "skip_if_known": true,
+  "steps": [
+    {
+      "field": "name",
+      "question": "¡Hola! Para poder ayudarte a reservar tu turno, primero necesito algunos datos. ¿Cuál es tu apellido y nombre completo?",
+      "field_type": "text",
+      "required": true,
+      "validation_hint": "Por favor, ingresá tu apellido y nombre completo."
+    },
+    {
+      "field": "dni",
+      "question": "Gracias. ¿Cuál es tu número de DNI?",
+      "field_type": "text",
+      "required": true,
+      "validation_hint": "Por favor, ingresá tu número de DNI (solo números, sin puntos)."
+    },
+    {
+      "field": "phone",
+      "question": "Por último, ¿cuál es tu número de WhatsApp de contacto?",
+      "field_type": "phone",
+      "required": true,
+      "validation_hint": "Por favor, ingresá un número de WhatsApp válido (ej: +54 9 11 1234-5678)."
+    }
+  ],
+  "completion_message": "¡Perfecto, ya tengo tus datos! Ahora sí, contame para cuándo te gustaría reservar tu turno."
+}

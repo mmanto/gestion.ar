@@ -219,6 +219,7 @@ class Client(Base):
     name = Column(Text, nullable=True)
     email = Column(Text, nullable=True)
     phone = Column(Text, nullable=True)
+    dni = Column(Text, nullable=True)
     status = Column(Text, nullable=False, default="active")
     score = Column(Numeric, nullable=False, default=0)
     total_conversations = Column(Integer, nullable=False, default=0)

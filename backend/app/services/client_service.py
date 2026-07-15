@@ -43,6 +43,7 @@ def _to_client(row: ClientModel) -> Client:
         name=row.name,
         email=row.email,
         phone=row.phone,
+        dni=row.dni,
         status=row.status,
         first_contact_at=row.first_contact_at.isoformat(),
         last_contact_at=row.last_contact_at.isoformat(),
@@ -84,6 +85,7 @@ class ClientService:
                 name=client_data.name,
                 email=client_data.email,
                 phone=client_data.phone,
+                dni=client_data.dni,
                 status=ClientStatus.ACTIVE.value,
                 total_conversations=0,
                 total_messages=0,
@@ -169,6 +171,7 @@ class ClientService:
                 ClientModel.external_id.ilike(pattern),
                 ClientModel.email.ilike(pattern),
                 ClientModel.phone.ilike(pattern),
+                ClientModel.dni.ilike(pattern),
             ))
         if color_semaforo == "sin_clasificar":
             filters.append(ClientModel.color_semaforo.is_(None))

@@ -17,6 +17,7 @@ export interface Client {
   name?: string;
   email?: string;
   phone?: string;
+  dni?: string;
   status: ClientStatus;
   first_contact_at: string;
   last_contact_at: string;
@@ -36,6 +37,7 @@ export interface ClientCreate {
   name?: string;
   email?: string;
   phone?: string;
+  dni?: string;
   metadata?: Record<string, unknown>;
 }
 
@@ -43,6 +45,7 @@ export interface ClientUpdate {
   name?: string;
   email?: string;
   phone?: string;
+  dni?: string;
   status?: ClientStatus;
   score?: number;
   metadata?: Record<string, unknown>;

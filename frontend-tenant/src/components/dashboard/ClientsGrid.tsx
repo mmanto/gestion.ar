@@ -152,6 +152,9 @@ const ClientsGrid = ({ colorFilter }: ClientsGridProps) => {
                     {client.phone && client.phone !== client.external_id && (
                       <p className="text-base text-gray-800">{client.phone}</p>
                     )}
+                    {client.dni && (
+                      <p className="text-base text-gray-800">DNI: {client.dni}</p>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>
