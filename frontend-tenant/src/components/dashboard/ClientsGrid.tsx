@@ -8,7 +8,7 @@ import { SemaforoBadge } from '../common/SemaforoBadge';
 import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '../common/Table';
 import MessagesList from '../messages/MessagesList';
 import clientsService from '../../services/clients.service';
-import type { Client } from '../../types/client.types';
+import type { Client, ColorFilter } from '../../types/client.types';
 import type { ConversationMessage } from '../../types/conversation.types';
 import { getWhatsappNumber, openWhatsapp } from '../../utils/whatsapp';
 
@@ -19,7 +19,12 @@ const sourceColors: Record<string, string> = {
   manual: 'bg-gray-200 text-gray-950',
 };
 
-const ClientsGrid = () => {
+interface ClientsGridProps {
+  /** Si viene, restringe la grilla a clientes de ese color de semáforo. */
+  colorFilter?: ColorFilter;
+}
+
+const ClientsGrid = ({ colorFilter }: ClientsGridProps) => {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -38,14 +43,18 @@ const ClientsGrid = () => {
   const fetchClients = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await clientsService.getAllClients({ limit: 20, search: appliedSearch });
+      const response = await clientsService.getAllClients({
+        limit: 20,
+        search: appliedSearch,
+        color_semaforo: colorFilter,
+      });
       setClients(response.clients);
     } catch (err) {
       console.error('Error cargando clientes:', err);
     } finally {
       setLoading(false);
     }
-  }, [appliedSearch]);
+  }, [appliedSearch, colorFilter]);
 
   useEffect(() => {
     fetchClients();

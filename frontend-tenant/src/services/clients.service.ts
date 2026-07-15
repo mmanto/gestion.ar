@@ -9,6 +9,7 @@ import type {
   ClientsResponse,
   ClientResponse,
   ClientFilters,
+  ClientColorStats,
 } from '../types/client.types';
 import type { ConversationsResponse } from '../types/conversation.types';
 
@@ -79,11 +80,22 @@ const clientsService = {
     if (filters.limit) params.append('limit', filters.limit.toString());
     if (filters.status) params.append('status', filters.status);
     if (filters.search) params.append('search', filters.search);
+    if (filters.color_semaforo) params.append('color_semaforo', filters.color_semaforo);
 
     const response = await api.get<ClientsResponse>(
       `/clients?${params.toString()}`
     );
     return response.data;
+  },
+
+  /**
+   * Get client counts grouped by color_semaforo (embudo de ventas), para los
+   * cards del Escritorio.
+   */
+  async getColorStats(): Promise<ClientColorStats> {
+    const response = await api.get<{ success: boolean } & ClientColorStats>('/clients/stats');
+    const { success: _success, ...counts } = response.data;
+    return counts;
   },
 
   /**

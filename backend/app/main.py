@@ -288,6 +288,7 @@ async def get_all_clients(
     limit: int = Query(20, ge=1, le=100),
     status: Optional[ClientStatus] = Query(None),
     search: Optional[str] = Query(None),
+    color_semaforo: Optional[str] = Query(None),
     current_user: User = Depends(get_current_user)
 ):
     """
@@ -307,7 +308,8 @@ async def get_all_clients(
             skip=skip,
             limit=limit,
             status=status,
-            search=search
+            search=search,
+            color_semaforo=color_semaforo
         )
 
         return {
@@ -323,6 +325,31 @@ async def get_all_clients(
         raise HTTPException(
             status_code=500,
             detail=f"Error obteniendo clientes: {str(e)}"
+        )
+
+
+@app.get("/api/clients/stats")
+async def get_clients_color_stats(current_user: User = Depends(get_current_user)):
+    """
+    Cuenta los clientes del tenant agrupados por color_semaforo (embudo de
+    ventas) — usado por los cards del Escritorio (ver StatsCards.tsx).
+    """
+    try:
+        bot_service = get_bot_service()
+        bots_result = await bot_service.get_bots_by_tenant(
+            tenant_id=current_user.tenant_id, skip=0, limit=1000
+        )
+        bot_ids = [b.bot_id for b in bots_result["bots"]]
+
+        client_service = get_client_service()
+        counts = await client_service.count_clients_by_color(bot_ids)
+
+        return {"success": True, **counts}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error obteniendo estadísticas de clientes: {str(e)}"
         )
 
 # ==================== ENDPOINTS DE CONVERSACIONES ====================

@@ -157,6 +157,7 @@ class ClientService:
         limit: int,
         status: Optional[ClientStatus],
         search: Optional[str],
+        color_semaforo: Optional[str] = None,
     ) -> Dict:
         filters = list(base_filters)
         if status:
@@ -169,6 +170,10 @@ class ClientService:
                 ClientModel.email.ilike(pattern),
                 ClientModel.phone.ilike(pattern),
             ))
+        if color_semaforo == "sin_clasificar":
+            filters.append(ClientModel.color_semaforo.is_(None))
+        elif color_semaforo:
+            filters.append(ClientModel.color_semaforo == color_semaforo)
 
         async with AsyncSessionLocal() as session:
             total = (await session.execute(
@@ -198,10 +203,11 @@ class ClientService:
         skip: int = 0,
         limit: int = 20,
         status: Optional[ClientStatus] = None,
-        search: Optional[str] = None
+        search: Optional[str] = None,
+        color_semaforo: Optional[str] = None,
     ) -> Dict:
         """Obtiene clientes de un bot con paginación y filtros"""
-        return await self._query_clients([ClientModel.bot_id == bot_id], skip, limit, status, search)
+        return await self._query_clients([ClientModel.bot_id == bot_id], skip, limit, status, search, color_semaforo)
 
     async def get_clients_by_bot_ids(
         self,
@@ -209,10 +215,24 @@ class ClientService:
         skip: int = 0,
         limit: int = 20,
         status: Optional[ClientStatus] = None,
-        search: Optional[str] = None
+        search: Optional[str] = None,
+        color_semaforo: Optional[str] = None,
     ) -> Dict:
         """Obtiene clientes de múltiples bots con paginación y filtros"""
-        return await self._query_clients([ClientModel.bot_id.in_(bot_ids)], skip, limit, status, search)
+        return await self._query_clients([ClientModel.bot_id.in_(bot_ids)], skip, limit, status, search, color_semaforo)
+
+    async def count_clients_by_color(self, bot_ids: List[str]) -> Dict[str, int]:
+        """Cuenta clientes de varios bots agrupados por color_semaforo (embudo de ventas)."""
+        counts = {"verde": 0, "amarillo": 0, "rojo": 0, "sin_clasificar": 0}
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(ClientModel.color_semaforo, func.count())
+                .where(ClientModel.bot_id.in_(bot_ids))
+                .group_by(ClientModel.color_semaforo)
+            )
+            for color, count in result.all():
+                counts[color or "sin_clasificar"] = count
+        return counts
 
     async def update_client(self, client_id: str, update_data: ClientUpdate) -> Optional[Client]:
         """Actualiza un cliente"""

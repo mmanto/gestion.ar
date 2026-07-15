@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { LoadingPage } from '../components/common/Spinner';
 import { PageHeader } from '../components/common/PageHeader';
@@ -8,12 +9,25 @@ import { Button } from '../components/common/Button';
 import StatsCards from '../components/dashboard/StatsCards';
 import ClientsGrid from '../components/dashboard/ClientsGrid';
 import { useStats } from '../hooks/useStats';
+import { useColorStats } from '../hooks/useColorStats';
+import { useIsMobile } from '../hooks/useIsMobile';
 import botsService from '../services/bots.service';
 import { publicService } from '../services/public.service';
 import type { TenantBotSummary } from '../types/bot.types';
+import type { ColorFilter } from '../types/client.types';
+
+const COLOR_LABELS: Record<ColorFilter, string> = {
+  verde: 'Viable',
+  amarillo: 'Potencial',
+  rojo: 'Exploración',
+  sin_clasificar: 'Sin clasificar',
+};
 
 export const Dashboard = () => {
-  const { stats, loading, error } = useStats();
+  const { loading, error } = useStats();
+  const { colorStats } = useColorStats();
+  const isMobile = useIsMobile();
+  const [selectedColor, setSelectedColor] = useState<ColorFilter | null>(null);
   const [bots, setBots] = useState<TenantBotSummary[]>([]);
   const [selectedBotId, setSelectedBotId] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -87,6 +101,41 @@ export const Dashboard = () => {
     );
   }
 
+  if (isMobile) {
+    return (
+      <AppLayout>
+        <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
+          {selectedColor === null ? (
+            <>
+              <PageHeader
+                title="Escritorio"
+                description="Tocá un card para ver esos clientes"
+                titleClassName="font-semibold uppercase tracking-[0.08em]"
+                descriptionClassName="text-gray-800"
+              />
+              <StatsCards colorStats={colorStats} selectedColor={selectedColor} onSelectColor={setSelectedColor} />
+            </>
+          ) : (
+            <>
+              <PageHeader
+                title={COLOR_LABELS[selectedColor]}
+                titleClassName="font-semibold uppercase tracking-[0.08em]"
+                descriptionClassName="text-gray-800"
+                actions={
+                  <Button variant="outline" className="gap-2" onClick={() => setSelectedColor(null)}>
+                    <ArrowLeft className="w-4 h-4" />
+                    Volver
+                  </Button>
+                }
+              />
+              <ClientsGrid colorFilter={selectedColor} />
+            </>
+          )}
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
         <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
@@ -125,7 +174,7 @@ export const Dashboard = () => {
             </Card>
           )}
 
-          {stats && <StatsCards stats={stats} />}
+          <StatsCards colorStats={colorStats} />
 
           <ClientsGrid />
         </div>

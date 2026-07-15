@@ -6,6 +6,7 @@ import type { SemaforoColor } from '../services/modules.service';
 
 export type ClientSource = 'whatsapp' | 'telegram' | 'web' | 'manual';
 export type ClientStatus = 'active' | 'blocked' | 'archived';
+export type ColorFilter = SemaforoColor | 'sin_clasificar';
 export type { SemaforoColor };
 
 export interface Client {
@@ -69,4 +70,12 @@ export interface ClientFilters {
   limit?: number;
   status?: ClientStatus | '';
   search?: string;
+  color_semaforo?: ColorFilter | '';
+}
+
+export interface ClientColorStats {
+  verde: number;
+  amarillo: number;
+  rojo: number;
+  sin_clasificar: number;
 }
