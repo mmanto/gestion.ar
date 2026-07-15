@@ -11,7 +11,7 @@ from sqlalchemy import func, or_, select
 
 from app.db.database import AsyncSessionLocal
 from app.db.models import Bot as BotModel, Client as ClientModel
-from app.models.client import Client, ClientCreate, ClientSource, ClientStatus, ClientUpdate
+from app.models.client import Client, ClientCreate, ClientSource, ClientStatus, ClientUpdate, estado_from_color
 
 
 def calculate_score(total_messages: int, first_contact_at: str) -> float:
@@ -51,7 +51,7 @@ def _to_client(row: ClientModel) -> Client:
         total_tokens_used=row.total_tokens_used,
         score=float(row.score),
         metadata=row.metadata_,
-        estado=row.estado,
+        estado=estado_from_color(row.color_semaforo),
         color_semaforo=row.color_semaforo,
         notas=row.notas,
     )

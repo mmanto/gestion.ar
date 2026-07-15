@@ -9,21 +9,9 @@ import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } fro
 import MessagesList from '../messages/MessagesList';
 import clientsService from '../../services/clients.service';
 import botsService from '../../services/bots.service';
-import type { Client, ClientStatus } from '../../types/client.types';
+import type { Client } from '../../types/client.types';
 import type { TenantBotSummary } from '../../types/bot.types';
 import type { ConversationMessage } from '../../types/conversation.types';
-
-const statusColors: Record<ClientStatus, string> = {
-  active: 'bg-green-200 text-green-950',
-  blocked: 'bg-red-200 text-red-950',
-  archived: 'bg-gray-200 text-gray-950',
-};
-
-const statusLabels: Record<ClientStatus, string> = {
-  active: 'Activo',
-  blocked: 'Bloqueado',
-  archived: 'Archivado',
-};
 
 const sourceColors: Record<string, string> = {
   whatsapp: 'bg-green-200 text-green-950',
@@ -129,11 +117,10 @@ const ClientsGrid = () => {
         <Table>
           <TableHead>
             <tr>
-              <TableHeaderCell>Calificación</TableHeaderCell>
+              <TableHeaderCell>Estado</TableHeaderCell>
               <TableHeaderCell>Contacto</TableHeaderCell>
               <TableHeaderCell>Agente</TableHeaderCell>
               <TableHeaderCell>Canal</TableHeaderCell>
-              <TableHeaderCell>Estado</TableHeaderCell>
               <TableHeaderCell>Último contacto</TableHeaderCell>
               <TableHeaderCell align="right">Acciones</TableHeaderCell>
             </tr>
@@ -169,13 +156,6 @@ const ClientsGrid = () => {
                     }`}
                   >
                     {client.source}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <span
-                    className={`px-2 py-1 text-base font-medium rounded-full ${statusColors[client.status]}`}
-                  >
-                    {statusLabels[client.status]}
                   </span>
                 </TableCell>
                 <TableCell textClassName="text-gray-800">

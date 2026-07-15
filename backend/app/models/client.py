@@ -8,6 +8,18 @@ from enum import Enum
 
 SemaforoColor = Literal["verde", "amarillo", "rojo"]
 
+SEMAFORO_ESTADO_LABELS: Dict[str, str] = {
+    "verde": "Viable",
+    "amarillo": "Potencial",
+    "rojo": "Exploración",
+}
+
+
+def estado_from_color(color: Optional[str]) -> str:
+    """Deriva el estado del embudo a partir de color_semaforo — no es un dato
+    independiente, así nunca puede quedar desincronizado del color."""
+    return SEMAFORO_ESTADO_LABELS.get(color or "", "Sin clasificar")
+
 
 class ClientSource(str, Enum):
     """Fuente de donde proviene el cliente"""
@@ -47,7 +59,6 @@ class ClientUpdate(BaseModel):
     status: Optional[ClientStatus] = None
     score: Optional[float] = None
     metadata: Optional[Dict] = None
-    estado: Optional[str] = None
     color_semaforo: Optional[SemaforoColor] = None
     notas: Optional[str] = None
 
@@ -66,7 +77,9 @@ class Client(ClientBase):
     total_tokens_used: int = 0
     score: float = 0.0
     metadata: Optional[Dict] = None
-    estado: str = "nuevo"
+    # Derivado de color_semaforo (ver estado_from_color) — no se recibe como
+    # input, solo se completa al construir la respuesta.
+    estado: str = "Sin clasificar"
     color_semaforo: Optional[SemaforoColor] = None
     notas: Optional[str] = None
 

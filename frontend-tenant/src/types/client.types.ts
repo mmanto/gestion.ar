@@ -45,7 +45,6 @@ export interface ClientUpdate {
   status?: ClientStatus;
   score?: number;
   metadata?: Record<string, unknown>;
-  estado?: string;
   color_semaforo?: SemaforoColor | null;
   notas?: string | null;
 }

@@ -227,12 +227,13 @@ class Client(Base):
     first_contact_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     last_contact_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     metadata_ = Column("metadata", JSONB, nullable=True)
-    # Embudo de ventas (ex-Prospect, ver docs/dev/DECISIONS.md) — estado es
-    # libre (nuevo/contactado/calificado/descartado), color_semaforo y notas
-    # sólo se completan cuando el agente califica automáticamente el caso
-    # (tool calling, ver prospect_auto_qualify_service.py) o alguien lo carga
-    # a mano.
-    estado = Column(Text, nullable=False, default="nuevo")
+    # Embudo de ventas (ex-Prospect, ver docs/dev/DECISIONS.md) — solo se
+    # completan cuando el agente califica automáticamente el caso (tool
+    # calling, ver prospect_auto_qualify_service.py) o alguien lo carga a
+    # mano. El "estado" del embudo (Viable/Potencial/Exploración) no se
+    # guarda: se deriva siempre de color_semaforo (ver
+    # app/models/client.py::estado_from_color) para que nunca queden
+    # desincronizados.
     color_semaforo = Column(Text, nullable=True)
     notas = Column(Text, nullable=True)
 
