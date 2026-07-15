@@ -83,12 +83,13 @@ class PushService:
         else:
             print("⚠️  Push Service: FCM_CREDENTIALS_PATH no configurado. Push Android no disponible.")
 
-        # ── APNs (iOS nativo) ──
+        # ── APNs (iOS nativo, vía aioapns) ──
         self._apns_key_path = os.getenv("APNS_KEY_PATH", "").strip()
         self._apns_key_id = os.getenv("APNS_KEY_ID", "").strip()
         self._apns_team_id = os.getenv("APNS_TEAM_ID", "").strip()
         self._apns_topic = os.getenv("APNS_TOPIC", "").strip()
         self._apns_use_sandbox = os.getenv("APNS_USE_SANDBOX", "false").lower() == "true"
+        self._apns_client = None  # lazy, se crea en el primer envío (ver _get_apns_client)
 
         if self._apns_key_path and os.path.exists(self._apns_key_path):
             print("✅ Push Service (APNs) configurado correctamente")
@@ -377,6 +378,23 @@ class PushService:
             print(f"Error enviando push FCM: {error_str[:100]}")
             return False
 
+    def _get_apns_client(self):
+        """Crea (una sola vez) el cliente aioapns, reutilizado entre envíos."""
+        if self._apns_client is None:
+            from aioapns import APNs
+
+            with open(self._apns_key_path) as f:
+                key_content = f.read()
+
+            self._apns_client = APNs(
+                key=key_content,
+                key_id=self._apns_key_id,
+                team_id=self._apns_team_id,
+                topic=self._apns_topic,
+                use_sandbox=self._apns_use_sandbox,
+            )
+        return self._apns_client
+
     async def _send_apns(self, subscription: PushSubscription, payload: dict) -> bool:
         if not self._apns_key_path or not os.path.exists(self._apns_key_path):
             print("⚠️  Push: APNs no configurado")
@@ -386,8 +404,7 @@ class PushService:
             return False
 
         try:
-            from apns2.client import APNsClient
-            from apns2.payload import Payload
+            from aioapns import NotificationRequest
 
             alert = {}
             if payload.get("title"):
@@ -395,32 +412,31 @@ class PushService:
             if payload.get("body"):
                 alert["body"] = payload["body"]
 
-            apns_payload = Payload(
-                alert=alert if alert else None,
-                badge=1,
-                sound="default",
-                custom={"url": payload.get("url", "/")},
+            request = NotificationRequest(
+                device_token=subscription.device_token,
+                message={
+                    "aps": {
+                        "alert": alert or None,
+                        "badge": 1,
+                        "sound": "default",
+                    },
+                    "url": payload.get("url", "/"),
+                },
             )
 
-            client = APNsClient(
-                self._apns_key_path,
-                use_sandbox=self._apns_use_sandbox,
-                use_alternative_port=False,
-            )
-            client.send_notification(
-                token_hex=subscription.device_token,
-                notification=apns_payload,
-                topic=self._apns_topic,
-            )
+            result = await self._get_apns_client().send_notification(request)
+            if not result.is_successful:
+                reason = result.description or ""
+                if "Unregistered" in reason or "BadDeviceToken" in reason:
+                    await self._deactivate(subscription.subscription_id)
+                print(f"Error enviando push APNs: {reason[:100]}")
+                return False
 
             await self._touch_last_used(subscription.subscription_id)
             return True
 
         except Exception as e:
-            error_str = str(e)
-            if "Unregistered" in error_str or "BadDeviceToken" in error_str:
-                await self._deactivate(subscription.subscription_id)
-            print(f"Error enviando push APNs: {error_str[:100]}")
+            print(f"Error enviando push APNs: {str(e)[:100]}")
             return False
 
     async def _touch_last_used(self, subscription_id: str) -> None:

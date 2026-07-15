@@ -40,4 +40,9 @@ alembic==1.18.4
 psycopg2-binary==2.9.11
 # PASO 9: Push notifications nativas (FCM/APNs) — ver ADR-007 en docs/dev/DECISIONS.md
 firebase-admin==6.0.0
-apns2==0.7.2
+# aioapns (no apns2): apns2 depende de hyper==0.7.0, que fija h2/hyperframe en
+# versiones pre-Python-3.10 (usan collections.MutableSet, removido en 3.10+).
+# httpcore importa h2 incondicionalmente al crear CUALQUIER httpx.Client(),
+# así que esa combinación rompe toda la app (Claude/DeepSeek incluidos), no
+# solo el envío de push iOS.
+aioapns==4.0
