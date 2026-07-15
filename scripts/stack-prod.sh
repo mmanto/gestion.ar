@@ -14,17 +14,18 @@
 #   rebuild       down + build + up (reconstruye imagenes y levanta)
 #   logs          ver logs de un servicio (requiere nombre de servicio)
 #   ps            listar contenedores y su estado
-#   status        mostrar estado + health checks
 #   shell         abrir shell en un servicio (requiere nombre de servicio)
 #   clean         limpiar recursos (--images: tambien imagenes del proyecto)
+#   build-android build APK debug (staff|client|both) desde frontend-tenant
 #
 # Ejemplos:
 #   ./stack.prod                         # menu interactivo
 #   ./stack.prod up                      # levantar todo
 #   ./stack.prod logs app                # logs del backend
 #   ./stack.prod restart frontend        # restart del frontend
-#   ./stack.prod shell ius               # shell en tenant ius
 #   ./stack.prod clean                   # limpiar recursos (seguro, sin datos)
+#   ./stack.prod build-android staff     # APK staff
+#   ./stack.prod build-android client    # APK client
 #
 # Requisitos:
 #   .env.prod presente en la raíz del repo
@@ -99,6 +100,7 @@ menu() {
   echo -e "${CYAN}║${NC} 7) status      estado + health checks      ${CYAN}║${NC}"
   echo -e "${CYAN}║${NC} 8) shell       abrir shell en servicio     ${CYAN}║${NC}"
   echo -e "${CYAN}║${NC} c) clean       limpiar recursos            ${CYAN}║${NC}"
+  echo -e "${CYAN}║${NC} b) build-android build APK (staff/client)   ${CYAN}║${NC}"
   echo -e "${CYAN}║${NC} q) salir                                  ${CYAN}║${NC}"
   echo -e "${CYAN}╚══════════════════════════════════════════════╝${NC}"
   echo ""
@@ -114,6 +116,7 @@ menu() {
     7) cmd_status ;;
     8) read -r -p "Servicio (app, frontend, ${TENANTS[*]}): " svc; cmd_shell "$svc" ;;
     c|C) read -r -p "Modo (Enter=ligero, images): " mode; cmd_clean "${mode:-light}" ;;
+    b|B) read -r -p "Target (staff|client|both): " target; cmd_build_android "${target:-staff}" ;;
     q|Q) exit 0 ;;
     *) echo -e "${RED}Opcion invalida${NC}"; menu ;;
   esac
@@ -317,7 +320,83 @@ cmd_clean() {
   docker system df 2>/dev/null || true
 }
 
-# ── Entrypoint ────────────────────────────────────────────────────────────────
+
+# ── Android build (host, no Docker) ────────────────────────────────────────
+
+cmd_build_android() {
+  local target="${1:-}"
+  if [[ -z "$target" || ! "$target" =~ ^(staff|client|both)$ ]]; then
+    echo -e "${RED}ERROR: target invalido '${target}'. Usar: staff | client | both${NC}"
+    return 1
+  fi
+
+  local missing=()
+  command -v node &>/dev/null || missing+=("node (npm)")
+  command -v java &>/dev/null || missing+=("java (JDK 17+)")
+  if [[ -z "${ANDROID_HOME:-}" && -z "${ANDROID_SDK_ROOT:-}" ]]; then
+    missing+=("ANDROID_HOME o ANDROID_SDK_ROOT")
+  fi
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    echo -e "${RED}Faltan requisitos:${NC}"
+    for m in "${missing[@]}"; do echo "  - $m"; done
+    echo ""
+    echo "Instalar Android SDK: https://developer.android.com/studio#command-line-tools"
+    return 1
+  fi
+
+  local project_dir="frontend-tenant"
+  if [[ ! -f "$project_dir/package.json" ]]; then
+    echo -e "${RED}ERROR: $project_dir no encontrado. Ejecuta desde la raiz del repo.${NC}"
+    return 1
+  fi
+
+  local gradlew="$project_dir/android/gradlew"
+  if [[ ! -f "$gradlew" ]]; then
+    echo -e "${RED}ERROR: $gradlew no encontrado. Ejecuta 'npx cap add android' primero.${NC}"
+    return 1
+  fi
+  chmod +x "$gradlew"
+
+  build_one() {
+    local t="$1"
+    echo -e "${CYAN}── Build: ${GREEN}${t}${CYAN} ──${NC}"
+
+    echo "  [1/3] npm run build:${t} ..."
+    (cd "$project_dir" && npm run "build:${t}") || {
+      echo -e "${RED}  ERROR: npm run build:${t} fallo${NC}"
+      return 1
+    }
+
+    echo "  [2/3] npx cap sync (VITE_TARGET=${t}) ..."
+    (cd "$project_dir" && VITE_TARGET="$t" npx cap sync) || {
+      echo -e "${RED}  ERROR: cap sync fallo${NC}"
+      return 1
+    }
+
+    echo "  [3/3] ./gradlew assembleDebug ..."
+    (cd "$project_dir/android" && ./gradlew assembleDebug 2>&1 | grep -E 'BUILD|FAILED|ERROR') || {
+      echo -e "${RED}  ERROR: gradle build fallo${NC}"
+      return 1
+    }
+
+    local apk="$project_dir/android/app/build/outputs/apk/debug/app-debug.apk"
+    if [[ -f "$apk" ]]; then
+      local size=$(du -h "$apk" | cut -f1)
+      echo -e "  ${GREEN}APK generado:${NC} ${apk} (${size})"
+    fi
+  }
+
+  if [[ "$target" == "both" ]]; then
+    build_one staff && build_one client
+  else
+    build_one "$target"
+  fi
+
+  echo ""
+  echo -e "${GREEN}==> Build Android completo.${NC}"
+  ls -lh "$project_dir/android/app/build/outputs/apk/debug/"*.apk 2>/dev/null || true
+}
+# ── Entrypoint ────────────────────────────────────────────────────────────
 
 if [ $# -eq 0 ]; then
   menu
@@ -337,10 +416,13 @@ case "$CMD" in
   status)        cmd_status ;;
   shell)         cmd_shell "${1:-}" ;;
   clean)         cmd_clean "${1:-light}" ;;
+  build-android) cmd_build_android "${1:-staff}" ;;
   -h|--help|help)
-    echo "Uso: $0 [up|down|restart|rebuild|logs|ps|status|shell|clean] [servicio|modo]"
+    echo "Uso: $0 [up|down|restart|rebuild|logs|ps|status|shell|clean|build-android] [servicio|target]"
     echo "Sin parametros muestra el menu interactivo."
+    echo "Tenants: ${TENANTS[*]} (usa el nombre corto: ius, erma)"
     echo "clean: sin flag | --images"
+    echo "build-android: staff | client | both (default: staff)"
     ;;
   *)             echo -e "${RED}Comando desconocido: $CMD${NC}"; menu ;;
 esac
