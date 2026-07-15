@@ -36,6 +36,7 @@ export default defineConfig({
   envDir: path.resolve(__dirname, '..'),
   define: {
     __TARGET__: JSON.stringify(target),
+    __CAPACITOR__: JSON.stringify(isCapacitor),
   },
   server: {
     host: '0.0.0.0',

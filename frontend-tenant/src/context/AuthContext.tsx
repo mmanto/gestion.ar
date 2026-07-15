@@ -1,8 +1,8 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 import type { ReactNode } from 'react';
 import type { AuthContextType, User, LoginCredentials } from '../types/auth.types';
 import authService from '../services/auth.service';
-
+import { TenantContext } from './TenantContext';
 // eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -15,6 +15,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [token, setToken] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const { setTenantId } = useContext(TenantContext) ?? {};
 
   // Escuchar evento de logout desde el interceptor 401 de api.ts
   useEffect(() => {
@@ -73,6 +74,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Guardar token y usuario
       authService.saveToken(response.access_token);
       authService.saveUser(response.user);
+
+      // En Capacitor (app nativa), el tenant se resuelve post-login
+      if (response.user?.tenant_id && setTenantId) {
+        setTenantId(response.user.tenant_id);
+      }
 
       // Actualizar estado
       setToken(response.access_token);

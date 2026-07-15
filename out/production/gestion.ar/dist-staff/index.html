@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/icons/icon-512.png" sizes="512x512" />
+    <link rel="icon" href="/icons/icon-512.png" sizes="any" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Backoffice</title>
+
+    <!-- Config inyectada por el entrypoint del contenedor al arrancar (ver
+         docker-entrypoint.sh) — define window.__TENANT_CONFIG__.tenantId.
+         Si el archivo no existe (dev sin Docker), el request 404 sin romper
+         nada; TenantContext cae al fallback ?tenant=<id>. -->
+    <script src="/tenant-config.js"></script>
+
+    <!-- PWA: capturar beforeinstallprompt lo antes absolutamente posible.
+         Los módulos ES son diferidos; este script inline corre ANTES que ellos. -->
+    <script>
+      window.__pwaBeforeInstallPrompt = null;
+      window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        window.__pwaBeforeInstallPrompt = e;
+        window.dispatchEvent(new CustomEvent('pwa-install-ready'));
+      });
+    </script>
+
+    <!-- PWA: Manifest - solo el chat por canal es instalable. Estático en el HTML
+         para que Chrome lo detecte durante el parseo; el script inline lo reescribe
+         para /chat/c/:channelId o lo quita por completo en cualquier otra ruta
+         (panel de administración incluido) para que esas páginas NO sean instalables. -->
+    <link rel="manifest" id="app-manifest" href="/manifest.webmanifest" />
+    <script>
+      (function () {
+        var match = window.location.pathname.match(/^\/chat\/c\/([^/]+)/);
+        var manifestLink = document.getElementById('app-manifest');
+        if (match) {
+          manifestLink.href = '/api/public/channels/' + match[1] + '/manifest.webmanifest';
+        } else {
+          manifestLink.remove();
+        }
+      })();
+    </script>
+
+    <!-- PWA: Theme color (Android toolbar, iOS status bar) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet" />
+
+    <meta name="theme-color" content="#2793b4" />
+
+    <!-- PWA: iOS / Safari -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Backoffice" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <script type="module" crossorigin src="/assets/index-sQWrx33n.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-Ck59wqAz.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

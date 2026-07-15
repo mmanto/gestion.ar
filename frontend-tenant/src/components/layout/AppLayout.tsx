@@ -3,8 +3,6 @@ import { useTemplate } from '../../hooks/useTemplate'
 import { TEMPLATE_MAP } from '../../templates/registry'
 import { MobileShell } from './MobileShell'
 
-declare const __TARGET__: 'staff' | 'client'
-
 interface AppLayoutProps {
   children: ReactNode
 }
@@ -12,12 +10,12 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   const { templateId } = useTemplate()
 
-  // Staff mobile app: bottom tabs instead of sidebar
-  if (__TARGET__ === 'staff') {
+  // App nativa (Capacitor): bottom tabs en vez de sidebar
+  if (__CAPACITOR__) {
     return <MobileShell>{children}</MobileShell>
   }
 
-  // Web/PWA: template-based layout (sidebar + navbar)
+  // Web/PWA: layout basado en template (sidebar + navbar)
   const Template = TEMPLATE_MAP[templateId].AppLayout
   return <Template>{children}</Template>
 }

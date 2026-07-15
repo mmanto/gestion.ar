@@ -324,10 +324,22 @@ cmd_clean() {
 # ── Android build (host, no Docker) ────────────────────────────────────────
 
 cmd_build_android() {
-  local target="${1:-}"
-  if [[ -z "$target" || ! "$target" =~ ^(staff|client|both)$ ]]; then
-    echo -e "${RED}ERROR: target invalido '${target}'. Usar: staff | client | both${NC}"
+  local target="${1:-staff}"
+  local api_url="${2:-}"
+
+  # Si el target se paso como "staff http://..." o "client http://...", parsear
+  if [[ "$target" =~ ^(staff|client|both)$ ]] && [[ -n "${2:-}" && ! "$2" =~ ^(staff|client|both)$ ]]; then
+    api_url="$2"
+  elif [[ ! "$target" =~ ^(staff|client|both)$ ]]; then
+    echo -e "${RED}ERROR: target invalido '${target}'. Usar: staff | client | both [api-url]${NC}"
     return 1
+  fi
+
+  # Default API URL para emulador Android (10.0.2.2 = host localhost)
+  if [[ -z "$api_url" ]]; then
+    api_url="http://10.0.2.2:8000"
+    echo -e "${YELLOW}==> API URL no especificada, usando default para emulador: ${api_url}${NC}"
+    echo "    Para dispositivo fisico o prod: ./stack.prod build-android staff https://api.tudominio.com"
   fi
 
   local missing=()
@@ -359,10 +371,11 @@ cmd_build_android() {
 
   build_one() {
     local t="$1"
-    echo -e "${CYAN}── Build: ${GREEN}${t}${CYAN} ──${NC}"
+    local url="$2"
+    echo -e "${CYAN}── Build: ${GREEN}${t}${CYAN} (API: ${url}) ──${NC}"
 
-    echo "  [1/3] npm run build:${t} ..."
-    (cd "$project_dir" && npm run "build:${t}") || {
+    echo "  [1/3] VITE_API_URL=${url} npm run build:${t} ..."
+    (cd "$project_dir" && VITE_API_URL="$url" npm run "build:${t}") || {
       echo -e "${RED}  ERROR: npm run build:${t} fallo${NC}"
       return 1
     }
@@ -387,13 +400,15 @@ cmd_build_android() {
   }
 
   if [[ "$target" == "both" ]]; then
-    build_one staff && build_one client
+    build_one staff "$api_url" && build_one client "$api_url"
   else
-    build_one "$target"
+    build_one "$target" "$api_url"
   fi
 
   echo ""
   echo -e "${GREEN}==> Build Android completo.${NC}"
+  echo "  API URL horneada: ${api_url}"
+  echo "  APKs en: $project_dir/android/app/build/outputs/apk/debug/"
   ls -lh "$project_dir/android/app/build/outputs/apk/debug/"*.apk 2>/dev/null || true
 }
 # ── Entrypoint ────────────────────────────────────────────────────────────
@@ -416,13 +431,13 @@ case "$CMD" in
   status)        cmd_status ;;
   shell)         cmd_shell "${1:-}" ;;
   clean)         cmd_clean "${1:-light}" ;;
-  build-android) cmd_build_android "${1:-staff}" ;;
+  build-android) cmd_build_android "${1:-staff}" "${2:-}" ;;
   -h|--help|help)
     echo "Uso: $0 [up|down|restart|rebuild|logs|ps|status|shell|clean|build-android] [servicio|target]"
     echo "Sin parametros muestra el menu interactivo."
     echo "Tenants: ${TENANTS[*]} (usa el nombre corto: ius, erma)"
     echo "clean: sin flag | --images"
-    echo "build-android: staff | client | both (default: staff)"
+    echo "build-android: staff | client | both [api-url] (default emulador: http://10.0.2.2:8000)"
     ;;
   *)             echo -e "${RED}Comando desconocido: $CMD${NC}"; menu ;;
 esac

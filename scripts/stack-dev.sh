@@ -14,7 +14,7 @@
 #   restart       restart de un servicio o de todo
 #   rebuild       down + build + up (reconstruye imagenes y levanta)
 #   logs          ver logs de un servicio (requiere nombre de servicio)
-#   ps            listar contenedores y su estado
+#   build-android build APK debug (staff|client|both [api-url])
 #   status        mostrar estado + health checks
 #   shell         abrir shell en un servicio (requiere nombre de servicio)
 #   build-android build APK debug (staff|client|both) desde frontend-tenant
@@ -24,9 +24,9 @@
 #   ./stack.dev up                      # levantar todo
 #   ./stack.dev logs app                # logs del backend
 #   ./stack.dev restart frontend        # restart del frontend
-#   ./stack.dev logs ius                # logs del tenant ius
-#   ./stack.dev shell erma              # shell en tenant erma
-#   ./stack.dev build-android staff     # APK staff
+#   ./stack.dev build-android staff                # APK para emulador (10.0.2.2)
+#   ./stack.dev build-android staff http://192.168.1.100:8000  # dispositivo fisico
+#   ./stack.dev build-android client               # APK client para emulador
 #   ./stack.dev clean                   # limpiar recursos
 #   docker network create traefik_public (una sola vez)
 #   /etc/hosts con: 127.0.0.1 erma.com.test ius.mx.test
@@ -274,10 +274,22 @@ cmd_shell() {
 # ── Android build (host, no Docker) ────────────────────────────────────────
 
 cmd_build_android() {
-  local target="${1:-}"
-  if [[ -z "$target" || ! "$target" =~ ^(staff|client|both)$ ]]; then
-    echo -e "${RED}ERROR: target invalido '${target}'. Usar: staff | client | both${NC}"
+  local target="${1:-staff}"
+  local api_url="${2:-}"
+
+  # Si el target se paso como "staff http://..." o "client http://...", parsear
+  if [[ "$target" =~ ^(staff|client|both)$ ]] && [[ -n "${2:-}" && ! "$2" =~ ^(staff|client|both)$ ]]; then
+    api_url="$2"
+  elif [[ ! "$target" =~ ^(staff|client|both)$ ]]; then
+    echo -e "${RED}ERROR: target invalido '${target}'. Usar: staff | client | both [api-url]${NC}"
     return 1
+  fi
+
+  # Default API URL para emulador Android (10.0.2.2 = host localhost)
+  if [[ -z "$api_url" ]]; then
+    api_url="http://10.0.2.2:8000"
+    echo -e "${YELLOW}==> API URL no especificada, usando default para emulador: ${api_url}${NC}"
+    echo "    Para dispositivo fisico o prod: ./stack.dev build-android staff https://api.tudominio.com"
   fi
 
   # Validar requisitos
@@ -302,7 +314,6 @@ cmd_build_android() {
     return 1
   fi
 
-  # ./gradlew en el proyecto Capacitor
   local gradlew="$project_dir/android/gradlew"
   if [[ ! -f "$gradlew" ]]; then
     echo -e "${RED}ERROR: $gradlew no encontrado. Ejecuta 'npx cap add android' primero.${NC}"
@@ -312,10 +323,11 @@ cmd_build_android() {
 
   build_one() {
     local t="$1"
-    echo -e "${CYAN}── Build: ${GREEN}${t}${CYAN} ──${NC}"
+    local url="$2"
+    echo -e "${CYAN}── Build: ${GREEN}${t}${CYAN} (API: ${url}) ──${NC}"
 
-    echo "  [1/3] npm run build:${t} ..."
-    (cd "$project_dir" && npm run "build:${t}") || {
+    echo "  [1/3] VITE_API_URL=${url} npm run build:${t} ..."
+    (cd "$project_dir" && VITE_API_URL="$url" npm run "build:${t}") || {
       echo -e "${RED}  ERROR: npm run build:${t} fallo${NC}"
       return 1
     }
@@ -340,13 +352,14 @@ cmd_build_android() {
   }
 
   if [[ "$target" == "both" ]]; then
-    build_one staff && build_one client
+    build_one staff "$api_url" && build_one client "$api_url"
   else
-    build_one "$target"
+    build_one "$target" "$api_url"
   fi
 
   echo ""
   echo -e "${GREEN}==> Build Android completo.${NC}"
+  echo "  API URL horneada: ${api_url}"
   echo "  APKs en: $project_dir/android/app/build/outputs/apk/debug/"
   ls -lh "$project_dir/android/app/build/outputs/apk/debug/"*.apk 2>/dev/null || true
 }
@@ -427,10 +440,6 @@ cmd_clean() {
 
       # node_modules (solo los montados en volumen, no los del host)
       echo "  [6/6] Borrando node_modules (volume)..."
-      docker volume rm gestionar_frontend_node_modules 2>/dev/null && echo "    - frontend_node_modules" || true
-
-      echo ""
-      echo -e "${GREEN}==> Limpieza profunda completa.${NC}"
       echo "  Para volver a empezar: ./stack.dev rebuild"
       ;;
 
@@ -492,7 +501,7 @@ case "$CMD" in
   ps)            cmd_ps ;;
   status)        cmd_status ;;
   shell)         cmd_shell "${1:-}" ;;
-  build-android) cmd_build_android "${1:-staff}" ;;
+  build-android) cmd_build_android "${1:-staff}" "${2:-}" ;;
   clean)         cmd_clean "${1:-light}" ;;
   -h|--help|help)
     echo "Uso: $0 [up|down|restart|rebuild|logs|ps|status|shell|build-android|clean] [servicio|target]"
