@@ -21,27 +21,18 @@ const proxyConfig = {
 }
 
 // Puerto 5174 (distinto del frontend-admin en 5173) para poder correr ambas
-
-// Construir para Capacitor (app nativa)? El build de Capacitor necesita
-// base: './' (rutas relativas, carga desde file://). El build PWA/web
-// sigue usando base: '/'.
-const isCapacitor = process.env.CAPACITOR_BUILD === '1'
-// VITE_TARGET define qué shell cargar: "staff" | "client"
-const target = process.env.VITE_TARGET || 'staff'
-const outDir = `dist-${target}`
-
+// apps en paralelo durante desarrollo local.
 export default defineConfig({
   plugins: [react()],
-  base: isCapacitor ? './' : '/',
+  // .env.dev / .env.prod viven en la raíz del repo (npm run dev/build pasan
+  // --mode dev / --mode prod).
   envDir: path.resolve(__dirname, '..'),
-  define: {
-    __TARGET__: JSON.stringify(target),
-    __CAPACITOR__: JSON.stringify(isCapacitor),
-  },
   server: {
     host: '0.0.0.0',
     port: 5174,
-    hmr: { clientPort: 5174 },
+    hmr: {
+      clientPort: 5174,
+    },
     allowedHosts: true,
     proxy: proxyConfig,
   },
@@ -50,8 +41,5 @@ export default defineConfig({
     port: 4174,
     allowedHosts: true,
     proxy: proxyConfig,
-  },
-  build: {
-    outDir,
   },
 })
