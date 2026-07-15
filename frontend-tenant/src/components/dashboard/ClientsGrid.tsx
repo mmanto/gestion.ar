@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { MessageCircle, Users } from 'lucide-react';
+import { FileText, MessageCircle, MessageSquare, Users } from 'lucide-react';
 import { Card } from '../common/Card';
 import { EmptyState } from '../common/EmptyState';
 import { Drawer } from '../common/Drawer';
@@ -8,10 +8,9 @@ import { SemaforoBadge } from '../common/SemaforoBadge';
 import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '../common/Table';
 import MessagesList from '../messages/MessagesList';
 import clientsService from '../../services/clients.service';
-import botsService from '../../services/bots.service';
 import type { Client } from '../../types/client.types';
-import type { TenantBotSummary } from '../../types/bot.types';
 import type { ConversationMessage } from '../../types/conversation.types';
+import { getWhatsappNumber, openWhatsapp } from '../../utils/whatsapp';
 
 const sourceColors: Record<string, string> = {
   whatsapp: 'bg-green-200 text-green-950',
@@ -22,7 +21,6 @@ const sourceColors: Record<string, string> = {
 
 const ClientsGrid = () => {
   const [clients, setClients] = useState<Client[]>([]);
-  const [botsMap, setBotsMap] = useState<Record<string, TenantBotSummary>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
@@ -33,15 +31,9 @@ const ClientsGrid = () => {
   const [conversationLoading, setConversationLoading] = useState(false);
   const [conversationError, setConversationError] = useState<string | null>(null);
 
-  useEffect(() => {
-    botsService.getBots({ limit: 100 })
-      .then((r) => {
-        const map: Record<string, TenantBotSummary> = {};
-        r.bots.forEach((b) => { map[b.bot_id] = b; });
-        setBotsMap(map);
-      })
-      .catch((err) => console.error('Error cargando bots:', err));
-  }, []);
+  // Drawer de resumen ejecutivo
+  const [summaryClient, setSummaryClient] = useState<Client | null>(null);
+  const [summaryDrawerOpen, setSummaryDrawerOpen] = useState(false);
 
   const fetchClients = useCallback(async () => {
     try {
@@ -62,6 +54,16 @@ const ClientsGrid = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setAppliedSearch(search);
+  };
+
+  const handleOpenWhatsapp = (client: Client) => {
+    const number = getWhatsappNumber(client);
+    if (number) openWhatsapp(number);
+  };
+
+  const handleOpenSummary = (client: Client) => {
+    setSummaryClient(client);
+    setSummaryDrawerOpen(true);
   };
 
   const handleOpenConversation = async (client: Client) => {
@@ -119,7 +121,6 @@ const ClientsGrid = () => {
             <tr>
               <TableHeaderCell>Estado</TableHeaderCell>
               <TableHeaderCell>Contacto</TableHeaderCell>
-              <TableHeaderCell>Agente</TableHeaderCell>
               <TableHeaderCell>Canal</TableHeaderCell>
               <TableHeaderCell>Último contacto</TableHeaderCell>
               <TableHeaderCell align="right">Acciones</TableHeaderCell>
@@ -143,11 +144,6 @@ const ClientsGrid = () => {
                       <p className="text-base text-gray-800">{client.phone}</p>
                     )}
                   </div>
-                </TableCell>
-                <TableCell>
-                  <span className="text-base text-gray-800">
-                    {botsMap[client.bot_id]?.name || client.bot_id}
-                  </span>
                 </TableCell>
                 <TableCell>
                   <span
@@ -174,6 +170,22 @@ const ClientsGrid = () => {
                     >
                       <MessageCircle className="w-4 h-4" />
                     </button>
+                    <button
+                      onClick={() => handleOpenWhatsapp(client)}
+                      title={getWhatsappNumber(client) ? 'Abrir WhatsApp' : 'Sin número de WhatsApp'}
+                      disabled={!getWhatsappNumber(client)}
+                      className="p-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-green-50"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleOpenSummary(client)}
+                      title={client.notas ? 'Ver resumen ejecutivo' : 'Sin resumen ejecutivo todavía'}
+                      disabled={!client.notas}
+                      className="p-1.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-amber-50"
+                    >
+                      <FileText className="w-4 h-4" />
+                    </button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -198,6 +210,16 @@ const ClientsGrid = () => {
         ) : (
           <MessagesList messages={conversationMessages} />
         )}
+      </Drawer>
+
+      <Drawer
+        open={summaryDrawerOpen}
+        onClose={() => setSummaryDrawerOpen(false)}
+        title="Resumen ejecutivo"
+      >
+        <div className="p-6">
+          <p className="text-base text-gray-900 whitespace-pre-wrap">{summaryClient?.notas}</p>
+        </div>
       </Drawer>
     </div>
   );

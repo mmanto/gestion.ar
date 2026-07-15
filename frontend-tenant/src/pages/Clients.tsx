@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Users, MessageCircle } from 'lucide-react';
+import { Users, MessageCircle, MessageSquare, FileText } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { LoadingPage } from '../components/common/Spinner';
 import { PageHeader } from '../components/common/PageHeader';
@@ -12,10 +12,9 @@ import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } fro
 import MessagesList from '../components/messages/MessagesList';
 import { useAuth } from '../hooks/useAuth';
 import clientsService from '../services/clients.service';
-import botsService from '../services/bots.service';
 import type { Client, ClientStatus, ClientFilters } from '../types/client.types';
-import type { TenantBotSummary } from '../types/bot.types';
 import type { ConversationMessage } from '../types/conversation.types';
+import { getWhatsappNumber, openWhatsapp } from '../utils/whatsapp';
 
 const sourceColors: Record<string, string> = {
   whatsapp: 'bg-green-200 text-green-950',
@@ -28,7 +27,6 @@ export const Clients = () => {
   const { user } = useAuth();
   const canBlock = user?.role === 'admin';
   const [clients, setClients] = useState<Client[]>([]);
-  const [botsMap, setBotsMap] = useState<Record<string, TenantBotSummary>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
@@ -44,20 +42,9 @@ export const Clients = () => {
   const [conversationLoading, setConversationLoading] = useState(false);
   const [conversationError, setConversationError] = useState<string | null>(null);
 
-  // Carga bots para mostrar nombre del bot junto a cada cliente
-  useEffect(() => {
-    const fetchBots = async () => {
-      try {
-        const data = await botsService.getBots({ limit: 100 });
-        const map: Record<string, TenantBotSummary> = {};
-        data.bots.forEach((b) => { map[b.bot_id] = b; });
-        setBotsMap(map);
-      } catch (err) {
-        console.error('Error fetching bots:', err);
-      }
-    };
-    fetchBots();
-  }, []);
+  // Drawer de resumen ejecutivo
+  const [summaryClient, setSummaryClient] = useState<Client | null>(null);
+  const [summaryDrawerOpen, setSummaryDrawerOpen] = useState(false);
 
   const fetchClients = useCallback(async () => {
     try {
@@ -126,6 +113,16 @@ export const Clients = () => {
     setDrawerOpen(false);
   };
 
+  const handleOpenWhatsapp = (client: Client) => {
+    const number = getWhatsappNumber(client);
+    if (number) openWhatsapp(number);
+  };
+
+  const handleOpenSummary = (client: Client) => {
+    setSummaryClient(client);
+    setSummaryDrawerOpen(true);
+  };
+
   const handleStatusFilter = (newStatus: ClientStatus | '') => {
     setPage(1);
     setFilters((prev) => ({ ...prev, status: newStatus }));
@@ -179,7 +176,7 @@ export const Clients = () => {
             <Table>
               <TableBody>
                 <tr>
-                  <td colSpan={7}>
+                  <td colSpan={6}>
                     <EmptyState
                       icon={<Users className="w-8 h-8 text-gray-800" />}
                       title="No hay contactos todavía"
@@ -197,7 +194,6 @@ export const Clients = () => {
                 <tr>
                   <TableHeaderCell>Estado</TableHeaderCell>
                   <TableHeaderCell>Contacto</TableHeaderCell>
-                  <TableHeaderCell>Agente</TableHeaderCell>
                   <TableHeaderCell>Canal</TableHeaderCell>
                   <TableHeaderCell>Conversaciones</TableHeaderCell>
                   <TableHeaderCell>Último contacto</TableHeaderCell>
@@ -222,11 +218,6 @@ export const Clients = () => {
                           <p className="text-base text-gray-800">{client.phone}</p>
                         )}
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-base text-gray-800">
-                        {botsMap[client.bot_id]?.name || client.bot_id}
-                      </span>
                     </TableCell>
                     <TableCell>
                       <span
@@ -255,6 +246,22 @@ export const Clients = () => {
                           className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
                         >
                           <MessageCircle className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleOpenWhatsapp(client)}
+                          title={getWhatsappNumber(client) ? 'Abrir WhatsApp' : 'Sin número de WhatsApp'}
+                          disabled={!getWhatsappNumber(client)}
+                          className="p-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-green-50"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleOpenSummary(client)}
+                          title={client.notas ? 'Ver resumen ejecutivo' : 'Sin resumen ejecutivo todavía'}
+                          disabled={!client.notas}
+                          className="p-1.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-amber-50"
+                        >
+                          <FileText className="w-4 h-4" />
                         </button>
                         {canBlock && (
                           <Button
@@ -312,6 +319,16 @@ export const Clients = () => {
           ) : (
             <MessagesList messages={conversationMessages} />
           )}
+        </Drawer>
+
+        <Drawer
+          open={summaryDrawerOpen}
+          onClose={() => setSummaryDrawerOpen(false)}
+          title="Resumen ejecutivo"
+        >
+          <div className="p-6">
+            <p className="text-base text-gray-900 whitespace-pre-wrap">{summaryClient?.notas}</p>
+          </div>
         </Drawer>
     </AppLayout>
   );
