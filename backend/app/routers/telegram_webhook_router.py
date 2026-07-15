@@ -95,6 +95,7 @@ async def handle_telegram_channel_webhook(
                     metadata={"first_name": message_data.get("first_name")},
                 )
                 message_data["client_id"] = client.client_id
+                message_data["client"] = client
                 message_data["bot_id"] = channel.bot_id
             except Exception as e:
                 logger.warning(f"Error registrando cliente Telegram: {e}")

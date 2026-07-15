@@ -29,7 +29,7 @@ from app.services.module_service import get_module_service
 from app.services.tenant_service import get_tenant_service
 from app.services.appointment_booking_service import BookingState, detects_booking_intent, start_booking
 from app.services.prospect_auto_qualify_service import QUALIFICATION_TOOL_SPEC, build_qualification_tool_executor
-from app.models.client import ClientUpdate
+from app.models.client import Client, ClientUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +130,7 @@ async def websocket_chat(websocket: WebSocket, bot_id: str, device_id: Optional[
     # Usar device_id estable del cliente si lo envía, o generar uno nuevo
     session_id = device_id if device_id else str(uuid.uuid4())
     web_client_id: Optional[str] = None
+    web_client: Optional[Client] = None
     try:
         client_service = get_client_service()
         web_client = await client_service.get_or_create_client(
@@ -246,12 +247,11 @@ async def websocket_chat(websocket: WebSocket, bot_id: str, device_id: Optional[
 
                     # Tool calling de calificación por semáforo
                     qualify_tools, qualify_executor = (None, None)
-                    if bot.config.auto_qualify_colors:
+                    if bot.config.auto_qualify_colors and web_client:
                         qualify_tools = [QUALIFICATION_TOOL_SPEC]
                         qualify_executor = build_qualification_tool_executor(
-                            tenant_id=bot.tenant_id,
+                            client=web_client,
                             canal="web",
-                            telefono=None,
                             allowed_colors=bot.config.auto_qualify_colors,
                         )
 
@@ -392,6 +392,7 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
     # Usar device_id estable del cliente si lo envía, o generar uno nuevo
     session_id = device_id if device_id else str(uuid.uuid4())
     channel_client_id: Optional[str] = None
+    channel_client: Optional[Client] = None
     try:
         client_service = get_client_service()
         channel_client = await client_service.get_or_create_client(
@@ -592,12 +593,11 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
                         )
 
                     qualify_tools, qualify_executor = (None, None)
-                    if bot.config.auto_qualify_colors:
+                    if bot.config.auto_qualify_colors and channel_client:
                         qualify_tools = [QUALIFICATION_TOOL_SPEC]
                         qualify_executor = build_qualification_tool_executor(
-                            tenant_id=bot.tenant_id,
+                            client=channel_client,
                             canal=channel_source,
-                            telefono=None,
                             allowed_colors=bot.config.auto_qualify_colors,
                         )
 

@@ -85,7 +85,7 @@ class BotConfig(BaseModel):
         default_factory=list,
         description=(
             "Colores del semáforo (ver ius_config.traffic_light/priority) para los que "
-            "el agente crea el Prospect automáticamente al determinarlos en la "
+            "el agente califica al Client automáticamente al determinarlos en la "
             "conversación, vía tool calling. Vacío = deshabilitado. Específico de bots "
             "tipo IUS; en bots sin ese concepto de semáforo simplemente no tiene efecto."
         ),

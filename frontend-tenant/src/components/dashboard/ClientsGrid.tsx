@@ -3,6 +3,8 @@ import { MessageCircle, Users } from 'lucide-react';
 import { Card } from '../common/Card';
 import { EmptyState } from '../common/EmptyState';
 import { Drawer } from '../common/Drawer';
+import { Button } from '../common/Button';
+import { SemaforoBadge } from '../common/SemaforoBadge';
 import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '../common/Table';
 import MessagesList from '../messages/MessagesList';
 import clientsService from '../../services/clients.service';
@@ -10,20 +12,6 @@ import botsService from '../../services/bots.service';
 import type { Client, ClientStatus } from '../../types/client.types';
 import type { TenantBotSummary } from '../../types/bot.types';
 import type { ConversationMessage } from '../../types/conversation.types';
-
-const ScoreBadge = ({ score }: { score: number }) => {
-  const color =
-    score >= 70
-      ? 'bg-green-200 text-green-950'
-      : score >= 40
-      ? 'bg-yellow-200 text-yellow-950'
-      : 'bg-gray-200 text-gray-900';
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-base font-semibold ${color}`}>
-      {score.toFixed(1)}
-    </span>
-  );
-};
 
 const statusColors: Record<ClientStatus, string> = {
   active: 'bg-green-200 text-green-950',
@@ -48,6 +36,8 @@ const ClientsGrid = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [botsMap, setBotsMap] = useState<Record<string, TenantBotSummary>>({});
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
 
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -68,18 +58,23 @@ const ClientsGrid = () => {
   const fetchClients = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await clientsService.getAllClients({ limit: 20 });
+      const response = await clientsService.getAllClients({ limit: 20, search: appliedSearch });
       setClients(response.clients);
     } catch (err) {
-      console.error('Error cargando prospectos:', err);
+      console.error('Error cargando clientes:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [appliedSearch]);
 
   useEffect(() => {
     fetchClients();
   }, [fetchClients]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAppliedSearch(search);
+  };
 
   const handleOpenConversation = async (client: Client) => {
     setSelectedClient(client);
@@ -101,17 +96,26 @@ const ClientsGrid = () => {
     }
   };
 
-  if (loading && clients.length === 0) {
-    return (
-      <Card className="mt-6" shadow="none">
-        <p className="text-sm text-gray-700">Cargando prospectos...</p>
-      </Card>
-    );
-  }
-
   return (
     <div className="mt-6">
-      {clients.length === 0 ? (
+      <form onSubmit={handleSearch} className="flex gap-2 mb-6">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar por nombre, teléfono o email..."
+          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+        />
+        <Button type="submit" variant="primary">
+          Buscar
+        </Button>
+      </form>
+
+      {loading && clients.length === 0 ? (
+        <Card shadow="none">
+          <p className="text-sm text-gray-700">Cargando clientes...</p>
+        </Card>
+      ) : clients.length === 0 ? (
         <Card shadow="none">
           <EmptyState
             icon={<Users className="w-8 h-8 text-gray-800" />}
@@ -125,7 +129,7 @@ const ClientsGrid = () => {
         <Table>
           <TableHead>
             <tr>
-              <TableHeaderCell>Score</TableHeaderCell>
+              <TableHeaderCell>Calificación</TableHeaderCell>
               <TableHeaderCell>Contacto</TableHeaderCell>
               <TableHeaderCell>Agente</TableHeaderCell>
               <TableHeaderCell>Canal</TableHeaderCell>
@@ -138,7 +142,7 @@ const ClientsGrid = () => {
             {clients.map((client) => (
               <TableRow key={client.client_id}>
                 <TableCell>
-                  <ScoreBadge score={client.score ?? 0} />
+                  <SemaforoBadge color={client.color_semaforo} estado={client.estado} />
                 </TableCell>
                 <TableCell>
                   <div>

@@ -112,8 +112,8 @@ async def update_custom_facts(
 
 @router.get("/bots/{bot_id}/training/auto-qualify-colors", response_model=dict)
 async def get_auto_qualify_colors(bot_id: str, current_user: User = Depends(require_role("admin", "operativo"))):
-    """Colores del semáforo habilitados para conversión automática (crear Prospect
-    solo, ver prospect_auto_qualify_service.py) — específico de bots tipo IUS."""
+    """Colores del semáforo habilitados para calificación automática del Client
+    (ver prospect_auto_qualify_service.py) — específico de bots tipo IUS."""
     bot = await _verify_tenant_bot(bot_id, current_user)
     return {"success": True, "auto_qualify_colors": bot.config.auto_qualify_colors}
 
@@ -124,7 +124,7 @@ async def update_auto_qualify_colors(
     body: AutoQualifyColorsUpdate,
     current_user: User = Depends(require_role("admin", "operativo")),
 ):
-    """Edita los colores del semáforo para los que el agente crea el Prospect solo."""
+    """Edita los colores del semáforo para los que el agente califica el Client solo."""
     bot = await _verify_tenant_bot(bot_id, current_user)
 
     bot_service = get_bot_service()

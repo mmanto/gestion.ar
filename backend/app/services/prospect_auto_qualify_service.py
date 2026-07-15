@@ -8,17 +8,21 @@ tiene forma de "avisarle" a código Python qué color determinó salvo mediante
 tool calling: esta tool es el puente.
 
 La tool se ofrece SIEMPRE que el bot tenga al menos un color habilitado
-(bot.config.auto_qualify_colors no vacío), pero el executor solo crea el
-Prospect si el color reportado está efectivamente en esa lista — así el
+(bot.config.auto_qualify_colors no vacío), pero el executor solo aplica la
+calificación si el color reportado está efectivamente en esa lista — así el
 modelo puede seguir clasificando y llamando la tool sin que el prompt tenga
 que replicar la política de "qué colores están habilitados".
+
+La calificación se guarda sobre el Client ya resuelto de la conversación (ver
+docs/dev/DECISIONS.md sobre la unificación de Prospect en Client) — no crea
+un registro nuevo desconectado.
 """
 
 import asyncio
-from typing import Callable, List, Optional
+from typing import Callable, List
 
-from app.models.prospect import ProspectCreate
-from app.services.prospect_service import get_prospect_service
+from app.models.client import Client, ClientUpdate
+from app.services.client_service import get_client_service
 
 QUALIFICATION_TOOL_NAME = "registrar_calificacion_prospecto"
 
@@ -63,9 +67,8 @@ QUALIFICATION_TOOL_SPEC = {
 
 
 def build_qualification_tool_executor(
-    tenant_id: str,
+    client: Client,
     canal: str,
-    telefono: Optional[str],
     allowed_colors: List[str],
 ) -> Callable[[str, dict], dict]:
     """
@@ -73,7 +76,7 @@ def build_qualification_tool_executor(
 
     Corre dentro del thread de asyncio.to_thread en el que vive sync_generate
     (sin event loop propio) — por eso usa asyncio.run() para invocar el
-    método async de ProspectService, patrón estándar para puentear async
+    método async de ClientService, patrón estándar para puentear async
     desde un thread síncrono.
     """
 
@@ -95,17 +98,16 @@ def build_qualification_tool_executor(
                 "reason": f"El color '{color}' no está habilitado para conversión automática en este bot.",
             }
 
-        prospect_data = ProspectCreate(
-            estado="nuevo",
-            nombre=nombre,
-            canal=canal,
-            whatsapp=telefono if canal == "whatsapp" else None,
-            email=args.get("email"),
+        email = args.get("email")
+        client_update = ClientUpdate(
             color_semaforo=color,
             notas=args.get("resumen_caso"),
+            # No pisar datos ya cargados por el cliente en la conversación.
+            name=nombre if not client.name else None,
+            email=email if (email and not client.email) else None,
         )
 
-        prospect = asyncio.run(get_prospect_service().create_prospect(tenant_id, prospect_data))
-        return {"registered": True, "prospect_id": prospect.prospect_id}
+        asyncio.run(get_client_service().update_client(client.client_id, client_update))
+        return {"registered": True, "client_id": client.client_id}
 
     return _executor

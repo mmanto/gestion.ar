@@ -190,6 +190,7 @@ async def handle_telegram_text_message(telegram, message_data: Dict) -> Dict:
         # legacy de un solo tenant (sin bot_id) queda en None: sin RAG y
         # con el prompt genérico, igual que el comportamiento histórico.
         bot_id = message_data.get("bot_id")
+        client = message_data.get("client")
         bot = await get_bot_service().get_bot(bot_id) if bot_id else None
 
         # Get RAG context, exclusivo de este bot
@@ -201,12 +202,11 @@ async def handle_telegram_text_message(telegram, message_data: Dict) -> Dict:
         # prospect_auto_qualify_service.py) — solo si el bot tiene al menos
         # un color habilitado para conversión automática.
         qualify_tools, qualify_executor = (None, None)
-        if bot and bot.config.auto_qualify_colors:
+        if bot and bot.config.auto_qualify_colors and client:
             qualify_tools = [QUALIFICATION_TOOL_SPEC]
             qualify_executor = build_qualification_tool_executor(
-                tenant_id=bot.tenant_id,
+                client=client,
                 canal="telegram",
-                telefono=str(chat_id),
                 allowed_colors=bot.config.auto_qualify_colors,
             )
 

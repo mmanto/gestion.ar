@@ -156,7 +156,7 @@ const TrainingSection = () => {
           <Card shadow="none" className="mb-6">
             <h3 className="text-sm font-semibold text-gray-900 mb-1">Calificación automática (semáforo)</h3>
             <p className="text-sm text-gray-700 mb-3">
-              Elegí para qué resultados el agente crea el prospecto de forma automática al
+              Elegí para qué resultados el agente califica al cliente de forma automática al
               determinarlos en la conversación. Podés elegir uno, dos o los tres.
             </p>
             <div className="flex flex-wrap gap-4">

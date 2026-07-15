@@ -2,8 +2,11 @@
  * Client types - TypeScript interfaces for Client entity
  */
 
+import type { SemaforoColor } from '../services/modules.service';
+
 export type ClientSource = 'whatsapp' | 'telegram' | 'web' | 'manual';
 export type ClientStatus = 'active' | 'blocked' | 'archived';
+export type { SemaforoColor };
 
 export interface Client {
   client_id: string;
@@ -21,6 +24,9 @@ export interface Client {
   total_tokens_used: number;
   score: number;
   metadata?: Record<string, unknown>;
+  estado: string;
+  color_semaforo?: SemaforoColor | null;
+  notas?: string | null;
 }
 
 export interface ClientCreate {
@@ -39,6 +45,9 @@ export interface ClientUpdate {
   status?: ClientStatus;
   score?: number;
   metadata?: Record<string, unknown>;
+  estado?: string;
+  color_semaforo?: SemaforoColor | null;
+  notas?: string | null;
 }
 
 export interface ClientsResponse {

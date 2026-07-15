@@ -227,6 +227,14 @@ class Client(Base):
     first_contact_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     last_contact_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     metadata_ = Column("metadata", JSONB, nullable=True)
+    # Embudo de ventas (ex-Prospect, ver docs/dev/DECISIONS.md) — estado es
+    # libre (nuevo/contactado/calificado/descartado), color_semaforo y notas
+    # sólo se completan cuando el agente califica automáticamente el caso
+    # (tool calling, ver prospect_auto_qualify_service.py) o alguien lo carga
+    # a mano.
+    estado = Column(Text, nullable=False, default="nuevo")
+    color_semaforo = Column(Text, nullable=True)
+    notas = Column(Text, nullable=True)
 
     __table_args__ = (
         Index("ix_clients_bot_id_external_id", "bot_id", "external_id", unique=True),
@@ -234,38 +242,9 @@ class Client(Base):
         Index("ix_clients_bot_id_status", "bot_id", "status"),
         Index("ix_clients_last_contact_at", "last_contact_at"),
         Index("ix_clients_score", "score"),
-    )
-
-
-class Prospect(Base):
-    """Entidad propia de prospección (grilla de Escritorio) — conceptualmente
-    distinta de Client (contacto/lead que ya interactuó con un bot): por ahora
-    comparte forma con Client pero no tiene bot_id ni métricas de conversación,
-    y se espera que evolucione con campos propios de embudo de ventas."""
-
-    __tablename__ = "prospects"
-
-    prospect_id = Column(Text, primary_key=True)
-    tenant_id = Column(Text, ForeignKey("tenants.tenant_id"), nullable=False)
-    estado = Column(Text, nullable=False, default="nuevo")
-    nombre = Column(Text, nullable=False)
-    fecha_interaccion = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    canal = Column(Text, nullable=True)
-    whatsapp = Column(Text, nullable=True)
-    email = Column(Text, nullable=True)
-    # Sólo se completan en prospectos creados automáticamente por el agente
-    # (tool calling de calificación por semáforo, ver
-    # prospect_auto_qualify_service.py) — null en altas manuales.
-    color_semaforo = Column(Text, nullable=True)
-    notas = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-
-    __table_args__ = (
-        Index("ix_prospects_tenant_id", "tenant_id"),
-        Index("ix_prospects_fecha_interaccion", "fecha_interaccion"),
         CheckConstraint(
             "color_semaforo IS NULL OR color_semaforo IN ('verde', 'amarillo', 'rojo')",
-            name="ck_prospects_color_semaforo",
+            name="ck_clients_color_semaforo",
         ),
     )
 

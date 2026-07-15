@@ -2,9 +2,11 @@
 Client models - Pydantic models for Client entity
 """
 
-from typing import Optional, Dict
+from typing import Optional, Dict, Literal
 from pydantic import BaseModel, Field
 from enum import Enum
+
+SemaforoColor = Literal["verde", "amarillo", "rojo"]
 
 
 class ClientSource(str, Enum):
@@ -45,6 +47,9 @@ class ClientUpdate(BaseModel):
     status: Optional[ClientStatus] = None
     score: Optional[float] = None
     metadata: Optional[Dict] = None
+    estado: Optional[str] = None
+    color_semaforo: Optional[SemaforoColor] = None
+    notas: Optional[str] = None
 
 
 class Client(ClientBase):
@@ -61,6 +66,9 @@ class Client(ClientBase):
     total_tokens_used: int = 0
     score: float = 0.0
     metadata: Optional[Dict] = None
+    estado: str = "nuevo"
+    color_semaforo: Optional[SemaforoColor] = None
+    notas: Optional[str] = None
 
     class Config:
         json_schema_extra = {

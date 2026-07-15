@@ -51,6 +51,9 @@ def _to_client(row: ClientModel) -> Client:
         total_tokens_used=row.total_tokens_used,
         score=float(row.score),
         metadata=row.metadata_,
+        estado=row.estado,
+        color_semaforo=row.color_semaforo,
+        notas=row.notas,
     )
 
 

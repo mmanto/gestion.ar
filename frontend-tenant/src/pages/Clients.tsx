@@ -7,6 +7,7 @@ import { Alert } from '../components/common/Alert';
 import { EmptyState } from '../components/common/EmptyState';
 import { Button } from '../components/common/Button';
 import { Drawer } from '../components/common/Drawer';
+import { SemaforoBadge } from '../components/common/SemaforoBadge';
 import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '../components/common/Table';
 import MessagesList from '../components/messages/MessagesList';
 import { useAuth } from '../hooks/useAuth';
@@ -15,20 +16,6 @@ import botsService from '../services/bots.service';
 import type { Client, ClientStatus, ClientFilters } from '../types/client.types';
 import type { TenantBotSummary } from '../types/bot.types';
 import type { ConversationMessage } from '../types/conversation.types';
-
-const ScoreBadge = ({ score }: { score: number }) => {
-  const color =
-    score >= 70
-      ? 'bg-green-200 text-green-950'
-      : score >= 40
-      ? 'bg-yellow-200 text-yellow-950'
-      : 'bg-gray-200 text-gray-900';
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-base font-semibold ${color}`}>
-      {score.toFixed(1)}
-    </span>
-  );
-};
 
 const statusColors: Record<ClientStatus, string> = {
   active: 'bg-green-200 text-green-950',
@@ -164,7 +151,7 @@ export const Clients = () => {
     <AppLayout>
         <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
           <PageHeader
-            title="Prospectos"
+            title="Clientes"
             description={`${total} contacto${total !== 1 ? 's' : ''} en total`}
             titleClassName="font-semibold uppercase tracking-[0.08em]"
             descriptionClassName="text-gray-800"
@@ -220,7 +207,7 @@ export const Clients = () => {
             <Table>
               <TableHead>
                 <tr>
-                  <TableHeaderCell>Score</TableHeaderCell>
+                  <TableHeaderCell>Calificación</TableHeaderCell>
                   <TableHeaderCell>Contacto</TableHeaderCell>
                   <TableHeaderCell>Agente</TableHeaderCell>
                   <TableHeaderCell>Canal</TableHeaderCell>
@@ -234,7 +221,7 @@ export const Clients = () => {
                 {clients.map((client: Client) => (
                   <TableRow key={client.client_id}>
                     <TableCell>
-                      <ScoreBadge score={client.score ?? 0} />
+                      <SemaforoBadge color={client.color_semaforo} estado={client.estado} />
                     </TableCell>
                     <TableCell>
                       <div>

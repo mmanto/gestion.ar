@@ -12,6 +12,7 @@ from fastapi.responses import PlainTextResponse
 
 from app.services.channel_service import get_channel_service
 from app.services.client_service import get_client_service
+from app.models.client import Client
 from app.models.channel import ChannelType, WhatsAppProvider
 from app.providers import get_whatsapp_provider, ParsedMessage
 from app.rag_service import get_rag_service
@@ -51,6 +52,7 @@ async def process_whatsapp_message(
 
         # Registrar o recuperar cliente
         client_id: Optional[str] = None
+        client: Optional[Client] = None
         if bot_id:
             try:
                 client_service = get_client_service()
@@ -77,12 +79,11 @@ async def process_whatsapp_message(
         # prospect_auto_qualify_service.py) — solo si el bot tiene al menos
         # un color habilitado para conversión automática.
         qualify_tools, qualify_executor = (None, None)
-        if bot and bot.config.auto_qualify_colors:
+        if bot and bot.config.auto_qualify_colors and client:
             qualify_tools = [QUALIFICATION_TOOL_SPEC]
             qualify_executor = build_qualification_tool_executor(
-                tenant_id=bot.tenant_id,
+                client=client,
                 canal="whatsapp",
-                telefono=parsed_message.from_number,
                 allowed_colors=bot.config.auto_qualify_colors,
             )
 
