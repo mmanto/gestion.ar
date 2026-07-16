@@ -28,7 +28,6 @@ const TrendStatCard = ({ icon, title, value, weeklyChange, onClick, selected }: 
   const card = (
     <Card
       shadow="none"
-      hover={!!onClick}
       className={`transition-colors duration-200 ${onClick ? 'hover:bg-primary-50' : ''} ${selected ? 'ring-2 ring-primary' : ''}`}
     >
       <div className="flex flex-col gap-2">
