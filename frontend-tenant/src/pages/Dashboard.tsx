@@ -61,6 +61,10 @@ export const Dashboard = () => {
     }
   };
 
+  const handleSelectColor = (color: ColorFilter) => {
+    setSelectedColor((prev) => (prev === color ? null : color));
+  };
+
   const handleCopyChatLink = async () => {
     if (!selectedBotId) return;
     setCopyError(false);
@@ -113,7 +117,7 @@ export const Dashboard = () => {
                 titleClassName="font-semibold uppercase tracking-[0.08em]"
                 descriptionClassName="text-gray-800"
               />
-              <StatsCards colorStats={colorStats} selectedColor={selectedColor} onSelectColor={setSelectedColor} />
+              <StatsCards colorStats={colorStats} selectedColor={selectedColor} onSelectColor={handleSelectColor} />
             </>
           ) : (
             <>
@@ -174,9 +178,9 @@ export const Dashboard = () => {
             </Card>
           )}
 
-          <StatsCards colorStats={colorStats} />
+          <StatsCards colorStats={colorStats} selectedColor={selectedColor} onSelectColor={handleSelectColor} />
 
-          <ClientsGrid />
+          <ClientsGrid colorFilter={selectedColor ?? undefined} />
         </div>
     </AppLayout>
   );
