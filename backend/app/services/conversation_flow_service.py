@@ -14,6 +14,37 @@ from typing import Dict, List, Optional, Any
 
 from app.models.bot import FlowConfig, FlowStep
 
+# Campos con columna propia en Client — el resto de lo capturado (ej.
+# case_type/description, o cualquier field custom que declare un tenant) va a
+# Client.metadata. Compartido entre el flow en vivo (FlowState, abajo) y la
+# extracción retroactiva de conversation_summary_service.py.
+CLIENT_FIELD_MAPPING: Dict[str, Optional[str]] = {
+    "name": "name",
+    "email": "email",
+    "phone": "phone",
+    "dni": "dni",
+    "case_type": None,  # Va a metadata
+    "description": None,  # Va a metadata
+}
+
+
+def map_captured_fields_to_client_update(captured: Dict[str, Any]) -> Dict[str, Any]:
+    """Traduce datos capturados (por nombre de field) a kwargs de ClientUpdate."""
+    update: Dict[str, Any] = {}
+    metadata: Dict[str, Any] = {}
+
+    for field, value in captured.items():
+        mapped = CLIENT_FIELD_MAPPING.get(field)
+        if mapped:
+            update[mapped] = value
+        else:
+            metadata[field] = value
+
+    if metadata:
+        update["metadata"] = metadata
+
+    return update
+
 
 class FlowState:
     """Estado de un flujo conversacional para una sesión WebSocket"""
@@ -157,28 +188,7 @@ class FlowState:
 
     def get_client_update_data(self) -> Dict[str, Any]:
         """Retorna los datos capturados para actualizar el cliente en PostgreSQL"""
-        update: Dict[str, Any] = {}
-        field_mapping = {
-            "name": "name",
-            "email": "email",
-            "phone": "phone",
-            "dni": "dni",
-            "case_type": None,  # Va a metadata
-            "description": None,  # Va a metadata
-        }
-        metadata: Dict[str, Any] = {}
-
-        for field, value in self.captured.items():
-            mapped = field_mapping.get(field)
-            if mapped:
-                update[mapped] = value
-            else:
-                metadata[field] = value
-
-        if metadata:
-            update["metadata"] = metadata
-
-        return update
+        return map_captured_fields_to_client_update(self.captured)
 
     def get_lead_score_bonus(self) -> float:
         """Calcula bonificación de score basada en el tipo de caso capturado"""

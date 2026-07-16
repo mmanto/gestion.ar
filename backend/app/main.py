@@ -12,6 +12,7 @@ import httpx
 from app.rag_service import get_rag_service
 from app.claude_service import get_claude_service, get_llm_service
 from app.conversation_service import get_conversation_service
+from app.services.conversation_summary_service import generate_summary_and_update_client
 from app.whatsapp_service import get_whatsapp_service
 from app.telegram_service import get_telegram_service
 from app.auth_service import (
@@ -627,6 +628,46 @@ async def send_agent_message(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error enviando mensaje: {str(e)}")
+
+
+@app.post("/api/conversations/{conversation_id}/summary")
+async def generate_conversation_summary(
+    conversation_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Genera un resumen ejecutivo de la conversación completa vía LLM y
+    actualiza el Client asociado con los datos mínimos que declare
+    bot.config.flow.steps (ver conversation_summary_service.py).
+    """
+    try:
+        conv_service = get_conversation_service()
+        conversation = await conv_service.get_conversation(conversation_id)
+
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversación no encontrada")
+
+        conv_bot_id = conversation.get("bot_id")
+        if conv_bot_id:
+            bot_service = get_bot_service()
+            conv_bot = await bot_service.get_bot(conv_bot_id)
+            if not conv_bot or conv_bot.tenant_id != current_user.tenant_id:
+                raise HTTPException(status_code=404, detail="Conversación no encontrada")
+
+        result = await generate_summary_and_update_client(conversation_id)
+        return {
+            "success": True,
+            "summary": result["summary"],
+            "client_id": result["client_id"],
+            "updated_fields": result["updated_fields"],
+        }
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generando resumen: {str(e)}")
 
 
 # ==================== ENDPOINTS WHATSAPP ====================

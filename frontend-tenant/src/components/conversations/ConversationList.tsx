@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { MessageSquare, MessageCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MessageSquare, MessageCircle, FileText, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../common/Button';
 import { Drawer } from '../common/Drawer';
 import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '../common/Table';
 import { EmptyState } from '../common/EmptyState';
 import { Spinner } from '../common/Spinner';
 import MessagesList from '../messages/MessagesList';
+import conversationsService from '../../services/conversations.service';
 import { formatDate, formatCurrency, formatNumber, truncateText } from '../../utils/formatters';
 import type { Conversation } from '../../types/conversation.types';
 
@@ -27,6 +28,11 @@ const ConversationList = ({
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  const [summarizingId, setSummarizingId] = useState<string | null>(null);
+  const [summaryDrawerOpen, setSummaryDrawerOpen] = useState(false);
+  const [summaryText, setSummaryText] = useState('');
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+
   const handleOpenConversation = (conversation: Conversation) => {
     setSelectedConversation(conversation);
     setDrawerOpen(true);
@@ -34,6 +40,22 @@ const ConversationList = ({
 
   const handleCloseDrawer = () => {
     setDrawerOpen(false);
+  };
+
+  const handleGenerateSummary = async (conversation: Conversation) => {
+    setSummarizingId(conversation.conversation_id);
+    try {
+      const result = await conversationsService.generateSummary(conversation.conversation_id);
+      setSummaryText(result.summary);
+      setSummaryError(null);
+    } catch (err) {
+      const detail = (err as { response?: { data?: { detail?: string } } }).response?.data?.detail;
+      setSummaryText('');
+      setSummaryError(detail || 'No se pudo generar el resumen ejecutivo.');
+    } finally {
+      setSummarizingId(null);
+      setSummaryDrawerOpen(true);
+    }
   };
 
   const getPlatformBadge = (platform?: string) => {
@@ -121,13 +143,27 @@ const ConversationList = ({
               <TableCell>{formatCurrency(conversation.total_cost_usd)}</TableCell>
               <TableCell>{formatDate(conversation.updated_at)}</TableCell>
               <TableCell align="right">
-                <button
-                  onClick={() => handleOpenConversation(conversation)}
-                  title="Ver conversación"
-                  className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                </button>
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    onClick={() => handleOpenConversation(conversation)}
+                    title="Ver conversación"
+                    className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleGenerateSummary(conversation)}
+                    title="Resumen ejecutivo"
+                    disabled={summarizingId === conversation.conversation_id}
+                    className="p-1.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {summarizingId === conversation.conversation_id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <FileText className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
               </TableCell>
             </TableRow>
           ))}
@@ -174,6 +210,20 @@ const ConversationList = ({
         title={selectedConversation ? selectedConversation.user_id : ''}
       >
         <MessagesList messages={selectedConversation?.messages ?? []} />
+      </Drawer>
+
+      <Drawer
+        open={summaryDrawerOpen}
+        onClose={() => setSummaryDrawerOpen(false)}
+        title="Resumen ejecutivo"
+      >
+        <div className="p-6">
+          {summaryError ? (
+            <p className="text-red-600 text-sm">{summaryError}</p>
+          ) : (
+            <p className="text-base text-gray-900 whitespace-pre-wrap">{summaryText}</p>
+          )}
+        </div>
       </Drawer>
     </div>
   );

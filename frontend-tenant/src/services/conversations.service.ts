@@ -28,6 +28,11 @@ const conversationsService = {
     const response = await api.post(`/conversations/${conversationId}/agent-message`, { content });
     return response.data.message;
   },
+
+  async generateSummary(conversationId: string): Promise<{ summary: string; client_id: string; updated_fields: string[] }> {
+    const response = await api.post(`/conversations/${conversationId}/summary`);
+    return response.data;
+  },
 };
 
 export default conversationsService;
