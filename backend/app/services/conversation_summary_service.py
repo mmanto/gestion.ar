@@ -120,10 +120,14 @@ async def generate_summary_and_update_client(conversation_id: str) -> Dict[str, 
         raise ValueError("La conversación no tiene mensajes")
 
     steps: List[FlowStep] = []
-    if bot_id:
-        bot = await get_bot_service().get_bot(bot_id)
-        if bot and bot.config.flow and bot.config.flow.steps:
-            steps = bot.config.flow.steps
+    bot = await get_bot_service().get_bot(bot_id) if bot_id else None
+    if bot and bot.config.flow and bot.config.flow.steps:
+        steps = bot.config.flow.steps
+    print(
+        f"[conversation_summary] bot_id={bot_id!r} bot_found={bot is not None} "
+        f"flow={(bot.config.flow if bot else None)!r}",
+        flush=True,
+    )
 
     llm = get_llm_service()
     response = await llm.generate_rag_response(
