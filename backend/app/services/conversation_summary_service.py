@@ -123,11 +123,6 @@ async def generate_summary_and_update_client(conversation_id: str) -> Dict[str, 
     bot = await get_bot_service().get_bot(bot_id) if bot_id else None
     if bot and bot.config.flow and bot.config.flow.steps:
         steps = bot.config.flow.steps
-    print(
-        f"[conversation_summary] bot_id={bot_id!r} bot_found={bot is not None} "
-        f"flow={(bot.config.flow if bot else None)!r}",
-        flush=True,
-    )
 
     llm = get_llm_service()
     response = await llm.generate_rag_response(
@@ -140,12 +135,12 @@ async def generate_summary_and_update_client(conversation_id: str) -> Dict[str, 
     parsed = _extract_json(response.response)
     summary = ""
     extracted: Dict[str, Any] = {}
-    print(
-        f"[conversation_summary] conversation_id={conversation_id} steps={[s.field for s in steps]} "
-        f"raw_response={response.response!r} parsed={parsed!r}",
-        flush=True,
-    )
     if parsed is None:
+        print(
+            f"⚠️  [conversation_summary] No se pudo parsear la respuesta del LLM como JSON "
+            f"(conversation_id={conversation_id}). Respuesta cruda: {response.response!r}",
+            flush=True,
+        )
         summary = (response.response or "").strip()
     else:
         summary = str(parsed.get("summary") or "").strip()
@@ -160,7 +155,12 @@ async def generate_summary_and_update_client(conversation_id: str) -> Dict[str, 
                 extracted[field] = value
         if not steps:
             extracted = {k: v for k, v in nested.items() if _is_present(v)}
-        print(f"[conversation_summary] extracted={extracted!r}", flush=True)
+        if steps and not extracted:
+            print(
+                f"⚠️  [conversation_summary] El LLM no devolvió ninguno de los campos esperados "
+                f"{sorted(known_fields)} (conversation_id={conversation_id}). JSON parseado: {parsed!r}",
+                flush=True,
+            )
 
     client_service = get_client_service()
     client = await client_service.get_client(client_id)
