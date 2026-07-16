@@ -14,7 +14,6 @@ semáforo.
 """
 
 import json
-import logging
 import re
 from typing import Any, Dict, List, Optional
 
@@ -25,8 +24,6 @@ from app.models.client import ClientUpdate
 from app.services.bot_service import get_bot_service
 from app.services.client_service import get_client_service
 from app.services.conversation_flow_service import map_captured_fields_to_client_update
-
-logger = logging.getLogger(__name__)
 
 _JSON_BLOCK_RE = re.compile(r"\{.*\}", re.DOTALL)
 
@@ -140,9 +137,9 @@ async def generate_summary_and_update_client(conversation_id: str) -> Dict[str, 
     summary = ""
     extracted: Dict[str, Any] = {}
     if parsed is None:
-        logger.warning(
-            "No se pudo parsear la respuesta del LLM como JSON (conversation_id=%s). Respuesta cruda: %r",
-            conversation_id, response.response,
+        print(
+            f"⚠️  [conversation_summary] No se pudo parsear la respuesta del LLM como JSON "
+            f"(conversation_id={conversation_id}). Respuesta cruda: {response.response!r}"
         )
         summary = (response.response or "").strip()
     else:
@@ -159,9 +156,9 @@ async def generate_summary_and_update_client(conversation_id: str) -> Dict[str, 
         if not steps:
             extracted = {k: v for k, v in nested.items() if _is_present(v)}
         if steps and not extracted:
-            logger.warning(
-                "El LLM no devolvió ninguno de los campos esperados %s (conversation_id=%s). JSON parseado: %r",
-                sorted(known_fields), conversation_id, parsed,
+            print(
+                f"⚠️  [conversation_summary] El LLM no devolvió ninguno de los campos esperados "
+                f"{sorted(known_fields)} (conversation_id={conversation_id}). JSON parseado: {parsed!r}"
             )
 
     client_service = get_client_service()
