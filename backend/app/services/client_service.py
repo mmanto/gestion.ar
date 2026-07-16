@@ -55,6 +55,7 @@ def _to_client(row: ClientModel) -> Client:
         estado=estado_from_color(row.color_semaforo),
         color_semaforo=row.color_semaforo,
         notas=row.notas,
+        destacado=row.destacado,
     )
 
 

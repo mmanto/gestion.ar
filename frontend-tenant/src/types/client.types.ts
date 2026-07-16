@@ -29,6 +29,7 @@ export interface Client {
   estado: string;
   color_semaforo?: SemaforoColor | null;
   notas?: string | null;
+  destacado: boolean;
 }
 
 export interface ClientCreate {
@@ -51,6 +52,7 @@ export interface ClientUpdate {
   metadata?: Record<string, unknown>;
   color_semaforo?: SemaforoColor | null;
   notas?: string | null;
+  destacado?: boolean;
 }
 
 export interface ClientsResponse {

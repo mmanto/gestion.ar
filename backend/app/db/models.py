@@ -237,6 +237,7 @@ class Client(Base):
     # desincronizados.
     color_semaforo = Column(Text, nullable=True)
     notas = Column(Text, nullable=True)
+    destacado = Column(Boolean, nullable=False, default=False, server_default="false")
 
     __table_args__ = (
         Index("ix_clients_bot_id_external_id", "bot_id", "external_id", unique=True),

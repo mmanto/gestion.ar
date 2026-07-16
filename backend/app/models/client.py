@@ -63,6 +63,7 @@ class ClientUpdate(BaseModel):
     metadata: Optional[Dict] = None
     color_semaforo: Optional[SemaforoColor] = None
     notas: Optional[str] = None
+    destacado: Optional[bool] = None
 
 
 class Client(ClientBase):
@@ -85,6 +86,7 @@ class Client(ClientBase):
     estado: str = "Sin clasificar"
     color_semaforo: Optional[SemaforoColor] = None
     notas: Optional[str] = None
+    destacado: bool = False
 
     class Config:
         json_schema_extra = {

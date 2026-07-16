@@ -1,5 +1,6 @@
 import TrendStatCard from './TrendStatCard';
 import { formatNumber } from '../../utils/formatters';
+import { useTenant } from '../../hooks/useTenant';
 import type { ClientColorStats, ColorFilter } from '../../types/client.types';
 
 interface StatsCardsProps {
@@ -7,6 +8,9 @@ interface StatsCardsProps {
   selectedColor?: ColorFilter | null;
   onSelectColor?: (color: ColorFilter) => void;
 }
+
+// Pedido puntual del tenant ius: 2 cards por fila en mobile en vez de 1.
+const IUS_TENANT_ID = 'tenant_6a10b2076443';
 
 /** Punto de semáforo — código de color por nivel (viable/potencial/exploración/sin clasificar). */
 const TrafficLight = ({ color }: { color: 'green' | 'yellow' | 'red' | 'gray' }) => {
@@ -20,8 +24,11 @@ const TrafficLight = ({ color }: { color: 'green' | 'yellow' | 'red' | 'gray' })
 };
 
 const StatsCards = ({ colorStats, selectedColor, onSelectColor }: StatsCardsProps) => {
+  const { tenantId } = useTenant();
+  const mobileCols = tenantId === IUS_TENANT_ID ? 'grid-cols-2' : 'grid-cols-1';
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className={`grid ${mobileCols} md:grid-cols-2 lg:grid-cols-4 gap-6`}>
       <TrendStatCard
         icon={<TrafficLight color="green" />}
         title="VIABLE"
