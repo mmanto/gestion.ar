@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { FileText, MessageCircle, MessageSquare, Users } from 'lucide-react';
+import { FileText, MessageCircle, MessageSquare, Users, Star, Eye } from 'lucide-react';
 import { Card } from '../common/Card';
 import { EmptyState } from '../common/EmptyState';
 import { Drawer } from '../common/Drawer';
@@ -7,6 +7,7 @@ import { Button } from '../common/Button';
 import { SemaforoBadge } from '../common/SemaforoBadge';
 import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '../common/Table';
 import MessagesList from '../messages/MessagesList';
+import { useAuth } from '../../hooks/useAuth';
 import clientsService from '../../services/clients.service';
 import type { Client, ColorFilter } from '../../types/client.types';
 import type { ConversationMessage } from '../../types/conversation.types';
@@ -25,6 +26,8 @@ interface ClientsGridProps {
 }
 
 const ClientsGrid = ({ colorFilter }: ClientsGridProps) => {
+  const { user } = useAuth();
+  const canBlock = user?.role === 'admin';
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -39,6 +42,10 @@ const ClientsGrid = ({ colorFilter }: ClientsGridProps) => {
   // Drawer de resumen ejecutivo
   const [summaryClient, setSummaryClient] = useState<Client | null>(null);
   const [summaryDrawerOpen, setSummaryDrawerOpen] = useState(false);
+
+  // Drawer de datos completos del cliente
+  const [detailClient, setDetailClient] = useState<Client | null>(null);
+  const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
 
   const fetchClients = useCallback(async () => {
     try {
@@ -73,6 +80,39 @@ const ClientsGrid = ({ colorFilter }: ClientsGridProps) => {
   const handleOpenSummary = (client: Client) => {
     setSummaryClient(client);
     setSummaryDrawerOpen(true);
+  };
+
+  const handleOpenDetail = (client: Client) => {
+    setDetailClient(client);
+    setDetailDrawerOpen(true);
+  };
+
+  const handleToggleDestacado = async (client: Client) => {
+    try {
+      const updated = await clientsService.updateClient(client.bot_id, client.client_id, {
+        destacado: !client.destacado,
+      });
+      setClients((prev) => prev.map((c) => (c.client_id === updated.client_id ? updated : c)));
+    } catch (err) {
+      console.error('Error toggling destacado:', err);
+    }
+  };
+
+  const handleToggleBlock = async (client: Client) => {
+    try {
+      if (client.status === 'blocked') {
+        await clientsService.unblockClient(client.bot_id, client.client_id);
+      } else {
+        await clientsService.blockClient(client.bot_id, client.client_id);
+      }
+      const newStatus: Client['status'] = client.status === 'blocked' ? 'active' : 'blocked';
+      setDetailClient((prev) =>
+        prev && prev.client_id === client.client_id ? { ...prev, status: newStatus } : prev
+      );
+      fetchClients();
+    } catch (err) {
+      console.error('Error toggling block status:', err);
+    }
   };
 
   const handleOpenConversation = async (client: Client) => {
@@ -129,9 +169,7 @@ const ClientsGrid = ({ colorFilter }: ClientsGridProps) => {
           <TableHead>
             <tr>
               <TableHeaderCell>Estado</TableHeaderCell>
-              <TableHeaderCell>Contacto</TableHeaderCell>
-              <TableHeaderCell>Canal</TableHeaderCell>
-              <TableHeaderCell>Último contacto</TableHeaderCell>
+              <TableHeaderCell>Cliente</TableHeaderCell>
               <TableHeaderCell align="right">Acciones</TableHeaderCell>
             </tr>
           </TableHead>
@@ -151,27 +189,37 @@ const ClientsGrid = ({ colorFilter }: ClientsGridProps) => {
                     )}
                   </div>
                 </TableCell>
-                <TableCell>
-                  <span
-                    className={`px-2 py-1 text-base font-medium rounded-full capitalize ${
-                      sourceColors[client.source] || 'bg-gray-200 text-gray-950'
-                    }`}
-                  >
-                    {client.source}
-                  </span>
-                </TableCell>
-                <TableCell textClassName="text-gray-800">
-                  {new Date(client.last_contact_at).toLocaleDateString('es-ES', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                  })}
-                </TableCell>
                 <TableCell align="right">
                   <div className="flex items-center justify-end gap-2">
                     <button
+                      onClick={() => handleToggleDestacado(client)}
+                      title={client.destacado ? 'Quitar destacado' : 'Marcar como destacado'}
+                      className={`p-1.5 rounded-lg transition-colors ${
+                        client.destacado
+                          ? 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200'
+                          : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                      }`}
+                    >
+                      <Star className="w-4 h-4" fill={client.destacado ? 'currentColor' : 'none'} />
+                    </button>
+                    <button
+                      onClick={() => handleOpenDetail(client)}
+                      title="Ver datos completos"
+                      className="p-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleOpenSummary(client)}
+                      title={client.notas ? 'Ver resumen ejecutivo' : 'Sin resumen ejecutivo todavía'}
+                      disabled={!client.notas}
+                      className="p-1.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-amber-50"
+                    >
+                      <FileText className="w-4 h-4" />
+                    </button>
+                    <button
                       onClick={() => handleOpenConversation(client)}
-                      title="Ver conversación"
+                      title="Ver historial de chat"
                       className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
                     >
                       <MessageCircle className="w-4 h-4" />
@@ -183,14 +231,6 @@ const ClientsGrid = ({ colorFilter }: ClientsGridProps) => {
                       className="p-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-green-50"
                     >
                       <MessageSquare className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleOpenSummary(client)}
-                      title={client.notas ? 'Ver resumen ejecutivo' : 'Sin resumen ejecutivo todavía'}
-                      disabled={!client.notas}
-                      className="p-1.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-amber-50"
-                    >
-                      <FileText className="w-4 h-4" />
                     </button>
                   </div>
                 </TableCell>
@@ -226,6 +266,66 @@ const ClientsGrid = ({ colorFilter }: ClientsGridProps) => {
         <div className="p-6">
           <p className="text-base text-gray-900 whitespace-pre-wrap">{summaryClient?.notas}</p>
         </div>
+      </Drawer>
+
+      <Drawer
+        open={detailDrawerOpen}
+        onClose={() => setDetailDrawerOpen(false)}
+        title={detailClient ? detailClient.name || detailClient.external_id : ''}
+      >
+        {detailClient && (
+          <div className="p-6 space-y-4">
+            <div>
+              <p className="text-sm text-gray-800">Canal</p>
+              <span
+                className={`inline-block mt-1 px-2 py-1 text-base font-medium rounded-full capitalize ${
+                  sourceColors[detailClient.source] || 'bg-gray-200 text-gray-950'
+                }`}
+              >
+                {detailClient.source}
+              </span>
+            </div>
+            <div>
+              <p className="text-sm text-gray-800">Conversaciones</p>
+              <p className="text-lg text-gray-900">{detailClient.total_conversations}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-800">Último contacto</p>
+              <p className="text-lg text-gray-900">
+                {new Date(detailClient.last_contact_at).toLocaleDateString('es-ES', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                })}
+              </p>
+            </div>
+            {detailClient.dni && (
+              <div>
+                <p className="text-sm text-gray-800">DNI</p>
+                <p className="text-lg text-gray-900">{detailClient.dni}</p>
+              </div>
+            )}
+            {detailClient.email && (
+              <div>
+                <p className="text-sm text-gray-800">Email</p>
+                <p className="text-lg text-gray-900">{detailClient.email}</p>
+              </div>
+            )}
+            {detailClient.phone && (
+              <div>
+                <p className="text-sm text-gray-800">Teléfono</p>
+                <p className="text-lg text-gray-900">{detailClient.phone}</p>
+              </div>
+            )}
+            {canBlock && (
+              <div className="pt-2">
+                <Button variant="outline" onClick={() => handleToggleBlock(detailClient)}>
+                  {detailClient.status === 'blocked' ? 'Desbloquear' : 'Bloquear'}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
       </Drawer>
     </div>
   );
