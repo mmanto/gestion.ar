@@ -14,7 +14,7 @@ from typing import Dict, List, Optional
 from sqlalchemy import func, select
 
 from app.db.database import AsyncSessionLocal
-from app.db.models import PushSubscription as PushSubscriptionModel
+from app.db.models import Bot as BotModel, PushSubscription as PushSubscriptionModel
 from app.models.push_subscription import (
     NotificationResult,
     PushSubscription,
@@ -115,6 +115,15 @@ class PushService:
                 return await self._save_vapid_subscription(session, data)
             return await self._save_native_subscription(session, data)
 
+    async def _resolve_tenant_id(self, session, bot_id: Optional[str]) -> Optional[str]:
+        """Resuelve tenant_id desde el bot (requerido por la FK NOT NULL de push_subscriptions)."""
+        if not bot_id:
+            return None
+        result = await session.execute(
+            select(BotModel.tenant_id).where(BotModel.bot_id == bot_id)
+        )
+        return result.scalars().first()
+
     async def _save_vapid_subscription(self, session, data: PushSubscriptionCreate) -> PushSubscription:
         if not data.subscription:
             raise ValueError("subscription es requerido para platform=vapid")
@@ -135,17 +144,21 @@ class PushService:
             row.expiration_time = data.subscription.expirationTime
             row.channel_id = data.channel_id or row.channel_id
             row.bot_id = data.bot_id or row.bot_id
+            row.user_id = data.user_id or row.user_id
+            row.tenant_id = row.tenant_id or await self._resolve_tenant_id(session, row.bot_id)
             await session.commit()
             await session.refresh(row)
             return _to_push_subscription(row)
 
+        tenant_id = await self._resolve_tenant_id(session, data.bot_id)
         subscription_id = f"sub_{uuid.uuid4().hex[:12]}"
         row = PushSubscriptionModel(
             subscription_id=subscription_id,
             bot_id=data.bot_id,
+            tenant_id=tenant_id,
             channel_id=data.channel_id,
             client_id=data.client_id,
-            user_id=None,
+            user_id=data.user_id,
             platform="vapid",
             endpoint=data.subscription.endpoint,
             p256dh=data.subscription.keys.p256dh,
@@ -180,14 +193,17 @@ class PushService:
             row.channel_id = data.channel_id or row.channel_id
             row.user_id = data.user_id or row.user_id
             row.client_id = data.client_id or row.client_id
+            row.tenant_id = row.tenant_id or await self._resolve_tenant_id(session, row.bot_id)
             await session.commit()
             await session.refresh(row)
             return _to_push_subscription(row)
 
+        tenant_id = await self._resolve_tenant_id(session, data.bot_id)
         subscription_id = f"sub_{uuid.uuid4().hex[:12]}"
         row = PushSubscriptionModel(
             subscription_id=subscription_id,
             bot_id=data.bot_id,
+            tenant_id=tenant_id,
             channel_id=data.channel_id,
             client_id=data.client_id,
             user_id=data.user_id,
@@ -366,7 +382,7 @@ class PushService:
                 },
             )
 
-            response = messaging.send(message)
+            response = messaging.send(message, app=self._fcm_app)
             print(f"✅ FCM enviado: {response}")
             await self._touch_last_used(subscription.subscription_id)
             return True
@@ -499,6 +515,56 @@ class PushService:
             else:
                 result.failed += 1
                 result.errors.append(sub.endpoint[:60])
+
+        return result
+
+    async def broadcast_to_staff(
+        self,
+        bot_id: str,
+        request: SendNotificationRequest,
+    ) -> NotificationResult:
+        """
+        Envía una notificación push a todo el staff suscripto de un bot (apps
+        nativas) — a diferencia de broadcast_to_bot(), que apunta a clientes.
+        Si request.user_id está especificado, solo envía a ese staff member.
+        """
+        result = NotificationResult()
+
+        filters = [
+            PushSubscriptionModel.bot_id == bot_id,
+            PushSubscriptionModel.is_active.is_(True),
+            PushSubscriptionModel.user_id.is_not(None),
+        ]
+        if request.user_id:
+            filters.append(PushSubscriptionModel.user_id == request.user_id)
+
+        async with AsyncSessionLocal() as session:
+            db_result = await session.execute(
+                select(PushSubscriptionModel).where(*filters).limit(1000)
+            )
+            rows = db_result.scalars().all()
+
+        logger.info("Push broadcast a staff: encontradas %d suscripciones (bot_id=%s)", len(rows), bot_id)
+
+        if not rows:
+            return result
+
+        payload = {
+            "title": request.title,
+            "body": request.body,
+            "url": request.url or "/",
+            "icon": request.icon or "/icons/icon-192.png",
+            "badge": request.badge or "/icons/icon-192.png",
+        }
+
+        for row in rows:
+            sub = _to_push_subscription(row)
+            success = await self.send_notification(sub, payload)
+            if success:
+                result.sent += 1
+            else:
+                result.failed += 1
+                result.errors.append(sub.endpoint[:60] if sub.endpoint else sub.subscription_id)
 
         return result
 

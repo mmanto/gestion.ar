@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import type { InternalAxiosRequestConfig } from 'axios';
+import { tokenStorage } from './tokenStorage';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -12,8 +13,8 @@ const api = axios.create({
 
 // Request interceptor - Agregar token a todas las peticiones
 api.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('token');
+  async (config: InternalAxiosRequestConfig) => {
+    const token = await tokenStorage.getItem('token');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -29,11 +30,11 @@ api.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
     // Si recibimos 401, limpiar token y redirigir a login
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      await tokenStorage.removeItem('token');
+      await tokenStorage.removeItem('user');
       window.location.href = '/login';
     }
     return Promise.reject(error);

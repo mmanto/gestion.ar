@@ -1,26 +1,25 @@
 {
-	"webDir": "dist-client",
+	"appId": "ius.intellify.pro",
+	"appName": "ius Staff",
+	"webDir": "dist",
 	"server": {
-		"androidScheme": "https",
-		"cleartext": true
+		"cleartext": true,
+		"androidScheme": "http"
+	},
+	"android": {
+		"allowMixedContent": false
 	},
 	"plugins": {
 		"SplashScreen": {
-			"launchShowDuration": 2000,
-			"backgroundColor": "#2793b4"
-		},
-		"PushNotifications": {
-			"presentationOptions": [
-				"badge",
-				"sound",
-				"alert"
-			]
+			"launchShowDuration": 1200,
+			"backgroundColor": "#25357a",
+			"androidSplashResourceName": "splash",
+			"androidScaleType": "CENTER_CROP",
+			"showSpinner": false
 		},
 		"StatusBar": {
-			"style": "dark",
-			"backgroundColor": "#2793b4"
+			"style": "DARK",
+			"backgroundColor": "#25357a"
 		}
-	},
-	"appId": "ar.gestion.client",
-	"appName": "gestion.ar"
+	}
 }

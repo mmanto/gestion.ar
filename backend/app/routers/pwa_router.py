@@ -10,6 +10,7 @@ from app.dependencies.auth import get_current_user
 from app.models.push_subscription import (
     PushSubscriptionCreate,
     SendNotificationRequest,
+    StaffPushSubscribeRequest,
 )
 from app.services.push_service import get_push_service
 from app.services.bot_service import get_bot_service
@@ -117,6 +118,39 @@ async def unsubscribe(body: dict):
 # ---------------------------------------------------------------------------
 # Endpoints PROTEGIDOS (requieren JWT — solo el admin del bot puede usarlos)
 # ---------------------------------------------------------------------------
+
+@router.post("/subscribe-staff", response_model=dict, status_code=status.HTTP_201_CREATED)
+async def subscribe_staff(
+    data: StaffPushSubscribeRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Registra el push token nativo (FCM/APNs) de un miembro del staff, para
+    recibir notificaciones cuando un cliente le escribe al bot.
+
+    A diferencia de /subscribe (público, para clientes anónimos), acá el
+    `user_id` de la suscripción se deriva SIEMPRE del JWT — nunca del body —
+    para que nadie pueda registrarse recibiendo las notificaciones de otro
+    staff member.
+    """
+    await verify_bot_ownership(data.bot_id, current_user)
+
+    push_service = get_push_service()
+    subscription = await push_service.save_subscription(
+        PushSubscriptionCreate(
+            platform=data.platform,
+            bot_id=data.bot_id,
+            device_token=data.device_token,
+            user_id=current_user.username,
+            user_agent=data.user_agent,
+        )
+    )
+
+    return {
+        "success": True,
+        "subscription_id": subscription.subscription_id,
+    }
+
 
 @router.get("/{bot_id}/subscriptions", response_model=dict)
 async def get_subscriptions(

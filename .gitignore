@@ -51,6 +51,9 @@ venv.bak/
 .env.dev
 .env.prod
 
+# Secrets (ej. cuenta de servicio de Firebase para FCM_CREDENTIALS_PATH)
+backend/secrets/
+
 # Docker
 docker-compose.override.yml
 

@@ -10,6 +10,7 @@ from typing import Dict
 
 from fastapi import HTTPException
 
+from app.connection_manager import notify_staff_of_client_message
 from app.rag_service import get_rag_service
 from app.claude_service import get_llm_service, build_effective_system_prompt
 from app.conversation_service import get_conversation_service
@@ -231,7 +232,7 @@ async def handle_telegram_text_message(telegram, message_data: Dict) -> Dict:
         client_id = message_data.get("client_id")
         try:
             conv_service = get_conversation_service()
-            await conv_service.log_chat_interaction(
+            log_result = await conv_service.log_chat_interaction(
                 user_id=user_id,
                 user_message=text,
                 assistant_response=response.response,
@@ -250,6 +251,15 @@ async def handle_telegram_text_message(telegram, message_data: Dict) -> Dict:
                     "telegram_message_id": message_data["message_id"]
                 }
             )
+            if bot_id:
+                await notify_staff_of_client_message(
+                    bot_id=bot_id,
+                    conversation_id=log_result["conversation_id"],
+                    client_id=client_id,
+                    client_label=(client.name if client else None) or message_data.get("first_name") or user_id,
+                    content=text,
+                    channel="telegram",
+                )
         except Exception as e:
             logger.warning(f"Error saving conversation: {e}")
 

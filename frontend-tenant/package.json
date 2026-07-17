@@ -6,11 +6,19 @@
   "scripts": {
     "dev": "vite --mode dev",
     "build": "tsc -b && vite build --mode prod",
+    "build:capacitor": "tsc -b && vite build --mode capacitor && node scripts/bake-tenant-config.mjs",
     "lint": "eslint .",
     "preview": "vite preview --mode prod"
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.2",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/core": "^8.4.2",
+    "@capacitor/push-notifications": "^8.1.2",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.3",
     "axios": "^1.13.2",
+    "capacitor-secure-storage-plugin": "^0.13.0",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
@@ -19,6 +27,7 @@
     "recharts": "^3.6.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.4.2",
     "@eslint/js": "^9.39.1",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",

@@ -23,8 +23,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const checkAuth = async () => {
     try {
-      const storedToken = authService.getToken();
-      const storedUser = authService.getUser();
+      const storedToken = await authService.getToken();
+      const storedUser = await authService.getUser();
 
       if (storedToken && storedUser) {
         // Verificar que el token sigue siendo válido
@@ -35,7 +35,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setIsAuthenticated(true);
         } catch {
           // Token inválido o expirado
-          authService.clearAuth();
+          await authService.clearAuth();
           setToken(null);
           setUser(null);
           setIsAuthenticated(false);
@@ -60,8 +60,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await authService.login(credentials);
 
       // Guardar token y usuario
-      authService.saveToken(response.access_token);
-      authService.saveUser(response.user);
+      await authService.saveToken(response.access_token);
+      await authService.saveUser(response.user);
 
       // Actualizar estado
       setToken(response.access_token);
@@ -73,8 +73,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    authService.clearAuth();
+  const logout = async () => {
+    await authService.clearAuth();
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);

@@ -1,0 +1,14 @@
+# Build outputs
+*.iml
+.gradle
+/local.properties
+/captures
+.externalNativeBuild
+.cxx
+build/
+app/build/
+
+# Secrets — nunca commitear (ver docs/dev/MOBILE.md, Etapa 8 del plan de Android)
+google-services.json
+*.jks
+*.keystore

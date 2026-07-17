@@ -16,16 +16,16 @@
 #   ps            listar contenedores y su estado
 #   shell         abrir shell en un servicio (requiere nombre de servicio)
 #   clean         limpiar recursos (--images: tambien imagenes del proyecto)
-#   build-android build APK debug (staff|client|both) desde frontend-tenant
+#   build-android build APK debug de la app nativa del staff de ius (emulator|device|prod)
 #
 # Ejemplos:
-#   ./stack.prod                         # menu interactivo
-#   ./stack.prod up                      # levantar todo
-#   ./stack.prod logs app                # logs del backend
-#   ./stack.prod restart frontend        # restart del frontend
-#   ./stack.prod clean                   # limpiar recursos (seguro, sin datos)
-#   ./stack.prod build-android staff     # APK staff
-#   ./stack.prod build-android client    # APK client
+#   ./stack.prod                                  # menu interactivo
+#   ./stack.prod up                               # levantar todo
+#   ./stack.prod logs app                         # logs del backend
+#   ./stack.prod restart frontend                 # restart del frontend
+#   ./stack.prod clean                            # limpiar recursos (seguro, sin datos)
+#   ./stack.prod build-android emulator           # APK para emulador Android
+#   ./stack.prod build-android prod https://api.intellify.pro/api  # APK contra prod
 #
 # Requisitos:
 #   .env.prod presente en la raíz del repo
@@ -100,7 +100,7 @@ menu() {
   echo -e "${CYAN}║${NC} 7) status      estado + health checks      ${CYAN}║${NC}"
   echo -e "${CYAN}║${NC} 8) shell       abrir shell en servicio     ${CYAN}║${NC}"
   echo -e "${CYAN}║${NC} c) clean       limpiar recursos            ${CYAN}║${NC}"
-  echo -e "${CYAN}║${NC} b) build-android build APK (staff/client)   ${CYAN}║${NC}"
+  echo -e "${CYAN}║${NC} b) build-android build APK (ius staff)      ${CYAN}║${NC}"
   echo -e "${CYAN}║${NC} q) salir                                  ${CYAN}║${NC}"
   echo -e "${CYAN}╚══════════════════════════════════════════════╝${NC}"
   echo ""
@@ -116,7 +116,7 @@ menu() {
     7) cmd_status ;;
     8) read -r -p "Servicio (app, frontend, ${TENANTS[*]}): " svc; cmd_shell "$svc" ;;
     c|C) read -r -p "Modo (Enter=ligero, images): " mode; cmd_clean "${mode:-light}" ;;
-    b|B) read -r -p "Target (staff|client|both): " target; cmd_build_android "${target:-staff}" ;;
+    b|B) read -r -p "Entorno (emulator|device|prod): " env; cmd_build_android "${env:-emulator}" ;;
     q|Q) exit 0 ;;
     *) echo -e "${RED}Opcion invalida${NC}"; menu ;;
   esac
@@ -322,25 +322,43 @@ cmd_clean() {
 
 
 # ── Android build (host, no Docker) ────────────────────────────────────────
+# App nativa dedicada al staff de ius (ver ADR-007 en docs/dev/DECISIONS.md y
+# el plan en /home/mmanto/.claude/plans/). Un solo target de build — sin
+# fork de VITE_TARGET/MobileShell (esa fue la causa del revert anterior) —
+# el mismo `npm run build:capacitor` para cualquier entorno, cambia solo el
+# VITE_API_URL y el VITE_TENANT_ID horneados.
+
+IUS_TENANT_ID_LOCAL="tenant_6a10b2076443"
+IUS_TENANT_ID_PROD="tenant_17d505040583"
 
 cmd_build_android() {
-  local target="${1:-staff}"
+  local env="${1:-emulator}"
   local api_url="${2:-}"
 
-  # Si el target se paso como "staff http://..." o "client http://...", parsear
-  if [[ "$target" =~ ^(staff|client|both)$ ]] && [[ -n "${2:-}" && ! "$2" =~ ^(staff|client|both)$ ]]; then
-    api_url="$2"
-  elif [[ ! "$target" =~ ^(staff|client|both)$ ]]; then
-    echo -e "${RED}ERROR: target invalido '${target}'. Usar: staff | client | both [api-url]${NC}"
+  if [[ ! "$env" =~ ^(emulator|device|prod)$ ]]; then
+    echo -e "${RED}ERROR: entorno invalido '${env}'. Usar: emulator | device | prod [api-url]${NC}"
     return 1
   fi
 
-  # Default API URL para emulador Android (10.0.2.2 = host localhost)
-  if [[ -z "$api_url" ]]; then
-    api_url="http://10.0.2.2:8000"
-    echo -e "${YELLOW}==> API URL no especificada, usando default para emulador: ${api_url}${NC}"
-    echo "    Para dispositivo fisico o prod: ./stack.prod build-android staff https://api.tudominio.com"
-  fi
+  local tenant_id="$IUS_TENANT_ID_LOCAL"
+  case "$env" in
+    emulator)
+      api_url="${api_url:-http://10.0.2.2:8000/api}"
+      ;;
+    device)
+      if [[ -z "$api_url" ]]; then
+        echo -e "${RED}ERROR: 'device' requiere la IP LAN del backend, ej: ./stack.prod build-android device http://192.168.1.50:8000/api${NC}"
+        return 1
+      fi
+      ;;
+    prod)
+      tenant_id="$IUS_TENANT_ID_PROD"
+      if [[ -z "$api_url" ]]; then
+        echo -e "${RED}ERROR: 'prod' requiere la URL real del backend, ej: ./stack.prod build-android prod https://api.intellify.pro/api${NC}"
+        return 1
+      fi
+      ;;
+  esac
 
   local missing=()
   command -v node &>/dev/null || missing+=("node (npm)")
@@ -369,47 +387,35 @@ cmd_build_android() {
   fi
   chmod +x "$gradlew"
 
-  build_one() {
-    local t="$1"
-    local url="$2"
-    echo -e "${CYAN}── Build: ${GREEN}${t}${CYAN} (API: ${url}) ──${NC}"
+  echo -e "${CYAN}── Build Android (${GREEN}${env}${CYAN}) — API: ${api_url} — tenant: ${tenant_id} ──${NC}"
 
-    echo "  [1/3] VITE_API_URL=${url} npm run build:${t} ..."
-    (cd "$project_dir" && VITE_API_URL="$url" npm run "build:${t}") || {
-      echo -e "${RED}  ERROR: npm run build:${t} fallo${NC}"
-      return 1
-    }
-
-    echo "  [2/3] npx cap sync (VITE_TARGET=${t}) ..."
-    (cd "$project_dir" && VITE_TARGET="$t" npx cap sync) || {
-      echo -e "${RED}  ERROR: cap sync fallo${NC}"
-      return 1
-    }
-
-    echo "  [3/3] ./gradlew assembleDebug ..."
-    (cd "$project_dir/android" && ./gradlew assembleDebug 2>&1 | grep -E 'BUILD|FAILED|ERROR') || {
-      echo -e "${RED}  ERROR: gradle build fallo${NC}"
-      return 1
-    }
-
-    local apk="$project_dir/android/app/build/outputs/apk/debug/app-debug.apk"
-    if [[ -f "$apk" ]]; then
-      local size=$(du -h "$apk" | cut -f1)
-      echo -e "  ${GREEN}APK generado:${NC} ${apk} (${size})"
-    fi
+  echo "  [1/3] VITE_API_URL=${api_url} VITE_TENANT_ID=${tenant_id} npm run build:capacitor ..."
+  (cd "$project_dir" && VITE_API_URL="$api_url" VITE_TENANT_ID="$tenant_id" npm run build:capacitor) || {
+    echo -e "${RED}  ERROR: npm run build:capacitor fallo${NC}"
+    return 1
   }
 
-  if [[ "$target" == "both" ]]; then
-    build_one staff "$api_url" && build_one client "$api_url"
-  else
-    build_one "$target" "$api_url"
-  fi
+  echo "  [2/3] npx cap sync android ..."
+  (cd "$project_dir" && VITE_API_URL="$api_url" npx cap sync android) || {
+    echo -e "${RED}  ERROR: cap sync fallo${NC}"
+    return 1
+  }
 
+  echo "  [3/3] ./gradlew assembleDebug ..."
+  (cd "$project_dir/android" && ./gradlew assembleDebug 2>&1 | grep -E 'BUILD|FAILED|ERROR') || {
+    echo -e "${RED}  ERROR: gradle build fallo${NC}"
+    return 1
+  }
+
+  local apk="$project_dir/android/app/build/outputs/apk/debug/app-debug.apk"
   echo ""
   echo -e "${GREEN}==> Build Android completo.${NC}"
   echo "  API URL horneada: ${api_url}"
-  echo "  APKs en: $project_dir/android/app/build/outputs/apk/debug/"
-  ls -lh "$project_dir/android/app/build/outputs/apk/debug/"*.apk 2>/dev/null || true
+  echo "  Tenant horneado: ${tenant_id}"
+  if [[ -f "$apk" ]]; then
+    local size=$(du -h "$apk" | cut -f1)
+    echo -e "  ${GREEN}APK generado:${NC} ${apk} (${size})"
+  fi
 }
 # ── Entrypoint ────────────────────────────────────────────────────────────
 
@@ -431,13 +437,13 @@ case "$CMD" in
   status)        cmd_status ;;
   shell)         cmd_shell "${1:-}" ;;
   clean)         cmd_clean "${1:-light}" ;;
-  build-android) cmd_build_android "${1:-staff}" "${2:-}" ;;
+  build-android) cmd_build_android "${1:-emulator}" "${2:-}" ;;
   -h|--help|help)
     echo "Uso: $0 [up|down|restart|rebuild|logs|ps|status|shell|clean|build-android] [servicio|target]"
     echo "Sin parametros muestra el menu interactivo."
     echo "Tenants: ${TENANTS[*]} (usa el nombre corto: ius, erma)"
     echo "clean: sin flag | --images"
-    echo "build-android: staff | client | both [api-url] (default emulador: http://10.0.2.2:8000)"
+    echo "build-android: emulator | device [api-url] | prod [api-url] (default emulador: http://10.0.2.2:8000/api)"
     ;;
   *)             echo -e "${RED}Comando desconocido: $CMD${NC}"; menu ;;
 esac

@@ -10,6 +10,7 @@ from typing import Optional, Dict, Any
 from fastapi import APIRouter, Request, HTTPException, Header, Form
 from fastapi.responses import PlainTextResponse
 
+from app.connection_manager import notify_staff_of_client_message
 from app.services.channel_service import get_channel_service
 from app.services.client_service import get_client_service
 from app.models.client import Client
@@ -101,7 +102,7 @@ async def process_whatsapp_message(
         # Guardar conversación
         try:
             conv_service = get_conversation_service()
-            await conv_service.log_chat_interaction(
+            log_result = await conv_service.log_chat_interaction(
                 user_id=parsed_message.from_number,
                 user_message=parsed_message.text or "[Mensaje no textual]",
                 assistant_response=response.response,
@@ -122,6 +123,15 @@ async def process_whatsapp_message(
                     "channel_id": channel_id
                 }
             )
+            if bot_id:
+                await notify_staff_of_client_message(
+                    bot_id=bot_id,
+                    conversation_id=log_result["conversation_id"],
+                    client_id=client_id,
+                    client_label=(client.name if client else None) or parsed_message.from_number,
+                    content=parsed_message.text or "[Mensaje no textual]",
+                    channel="whatsapp",
+                )
         except Exception as e:
             logger.warning(f"Error guardando conversación: {e}")
 

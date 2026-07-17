@@ -18,7 +18,7 @@ from fastapi.responses import Response
 from app.auth_service import User
 from app.dependencies.auth import get_current_user
 from app.claude_service import get_llm_service, ChatMessage, build_effective_system_prompt, get_effective_welcome_message
-from app.connection_manager import connection_manager, staff_connection_manager
+from app.connection_manager import connection_manager, notify_staff_of_client_message
 from app.conversation_service import get_conversation_service
 from app.rag_service import get_rag_service
 from app.services.bot_service import get_bot_service
@@ -44,18 +44,14 @@ async def _notify_staff(
     content: str,
     channel: str = "web",
 ) -> None:
-    """Broadcastea un mensaje de cliente a todo el staff conectado al bot."""
-    await staff_connection_manager.broadcast_to_bot(
-        bot_id,
-        {
-            "type": "client_message",
-            "conversation_id": conversation_id,
-            "client_id": client_id,
-            "client_name": client_label,
-            "channel": channel,
-            "content": content,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        },
+    """Notifica a todo el staff de un mensaje de cliente (WS + push)."""
+    await notify_staff_of_client_message(
+        bot_id=bot_id,
+        conversation_id=conversation_id,
+        client_id=client_id,
+        client_label=client_label,
+        content=content,
+        channel=channel,
     )
 
 

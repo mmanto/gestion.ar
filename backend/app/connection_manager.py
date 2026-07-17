@@ -5,7 +5,9 @@ Registro en memoria de conexiones WebSocket activas:
 - Staff: keyed by (bot_id, user_id) para broadcast a admins/operadores
 """
 
+from datetime import datetime, timezone
 from typing import Dict
+
 from fastapi import WebSocket
 
 
@@ -88,3 +90,39 @@ class StaffConnectionManager:
 # Singletons compartidos entre routers
 connection_manager = ConnectionManager()
 staff_connection_manager = StaffConnectionManager()
+
+
+async def notify_staff_of_client_message(
+    bot_id: str,
+    conversation_id: str,
+    client_id: str | None,
+    client_label: str,
+    content: str,
+    channel: str = "web",
+) -> None:
+    """Notifica a todo el staff de un bot sobre un mensaje de cliente entrante:
+    WS en tiempo real (staff con la app abierta) + push (staff en background/
+    con la app cerrada). Compartido entre los canales Web, WhatsApp y Telegram."""
+    from app.models.push_subscription import SendNotificationRequest
+    from app.services.push_service import get_push_service
+
+    await staff_connection_manager.broadcast_to_bot(
+        bot_id,
+        {
+            "type": "client_message",
+            "conversation_id": conversation_id,
+            "client_id": client_id,
+            "client_name": client_label,
+            "channel": channel,
+            "content": content,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        },
+    )
+    await get_push_service().broadcast_to_staff(
+        bot_id,
+        SendNotificationRequest(
+            title=client_label,
+            body=content[:140],
+            url=f"/conversations/{conversation_id}",
+        ),
+    )

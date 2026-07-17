@@ -1,4 +1,5 @@
 import api from './api';
+import { tokenStorage } from './tokenStorage';
 import type { LoginCredentials, LoginResponse, User } from '../types/auth.types';
 
 const authService = {
@@ -29,31 +30,31 @@ const authService = {
   },
 
   /**
-   * Guardar token en localStorage
+   * Guardar token (Secure Storage en nativo, localStorage en web)
    */
-  saveToken(token: string): void {
-    localStorage.setItem('token', token);
+  async saveToken(token: string): Promise<void> {
+    await tokenStorage.setItem('token', token);
   },
 
   /**
-   * Guardar usuario en localStorage
+   * Guardar usuario (Secure Storage en nativo, localStorage en web)
    */
-  saveUser(user: User): void {
-    localStorage.setItem('user', JSON.stringify(user));
+  async saveUser(user: User): Promise<void> {
+    await tokenStorage.setItem('user', JSON.stringify(user));
   },
 
   /**
-   * Obtener token de localStorage
+   * Obtener token
    */
-  getToken(): string | null {
-    return localStorage.getItem('token');
+  async getToken(): Promise<string | null> {
+    return tokenStorage.getItem('token');
   },
 
   /**
-   * Obtener usuario de localStorage
+   * Obtener usuario
    */
-  getUser(): User | null {
-    const userStr = localStorage.getItem('user');
+  async getUser(): Promise<User | null> {
+    const userStr = await tokenStorage.getItem('user');
     if (!userStr) return null;
     try {
       return JSON.parse(userStr);
@@ -65,9 +66,9 @@ const authService = {
   /**
    * Limpiar token y usuario (logout)
    */
-  clearAuth(): void {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  async clearAuth(): Promise<void> {
+    await tokenStorage.removeItem('token');
+    await tokenStorage.removeItem('user');
   },
 };
 

@@ -41,6 +41,20 @@ class PushSubscriptionCreate(BaseModel):
     user_agent: Optional[str] = Field(None, description="User-Agent del dispositivo (para diagnóstico)")
 
 
+class StaffPushSubscribeRequest(BaseModel):
+    """Payload para que la app nativa del staff registre su push token.
+
+    A diferencia de PushSubscriptionCreate (endpoint público), acá NO se
+    acepta `user_id` del cliente — el router lo deriva siempre del JWT para
+    que un usuario no pueda registrarse con el user_id de otro (ver
+    POST /api/pwa/subscribe-staff en pwa_router.py).
+    """
+    platform: str = Field(..., description="fcm | apns")
+    bot_id: str = Field(..., description="Bot cuyos mensajes de cliente quiere recibir el staff")
+    device_token: str = Field(..., description="Token de dispositivo FCM o APNs")
+    user_agent: Optional[str] = Field(None, description="Info del dispositivo (para diagnóstico)")
+
+
 class PushSubscription(BaseModel):
     """Modelo completo de suscripción push almacenado en PostgreSQL"""
     subscription_id: str = Field(..., description="ID único, formato: sub_{hex12}")

@@ -4,6 +4,9 @@ import { AuthProvider } from './context/AuthContext';
 import { TemplateProvider } from './context/TemplateContext';
 import { SidebarProvider } from './context/SidebarContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { useNativeBackButton } from './hooks/useNativeBackButton';
+import { useNativeStaffPush } from './hooks/useNativeStaffPush';
+import { useAuth } from './hooks/useAuth';
 
 // Pages
 import { Landing } from './pages/Landing';
@@ -20,13 +23,24 @@ import { Modules } from './pages/Modules';
 import { Users } from './pages/Users';
 import { Settings } from './pages/Settings';
 
+/** Registra el push nativo del staff una vez autenticado. Vive adentro de
+ * AuthProvider (necesita useAuth()) — no renderiza nada. */
+function NativeStaffPushRegistrar() {
+  const { isAuthenticated } = useAuth();
+  useNativeStaffPush(isAuthenticated);
+  return null;
+}
+
 function App() {
+  useNativeBackButton();
+
   return (
     <Router>
       <TenantProvider>
         <AuthProvider>
           <TemplateProvider>
             <SidebarProvider>
+              <NativeStaffPushRegistrar />
               <Routes>
                 {/* Rutas públicas */}
                 <Route path="/" element={<Landing />} />
