@@ -2,10 +2,6 @@
 	"appId": "ius.intellify.pro",
 	"appName": "ius Staff",
 	"webDir": "dist",
-	"server": {
-		"cleartext": true,
-		"androidScheme": "http"
-	},
 	"android": {
 		"allowMixedContent": false
 	},
