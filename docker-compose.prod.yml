@@ -27,6 +27,12 @@ services:
       - REDIS_URL=redis://redis:6379
       - CHROMA_PATH=/app/chroma_db
       - DATABASE_URL=postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-gestionar}
+    # /opt/secrets vive en el servidor, fuera del clone del repo (nunca en
+    # git) — hoy solo firebase-credentials.json (push nativo staff, ver
+    # FCM_CREDENTIALS_PATH en .env.prod y docs/dev/MOBILE.md). :ro porque el
+    # backend solo lee credenciales, nunca las escribe.
+    volumes:
+      - /opt/secrets:/app/secrets:ro
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
     networks:
       - default

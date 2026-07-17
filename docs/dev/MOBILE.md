@@ -90,12 +90,36 @@ suscribirse con el `user_id` de otro miembro del staff.
 
 ### FCM (Android) — setup
 
+**Local (ya hecho):** `backend/secrets/firebase-credentials.json`
+(gitignored) + `FCM_CREDENTIALS_PATH=/app/secrets/firebase-credentials.json`
+en `.env.dev` — funciona porque `docker-compose.override.yml` monta
+`./backend:/app` entero.
+
+**Prod (pendiente — requiere acceso SSH al servidor, ver
+`docs/ops/DEPLOYMENT.md`):**
+
 1. Crear proyecto en [Firebase Console](https://console.firebase.google.com/)
-2. Agregar app Android con package `ius.intellify.pro`, bajar
-   `google-services.json` → `frontend-tenant/android/app/` (gitignored)
-3. Project Settings → Service Accounts → Generate new private key → guardar
-   el JSON en el servidor (ej. `/opt/secrets/firebase-credentials.json`)
-4. `.env.prod`: `FCM_CREDENTIALS_PATH=/opt/secrets/firebase-credentials.json`
+   (ya existe: `ius-intellify`, mismo que
+   `frontend-tenant/android/app/google-services.json`)
+2. Project Settings → Service Accounts → Generate new private key
+3. En el servidor: `ssh deploy@<IP_SERVIDOR>`, luego
+   `mkdir -p /opt/secrets && chmod 700 /opt/secrets`
+4. Subir el JSON generado a `/opt/secrets/firebase-credentials.json` (scp
+   desde tu máquina — nunca pegarlo por SSH/nano en texto plano si se puede
+   evitar)
+5. `docker-compose.prod.yml` ya monta `/opt/secrets:/app/secrets:ro` en el
+   servicio `app`, y `.env.prod` ya tiene
+   `FCM_CREDENTIALS_PATH=/app/secrets/firebase-credentials.json` (ruta
+   dentro del contenedor) — no hace falta tocar nada más de config
+6. Redeploy: `cd /opt/app && ./deploy.sh` (o el `docker compose ... up -d
+   --build app` manual de `DEPLOYMENT.md` si solo se cambió el mount, sin
+   nuevo código)
+7. Verificar (al arrancar el contenedor, en `PushService.__init__`):
+   `docker compose ... logs app | grep -i fcm` debería mostrar `✅ Push
+   Service (FCM) inicializado correctamente` en vez de `⚠️  Push Service:
+   FCM_CREDENTIALS_PATH no configurado` (archivo ausente o ruta mal escrita
+   en `.env.prod` — falla silenciosa, no tira error al arrancar) o `⚠️  Push
+   Service: FCM init falló: ...` (JSON inválido/corrupto)
 
 ### Canal de notificación (Android) — obligatorio, no es opcional
 
