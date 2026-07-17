@@ -17,7 +17,7 @@ export function KeroAppLayout({ children }: KeroAppLayoutProps) {
       <KeroSidebar />
       <div className={`flex flex-col min-h-screen transition-all duration-300 ${collapsed ? 'md:pl-[112px]' : 'md:pl-[304px]'}`}>
         <KeroTopbar />
-        <main className="flex-grow px-8 pb-10">
+        <main className="flex-grow pt-14 px-2 pb-2 md:pt-0 md:px-8 md:pb-10">
           <div className="w-full">
             {children}
           </div>
