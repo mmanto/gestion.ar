@@ -10,7 +10,7 @@ if [ -z "$TENANT_ID" ]; then
 fi
 
 cat > /usr/share/nginx/html/tenant-config.js <<EOF
-window.__TENANT_CONFIG__ = { tenantId: "${TENANT_ID:-}" };
+window.__TENANT_CONFIG__ = { tenantId: "${TENANT_ID:-}", statsTwoColsMobile: ${STATS_TWO_COLS_MOBILE:-false} };
 EOF
 
 exec "$@"

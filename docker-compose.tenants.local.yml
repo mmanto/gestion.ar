@@ -62,6 +62,7 @@ services:
     container_name: gestionar_frontend_tenant_ius
     environment:
       - TENANT_ID=tenant_6a10b2076443
+      - STATS_TWO_COLS_MOBILE=true
     depends_on:
       app:
         condition: service_healthy

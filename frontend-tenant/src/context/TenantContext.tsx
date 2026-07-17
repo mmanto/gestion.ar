@@ -10,7 +10,7 @@ import publicTenantService from '../services/publicTenant.service';
 // la URL (persistido en localStorage para no tener que repetirlo).
 declare global {
   interface Window {
-    __TENANT_CONFIG__?: { tenantId: string };
+    __TENANT_CONFIG__?: { tenantId: string; statsTwoColsMobile?: boolean };
   }
 }
 
@@ -44,6 +44,7 @@ interface TenantContextType {
   tenant: TenantPublicInfo | null;
   isLoading: boolean;
   error: string | null;
+  statsTwoColsMobile: boolean;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -70,7 +71,9 @@ export const TenantProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   }, [tenantId]);
 
   return (
-    <TenantContext.Provider value={{ tenantId, tenant, isLoading, error }}>
+    <TenantContext.Provider
+      value={{ tenantId, tenant, isLoading, error, statsTwoColsMobile: !!window.__TENANT_CONFIG__?.statsTwoColsMobile }}
+    >
       {children}
     </TenantContext.Provider>
   );
