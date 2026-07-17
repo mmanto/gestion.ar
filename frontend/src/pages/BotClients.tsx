@@ -13,19 +13,7 @@ import { useClients } from '../hooks/useClients';
 import botsService from '../services/bots.service';
 import clientsService from '../services/clients.service';
 import type { Bot } from '../types/bot.types';
-import type { Client, ClientStatus } from '../types/client.types';
-
-const statusColors: Record<ClientStatus, string> = {
-  active: 'bg-green-200 text-green-950',
-  blocked: 'bg-red-200 text-red-950',
-  archived: 'bg-gray-200 text-gray-950',
-};
-
-const statusLabels: Record<ClientStatus, string> = {
-  active: 'Activo',
-  blocked: 'Bloqueado',
-  archived: 'Archivado',
-};
+import type { Client } from '../types/client.types';
 
 const sourceColors: Record<string, string> = {
   whatsapp: 'bg-green-200 text-green-950',
@@ -157,7 +145,7 @@ export const BotClients = () => {
             <Table>
               <TableBody>
                 <tr>
-                  <td colSpan={7}>
+                  <td colSpan={6}>
                     <EmptyState
                       icon={<Users className="w-8 h-8 text-gray-800" />}
                       title="No hay clientes para este agente"
@@ -174,7 +162,6 @@ export const BotClients = () => {
                   <TableHeaderCell>Score</TableHeaderCell>
                   <TableHeaderCell>Cliente</TableHeaderCell>
                   <TableHeaderCell>Canal</TableHeaderCell>
-                  <TableHeaderCell>Estado</TableHeaderCell>
                   <TableHeaderCell>Conversaciones</TableHeaderCell>
                   <TableHeaderCell>Último contacto</TableHeaderCell>
                   <TableHeaderCell align="right">Acciones</TableHeaderCell>
@@ -206,13 +193,6 @@ export const BotClients = () => {
                         }`}
                       >
                         {client.source}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span
-                        className={`px-2 py-1 text-base font-medium rounded-full ${statusColors[client.status]}`}
-                      >
-                        {statusLabels[client.status]}
                       </span>
                     </TableCell>
                     <TableCell textClassName="text-gray-800">

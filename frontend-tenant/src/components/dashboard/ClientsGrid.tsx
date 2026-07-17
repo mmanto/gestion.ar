@@ -4,7 +4,6 @@ import { Card } from '../common/Card';
 import { EmptyState } from '../common/EmptyState';
 import { Drawer } from '../common/Drawer';
 import { Button } from '../common/Button';
-import { SemaforoBadge } from '../common/SemaforoBadge';
 import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '../common/Table';
 import MessagesList from '../messages/MessagesList';
 import { useAuth } from '../../hooks/useAuth';
@@ -168,7 +167,6 @@ const ClientsGrid = ({ colorFilter }: ClientsGridProps) => {
         <Table>
           <TableHead>
             <tr>
-              <TableHeaderCell>Estado</TableHeaderCell>
               <TableHeaderCell>Cliente</TableHeaderCell>
               <TableHeaderCell align="right">Acciones</TableHeaderCell>
             </tr>
@@ -176,9 +174,6 @@ const ClientsGrid = ({ colorFilter }: ClientsGridProps) => {
           <TableBody>
             {clients.map((client) => (
               <TableRow key={client.client_id}>
-                <TableCell>
-                  <SemaforoBadge color={client.color_semaforo} estado={client.estado} />
-                </TableCell>
                 <TableCell>
                   <div>
                     <p className="text-lg font-normal text-gray-900">

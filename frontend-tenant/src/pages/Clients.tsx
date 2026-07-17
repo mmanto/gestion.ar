@@ -7,7 +7,6 @@ import { Alert } from '../components/common/Alert';
 import { EmptyState } from '../components/common/EmptyState';
 import { Button } from '../components/common/Button';
 import { Drawer } from '../components/common/Drawer';
-import { SemaforoBadge } from '../components/common/SemaforoBadge';
 import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '../components/common/Table';
 import MessagesList from '../components/messages/MessagesList';
 import { useAuth } from '../hooks/useAuth';
@@ -200,7 +199,7 @@ export const Clients = () => {
             <Table>
               <TableBody>
                 <tr>
-                  <td colSpan={3}>
+                  <td colSpan={2}>
                     <EmptyState
                       icon={<Users className="w-8 h-8 text-gray-800" />}
                       title="No hay contactos todavía"
@@ -216,7 +215,6 @@ export const Clients = () => {
             <Table>
               <TableHead>
                 <tr>
-                  <TableHeaderCell>Estado</TableHeaderCell>
                   <TableHeaderCell>Cliente</TableHeaderCell>
                   <TableHeaderCell align="right">Acciones</TableHeaderCell>
                 </tr>
@@ -224,9 +222,6 @@ export const Clients = () => {
               <TableBody>
                 {clients.map((client: Client) => (
                   <TableRow key={client.client_id}>
-                    <TableCell>
-                      <SemaforoBadge color={client.color_semaforo} estado={client.estado} />
-                    </TableCell>
                     <TableCell>
                       <div>
                         <p className="text-lg font-normal text-gray-900">
