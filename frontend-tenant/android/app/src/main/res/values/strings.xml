@@ -4,4 +4,5 @@
     <string name="title_activity_main">ius Staff</string>
     <string name="package_name">ius.intellify.pro</string>
     <string name="custom_url_scheme">ius.intellify.pro</string>
+    <string name="default_notification_channel_id">ius_staff_messages</string>
 </resources>

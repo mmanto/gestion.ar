@@ -1,141 +1,182 @@
-# MOBILE.md — Desarrollo Mobile (ADR-007)
+# MOBILE.md — App nativa Android del staff de ius (ADR-007)
 
-Pendientes y próximos pasos para las apps nativas con Capacitor.
-Ver ADR-007 en `DECISIONS.md` para el contexto arquitectónico.
+Estado de la app nativa Android para el **staff** del tenant `ius` (legal),
+empaquetada con Capacitor desde el mismo código de `frontend-tenant/` que
+sirve el panel web — sin fork de build ni de componentes. Ver ADR-007 en
+`DECISIONS.md` para el contexto arquitectónico (nota: ADR-007 describe la
+idea original de dos targets `staff`/`client`; ese split se intentó, rompió
+el sidebar del panel web para todos los tenants y se revirtió — lo que
+describe este documento es la implementación real, de un solo target).
+
+Para la **app del cliente final** (quien le escribe al bot, no el staff),
+hay un plan de diseño separado — es un proyecto distinto, no forma parte de
+esto.
 
 ---
 
-## Setup de plataformas nativas
+## Arquitectura: un solo target, progressive enhancement
 
-### Android
+No existe `VITE_TARGET=staff|client` ni build condicional de rutas/layout.
+`npm run build` (web) y `npm run build:capacitor` (nativo) generan el mismo
+árbol de componentes; lo único que cambia es:
+
+- **Tenant fijo horneado en build:** `scripts/bake-tenant-config.mjs` escribe
+  `dist/tenant-config.js` con `window.__TENANT_CONFIG__` a partir de
+  `VITE_TENANT_ID`, reusando el mismo mecanismo que `TenantContext.tsx` ya
+  lee en la web (ahí lo inyecta `docker-entrypoint.sh` al arrancar el
+  contenedor; acá se hornea en el bundle porque una app nativa no tiene ese
+  arranque de contenedor).
+- **Todo lo nativo es progressive enhancement** vía
+  `Capacitor.isNativePlatform()`: back button, push nativo, secure storage,
+  status bar/splash. Cero impacto en el build web — `isNativePlatform()`
+  resuelve `false` ahí y esos hooks son no-op.
+
+## Build
 
 ```bash
 cd frontend-tenant
-npm run build:staff          # o build:client
-VITE_TARGET=staff npx cap sync
+VITE_API_URL=http://10.0.2.2:8000/api VITE_TENANT_ID=tenant_6a10b2076443 \
+  npm run build:capacitor       # tsc -b && vite build --mode capacitor && bake-tenant-config
+npx cap sync android
 cd android && ./gradlew assembleDebug
 ```
 
-**Requisitos:**
-- Android SDK (Android Studio o `sdkmanager`)
-- `ANDROID_HOME` o `ANDROID_SDK_ROOT` en el path
-- Java 17+ (JDK)
+O, más simple, usando el comando del stack (valida requisitos, fija
+`VITE_API_URL`/`VITE_TENANT_ID` según el entorno):
 
-El proyecto `android/` ya está generado con 7 plugins de Capacitor.
+```bash
+./stack.dev build-android emulator                          # http://10.0.2.2:8000/api
+./stack.dev build-android device http://192.168.1.100:8000/api
+./stack.prod build-android prod https://api.intellify.pro/api
+```
+
+`appId: ius.intellify.pro`, `appName: 'ius Staff'`
+(`frontend-tenant/capacitor.config.ts`).
+
+**Requisitos:** Android SDK (`ANDROID_HOME`/`ANDROID_SDK_ROOT`), JDK 17+.
+
+`frontend-tenant/android/.gitignore` excluye `.gradle/`, `build/`,
+`app/build/`, `google-services.json` y keystores — no volver a commitear
+basura de build (ya pasó una vez, se limpió en `b976f40`/`b001d69`).
 
 ### iOS
 
-```bash
-cd frontend-tenant
-npm run build:staff
-VITE_TARGET=staff npx cap add ios
-npx cap open ios
-```
-
-**Requisitos:**
-- macOS con Xcode 15+
-- Apple Developer account (para firmar y distribuir)
+No implementado todavía. El mismo patrón (capacitor.config, sin
+`VITE_TARGET`) aplicaría con `npx cap add ios`, pero no hay `android/`
+equivalente ni se probó.
 
 ---
 
-## Push notifications nativas
+## Push notifications nativas al staff
 
-### FCM (Android)
+Cuando un cliente escribe por **Web, WhatsApp o Telegram**,
+`notify_staff_of_client_message()` (`backend/app/connection_manager.py`) hace
+dos cosas: WS en tiempo real (`staff_connection_manager`, para staff con la
+app abierta) y `push_service.broadcast_to_staff()` (para staff en background
+o con la app cerrada). Se llama desde `web_chat_router.py` (`_notify_staff`),
+`whatsapp_webhook_router.py` y `telegram_handlers.py`.
+
+`push_service.py` rutea por `platform` (`vapid`/`fcm`/`apns`) con
+`_send_vapid`/`_send_fcm`/`_send_apns`.
+
+### Registro del token (frontend)
+
+`useNativeStaffPush.ts` (usado en `App.tsx`) registra el token nativo
+(FCM en Android, APNs en iOS) contra el primer bot activo del tenant y lo
+manda a `POST /api/pwa/subscribe-staff`. A diferencia de `POST /subscribe`
+(público, para clientes anónimos), este endpoint requiere JWT y deriva
+`user_id` siempre del token — nunca del body — para que nadie pueda
+suscribirse con el `user_id` de otro miembro del staff.
+
+### FCM (Android) — setup
 
 1. Crear proyecto en [Firebase Console](https://console.firebase.google.com/)
-2. Project Settings → Service Accounts → Generate new private key
-3. Guardar el JSON en el servidor (ej. `/opt/secrets/firebase-credentials.json`)
-4. Agregar a `.env.prod`:
+2. Agregar app Android con package `ius.intellify.pro`, bajar
+   `google-services.json` → `frontend-tenant/android/app/` (gitignored)
+3. Project Settings → Service Accounts → Generate new private key → guardar
+   el JSON en el servidor (ej. `/opt/secrets/firebase-credentials.json`)
+4. `.env.prod`: `FCM_CREDENTIALS_PATH=/opt/secrets/firebase-credentials.json`
 
-```bash
-FCM_CREDENTIALS_PATH=/opt/secrets/firebase-credentials.json
-```
+### Canal de notificación (Android) — obligatorio, no es opcional
 
-5. Agregar el archivo `google-services.json` a `frontend-tenant/android/app/`
+Sin un canal propio declarado, FCM entrega los mensajes al
+`fcm_fallback_notification_channel` que crea el SDK — en varios fabricantes
+(confirmado en Motorola/MyUX con `adb logcat`, buscando
+`NotificationListener: onNotificationPosted`) ese canal queda con prioridad
+baja: la notificación se publica en el sistema (`✅ FCM enviado` en el
+backend, `messaging.send()` no tira error) pero sin heads-up, sonido ni
+vibración — llega, pero nadie la nota, y no hay ningún error en ningún lado
+que lo delate. Se resuelve con tres piezas que tienen que ir juntas:
 
-### APNs (iOS)
+1. `AndroidManifest.xml`: meta-data
+   `com.google.firebase.messaging.default_notification_channel_id` →
+   `@string/default_notification_channel_id` (`strings.xml`, valor
+   `ius_staff_messages`).
+2. `MainActivity.java`: crea ese canal explícitamente con
+   `NotificationManager.IMPORTANCE_HIGH` en `onCreate()` — si el canal no
+   existe todavía cuando llega el primer mensaje, el SDK lo crea solo con
+   importancia `DEFAULT`, que en algunos fabricantes tampoco alcanza para
+   heads-up.
+3. `push_service.py` (`_send_fcm`): el mensaje especifica
+   `android.notification.channel_id="ius_staff_messages"` explícitamente,
+   en vez de confiar en que el manifest resuelva el default.
 
-1. En [Apple Developer](https://developer.apple.com/account/) → Keys → crear APNs Auth Key
-2. Descargar el archivo `.p8`
-3. Agregar a `.env.prod`:
+**Para probar esto de nuevo:** cerrar la app deslizándola de recientes (no
+`adb shell am force-stop` — eso pone la app en el estado "detenida" de
+Android, que bloquea todo push hasta que se vuelve a abrir manualmente, y
+da un falso negativo distinto al bug real: `GCM: broadcast intent callback:
+result=CANCELLED`).
+
+### APNs (iOS) — setup (sin implementar aún, ver arriba)
+
+1. Apple Developer → Keys → crear APNs Auth Key, descargar el `.p8`
+2. `.env.prod`:
 
 ```bash
 APNS_KEY_PATH=/opt/secrets/apns-key.p8
 APNS_KEY_ID=ABC1234567
 APNS_TEAM_ID=DEF7890123
-APNS_TOPIC=ar.gestion.staff     # bundle ID de la app
+APNS_TOPIC=ius.intellify.pro
 APNS_USE_SANDBOX=true           # true para desarrollo, false para producción
 ```
 
 ---
 
-## Broadcast WhatsApp/Telegram → staff
+## JWT en Secure Storage
 
-El staff WebSocket (`/ws/staff/chat/{bot_id}`) solo recibe mensajes en tiempo real
-del canal Web. Los webhooks de WhatsApp y Telegram no notifican al staff.
-
-**Archivos a modificar:**
-
-- `backend/app/routers/whatsapp_webhook_router.py`
-- `backend/app/routers/telegram_webhook_router.py`
-
-**Patrón a replicar** (ver `backend/app/routers/web_chat_router.py:_notify_staff`):
-
-```python
-from app.connection_manager import staff_connection_manager
-from datetime import datetime, timezone
-
-await staff_connection_manager.broadcast_to_bot(
-    bot_id,
-    {
-        "type": "client_message",
-        "conversation_id": conversation_id,
-        "client_id": client_id,
-        "client_name": client_name,
-        "channel": "whatsapp",  # o "telegram"
-        "content": user_text,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    },
-)
-```
-
-Insertar después de cada `log_chat_interaction()` en ambos routers.
+`tokenStorage.ts` (`frontend-tenant/src/services`) envuelve `localStorage`
+en web y `capacitor-secure-storage-plugin` en nativo (Keychain/Keystore).
+Usado desde `api.ts`/`auth.service.ts` en vez de `localStorage` directo —
+en nativo el JWT nunca queda en el WebView storage inspeccionable.
 
 ---
 
-## botId dinámico en StaffAppProvider
+## Chrome nativo
 
-`StaffAppProvider` recibe `botId={null}` (ver `frontend-tenant/src/App.tsx`).
-El push nativo no se registra hasta que haya un `botId` válido.
-
-**Fix pendiente:** cuando el Dashboard cargue los bots del tenant, pasar el primer
-`bot_id` activo al provider. Opciones:
-
-1. Usar un contexto `BotContext` que el Dashboard popule y `StaffAppProvider` consuma
-2. Hacer que `useNativePushNotifications` acepte `botId` reactivo (ya lo hace — solo
-   hay que pasarle el valor cuando esté disponible)
+`@capacitor/splash-screen`, `@capacitor/status-bar`, `@capacitor/app`,
+color navy de marca (`#25357a`, ver `capacitor.config.ts`). Back button
+manejado por `useNativeBackButton.ts` (usado una vez en `App.tsx`, no-op en
+web).
 
 ---
 
-## Distribución en stores
+## Pendientes
 
-### Play Store
-
-1. Generar APK/AAB firmado: `./gradlew bundleRelease`
-2. Crear listing en [Google Play Console](https://play.google.com/console)
-3. Subir el AAB, screenshots, descripción, política de privacidad
-
-### App Store
-
-1. Crear App ID en [App Store Connect](https://appstoreconnect.apple.com)
-2. Archivar y distribuir desde Xcode
-3. Completar metadata, screenshots, privacy policy
+- **Prueba funcional completa en dispositivo real** (login, navegación sin
+  crashes, respuesta de conversación, push con la app completamente
+  cerrada) — no se hizo todavía contra un teléfono físico de ius.
+- **Firma de release + distribución:** hoy solo hay build debug. Falta
+  keystore de upload (nunca commitear), `signingConfigs` en
+  `android/app/build.gradle` vía variables de entorno, y decidir Play Store
+  (probablemente alcanza con "internal testing", no es una app
+  consumer-facing) vs. sideload directo de APKs a los dispositivos de ius.
+- **iOS:** sin empezar.
 
 ---
 
-## Variables de entorno nuevas
+## Variables de entorno
 
-Ver `ENV.md` para la lista completa. Resumen de las agregadas por ADR-007:
+Ver `ENV.md` para la lista completa.
 
 | Variable | Descripción |
 |---|---|
@@ -143,26 +184,5 @@ Ver `ENV.md` para la lista completa. Resumen de las agregadas por ADR-007:
 | `APNS_KEY_PATH` | Path al .p8 de APNs |
 | `APNS_KEY_ID` | Key ID de Apple |
 | `APNS_TEAM_ID` | Team ID de Apple |
-| `APNS_TOPIC` | Bundle ID de la app |
+| `APNS_TOPIC` | Bundle ID de la app (`ius.intellify.pro`) |
 | `APNS_USE_SANDBOX` | `true` para desarrollo |
-
----
-
-## Known issues
-
-### Dependencia Firebase Admin bloquea build del backend
-
-`firebase-admin==6.17.0` (requerido por ADR-007 para FCM push notifications)
-requiere compilar `grpcio` y `google-api-core` con dependencias de sistema
-(`libffi`, `openssl`, `rustc`/`cargo` para `cryptography`). En entornos sin
-toolchain de compilación completo (Docker slim, VPS mínima), `pip install`
-falla con errores de compilación de módulos C.
-
-**Workaround actual:** quitar `firebase-admin` y `apns2` de `requirements.txt`
-mientras no se esté desarrollando push notifications nativas. Re-agregarlas
-cuando se implemente FCM/APNs (ver sección "Push notifications nativas").
-
-**Fix definitivo (pendiente):**
-- Agregar `build-essential`/`libffi-dev`/`libssl-dev` al Dockerfile del backend
-- O usar imágenes base `python:3.11-slim-bookworm` con build deps preinstaladas
-- Evaluar `firebase-admin` en modo lightweight sin `grpcio` (REST API en vez de gRPC)

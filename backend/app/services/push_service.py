@@ -380,6 +380,20 @@ class PushService:
                 data={
                     "url": payload.get("url", "/"),
                 },
+                # Sin channel_id explícito, Android entrega el mensaje al canal
+                # fcm_fallback_notification_channel (creado por el propio SDK),
+                # que en varios fabricantes queda con prioridad baja: se
+                # publica en el sistema pero sin heads-up/sonido/vibración —
+                # confirmado en Motorola con logcat (onNotificationPosted con
+                # channel=fcm_fallback_notification_channel, sound=null,
+                # vibrate=null). "ius_staff_messages" es el canal IMPORTANCE_HIGH
+                # que crea MainActivity.java al arrancar la app nativa.
+                android=messaging.AndroidConfig(
+                    priority="high",
+                    notification=messaging.AndroidNotification(
+                        channel_id="ius_staff_messages",
+                    ),
+                ),
             )
 
             response = messaging.send(message, app=self._fcm_app)
@@ -388,8 +402,17 @@ class PushService:
             return True
 
         except Exception as e:
+            from firebase_admin import messaging
+
             error_str = str(e)
-            if "UNREGISTERED" in error_str or "INVALID_ARGUMENT" in error_str or "NOT_FOUND" in error_str:
+            # El SDK levanta messaging.UnregisteredError (mensaje "NotRegistered"
+            # o "Requested entity was not found.", según la versión) para tokens
+            # que ya no existen — el matching por substring anterior
+            # ("UNREGISTERED"/"NOT_FOUND" en mayúsculas) nunca hacía match con
+            # ninguno de los dos mensajes reales, así que las suscripciones
+            # muertas nunca se desactivaban solas (confirmado en testing manual:
+            # un token de horas antes seguía intentándose en cada envío).
+            if isinstance(e, messaging.UnregisteredError) or "UNREGISTERED" in error_str or "INVALID_ARGUMENT" in error_str or "NOT_FOUND" in error_str:
                 await self._deactivate(subscription.subscription_id)
             print(f"Error enviando push FCM: {error_str[:100]}")
             return False
