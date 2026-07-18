@@ -27,7 +27,7 @@
 #   ./stack.dev build-android device http://192.168.1.100:8000/api  # dispositivo fisico
 #   ./stack.dev clean                   # limpiar recursos
 #   docker network create traefik_public (una sola vez)
-#   /etc/hosts con: 127.0.0.1 erma.com.test ius.mx.test
+#   /etc/hosts con: 127.0.0.1 erma.com.test ius.mx.test ius-landing.test
 
 set -euo pipefail
 
@@ -36,6 +36,8 @@ COMPOSE_FILES=(-f docker-compose.yml -f docker-compose.override.yml -f docker-co
 
 CORE_SERVICES=(app frontend postgres redis traefik-local)
 TENANTS=(erma ius)
+SITES=(ius-landing)
+declare -A SITE_DOMAINS=(["ius-landing"]="ius-landing.test")
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -66,12 +68,18 @@ check_hosts() {
       missing+=("127.0.0.1 ${domain}")
     fi
   done
+  for site in "${SITES[@]}"; do
+    local domain="${SITE_DOMAINS[$site]}"
+    if ! grep -qE "127\.0\.0\.1\s+${domain}" /etc/hosts 2>/dev/null; then
+      missing+=("127.0.0.1 ${domain}")
+    fi
+  done
   if [ ${#missing[@]} -gt 0 ]; then
     echo -e "${YELLOW}==> Faltan entradas en /etc/hosts para dominios .test:${NC}"
     for entry in "${missing[@]}"; do
       echo -e "  ${RED}${entry}${NC}"
     done
-    echo -e "${GREEN}  sudo sh -c 'echo \"127.0.0.1 erma.com.test\" >> /etc/hosts && echo \"127.0.0.1 ius.mx.test\" >> /etc/hosts'${NC}"
+    echo -e "${GREEN}  sudo sh -c 'echo \"127.0.0.1 erma.com.test\" >> /etc/hosts && echo \"127.0.0.1 ius.mx.test\" >> /etc/hosts && echo \"127.0.0.1 ius-landing.test\" >> /etc/hosts'${NC}"
     echo ""
   fi
 }
@@ -108,6 +116,13 @@ health_check() {
     curl -sf -o /dev/null -w "tenant-${tenant}: %{http_code}\n" "http://${domain}/" \
       || echo -e "${YELLOW}tenant-${tenant}: sin respuesta${NC}"
   done
+
+  # Sites via Traefik en :80
+  for site in "${SITES[@]}"; do
+    local domain="${SITE_DOMAINS[$site]}"
+    curl -sf -o /dev/null -w "site-${site}: %{http_code}\n" "http://${domain}/" \
+      || echo -e "${YELLOW}site-${site}: sin respuesta${NC}"
+  done
 }
 
 menu() {
@@ -116,6 +131,7 @@ menu() {
   echo -e "${CYAN}║${NC}       ${GREEN}gestion.ar${NC} — stack de desarrollo         ${CYAN}║${NC}"
   echo -e "${CYAN}║${NC}       core: ${CORE_SERVICES[*]}  ${CYAN}║${NC}"
   echo -e "${CYAN}║${NC}       tenants: ${TENANTS[*]}                     ${CYAN}║${NC}"
+  echo -e "${CYAN}║${NC}       sites: ${SITES[*]}                    ${CYAN}║${NC}"
   echo -e "${CYAN}╠══════════════════════════════════════════════════╣${NC}"
   echo -e "${CYAN}║${NC} 1) up            levantar todo                 ${CYAN}║${NC}"
   echo -e "${CYAN}║${NC} 2) down          detener todo                  ${CYAN}║${NC}"
@@ -135,12 +151,12 @@ menu() {
   case "$choice" in
     1) cmd_up ;;
     2) cmd_down ;;
-    3) read -r -p "Servicio (${CORE_SERVICES[*]} ${TENANTS[*]}): " svc; cmd_restart "$svc" ;;
+    3) read -r -p "Servicio (${CORE_SERVICES[*]} ${TENANTS[*]} ${SITES[*]}): " svc; cmd_restart "$svc" ;;
     4) cmd_rebuild ;;
-    5) read -r -p "Servicio (${CORE_SERVICES[*]} ${TENANTS[*]}): " svc; cmd_logs "$svc" ;;
+    5) read -r -p "Servicio (${CORE_SERVICES[*]} ${TENANTS[*]} ${SITES[*]}): " svc; cmd_logs "$svc" ;;
     6) cmd_ps ;;
     7) cmd_status ;;
-    8) read -r -p "Servicio (${CORE_SERVICES[*]} ${TENANTS[*]}): " svc; cmd_shell "$svc" ;;
+    8) read -r -p "Servicio (${CORE_SERVICES[*]} ${TENANTS[*]} ${SITES[*]}): " svc; cmd_shell "$svc" ;;
     9) read -r -p "Entorno (emulator|device): " env; cmd_build_android "${env:-emulator}" ;;
     c|C) read -r -p "Modo (Enter=ligero, deep, all): " mode; cmd_clean "${mode:-light}" ;;
     q|Q) exit 0 ;;
@@ -163,6 +179,13 @@ resolve_service() {
   for tenant in "${TENANTS[@]}"; do
     if [[ "$name" == "$tenant" ]]; then
       echo "frontend-tenant-${tenant}"
+      return 0
+    fi
+  done
+  # Sites: short name → compose service name (ius-landing → landing-ius)
+  for site in "${SITES[@]}"; do
+    if [[ "$name" == "$site" ]]; then
+      echo "landing-${name%-landing}"
       return 0
     fi
   done
@@ -189,6 +212,9 @@ cmd_up() {
         [[ "$tenant" == "ius" ]] && domain="ius.mx.test"
         echo -e "  Tenant ${tenant}: ${CYAN}http://${domain}${NC}"
       done
+      for site in "${SITES[@]}"; do
+        echo -e "  Site ${site}: ${CYAN}http://${SITE_DOMAINS[$site]}${NC}"
+      done
       cmd_ps
       return
     fi
@@ -214,7 +240,7 @@ cmd_restart() {
     local container
     container=$(resolve_service "$svc") || {
       echo -e "${RED}ERROR: servicio '$svc' no valido.${NC}"
-      echo -e "Usar: ${CORE_SERVICES[*]} ${TENANTS[*]}"
+      echo -e "Usar: ${CORE_SERVICES[*]} ${TENANTS[*]} ${SITES[*]}"
       return 1
     }
     echo -e "${YELLOW}==> Restart de $container...${NC}"
@@ -233,7 +259,7 @@ cmd_logs() {
   local svc="${1:-}"
   if [[ -z "$svc" ]]; then
     echo -e "${RED}ERROR: especifica un servicio.${NC}"
-    echo -e "Usar: ${CORE_SERVICES[*]} ${TENANTS[*]}"
+    echo -e "Usar: ${CORE_SERVICES[*]} ${TENANTS[*]} ${SITES[*]}"
     return 1
   fi
   local container
@@ -258,7 +284,7 @@ cmd_shell() {
   local svc="${1:-}"
   if [[ -z "$svc" ]]; then
     echo -e "${RED}ERROR: especifica un servicio.${NC}"
-    echo -e "Usar: ${CORE_SERVICES[*]} ${TENANTS[*]}"
+    echo -e "Usar: ${CORE_SERVICES[*]} ${TENANTS[*]} ${SITES[*]}"
     return 1
   fi
   local container
@@ -501,6 +527,7 @@ case "$CMD" in
     echo "Sin parametros muestra el menu interactivo."
     echo "Core: ${CORE_SERVICES[*]}"
     echo "Tenants: ${TENANTS[*]} (usa el nombre corto: erma, ius)"
+    echo "Sites: ${SITES[*]} (landing estatica, sin backend detras)"
     echo "build-android: emulator | device [api-url] (default: emulator, http://10.0.2.2:8000/api)"
     echo "clean: sin flag | --deep | --all"
     ;;

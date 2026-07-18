@@ -39,6 +39,8 @@ COMPOSE_FILES=(-f docker-compose.yml -f docker-compose.prod.yml -f docker-compos
 
 CORE_SERVICES=(app frontend)
 TENANTS=(ius erma)
+SITES=(ius-landing)
+declare -A SITE_DOMAINS=(["ius-landing"]="law.dev.leadtrackers.pro")
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -82,6 +84,12 @@ health_check() {
     curl -sf -o /dev/null -w "$tenant: %{http_code}\n" "$tenant_url/" \
       || echo -e "${YELLOW}$tenant: sin respuesta${NC}"
   done
+
+  for site in "${SITES[@]}"; do
+    local site_url="https://${SITE_DOMAINS[$site]}"
+    curl -sf -o /dev/null -w "$site: %{http_code}\n" "$site_url/" \
+      || echo -e "${YELLOW}$site: sin respuesta${NC}"
+  done
 }
 
 menu() {
@@ -90,6 +98,7 @@ menu() {
   echo -e "${CYAN}║${NC}     ${GREEN}gestion.ar${NC} — stack de producción       ${CYAN}║${NC}"
   echo -e "${CYAN}║${NC}     core: app, frontend                     ${CYAN}║${NC}"
   echo -e "${CYAN}║${NC}     tenants: ${TENANTS[*]}                         ${CYAN}║${NC}"
+  echo -e "${CYAN}║${NC}     sites: ${SITES[*]}                        ${CYAN}║${NC}"
   echo -e "${CYAN}╠══════════════════════════════════════════════╣${NC}"
   echo -e "${CYAN}║${NC} 1) up          levantar todo               ${CYAN}║${NC}"
   echo -e "${CYAN}║${NC} 2) down        detener todo                ${CYAN}║${NC}"
@@ -109,12 +118,12 @@ menu() {
   case "$choice" in
     1) cmd_up ;;
     2) cmd_down ;;
-    3) read -r -p "Servicio (app, frontend, ${TENANTS[*]}): " svc; cmd_restart "$svc" ;;
+    3) read -r -p "Servicio (app, frontend, ${TENANTS[*]} ${SITES[*]}): " svc; cmd_restart "$svc" ;;
     4) cmd_rebuild ;;
-    5) read -r -p "Servicio (app, frontend, ${TENANTS[*]}): " svc; cmd_logs "$svc" ;;
+    5) read -r -p "Servicio (app, frontend, ${TENANTS[*]} ${SITES[*]}): " svc; cmd_logs "$svc" ;;
     6) cmd_ps ;;
     7) cmd_status ;;
-    8) read -r -p "Servicio (app, frontend, ${TENANTS[*]}): " svc; cmd_shell "$svc" ;;
+    8) read -r -p "Servicio (app, frontend, ${TENANTS[*]} ${SITES[*]}): " svc; cmd_shell "$svc" ;;
     c|C) read -r -p "Modo (Enter=ligero, images): " mode; cmd_clean "${mode:-light}" ;;
     b|B) read -r -p "Entorno (emulator|device|prod): " env; cmd_build_android "${env:-emulator}" ;;
     q|Q) exit 0 ;;
@@ -125,7 +134,7 @@ menu() {
 
 
 # Resuelve un nombre corto de servicio al nombre de contenedor en compose.
-# Ej: "ius" → "frontend-tenant-ius", "app" → "app".
+# Ej: "ius" → "frontend-tenant-ius", "ius-landing" → "landing-ius", "app" → "app".
 # Retorna 1 si el servicio no es válido.
 resolve_service() {
   local name="$1"
@@ -141,13 +150,19 @@ resolve_service() {
       return 0
     fi
   done
+  for site in "${SITES[@]}"; do
+    if [[ "$name" == "$site" ]]; then
+      echo "landing-${name%-landing}"
+      return 0
+    fi
+  done
   return 1
 }
 
 prompt_service() {
   local prompt="${1:-Servicio}"
   echo ""
-  echo "Servicios: app | frontend | ${TENANTS[*]}"
+  echo "Servicios: app | frontend | ${TENANTS[*]} ${SITES[*]}"
   read -r -p "$prompt: " svc
   echo "$svc"
 }
@@ -189,7 +204,7 @@ cmd_restart() {
   else
     local container
     container=$(resolve_service "$svc") || {
-      echo -e "${RED}ERROR: servicio '$svc' no válido. Usar: app | frontend | ${TENANTS[*]}${NC}"
+      echo -e "${RED}ERROR: servicio '$svc' no válido. Usar: app | frontend | ${TENANTS[*]} ${SITES[*]}${NC}"
       return 1
     }
     echo -e "${YELLOW}==> Restart de $container...${NC}"
@@ -207,7 +222,7 @@ cmd_rebuild() {
 cmd_logs() {
   local svc="${1:-}"
   if [[ -z "$svc" ]]; then
-    echo -e "${RED}ERROR: especificá un servicio: app | frontend | ${TENANTS[*]}${NC}"
+    echo -e "${RED}ERROR: especificá un servicio: app | frontend | ${TENANTS[*]} ${SITES[*]}${NC}"
     return 1
   fi
   local container
@@ -231,7 +246,7 @@ cmd_status() {
 cmd_shell() {
   local svc="${1:-}"
   if [[ -z "$svc" ]]; then
-    echo -e "${RED}ERROR: especificá un servicio: app | frontend | ${TENANTS[*]}${NC}"
+    echo -e "${RED}ERROR: especificá un servicio: app | frontend | ${TENANTS[*]} ${SITES[*]}${NC}"
     return 1
   fi
   local container
@@ -446,6 +461,7 @@ case "$CMD" in
     echo "Uso: $0 [up|down|restart|rebuild|logs|ps|status|shell|clean|build-android] [servicio|target]"
     echo "Sin parametros muestra el menu interactivo."
     echo "Tenants: ${TENANTS[*]} (usa el nombre corto: ius, erma)"
+    echo "Sites: ${SITES[*]} (landing estatica, sin backend detras)"
     echo "clean: sin flag | --images"
     echo "build-android: emulator | device [api-url] | prod [api-url] (default emulador: http://10.0.2.2:8000/api)"
     ;;
