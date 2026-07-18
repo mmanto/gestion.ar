@@ -98,9 +98,9 @@ export const TenantDetail = () => {
     try {
       const updated = await tenantAdminService.updateTenant(tenantId, {
         branding: {
-          logo_url: brandingLogoUrl || null,
+          logo_url: brandingLogoUrl || undefined,
           primary_color: brandingColor,
-          tagline: brandingTagline || null,
+          tagline: brandingTagline || undefined,
         },
       });
       setTenant(updated);
