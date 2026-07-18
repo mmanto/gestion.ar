@@ -9,9 +9,9 @@ export const Sidebar: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
   const { tenant } = useTenant();
   const { collapsed, toggleCollapsed, mobileOpen, setMobileOpen } = useSidebar();
-  const tenantName = tenant?.name || 'Backoffice';
   const logoH = tenant?.branding.logo_url_horizontal || tenant?.branding.logo_url;
-  const logoV = tenant?.branding.logo_url_vertical;
+  const logoV = tenant?.branding.logo_url_vertical || tenant?.branding.logo_url;
+  const tenantName = tenant?.name || 'Backoffice';
   const location = useLocation();
 
   useEffect(() => {
