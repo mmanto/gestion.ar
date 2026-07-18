@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { BrandingSection } from '../components/settings/BrandingSection';
 import { GraduationCap, Trash2 } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { LoadingPage } from '../components/common/Spinner';
@@ -270,6 +271,8 @@ export const Settings = () => {
             )}
           </div>
         </Card>
+
+        {user?.role === 'admin' && <BrandingSection />}
 
         {(user?.role === 'admin' || user?.role === 'operativo') && (
           <div>

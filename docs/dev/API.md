@@ -422,6 +422,55 @@ el WebSocket del cliente y el WebSocket del staff en tiempo real.
 Si el staff está offline, se envía push notification (FCM/APNs/VAPID).
 ---
 
+
+## Tenant — Branding
+
+Endpoints para que el admin del tenant gestione su marca (logo, color, tagline).
+Requieren JWT. Solo el rol `admin` del tenant puede modificar branding.
+
+### POST `/api/tenant/branding/logo`
+
+Subir el logo del tenant. Acepta multipart `file`.
+
+**Request:** `multipart/form-data`
+- `file`: imagen (JPG, PNG, WEBP, SVG — hasta 2MB)
+
+**Response 200:**
+```json
+{ "success": true, "url": "/api/uploads/tenants/abc123.png" }
+```
+
+### PATCH `/api/tenant/branding`
+
+Actualizar color principal y/o tagline. Ambos campos opcionales.
+
+**Request:**
+```json
+{ "primary_color": "#ff5722", "tagline": "Justicia laboral" }
+```
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "branding": {
+    "logo_url": "/api/uploads/tenants/abc123.png",
+    "primary_color": "#ff5722",
+    "tagline": "Justicia laboral"
+  }
+}
+```
+
+### DELETE `/api/tenant/branding/logo`
+
+Eliminar el logo del tenant (solo la referencia — no borra el archivo en disco).
+
+**Response 200:**
+```json
+{ "success": true }
+```
+
+---
 ## Sistema
 
 ### GET `/`

@@ -45,6 +45,10 @@ export const TenantDetail = () => {
   const [botModules, setBotModules] = useState<Record<string, BotModuleInfo[]>>({});
   const [allModules, setAllModules] = useState<ModuleInfo[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [brandingLogoUrl, setBrandingLogoUrl] = useState<string | undefined>();
+  const [brandingColor, setBrandingColor] = useState('#25357a');
+  const [brandingTagline, setBrandingTagline] = useState('');
+  const [savingBranding, setSavingBranding] = useState(false);
 
   const load = useCallback(async () => {
     if (!tenantId) return;
@@ -58,6 +62,9 @@ export const TenantDetail = () => {
         tenantAdminService.listPlans(),
       ]);
       setTenant(tenantData);
+      setBrandingLogoUrl(tenantData.branding?.logo_url || undefined);
+      setBrandingColor(tenantData.branding?.primary_color || '#25357a');
+      setBrandingTagline(tenantData.branding?.tagline || '');
       setUsers(usersData.users);
       setBots(botsData.bots);
       setAllModules(modulesData);
@@ -83,6 +90,26 @@ export const TenantDetail = () => {
     if (!tenantId) return;
     const updated = await tenantAdminService.updateTenant(tenantId, { plan_id: planId });
     setTenant(updated);
+  };
+
+  const handleSaveBranding = async () => {
+    if (!tenantId) return;
+    setSavingBranding(true);
+    try {
+      const updated = await tenantAdminService.updateTenant(tenantId, {
+        branding: {
+          logo_url: brandingLogoUrl || null,
+          primary_color: brandingColor,
+          tagline: brandingTagline || null,
+        },
+      });
+      setTenant(updated);
+      setBrandingLogoUrl(updated.branding?.logo_url || undefined);
+      setBrandingColor(updated.branding?.primary_color || '#25357a');
+      setBrandingTagline(updated.branding?.tagline || '');
+    } finally {
+      setSavingBranding(false);
+    }
   };
 
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -231,6 +258,58 @@ export const TenantDetail = () => {
               </option>
             ))}
           </select>
+        </Card>
+
+        {/* Branding */}
+        <Card shadow="none" className="mb-8">
+          <h3 className="text-base font-semibold text-gray-900 mb-3">Marca</h3>
+          <div className="space-y-4">
+            {/* Logo */}
+            <div>
+              <p className="text-xs font-medium text-gray-700 mb-2">Logo</p>
+              <AvatarPicker
+                value={brandingLogoUrl}
+                onChange={setBrandingLogoUrl}
+                fallbackLabel={tenant.name?.charAt(0) || '?'}
+              />
+            </div>
+
+            {/* Primary color */}
+            <div>
+              <p className="text-xs font-medium text-gray-700 mb-2">Color principal</p>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={brandingColor}
+                  onChange={(e) => setBrandingColor(e.target.value)}
+                  className="w-10 h-10 rounded border border-gray-300 cursor-pointer p-0.5"
+                />
+                <span className="text-sm text-gray-700">{brandingColor}</span>
+              </div>
+            </div>
+
+            {/* Tagline */}
+            <div>
+              <p className="text-xs font-medium text-gray-700 mb-2">Tagline</p>
+              <input
+                type="text"
+                value={brandingTagline}
+                onChange={(e) => setBrandingTagline(e.target.value)}
+                maxLength={200}
+                placeholder="Ej: Abogados de confianza"
+                className="w-full max-w-sm px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+            </div>
+
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleSaveBranding}
+              disabled={savingBranding}
+            >
+              {savingBranding ? 'Guardando...' : 'Guardar marca'}
+            </Button>
+          </div>
         </Card>
 
         {/* Usuarios */}

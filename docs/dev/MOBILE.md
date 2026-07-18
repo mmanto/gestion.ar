@@ -36,10 +36,19 @@ No existe `VITE_TARGET=staff|client` ni build condicional de rutas/layout.
 ```bash
 cd frontend-tenant
 VITE_API_URL=http://10.0.2.2:8000/api VITE_TENANT_ID=tenant_6a10b2076443 \
+  VITE_STATS_TWO_COLS_MOBILE=true \
   npm run build:capacitor       # tsc -b && vite build --mode capacitor && bake-tenant-config
 npx cap sync android
 cd android && ./gradlew assembleDebug
 ```
+
+`VITE_STATS_TWO_COLS_MOBILE=true` replica lo que `docker-compose.tenants.*.yml`
+ya setea para `ius` en la web (`STATS_TWO_COLS_MOBILE`, leído por
+`docker-entrypoint.sh`) — sin esto, `bake-tenant-config.mjs` hornea
+`statsTwoColsMobile: false` y el dashboard (`StatsCards.tsx`) muestra las
+stat cards en 1 columna en el celular en vez de 2. `stack.dev`/`stack.prod
+build-android` ya lo setean; si se corre `npm run build:capacitor` a mano,
+hay que pasarlo explícitamente.
 
 O, más simple, usando el comando del stack (valida requisitos, fija
 `VITE_API_URL`/`VITE_TENANT_ID` según el entorno):

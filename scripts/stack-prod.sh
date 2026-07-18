@@ -389,8 +389,12 @@ cmd_build_android() {
 
   echo -e "${CYAN}── Build Android (${GREEN}${env}${CYAN}) — API: ${api_url} — tenant: ${tenant_id} ──${NC}"
 
-  echo "  [1/3] VITE_API_URL=${api_url} VITE_TENANT_ID=${tenant_id} npm run build:capacitor ..."
-  (cd "$project_dir" && VITE_API_URL="$api_url" VITE_TENANT_ID="$tenant_id" npm run build:capacitor) || {
+  # STATS_TWO_COLS_MOBILE=true replica lo que docker-compose.tenants.*.yml ya
+  # setea para ius en la web (ver docker-entrypoint.sh) — sin esto el build
+  # nativo horneaba statsTwoColsMobile:false y el dashboard mostraba las
+  # stat cards en 1 columna en el celular en vez de 2 (StatsCards.tsx).
+  echo "  [1/3] VITE_API_URL=${api_url} VITE_TENANT_ID=${tenant_id} VITE_STATS_TWO_COLS_MOBILE=true npm run build:capacitor ..."
+  (cd "$project_dir" && VITE_API_URL="$api_url" VITE_TENANT_ID="$tenant_id" VITE_STATS_TWO_COLS_MOBILE=true npm run build:capacitor) || {
     echo -e "${RED}  ERROR: npm run build:capacitor fallo${NC}"
     return 1
   }

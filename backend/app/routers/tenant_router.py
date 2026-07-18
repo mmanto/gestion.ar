@@ -14,17 +14,120 @@ general, ver bot_router.py/tenant_admin_router.py) — sólo puede:
 Ver estrategia multi-tenant en docs/dev/DECISIONS.md.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+import os
+import re
+import uuid as _uuid
 
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from app.auth_service import User
 from app.dependencies.auth import get_current_user, require_role
 from app.models.bot import BotStatus, BotUpdate
-from app.models.tenant import AutoQualifyColorsUpdate, CustomFactsUpdate, ModuleEnableRequest, TenantOwnUserCreate, TenantUserOut, TenantUserUpdate
+from app.models.tenant import AutoQualifyColorsUpdate, CustomFactsUpdate, ModuleEnableRequest, TenantOwnUserCreate, TenantUpdate, TenantUserOut, TenantUserUpdate
 from app.services.bot_service import get_bot_service
+from app.routers.upload_router import UPLOADS_DIR
+from app.services.tenant_service import get_tenant_service
 from app.services.module_service import get_module_service
 from app.services.user_service import get_user_service
 
 router = APIRouter(prefix="/api/tenant", tags=["tenant"])
+
+
+TENANT_LOGOS_DIR = os.path.join(UPLOADS_DIR, "tenants")
+ALLOWED_LOGO_CONTENT_TYPES = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/svg+xml": ".svg",
+}
+MAX_LOGO_BYTES = 2 * 1024 * 1024  # 2MB
+
+
+# ── Branding ──────────────────────────────────────────────────────────────────
+
+@router.post("/branding/logo", response_model=dict)
+async def upload_tenant_logo(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
+    """Sube el logo del tenant y actualiza branding.logo_url."""
+    ext = ALLOWED_LOGO_CONTENT_TYPES.get(file.content_type)
+    if not ext:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Formato no soportado — usá JPG, PNG, WEBP o SVG",
+        )
+
+    contents = await file.read()
+    if len(contents) > MAX_LOGO_BYTES:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "La imagen supera el tamaño máximo de 2MB",
+        )
+
+    os.makedirs(TENANT_LOGOS_DIR, exist_ok=True)
+    filename = f"{_uuid.uuid4().hex}{ext}"
+    file_path = os.path.join(TENANT_LOGOS_DIR, filename)
+    with open(file_path, "wb") as f:
+        f.write(contents)
+
+    url = f"/api/uploads/tenants/{filename}"
+    tenant_service = get_tenant_service()
+    tenant = await tenant_service.get_tenant(current_user.tenant_id)
+    branding = dict(tenant.branding) if tenant and tenant.branding else {}
+    branding["logo_url"] = url
+    await tenant_service.update_tenant(current_user.tenant_id, TenantUpdate(branding=branding))
+
+    return {"success": True, "url": url}
+
+
+@router.patch("/branding", response_model=dict)
+async def update_tenant_branding(
+    body: dict,
+    current_user: User = Depends(require_role("admin")),
+):
+    """Actualiza campos de branding (primary_color, tagline)."""
+    primary_color = body.get("primary_color")
+    tagline = body.get("tagline")
+
+    if primary_color is not None:
+        if not isinstance(primary_color, str) or not re.match(r"^#[0-9a-fA-F]{6}$", primary_color):
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                "primary_color debe ser un hex color válido (ej. #ff5722)",
+            )
+
+    tenant_service = get_tenant_service()
+    tenant = await tenant_service.get_tenant(current_user.tenant_id)
+    branding = dict(tenant.branding) if tenant and tenant.branding else {}
+
+    if primary_color is not None:
+        branding["primary_color"] = primary_color
+    if tagline is not None:
+        if not isinstance(tagline, str) or len(tagline) > 200:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                "tagline debe ser un string de hasta 200 caracteres",
+            )
+        branding["tagline"] = tagline
+
+    await tenant_service.update_tenant(current_user.tenant_id, TenantUpdate(branding=branding))
+
+    return {"success": True, "branding": branding}
+
+
+@router.delete("/branding/logo", response_model=dict)
+async def delete_tenant_logo(
+    current_user: User = Depends(require_role("admin")),
+):
+    """Elimina el logo del tenant (solo la referencia — no borra el archivo)."""
+    tenant_service = get_tenant_service()
+    tenant = await tenant_service.get_tenant(current_user.tenant_id)
+    branding = dict(tenant.branding) if tenant and tenant.branding else {}
+    branding["logo_url"] = None
+
+    await tenant_service.update_tenant(current_user.tenant_id, TenantUpdate(branding=branding))
+
+    return {"success": True}
 
 
 async def _verify_tenant_bot(bot_id: str, current_user: User):
