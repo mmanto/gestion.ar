@@ -22,6 +22,7 @@ function readStoredCollapsed(): boolean {
 
 export const SidebarProvider: React.FC<SidebarProviderProps> = ({ children }) => {
   const [collapsed, setCollapsedState] = useState<boolean>(readStoredCollapsed);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const setCollapsed = (value: boolean) => {
     setCollapsedState(value);
@@ -33,8 +34,16 @@ export const SidebarProvider: React.FC<SidebarProviderProps> = ({ children }) =>
   };
 
   const toggleCollapsed = () => setCollapsed(!collapsed);
+  const toggleMobileOpen = () => setMobileOpen((v) => !v);
 
-  const value: SidebarContextType = { collapsed, setCollapsed, toggleCollapsed };
+  const value: SidebarContextType = {
+    collapsed,
+    setCollapsed,
+    toggleCollapsed,
+    mobileOpen,
+    setMobileOpen,
+    toggleMobileOpen,
+  };
 
   return <SidebarContext.Provider value={value}>{children}</SidebarContext.Provider>;
 };

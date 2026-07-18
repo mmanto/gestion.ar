@@ -20,7 +20,7 @@ export const Drawer = ({ open, onClose, title, children }: DrawerProps) => {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex justify-end transition-opacity duration-300 ${
+      className={`fixed inset-0 z-[70] flex justify-end transition-opacity duration-300 ${
         open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
       }`}
     >
