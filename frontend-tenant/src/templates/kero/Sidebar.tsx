@@ -114,9 +114,9 @@ export const KeroSidebar: React.FC = () => {
         >
           <Link to="/dashboard" className="flex items-center gap-2">
             {!collapsed && logoH ? (
-              <img src={logoH} alt={tenantName} className="h-8 max-w-[180px] object-contain" />
+              <img src={logoH} alt={tenantName} className="h-16 max-w-[360px] object-contain" />
             ) : collapsed && logoV ? (
-              <img src={logoV} alt={tenantName} className="h-8 w-8 object-contain" />
+              <img src={logoV} alt={tenantName} className="h-16 w-16 object-contain" />
             ) : (
               <span className="font-editorial text-2xl font-semibold uppercase tracking-[0.08em] text-gray-800 select-none">
                 {collapsed ? tenantName.charAt(0).toUpperCase() : tenantName}
@@ -156,7 +156,7 @@ export const KeroSidebar: React.FC = () => {
         <div className="flex items-center justify-center gap-2 px-5 h-20 border-b border-gray-200 flex-shrink-0">
           <Link to="/dashboard">
             {logoH ? (
-              <img src={logoH} alt={tenantName} className="h-8 max-w-[180px] object-contain" />
+              <img src={logoH} alt={tenantName} className="h-16 max-w-[360px] object-contain" />
             ) : (
               <span className="font-editorial text-2xl font-semibold uppercase tracking-[0.08em] text-gray-800 select-none">
                 {tenantName}
