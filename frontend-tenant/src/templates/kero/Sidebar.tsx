@@ -11,6 +11,8 @@ export const KeroSidebar: React.FC = () => {
   const { user } = useAuth();
   const { tenant } = useTenant();
   const tenantName = tenant?.name || 'Backoffice';
+  const logoH = tenant?.branding.logo_url_horizontal || tenant?.branding.logo_url;
+  const logoV = tenant?.branding.logo_url_vertical || tenant?.branding.logo_url;
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
@@ -110,10 +112,16 @@ export const KeroSidebar: React.FC = () => {
             collapsed ? 'px-2' : 'px-5'
           }`}
         >
-          <Link to="/dashboard">
-            <span className="font-editorial text-2xl font-semibold uppercase tracking-[0.08em] text-gray-800 select-none">
-              {collapsed ? tenantName.charAt(0).toUpperCase() : tenantName}
-            </span>
+          <Link to="/dashboard" className="flex items-center gap-2">
+            {!collapsed && logoH ? (
+              <img src={logoH} alt={tenantName} className="h-8 max-w-[180px] object-contain" />
+            ) : collapsed && logoV ? (
+              <img src={logoV} alt={tenantName} className="h-8 w-8 object-contain" />
+            ) : (
+              <span className="font-editorial text-2xl font-semibold uppercase tracking-[0.08em] text-gray-800 select-none">
+                {collapsed ? tenantName.charAt(0).toUpperCase() : tenantName}
+              </span>
+            )}
           </Link>
         </div>
         {desktopNavItems}
@@ -147,9 +155,13 @@ export const KeroSidebar: React.FC = () => {
       >
         <div className="flex items-center justify-center gap-2 px-5 h-20 border-b border-gray-200 flex-shrink-0">
           <Link to="/dashboard">
-            <span className="font-editorial text-2xl font-semibold uppercase tracking-[0.08em] text-gray-800 select-none">
-              {tenantName}
-            </span>
+            {logoH ? (
+              <img src={logoH} alt={tenantName} className="h-8 max-w-[180px] object-contain" />
+            ) : (
+              <span className="font-editorial text-2xl font-semibold uppercase tracking-[0.08em] text-gray-800 select-none">
+                {tenantName}
+              </span>
+            )}
           </Link>
         </div>
         {navItems}
