@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { FileText, MessageCircle, MessageSquare, Users, Star, Eye } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { Card } from '../common/Card';
 import { EmptyState } from '../common/EmptyState';
 import { Drawer } from '../common/Drawer';
 import { Button } from '../common/Button';
+import { ActionMenu } from '../common/ActionMenu';
 import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '../common/Table';
 import MessagesList from '../messages/MessagesList';
 import { useAuth } from '../../hooks/useAuth';
@@ -11,6 +12,7 @@ import clientsService from '../../services/clients.service';
 import type { Client, ColorFilter } from '../../types/client.types';
 import type { ConversationMessage } from '../../types/conversation.types';
 import { getWhatsappNumber, openWhatsapp } from '../../utils/whatsapp';
+import { buildClientActionItems } from '../../utils/clientActions';
 
 const sourceColors: Record<string, string> = {
   whatsapp: 'bg-green-200 text-green-950',
@@ -185,48 +187,17 @@ const ClientsGrid = ({ colorFilter }: ClientsGridProps) => {
                   </div>
                 </TableCell>
                 <TableCell align="right">
-                  <div className="flex items-center justify-end gap-2">
-                    <button
-                      onClick={() => handleToggleDestacado(client)}
-                      title={client.destacado ? 'Quitar destacado' : 'Marcar como destacado'}
-                      className={`p-1.5 rounded-lg transition-colors ${
-                        client.destacado
-                          ? 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200'
-                          : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                      }`}
-                    >
-                      <Star className="w-4 h-4" fill={client.destacado ? 'currentColor' : 'none'} />
-                    </button>
-                    <button
-                      onClick={() => handleOpenDetail(client)}
-                      title="Ver datos completos"
-                      className="p-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleOpenSummary(client)}
-                      title={client.notas ? 'Ver resumen ejecutivo' : 'Sin resumen ejecutivo todavía'}
-                      disabled={!client.notas}
-                      className="p-1.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-amber-50"
-                    >
-                      <FileText className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleOpenConversation(client)}
-                      title="Ver historial de chat"
-                      className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleOpenWhatsapp(client)}
-                      title={getWhatsappNumber(client) ? 'Abrir WhatsApp' : 'Sin número de WhatsApp'}
-                      disabled={!getWhatsappNumber(client)}
-                      className="p-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-green-50"
-                    >
-                      <MessageSquare className="w-4 h-4" />
-                    </button>
+                  <div className="flex items-center justify-end">
+                    <ActionMenu
+                      ariaLabel={`Acciones para ${client.name || client.external_id}`}
+                      items={buildClientActionItems(client, {
+                        onToggleDestacado: handleToggleDestacado,
+                        onOpenDetail: handleOpenDetail,
+                        onOpenSummary: handleOpenSummary,
+                        onOpenConversation: handleOpenConversation,
+                        onOpenWhatsapp: handleOpenWhatsapp,
+                      })}
+                    />
                   </div>
                 </TableCell>
               </TableRow>

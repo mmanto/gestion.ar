@@ -82,7 +82,7 @@ export const KeroSidebar: React.FC = () => {
       {/* Botón hamburguesa — mobile */}
       <button
         onClick={() => setMobileOpen(v => !v)}
-        className="md:hidden fixed top-[calc(0.75rem+env(safe-area-inset-top))] left-[calc(0.75rem+env(safe-area-inset-left))] z-[60] p-2 rounded-lg bg-white text-gray-900 shadow-md hover:bg-gray-50 transition-colors"
+        className="md:hidden fixed top-[calc(0.75rem+env(safe-area-inset-top))] right-[calc(0.75rem+env(safe-area-inset-right))] z-[60] p-2 rounded-lg bg-white text-gray-900 shadow-md hover:bg-gray-50 transition-colors"
         aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
       >
         {mobileOpen

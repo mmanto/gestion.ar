@@ -31,7 +31,7 @@ export const Sidebar: React.FC = () => {
       {/* Botón hamburguesa — mobile */}
       <button
         onClick={() => setMobileOpen(v => !v)}
-        className="md:hidden fixed top-3 left-3 z-[60] p-2 rounded-lg text-white hover:bg-white/10 transition-colors"
+        className="md:hidden fixed top-3 right-3 z-[60] p-2 rounded-lg text-white hover:bg-white/10 transition-colors"
         style={{ backgroundColor: '#2A3B4D' }}
         aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
       >
