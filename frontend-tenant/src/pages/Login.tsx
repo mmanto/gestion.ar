@@ -28,21 +28,19 @@ export const Login: React.FC = () => {
       >
         <div className="flex flex-col items-center gap-6">
 
+
           {/* Marca */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col items-center gap-3">
             {tenant?.branding.logo_url ? (
-              <img src={tenant.branding.logo_url} alt={tenant.name} className="h-16 w-16 rounded object-contain" />
+              <img src={tenant.branding.logo_url} alt={tenant.name} className="h-32 w-32 rounded object-contain" />
             ) : (
               <div
-                className="h-12 w-12 rounded-lg flex items-center justify-center text-white font-semibold text-xl"
+                className="h-24 w-24 rounded-lg flex items-center justify-center text-white font-semibold text-4xl"
                 style={{ background: primaryColor }}
               >
-                {/* {(tenant?.name || '?').charAt(0).toUpperCase()} */}
+                {(tenant?.name || '?').charAt(0).toUpperCase()}
               </div>
             )}
-            <p className="text-xl font-semibold" style={{ color: primaryColor }}>
-              {tenant?.name || 'Backoffice'}
-            </p>
           </div>
 
           {/* Encabezado */}
@@ -51,7 +49,7 @@ export const Login: React.FC = () => {
               Iniciar sesión
             </h2>
             <p className="text-sm mt-1" style={{ color: '#64748b' }}>
-              Accede a tu cuenta para continuar
+              {tenant?.branding.tagline || 'Accede a tu cuenta para continuar'}
             </p>
           </div>
 
