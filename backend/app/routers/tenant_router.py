@@ -47,9 +47,11 @@ MAX_LOGO_BYTES = 2 * 1024 * 1024  # 2MB
 @router.post("/branding/logo", response_model=dict)
 async def upload_tenant_logo(
     file: UploadFile = File(...),
+    type: str = Query("horizontal", pattern="^(horizontal|vertical)$"),
     current_user: User = Depends(get_current_user),
 ):
-    """Sube el logo del tenant y actualiza branding.logo_url."""
+    """Sube el logo del tenant y actualiza branding.logo_url_horizontal o
+    branding.logo_url_vertical según el parámetro `type` (default: horizontal)."""
     ext = ALLOWED_LOGO_CONTENT_TYPES.get(file.content_type)
     if not ext:
         raise HTTPException(
@@ -71,13 +73,14 @@ async def upload_tenant_logo(
         f.write(contents)
 
     url = f"/api/uploads/tenants/{filename}"
+    field = "logo_url_horizontal" if type == "horizontal" else "logo_url_vertical"
     tenant_service = get_tenant_service()
     tenant = await tenant_service.get_tenant(current_user.tenant_id)
     branding = dict(tenant.branding) if tenant and tenant.branding else {}
-    branding["logo_url"] = url
+    branding[field] = url
     await tenant_service.update_tenant(current_user.tenant_id, TenantUpdate(branding=branding))
 
-    return {"success": True, "url": url}
+    return {"success": True, "url": url, "type": type}
 
 
 @router.patch("/branding", response_model=dict)
@@ -112,18 +115,18 @@ async def update_tenant_branding(
 
     await tenant_service.update_tenant(current_user.tenant_id, TenantUpdate(branding=branding))
 
-    return {"success": True, "branding": branding}
-
-
 @router.delete("/branding/logo", response_model=dict)
 async def delete_tenant_logo(
+    type: str = Query("horizontal", pattern="^(horizontal|vertical)$"),
     current_user: User = Depends(require_role("admin")),
 ):
-    """Elimina el logo del tenant (solo la referencia — no borra el archivo)."""
+    """Elimina el logo del tenant (solo la referencia — no borra el archivo).
+    `type` indica cuál eliminar: horizontal o vertical (default: horizontal)."""
+    field = "logo_url_horizontal" if type == "horizontal" else "logo_url_vertical"
     tenant_service = get_tenant_service()
     tenant = await tenant_service.get_tenant(current_user.tenant_id)
     branding = dict(tenant.branding) if tenant and tenant.branding else {}
-    branding["logo_url"] = None
+    branding[field] = None
 
     await tenant_service.update_tenant(current_user.tenant_id, TenantUpdate(branding=branding))
 

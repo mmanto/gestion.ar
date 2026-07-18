@@ -10,12 +10,99 @@ const MAX_BYTES = 2 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
 const ALLOWED_EXTENSIONS = '.jpg,.jpeg,.png,.webp,.svg';
 
+type LogoType = 'horizontal' | 'vertical';
+
+const LOGO_LABELS: Record<LogoType, string> = {
+  horizontal: 'Logo horizontal',
+  vertical: 'Logo vertical',
+};
+
+const LOGO_HINTS: Record<LogoType, string> = {
+  horizontal: 'Se usa en la landing, login y menú expandido',
+  vertical: 'Se usa en el login y menú colapsado',
+};
+
+const LogoUploadSlot: React.FC<{
+  type: LogoType;
+  url: string | undefined;
+  fallbackColor: string;
+  fallbackLetter: string;
+  uploading: boolean;
+  deleting: boolean;
+  error: string | null;
+  onSelect: (file: File) => void;
+  onDelete: () => void;
+}> = ({ type, url, fallbackColor, fallbackLetter, uploading, deleting, error, onSelect, onDelete }) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (file) onSelect(file);
+  };
+
+  return (
+    <div>
+      <p className="text-xs font-medium text-gray-700 mb-2">{LOGO_LABELS[type]}</p>
+      <div className="flex items-center gap-4">
+        <div className="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+          {url ? (
+            <img src={url} alt={LOGO_LABELS[type]} className="w-full h-full object-contain" />
+          ) : (
+            <span
+              className="text-3xl font-semibold text-white w-full h-full flex items-center justify-center"
+              style={{ background: fallbackColor }}
+            >
+              {fallbackLetter}
+            </span>
+          )}
+        </div>
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => inputRef.current?.click()}
+              disabled={uploading}
+            >
+              <Upload className="w-3.5 h-3.5 mr-1.5" />
+              {uploading ? 'Subiendo...' : 'Subir'}
+            </Button>
+            {url && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onDelete}
+                disabled={deleting}
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                {deleting ? 'Eliminando...' : 'Eliminar'}
+              </Button>
+            )}
+          </div>
+          <p className="text-xs text-gray-700">{LOGO_HINTS[type]}</p>
+        </div>
+      </div>
+      {error && <p className="text-xs text-red-600 mt-1.5">{error}</p>}
+      <input
+        ref={inputRef}
+        type="file"
+        accept={ALLOWED_EXTENSIONS}
+        onChange={handleFileChange}
+        className="hidden"
+      />
+    </div>
+  );
+};
+
 export const BrandingSection = () => {
   const { tenant } = useTenant();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [logoUrl, setLogoUrl] = useState<string | undefined>(
-    tenant?.branding.logo_url || undefined,
+  const [logoH, setLogoH] = useState<string | undefined>(
+    tenant?.branding.logo_url_horizontal || tenant?.branding.logo_url || undefined,
+  );
+  const [logoV, setLogoV] = useState<string | undefined>(
+    tenant?.branding.logo_url_vertical || undefined,
   );
   const [primaryColor, setPrimaryColor] = useState<string>(
     tenant?.branding.primary_color || '#25357a',
@@ -24,17 +111,20 @@ export const BrandingSection = () => {
     tenant?.branding.tagline || '',
   );
 
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadingH, setUploadingH] = useState(false);
+  const [uploadingV, setUploadingV] = useState(false);
+  const [uploadErrorH, setUploadErrorH] = useState<string | null>(null);
+  const [uploadErrorV, setUploadErrorV] = useState<string | null>(null);
+  const [deletingH, setDeletingH] = useState(false);
+  const [deletingV, setDeletingV] = useState(false);
   const [colorSaving, setColorSaving] = useState(false);
   const [taglineSaving, setTaglineSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [saved, setSaved] = useState<string | null>(null);
 
-  // Keep state in sync when tenant info refreshes
   useEffect(() => {
     if (tenant) {
-      setLogoUrl(tenant.branding.logo_url || undefined);
+      setLogoH(tenant.branding.logo_url_horizontal || tenant.branding.logo_url || undefined);
+      setLogoV(tenant.branding.logo_url_vertical || undefined);
       setPrimaryColor(tenant.branding.primary_color || '#25357a');
       setTagline(tenant.branding.tagline || '');
     }
@@ -45,30 +135,38 @@ export const BrandingSection = () => {
     setTimeout(() => setSaved(null), 2000);
   };
 
-  const handleLogoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-
+  const handleLogoSelect = async (type: LogoType, file: File) => {
     if (!ALLOWED_TYPES.includes(file.type)) {
-      setUploadError('Formato no soportado — usá JPG, PNG, WEBP o SVG');
+      type === 'horizontal' ? setUploadErrorH('Formato no soportado — usá JPG, PNG, WEBP o SVG') : setUploadErrorV('Formato no soportado — usá JPG, PNG, WEBP o SVG');
       return;
     }
     if (file.size > MAX_BYTES) {
-      setUploadError('La imagen supera el tamaño máximo de 2MB');
+      type === 'horizontal' ? setUploadErrorH('La imagen supera el tamaño máximo de 2MB') : setUploadErrorV('La imagen supera el tamaño máximo de 2MB');
       return;
     }
 
-    setUploadError(null);
-    setUploading(true);
+    type === 'horizontal' ? (setUploadErrorH(null), setUploadingH(true)) : (setUploadErrorV(null), setUploadingV(true));
     try {
-      const url = await tenantBrandingService.uploadLogo(file);
-      setLogoUrl(url);
-      flashSaved('Logo actualizado');
+      const url = await tenantBrandingService.uploadLogo(file, type);
+      type === 'horizontal' ? setLogoH(url) : setLogoV(url);
+      flashSaved(`${LOGO_LABELS[type]} actualizado`);
     } catch {
-      setUploadError('No se pudo subir el logo');
+      type === 'horizontal' ? setUploadErrorH('No se pudo subir el logo') : setUploadErrorV('No se pudo subir el logo');
     } finally {
-      setUploading(false);
+      type === 'horizontal' ? setUploadingH(false) : setUploadingV(false);
+    }
+  };
+
+  const handleDeleteLogo = async (type: LogoType) => {
+    type === 'horizontal' ? setDeletingH(true) : setDeletingV(true);
+    try {
+      await tenantBrandingService.deleteLogo(type);
+      type === 'horizontal' ? setLogoH(undefined) : setLogoV(undefined);
+      flashSaved(`${LOGO_LABELS[type]} eliminado`);
+    } catch {
+      // handled by interceptor toast
+    } finally {
+      type === 'horizontal' ? setDeletingH(false) : setDeletingV(false);
     }
   };
 
@@ -78,8 +176,6 @@ export const BrandingSection = () => {
     try {
       await tenantBrandingService.updateBranding({ primary_color: color });
       flashSaved('Color guardado');
-    } catch {
-      // revert on failure
     } finally {
       setColorSaving(false);
     }
@@ -90,25 +186,12 @@ export const BrandingSection = () => {
     try {
       await tenantBrandingService.updateBranding({ tagline });
       flashSaved('Tagline guardada');
-    } catch {
-      // handled by interceptor toast
     } finally {
       setTaglineSaving(false);
     }
   };
 
-  const handleDeleteLogo = async () => {
-    setDeleting(true);
-    try {
-      await tenantBrandingService.deleteLogo();
-      setLogoUrl(undefined);
-      flashSaved('Logo eliminado');
-    } catch {
-      // handled by interceptor toast
-    } finally {
-      setDeleting(false);
-    }
-  };
+  const fallbackLetter = (tenant?.name || '?').charAt(0).toUpperCase();
 
   return (
     <Card shadow="none" className="mb-6">
@@ -120,63 +203,28 @@ export const BrandingSection = () => {
         </Alert>
       )}
 
-      {/* Logo */}
-      <div className="mb-6">
-        <p className="text-xs font-medium text-gray-700 mb-2">Logo</p>
-        <div className="flex items-center gap-4">
-          <div className="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-            {logoUrl ? (
-              <img
-                src={logoUrl}
-                alt="Logo del tenant"
-                className="w-full h-full object-contain"
-              />
-            ) : (
-              <span
-                className="text-3xl font-semibold text-white w-full h-full flex items-center justify-center"
-                style={{ background: primaryColor }}
-              >
-                {tenant?.name?.charAt(0).toUpperCase() || '?'}
-              </span>
-            )}
-          </div>
-          <div className="space-y-2">
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-              >
-                <Upload className="w-3.5 h-3.5 mr-1.5" />
-                {uploading ? 'Subiendo...' : 'Subir logo'}
-              </Button>
-              {logoUrl && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDeleteLogo}
-                  disabled={deleting}
-                >
-                  <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                  {deleting ? 'Eliminando...' : 'Eliminar'}
-                </Button>
-              )}
-            </div>
-            <p className="text-xs text-gray-700">
-              JPG, PNG, WEBP o SVG — hasta 2MB
-            </p>
-          </div>
-        </div>
-        {uploadError && (
-          <p className="text-xs text-red-600 mt-1.5">{uploadError}</p>
-        )}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept={ALLOWED_EXTENSIONS}
-          onChange={handleLogoSelect}
-          className="hidden"
+      <div className="space-y-6 mb-6">
+        <LogoUploadSlot
+          type="horizontal"
+          url={logoH}
+          fallbackColor={primaryColor}
+          fallbackLetter={fallbackLetter}
+          uploading={uploadingH}
+          deleting={deletingH}
+          error={uploadErrorH}
+          onSelect={(f) => handleLogoSelect('horizontal', f)}
+          onDelete={() => handleDeleteLogo('horizontal')}
+        />
+        <LogoUploadSlot
+          type="vertical"
+          url={logoV}
+          fallbackColor={primaryColor}
+          fallbackLetter={fallbackLetter}
+          uploading={uploadingV}
+          deleting={deletingV}
+          error={uploadErrorV}
+          onSelect={(f) => handleLogoSelect('vertical', f)}
+          onDelete={() => handleDeleteLogo('vertical')}
         />
       </div>
 

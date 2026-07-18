@@ -45,10 +45,10 @@ export const TenantDetail = () => {
   const [botModules, setBotModules] = useState<Record<string, BotModuleInfo[]>>({});
   const [allModules, setAllModules] = useState<ModuleInfo[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
-  const [brandingLogoUrl, setBrandingLogoUrl] = useState<string | undefined>();
+  const [brandingLogoH, setBrandingLogoH] = useState<string | undefined>();
+  const [brandingLogoV, setBrandingLogoV] = useState<string | undefined>();
   const [brandingColor, setBrandingColor] = useState('#25357a');
   const [brandingTagline, setBrandingTagline] = useState('');
-  const [savingBranding, setSavingBranding] = useState(false);
 
   const load = useCallback(async () => {
     if (!tenantId) return;
@@ -62,9 +62,9 @@ export const TenantDetail = () => {
         tenantAdminService.listPlans(),
       ]);
       setTenant(tenantData);
-      setBrandingLogoUrl(tenantData.branding?.logo_url || undefined);
+      setBrandingLogoH(tenantData.branding?.logo_url_horizontal || tenantData.branding?.logo_url || undefined);
+      setBrandingLogoV(tenantData.branding?.logo_url_vertical || undefined);
       setBrandingColor(tenantData.branding?.primary_color || '#25357a');
-      setBrandingTagline(tenantData.branding?.tagline || '');
       setUsers(usersData.users);
       setBots(botsData.bots);
       setAllModules(modulesData);
@@ -98,13 +98,15 @@ export const TenantDetail = () => {
     try {
       const updated = await tenantAdminService.updateTenant(tenantId, {
         branding: {
-          logo_url: brandingLogoUrl || undefined,
+          logo_url_horizontal: brandingLogoH || undefined,
+          logo_url_vertical: brandingLogoV || undefined,
           primary_color: brandingColor,
           tagline: brandingTagline || undefined,
         },
       });
       setTenant(updated);
-      setBrandingLogoUrl(updated.branding?.logo_url || undefined);
+      setBrandingLogoH(updated.branding?.logo_url_horizontal || updated.branding?.logo_url || undefined);
+      setBrandingLogoV(updated.branding?.logo_url_vertical || undefined);
       setBrandingColor(updated.branding?.primary_color || '#25357a');
       setBrandingTagline(updated.branding?.tagline || '');
     } finally {
@@ -264,12 +266,21 @@ export const TenantDetail = () => {
         <Card shadow="none" className="mb-8">
           <h3 className="text-base font-semibold text-gray-900 mb-3">Marca</h3>
           <div className="space-y-4">
-            {/* Logo */}
             <div>
-              <p className="text-xs font-medium text-gray-700 mb-2">Logo</p>
+              <p className="text-xs font-medium text-gray-700 mb-2">Logo horizontal</p>
               <AvatarPicker
-                value={brandingLogoUrl}
-                onChange={setBrandingLogoUrl}
+                value={brandingLogoH}
+                onChange={setBrandingLogoH}
+                fallbackLabel={tenant.name?.charAt(0) || '?'}
+              />
+            </div>
+
+            {/* Logo vertical */}
+            <div>
+              <p className="text-xs font-medium text-gray-700 mb-2">Logo vertical</p>
+              <AvatarPicker
+                value={brandingLogoV}
+                onChange={setBrandingLogoV}
                 fallbackLabel={tenant.name?.charAt(0) || '?'}
               />
             </div>

@@ -6,11 +6,11 @@ import api from './api';
 import type { TenantBranding } from '../types/tenant.types';
 
 const tenantBrandingService = {
-  async uploadLogo(file: File): Promise<string> {
+  async uploadLogo(file: File, type: 'horizontal' | 'vertical' = 'horizontal'): Promise<string> {
     const formData = new FormData();
     formData.append('file', file);
     const { data } = await api.post<{ success: boolean; url: string }>(
-      '/tenant/branding/logo',
+      `/tenant/branding/logo?type=${type}`,
       formData,
       { headers: { 'Content-Type': null } }
     );
@@ -28,8 +28,8 @@ const tenantBrandingService = {
     return data.branding;
   },
 
-  async deleteLogo(): Promise<void> {
-    await api.delete('/tenant/branding/logo');
+  async deleteLogo(type: 'horizontal' | 'vertical' = 'horizontal'): Promise<void> {
+    await api.delete(`/tenant/branding/logo?type=${type}`);
   },
 };
 

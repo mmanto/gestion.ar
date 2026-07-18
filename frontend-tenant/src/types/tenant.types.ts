@@ -6,6 +6,8 @@
 
 export interface TenantBranding {
   logo_url?: string;
+  logo_url_horizontal?: string;
+  logo_url_vertical?: string;
   primary_color?: string;
   tagline?: string;
 }

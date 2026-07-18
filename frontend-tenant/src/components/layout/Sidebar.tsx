@@ -7,9 +7,9 @@ import { NAV_LINKS } from '../../config/navLinks';
 
 export const Sidebar: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
-  const { tenant } = useTenant();
   const tenantName = tenant?.name || 'Backoffice';
-  const { collapsed, toggleCollapsed, mobileOpen, setMobileOpen } = useSidebar();
+  const logoH = tenant?.branding.logo_url_horizontal || tenant?.branding.logo_url;
+  const logoV = tenant?.branding.logo_url_vertical;
   const location = useLocation();
 
   useEffect(() => {
@@ -48,14 +48,27 @@ export const Sidebar: React.FC = () => {
             collapsed ? 'md:px-2' : ''
           }`}
         >
-          <Link to="/dashboard">
-            <span
-              className="font-editorial text-2xl font-semibold uppercase tracking-[0.08em] select-none"
-              style={{ color: 'white' }}
-            >
-              {collapsed ? <span className="hidden md:inline">{tenantName.charAt(0).toUpperCase()}</span> : null}
-              <span className={collapsed ? 'md:hidden' : ''}>{tenantName}</span>
-            </span>
+          <Link to="/dashboard" className="flex items-center gap-2">
+            {/* Logo horizontal — visible solo expandido */}
+            {!collapsed && logoH ? (
+              <img src={logoH} alt={tenantName} className="h-8 max-w-[120px] object-contain" />
+            ) : null}
+            {/* Logo vertical — visible solo colapsado */}
+            {collapsed && logoV ? (
+              <img src={logoV} alt={tenantName} className="h-8 w-8 object-contain" />
+            ) : null}
+            {/* Fallback textual — solo si no hay logo para el estado actual */}
+            {(!collapsed && !logoH) || (collapsed && !logoV) ? (
+              <span
+                className="font-editorial text-2xl font-semibold uppercase tracking-[0.08em] select-none"
+                style={{ color: 'white' }}
+              >
+                {collapsed ? (
+                  <span className="hidden md:inline">{tenantName.charAt(0).toUpperCase()}</span>
+                ) : null}
+                <span className={collapsed ? 'md:hidden' : ''}>{tenantName}</span>
+              </span>
+            ) : null}
           </Link>
         </div>
 
