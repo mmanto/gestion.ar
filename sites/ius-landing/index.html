@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Agente de Derecho Laboral | iUS</title>
+<meta name="description" content="El agente de IA que califica clientes para abogados laboralistas. Analiza cada asunto, clasifica al prospecto y detecta quién está listo para pagar asesoría." />
+<meta name="robots" content="index, follow" />
+<link rel="canonical" href="https://iusmx.com.mx/" />
+
+<!-- Favicon -->
+<link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
+
+<!-- Open Graph / Facebook / WhatsApp -->
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://iusmx.com.mx/" />
+<meta property="og:title" content="iUS | Agente de IA para Abogados Laboralistas" />
+<meta property="og:description" content="iUS analiza cada asunto, clasifica al prospecto y detecta quién está listo para pagar asesoría — antes de que inviertas tu tiempo en la primera reunión." />
+<meta property="og:image" content="https://iusmx.com.mx/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:locale" content="es_MX" />
+<meta property="og:site_name" content="iUS" />
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="iUS | Agente de IA para Abogados Laboralistas" />
+<meta name="twitter:description" content="La IA que califica clientes para abogados laboralistas. Analiza, clasifica y detecta quién está listo para pagar asesoría." />
+<meta name="twitter:image" content="https://iusmx.com.mx/og-image.png" />
+
+<!-- Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "iUS",
+  "url": "https://iusmx.com.mx",
+  "logo": "https://iusmx.com.mx/favicon-32.png",
+  "description": "Agente de inteligencia artificial que califica clientes para abogados laboralistas.",
+  "email": "hola@iusmx.com.mx",
+  "sameAs": []
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "¿Qué es iUS y cómo funciona?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "iUS es un agente de inteligencia artificial que analiza cada consulta que recibe tu estudio, clasifica al prospecto según su asunto y detecta quién está listo para pagar asesoría."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Cuánto tiempo lleva implementarlo en mi estudio?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "La puesta en marcha estándar toma entre 1 y 2 semanas, configurando el agente con la información y los criterios de clasificación de tu estudio."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Necesito conocimientos técnicos para usarlo?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. iUS está pensado para abogados, no para ingenieros, con interfaces intuitivas y soporte continuo."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Cómo protege iUS los datos de mis clientes?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Trabajamos bajo estrictos protocolos de seguridad, firmamos NDA con todos nuestros clientes y los datos nunca se comparten con terceros."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Cómo empiezo a usar iUS?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Completá el formulario de contacto o escribinos por WhatsApp para agendar una primera reunión sin costo."
+      }
+    }
+  ]
+}
+</script>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: { 50:'#eff6ff',100:'#dbeafe',200:'#bfdbfe',300:'#93c5fd',400:'#60a5fa',500:'#2563eb',600:'#1d4ed8',700:'#1e40af',900:'#1e3a8a' },
+          sky: { 400:'#60a5fa',500:'#2563eb' }
+        },
+        fontFamily: { sans: ['system-ui','-apple-system','Segoe UI','Roboto','sans-serif'] }
+      }
+    }
+  }
+</script>
+<style>
+  .text-gradient{background:linear-gradient(135deg,#1d4ed8,#3b82f6);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .bg-gradient-brand{background:linear-gradient(135deg,#1d4ed8,#3b82f6);}
+  .chip{display:inline-flex;align-items:center;gap:.375rem;padding:.375rem .875rem;border-radius:9999px;font-size:.75rem;font-weight:600;}
+  html{scroll-behavior:smooth;}
+</style>
+</head>
+<body class="bg-white text-gray-900 antialiased">
+
+<!-- NAV -->
+<header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-100">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <a href="#" class="flex items-center gap-3">
+      <img src="./logo-horizontal.svg" alt="iUS" class="h-8 w-auto" />
+      <span class="hidden sm:inline-flex chip bg-brand-50 text-brand-700">Escucha. Analiza. Decide.</span>
+    </a>
+    <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
+      <a href="#hero" class="hover:text-brand-600 transition-colors">¿Qué es?</a>
+      <a href="#ventajas" class="hover:text-brand-600 transition-colors">Ventajas</a>
+      <a href="#niveles" class="hover:text-brand-600 transition-colors">Cómo clasificamos</a>
+      <a href="#costo" class="hover:text-brand-600 transition-colors">Costo</a>
+      <a href="#clientes" class="hover:text-brand-600 transition-colors">Clientes</a>
+      <!--<a href="#equipo" class="hover:text-brand-600 transition-colors">Equipo</a>-->
+      <a href="#faq" class="hover:text-brand-600 transition-colors">FAQ</a>
+      <a href="#contacto" class="hover:text-brand-600 transition-colors">Contacto</a>
+    </nav>
+    <div class="flex items-center gap-3">
+      
+      <a href="https://ius.intellify.pro/login" target="_blank" rel="noopener noreferrer" class="hidden sm:inline-flex bg-gradient-brand text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:opacity-90 transition-all hover:scale-105">Mi panel de consulta</a>
+      <button id="menu-btn" type="button" aria-label="Abrir menú" aria-expanded="false" class="md:hidden -mr-2 p-2 text-gray-700 hover:text-brand-600">
+        <svg id="menu-icon-open" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+        <svg id="menu-icon-close" class="w-6 h-6 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 6l12 12M18 6L6 18"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile dropdown menu -->
+  <div id="mobile-menu" class="hidden md:hidden border-t border-gray-100 bg-white">
+    <nav class="flex flex-col px-4 sm:px-6 py-4 text-sm font-medium text-gray-700">
+      <a href="#hero" class="py-3 border-b border-gray-50 hover:text-brand-600">¿Qué es?</a>
+      <a href="#ventajas" class="py-3 border-b border-gray-50 hover:text-brand-600">Ventajas</a>
+      <a href="#niveles" class="py-3 border-b border-gray-50 hover:text-brand-600">Cómo clasificamos</a>
+            <a href="#costo" class="py-3 border-b border-gray-50 hover:text-brand-600">Costo</a>
+      <a href="#clientes" class="py-3 border-b border-gray-50 hover:text-brand-600">Clientes</a>
+      <!--<a href="#equipo" class="py-3 border-b border-gray-50 hover:text-brand-600">Equipo</a>-->
+      <a href="#faq" class="py-3 border-b border-gray-50 hover:text-brand-600">FAQ</a>
+      <a href="#contacto" class="py-3 border-b border-gray-50 hover:text-brand-600">Contacto</a>
+      <a href="https://ius.intellify.pro/login" target="_blank" rel="noopener noreferrer" class="py-3 border-b border-gray-50 hover:text-brand-600">Mi panel de consulta</a>
+      <a href="https://api.whatsapp.com/send?phone=5215561483164&text=Hola%2C%20me%20gustar%C3%ADa%20agendar%20una%20demostraci%C3%B3n%20de%20iUS." target="_blank" rel="noopener noreferrer" class="hidden sm:inline-flex bg-gradient-brand text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:opacity-90 transition-all hover:scale-105">
+    Conoce iUS en 15 minutos
+</a>
+    </nav>
+  </div>
+</header>
+
+<script>
+  (function () {
+    var btn = document.getElementById('menu-btn');
+    var menu = document.getElementById('mobile-menu');
+    var iconOpen = document.getElementById('menu-icon-open');
+    var iconClose = document.getElementById('menu-icon-close');
+
+    function closeMenu() {
+      menu.classList.add('hidden');
+      iconOpen.classList.remove('hidden');
+      iconClose.classList.add('hidden');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+
+    btn.addEventListener('click', function () {
+      var isOpen = !menu.classList.contains('hidden');
+      if (isOpen) {
+        closeMenu();
+      } else {
+        menu.classList.remove('hidden');
+        iconOpen.classList.add('hidden');
+        iconClose.classList.remove('hidden');
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    });
+
+    menu.querySelectorAll('a').forEach(function (link) {
+      link.addEventListener('click', closeMenu);
+    });
+  })();
+</script>
+
+<!-- HERO -->
+<section id="hero" class="relative overflow-hidden bg-cover bg-center py-20 lg:py-28" style="background-image: linear-gradient(115deg, rgba(8,12,28,.93) 0%, rgba(12,32,84,.85) 45%, rgba(12,32,84,.55) 100%), url('./despacho-hero.jpg');">
+  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-16 items-center">
+    <div>
+      <span class="chip bg-white/10 text-brand-200 mb-6 backdrop-blur">Agente de IA para abogados laboralistas</span>
+      <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight text-white mb-4">
+        La IA que <span class="text-gradient" style="background:linear-gradient(135deg,#93c5fd,#3b82f6);-webkit-background-clip:text;background-clip:text;color:transparent;">califica clientes</span> para abogados laboralistas
+      </h1>
+      <div class="w-16 h-1 bg-gradient-to-r from-sky-300 to-white rounded-full mb-6"></div>
+      <p class="text-lg text-gray-200 leading-relaxed mb-8">
+        iUS analiza cada asunto, clasifica al cliente y detecta quién sí está listo para pagar asesoría.
+      </p>
+      <div class="flex flex-wrap gap-4">
+
+        <a href="#niveles" class="border border-white/30 text-white font-semibold px-7 py-3.5 rounded-full hover:border-white hover:bg-white/10 transition-colors">¿Cómo trabaja iUS?</a>
+
+        <a href="https://api.whatsapp.com/send?phone=5215561483164&text=Hola%2C%20me%20gustar%C3%ADa%20agendar%20una%20demostraci%C3%B3n%20de%20iUS." target="_blank" rel="noopener noreferrer" class="hidden sm:inline-flex items-center justify-center bg-gradient-brand text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:opacity-90 transition-all hover:scale-105">Solicita una demostración</a>
+
+        
+      </div>
+    </div>
+
+    <!-- chat mockup -->
+    <div class="relative">
+      <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden">
+        <div class="bg-gradient-brand px-5 py-4 flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center p-1.5"><img src="./logo-vertical-blanco.svg" alt="iUS" class="w-full h-full object-contain" /></div>
+          <div>
+            <div class="text-white font-semibold text-sm">Asistente iUS</div>
+            <div class="text-white/80 text-xs">en línea</div>
+          </div>
+        </div>
+        <div class="p-5 space-y-3 bg-gray-50">
+          <div class="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm max-w-[85%] text-sm text-gray-700">
+            Hola, soy la asistente iUS 👋 Puedo ayudarte a entender mejor tu situación laboral y orientarte para recibir asesoría de un especialista en derecho laboral. Platícame tu situación.
+          </div>
+          <div class="bg-brand-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 shadow-sm max-w-[85%] ml-auto text-sm">
+            Trabajo para el gobierno federal, fui notificada de mi despido en un viaje de trabajo...
+          </div>
+          <div class="flex justify-end">
+            <span class="text-[11px] text-gray-400">10:39 ✓✓</span>
+          </div>
+          <div class="bg-white rounded-2xl px-4 py-3 shadow-sm border border-brand-100 text-sm">
+            <span class="inline-block chip bg-green-100 text-green-700 text-[11px]">Viabilidad Alta</span>
+            <p class="mt-2 text-gray-600">Asunto con fundamento sólido. Prioridad para agendar asesoría.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- QUE ES / PROBLEMA -->
+<section id="que-es" class="py-20 lg:py-28 relative overflow-hidden bg-slate-100">
+  <svg class="absolute top-4 left-4 w-24 h-24 text-brand-200 opacity-60 pointer-events-none" viewBox="0 0 100 100" fill="none">
+    <g fill="currentColor"><circle cx="4" cy="4" r="3"/><circle cx="22" cy="4" r="3"/><circle cx="40" cy="4" r="3"/><circle cx="4" cy="22" r="3"/><circle cx="22" cy="22" r="3"/><circle cx="4" cy="40" r="3"/><circle cx="4" cy="58" r="3"/><circle cx="22" cy="40" r="3"/></g>
+  </svg>
+  <div class="absolute -top-24 -right-24 w-96 h-96 bg-brand-100 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
+  <div class="absolute bottom-10 right-0 w-72 h-72 bg-brand-50 rounded-full blur-3xl opacity-70 pointer-events-none"></div>
+  <svg class="absolute bottom-4 left-4 w-24 h-24 text-brand-200 opacity-60 pointer-events-none" viewBox="0 0 100 100" fill="none">
+    <g fill="currentColor"><circle cx="4" cy="96" r="3"/><circle cx="22" cy="96" r="3"/><circle cx="40" cy="96" r="3"/><circle cx="4" cy="78" r="3"/><circle cx="22" cy="78" r="3"/><circle cx="4" cy="60" r="3"/></g>
+  </svg>
+
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
+    <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">No toda consulta representa una <span class="text-gradient">oportunidad legal</span></h2>
+    <div class="w-16 h-1 bg-gradient-brand rounded-full mx-auto mb-6"></div>
+    <p class="text-gray-600 max-w-2xl mx-auto mb-14">Sólo algunos clientes quieren invertir en su asunto.</p>
+    <div class="grid sm:grid-cols-3 gap-8">
+      <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
+        <div class="w-16 h-16 rounded-full bg-brand-50 flex items-center justify-center mb-5 mx-auto">
+          <svg class="w-7 h-7 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 10h.01M12 10h.01M16 10h.01"/>
+            <path d="M21 12c0 4.418-4.03 8-9 8-1.06 0-2.08-.16-3.02-.46L4 21l1.5-3.6C4.55 16.1 4 14.62 4 13.05 4 8.6 8.03 5 13 5c1.66 0 3.22.4 4.56 1.1"/>
+          </svg>
+        </div>
+        <div class="text-sm font-bold text-brand-600 uppercase tracking-wider mb-3">Sin compromiso</div>
+        <p class="text-gray-600 text-sm">Hay quienes buscan asesoría sin intención real de contratar.</p>
+      </div>
+      <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
+        <div class="w-16 h-16 rounded-full bg-brand-50 flex items-center justify-center mb-5 mx-auto">
+          <svg class="w-7 h-7 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 3v5a1 1 0 0 0 1 1h5"/>
+            <path d="M6 3h8l6 6v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/>
+            <path d="m9.5 12.5 5 5M14.5 12.5l-5 5"/>
+          </svg>
+        </div>
+        <div class="text-sm font-bold text-brand-600 uppercase tracking-wider mb-3">Sin fundamentos</div>
+        <p class="text-gray-600 text-sm">Otros clientes no cuentan con bases suficientes para un caso viable.</p>
+      </div>
+      <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
+        <div class="w-16 h-16 rounded-full bg-brand-50 flex items-center justify-center mb-5 mx-auto">
+          <svg class="w-7 h-7 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="5" width="20" height="14" rx="2"/>
+            <line x1="2" y1="10" x2="22" y2="10"/>
+          </svg>
+        </div>
+        <div class="text-sm font-bold text-brand-600 uppercase tracking-wider mb-3">Sin disposición</div>
+        <p class="text-gray-600 text-sm">Y algunos no están dispuestos a invertir en asesoría legal.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRANSFORMA: escucha analiza decide -->
+<section id="ventajas" class="py-20 lg:py-24 bg-slate-100">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="relative overflow-hidden rounded-[2.5rem] px-6 py-14 sm:px-14 sm:py-16" style="background:linear-gradient(135deg,#081b6e 0%,#0d3fc4 60%,#1456e8 100%);">
+      <div class="absolute top-8 right-8 sm:right-14 w-28 h-28 opacity-40 pointer-events-none" style="background-image:radial-gradient(circle,#7ea3ff 1.5px,transparent 1.5px);background-size:14px 14px;"></div>
+      <div class="absolute -bottom-16 -left-10 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="relative text-center mb-14">
+        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">iUS <span class="bg-gradient-to-r from-sky-300 to-white bg-clip-text text-transparent">transforma</span> este escenario</h2>
+        <div class="w-16 h-1 bg-gradient-to-r from-sky-300 to-white rounded-full mx-auto mb-6"></div>
+        <p class="text-blue-100 max-w-2xl mx-auto">Antes de que tu interactúes con un prospecto, iUS ya ha evaluado su contexto, su viabilidad y su nivel de compromiso.</p>
+      </div>
+
+      <div class="relative hidden sm:flex items-center justify-center max-w-2xl mx-auto mb-2">
+        <div class="w-14 h-14 shrink-0 rounded-2xl bg-gradient-to-br from-sky-400 to-brand-600 text-white flex items-center justify-center text-xl font-bold shadow-lg">1</div>
+        <div class="flex-1 border-t-2 border-dashed border-white/30 mx-3"></div>
+        <div class="w-14 h-14 shrink-0 rounded-2xl bg-gradient-to-br from-sky-400 to-brand-600 text-white flex items-center justify-center text-xl font-bold shadow-lg">2</div>
+        <div class="flex-1 border-t-2 border-dashed border-white/30 mx-3"></div>
+        <div class="w-14 h-14 shrink-0 rounded-2xl bg-gradient-to-br from-sky-400 to-brand-600 text-white flex items-center justify-center text-xl font-bold shadow-lg">3</div>
+      </div>
+
+      <div class="relative grid sm:grid-cols-3 gap-10 sm:gap-8 mt-8">
+        <div class="text-center">
+          <div class="w-20 h-20 mx-auto rounded-full bg-white flex items-center justify-center mb-4 shadow-lg">
+            <svg class="w-9 h-9 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 1 1-7 0"/>
+              <path d="M15 8.5a2.5 2.5 0 0 0-5 0v1a2 2 0 1 1 0 4"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-white mb-2">iUS escucha</h3>
+          <p class="text-sm text-blue-100">Recopila información relevante mediante interacción guiada.</p>
+        </div>
+        <div class="text-center">
+          <div class="w-20 h-20 mx-auto rounded-full bg-white flex items-center justify-center mb-4 shadow-lg">
+            <svg class="w-9 h-9 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5.5"/>
+              <path d="M13 3l4 4v2"/>
+              <path d="M9 8h4M9 12h2"/>
+              <circle cx="16.5" cy="16.5" r="3"/>
+              <path d="m19 19 1.8 1.8"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-white mb-2">iUS analiza</h3>
+          <p class="text-sm text-blue-100">Evalúa la viabilidad jurídica del asunto.</p>
+        </div>
+        <div class="text-center">
+          <div class="w-20 h-20 mx-auto rounded-full bg-white flex items-center justify-center mb-4 shadow-lg">
+            <svg class="w-9 h-9 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="4" width="12" height="17" rx="2"/>
+              <path d="M9 4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1z"/>
+              <path d="m9.5 13.5 2 2 3.5-3.5"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-white mb-2">iUS decide</h3>
+          <p class="text-sm text-blue-100">Clasifica y prioriza conforme a criterios legales estratégicos.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- NIVELES DE CLASIFICACION -->
+<section id="niveles" class="py-20 lg:py-28 bg-white">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-14">
+      <span class="chip bg-brand-100 text-brand-700 mb-4">Calificación estratégica</span>
+      <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Clasificamos a tus clientes en 3 niveles</h2>
+      <div class="w-16 h-1 bg-gradient-brand rounded-full mx-auto mb-4"></div>
+      <p class="text-gray-600 mt-2">Según prescripción y disposición de pago</p>
+    </div>
+
+    <!-- rings -->
+    <div class="grid sm:grid-cols-3 gap-10 sm:gap-6 max-w-4xl mx-auto">
+      <div class="text-center">
+        <svg class="w-40 h-40 sm:w-44 sm:h-44 mx-auto mb-5 -rotate-90" viewBox="0 0 176 176">
+          <circle cx="88" cy="88" r="72" fill="none" stroke="#22c55e" stroke-width="24"/>
+          <circle cx="88" cy="88" r="72" fill="none" stroke="#15803d" stroke-width="24" stroke-linecap="round" stroke-dasharray="55 397" stroke-dashoffset="-15"/>
+          <g transform="rotate(90 88 88)" stroke="#16a34a" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.55">
+            <circle cx="72" cy="80" r="3.5" fill="#16a34a" stroke="none"/>
+            <circle cx="104" cy="80" r="3.5" fill="#16a34a" stroke="none"/>
+            <path d="M70 96 Q88 113 106 96"/>
+          </g>
+        </svg>
+        <div class="text-base font-bold text-green-700 mb-2">Viabilidad Alta</div>
+        <p class="text-gray-600 text-sm">Asunto sólido, pruebas en mano y listo para pagar asesoría.</p>
+      </div>
+      <div class="text-center">
+        <svg class="w-40 h-40 sm:w-44 sm:h-44 mx-auto mb-5 -rotate-90" viewBox="0 0 176 176">
+          <circle cx="88" cy="88" r="72" fill="none" stroke="#f59e0b" stroke-width="24"/>
+          <circle cx="88" cy="88" r="72" fill="none" stroke="#d97706" stroke-width="24" stroke-linecap="round" stroke-dasharray="55 397" stroke-dashoffset="-15"/>
+          <circle cx="88" cy="88" r="72" fill="none" stroke="#d97706" stroke-width="24" stroke-linecap="round" stroke-dasharray="30 422" stroke-dashoffset="-241"/>
+          <g transform="rotate(90 88 88)" stroke="#d97706" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.55">
+            <circle cx="72" cy="80" r="3.5" fill="#d97706" stroke="none"/>
+            <circle cx="104" cy="80" r="3.5" fill="#d97706" stroke="none"/>
+            <path d="M70 101 Q88 108 106 101"/>
+          </g>
+        </svg>
+        <div class="text-base font-bold text-amber-600 mb-2">Potencial</div>
+        <p class="text-gray-600 text-sm">Buen asunto, pero aún no decide.</p>
+      </div>
+      <div class="text-center">
+        <svg class="w-40 h-40 sm:w-44 sm:h-44 mx-auto mb-5 -rotate-90" viewBox="0 0 176 176">
+          <circle cx="88" cy="88" r="72" fill="none" stroke="#ef4444" stroke-width="24"/>
+          <circle cx="88" cy="88" r="72" fill="none" stroke="#b91c1c" stroke-width="24" stroke-linecap="round" stroke-dasharray="55 397" stroke-dashoffset="-15"/>
+          <g transform="rotate(90 88 88)" stroke="#dc2626" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.55">
+            <circle cx="72" cy="80" r="3.5" fill="#dc2626" stroke="none"/>
+            <circle cx="104" cy="80" r="3.5" fill="#dc2626" stroke="none"/>
+            <path d="M70 106 Q88 93 106 106"/>
+          </g>
+        </svg>
+        <div class="text-base font-bold text-red-700 mb-2">Exploración</div>
+        <p class="text-gray-600 text-sm">Sólo pregunta. No va a contratar asesoría.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CANALES -->
+<section class="relative py-20 lg:py-28 bg-slate-100 overflow-hidden">
+  <!-- puntos decorativos -->
+  <svg class="absolute top-6 left-6 w-28 h-28 text-brand-200 opacity-60 pointer-events-none" viewBox="0 0 120 120" fill="none">
+    <g fill="currentColor"><circle cx="4" cy="4" r="3"/><circle cx="24" cy="4" r="3"/><circle cx="44" cy="4" r="3"/><circle cx="4" cy="24" r="3"/><circle cx="24" cy="24" r="3"/><circle cx="4" cy="44" r="3"/><circle cx="4" cy="64" r="3"/><circle cx="24" cy="44" r="3"/></g>
+  </svg>
+  <svg class="absolute bottom-6 right-6 w-28 h-28 text-brand-200 opacity-60 pointer-events-none" viewBox="0 0 120 120" fill="none">
+    <g fill="currentColor"><circle cx="116" cy="116" r="3"/><circle cx="96" cy="116" r="3"/><circle cx="76" cy="116" r="3"/><circle cx="116" cy="96" r="3"/><circle cx="96" cy="96" r="3"/><circle cx="116" cy="76" r="3"/><circle cx="116" cy="56" r="3"/><circle cx="96" cy="76" r="3"/></g>
+  </svg>
+  <svg class="absolute top-1/3 right-0 w-64 h-64 text-brand-100 opacity-70 pointer-events-none" viewBox="0 0 200 200" fill="none">
+    <path d="M-20 100 Q100 20 220 100" stroke="currentColor" stroke-width="1.5"/>
+  </svg>
+
+  <div class="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <h2 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4 lg:whitespace-nowrap">Integración directa con los canales donde <span class="text-brand-600">ya están tus clientes</span></h2>
+    <div class="w-16 h-1 rounded-full mx-auto mb-6 bg-gradient-brand"></div>
+    <p class="text-gray-600 mb-12">Sin apps nuevas para tus clientes. Ellos escriben donde ya están.</p>
+    <div class="grid sm:grid-cols-3 gap-6 max-w-4xl mx-auto mb-10">
+      <div class="p-8 rounded-2xl bg-white shadow-sm border-2 border-brand-600">
+        <div class="w-16 h-16 rounded-2xl bg-brand-50 flex items-center justify-center mb-5 mx-auto">
+          <svg class="w-7 h-7 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/>
+            <path d="M8 10h.01M12 10h.01M16 10h.01"/>
+          </svg>
+        </div>
+        <div class="font-bold text-lg text-gray-900 mb-2">Webchat</div>
+        <div class="inline-flex items-center gap-1.5 text-sm text-green-600 font-medium">
+          <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Activo
+        </div>
+      </div>
+      <div class="p-8 rounded-2xl bg-white shadow-sm border border-gray-100">
+        <div class="w-16 h-16 rounded-2xl bg-brand-50 flex items-center justify-center mb-5 mx-auto">
+          <svg class="w-7 h-7 text-brand-600" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M21.9 4.1c.3-1.4-1-2.4-2.2-1.9L2.4 9.4c-1.4.6-1.4 2.6.1 3.1l4.2 1.4 1.6 5.1c.2.7 1 .9 1.6.4l2.5-2.2 4.2 3.1c.8.6 2 .2 2.2-.8l3.1-15.4ZM8.6 13.4l9.4-6.9c.3-.2.6.2.3.4l-8 7.6c-.2.2-.4.5-.4.8l-.2 2.9-.9-4.4Z"/>
+          </svg>
+        </div>
+        <div class="font-bold text-lg text-gray-900 mb-2">Telegram</div>
+        <div class="inline-flex items-center gap-1.5 text-sm text-green-600 font-medium">
+          <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Activo
+        </div>
+      </div>
+      <div class="p-8 rounded-2xl bg-white shadow-sm border border-gray-100">
+        <div class="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-5 mx-auto">
+          <svg class="w-7 h-7 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2Z"/>
+            <path d="M12 18h.01"/>
+          </svg>
+        </div>
+        <div class="font-bold text-lg text-gray-400 mb-2">WhatsApp</div>
+        <div class="inline-flex items-center gap-1.5 text-sm text-gray-400 font-medium">
+          <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>Próximamente
+        </div>
+      </div>
+    </div>
+    <a href="https://api.whatsapp.com/send?phone=5215561483164&text=Hola%2C%20me%20gustar%C3%ADa%20agendar%20una%20demostraci%C3%B3n%20de%20iUS." target="_blank" rel="noopener noreferrer" class="hidden sm:inline-flex bg-gradient-brand text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:opacity-90 transition-all hover:scale-105">
+    Conoce iUS en 15 minutos
+</a>
+  </div>
+</section>
+
+<!-- FUNCIONES + INVERSION -->
+<section class="relative py-20 lg:py-24 bg-white overflow-hidden">
+  <div class="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 text-center mb-4">Funciones <span class="text-brand-600">potentes</span> para tu negocio</h2>
+    <div class="w-16 h-1 bg-gradient-brand rounded-full mx-auto mb-14"></div>
+    <div class="grid sm:grid-cols-3 gap-6 mb-24">
+      <div class="relative p-8 rounded-3xl bg-white shadow-sm border border-gray-100 flex gap-4 items-start hover:shadow-xl hover:-translate-y-1 hover:border-brand-200 transition-all duration-300">
+        <span class="absolute top-5 right-6 text-3xl font-extrabold text-brand-50">01</span>
+        <div class="w-14 h-14 shrink-0 rounded-2xl bg-brand-600 flex items-center justify-center shadow-md shadow-brand-200">
+          <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="11" width="14" height="10" rx="2"/>
+            <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+          </svg>
+        </div>
+        <div class="relative">
+          <h3 class="font-bold text-gray-900 mb-2">Captura segura e inteligente de datos</h3>
+          <p class="text-sm text-gray-600 leading-relaxed">Recolecta la información del asunto de forma segura y protegida.</p>
+        </div>
+      </div>
+      <div class="relative p-8 rounded-3xl bg-white shadow-sm border border-gray-100 flex gap-4 items-start hover:shadow-xl hover:-translate-y-1 hover:border-indigo-200 transition-all duration-300">
+        <span class="absolute top-5 right-6 text-3xl font-extrabold text-indigo-50">02</span>
+        <div class="w-14 h-14 shrink-0 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-md shadow-indigo-200">
+          <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>
+          </svg>
+        </div>
+        <div class="relative">
+          <h3 class="font-bold text-gray-900 mb-2">Expediente automático</h3>
+          <p class="text-sm text-gray-600 leading-relaxed">Cada conversación se convierte en un expediente listo para revisar.</p>
+        </div>
+      </div>
+      <div class="relative p-8 rounded-3xl bg-white shadow-sm border border-gray-100 flex gap-4 items-start hover:shadow-xl hover:-translate-y-1 hover:border-sky-200 transition-all duration-300">
+        <span class="absolute top-5 right-6 text-3xl font-extrabold text-sky-50">03</span>
+        <div class="w-14 h-14 shrink-0 rounded-2xl bg-sky-600 flex items-center justify-center shadow-md shadow-sky-200">
+          <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/>
+            <path d="M18.4 2.6a2 2 0 0 1 2.8 2.8L11 15.8 7 17l1.2-4Z"/>
+          </svg>
+        </div>
+        <div class="relative">
+          <h3 class="font-bold text-gray-900 mb-2">Síntesis ejecutiva del asunto</h3>
+          <p class="text-sm text-gray-600 leading-relaxed">Un resumen claro del conflicto en un párrafo, listo para decidir.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center mb-14">
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">Una <span class="text-brand-600">inversión</span> que se paga sola</h2>
+      <div class="w-16 h-1 bg-gradient-brand rounded-full mx-auto mb-6"></div>
+      <p class="text-gray-600 max-w-2xl mx-auto">Con un sólo asunto adicional al mes, iUS puede cubrir completamente su costo. Todo lo demás es rentabilidad.</p>
+    </div>
+    <div class="grid sm:grid-cols-2 gap-6 max-w-5xl mx-auto">
+      <div class="p-8 rounded-3xl bg-white border border-red-100 shadow-sm">
+        <h3 class="font-bold text-red-600 mb-3 uppercase text-sm tracking-wide">Antes de iUS</h3>
+        <div class="border-b border-red-100 mb-5"></div>
+        <ul class="space-y-4 text-gray-700">
+          <li class="flex items-center gap-3"><span class="w-6 h-6 shrink-0 rounded-full bg-red-50 text-red-500 flex items-center justify-center text-xs font-bold">✕</span> 10 consultas</li>
+          <li class="flex items-center gap-3"><span class="w-6 h-6 shrink-0 rounded-full bg-red-50 text-red-500 flex items-center justify-center text-xs font-bold">✕</span> Múltiples entrevistas</li>
+          <li class="flex items-center gap-3"><span class="w-6 h-6 shrink-0 rounded-full bg-red-50 text-red-500 flex items-center justify-center text-xs font-bold">✕</span> 1 cliente en duda</li>
+          <li class="flex items-center gap-3"><span class="w-6 h-6 shrink-0 rounded-full bg-red-50 text-red-500 flex items-center justify-center text-xs font-bold">✕</span> Más de 10 hrs invertidas</li>
+        </ul>
+      </div>
+      <div class="p-8 rounded-3xl bg-white border-2 border-brand-600 shadow-lg">
+        <h3 class="font-bold text-brand-600 mb-3 uppercase text-sm tracking-wide">Después con iUS</h3>
+        <div class="border-b border-brand-100 mb-5"></div>
+        <ul class="space-y-4 text-gray-700">
+          <li class="flex items-center gap-3"><span class="w-6 h-6 shrink-0 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-xs font-bold">✓</span> 10 consultas</li>
+          <li class="flex items-center gap-3"><span class="w-6 h-6 shrink-0 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-xs font-bold">✓</span> De 3 a 4 clientes calificados</li>
+          <li class="flex items-center gap-3"><span class="w-6 h-6 shrink-0 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-xs font-bold">✓</span> Asuntos listos para avanzar</li>
+          <li class="flex items-center gap-3"><span class="w-6 h-6 shrink-0 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-xs font-bold">✓</span> Menos de 2 horas invertidas — 80% de ahorro en tiempo</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="costo" class="relative py-20 lg:py-28 bg-slate-100 overflow-hidden">
+  <!-- decorativos -->
+  <svg class="absolute top-4 left-4 w-24 h-24 text-brand-200 opacity-60 pointer-events-none" viewBox="0 0 100 100" fill="none">
+    <g fill="currentColor"><circle cx="4" cy="4" r="3"/><circle cx="22" cy="4" r="3"/><circle cx="40" cy="4" r="3"/><circle cx="4" cy="22" r="3"/><circle cx="22" cy="22" r="3"/><circle cx="4" cy="40" r="3"/><circle cx="4" cy="58" r="3"/><circle cx="22" cy="40" r="3"/></g>
+  </svg>
+  <div class="absolute -top-24 -right-24 w-96 h-96 bg-brand-100 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
+  <div class="absolute bottom-10 right-0 w-72 h-72 bg-brand-50 rounded-full blur-3xl opacity-70 pointer-events-none"></div>
+  <svg class="absolute bottom-4 left-4 w-24 h-24 text-brand-200 opacity-60 pointer-events-none" viewBox="0 0 100 100" fill="none">
+    <g fill="currentColor"><circle cx="4" cy="96" r="3"/><circle cx="22" cy="96" r="3"/><circle cx="40" cy="96" r="3"/><circle cx="4" cy="78" r="3"/><circle cx="22" cy="78" r="3"/><circle cx="4" cy="60" r="3"/></g>
+  </svg>
+
+  <div class="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-14">
+      <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Empieza a convertir más prospectos hoy</h2>
+      <div class="w-16 h-1 bg-gradient-brand rounded-full mx-auto"></div>
+    </div>
+    <div class="grid sm:grid-cols-2 gap-8 max-w-4xl mx-auto">
+     
+      <!-- anual -->
+      <div class="relative p-8 rounded-3xl bg-gradient-brand text-white shadow-2xl">
+        <div class="absolute -top-3 left-8 chip bg-white text-brand-700 shadow">Plan recomendado</div>
+        <div class="text-sm font-semibold text-white/80 uppercase tracking-wide mb-1 mt-2">Plan anual</div>
+        <div class="text-xs text-white/70 mb-4">AHORRA MÁS DEL 20%</div>
+        <div class="text-4xl font-extrabold mb-6">$549 <span class="text-base font-medium text-white/80">MXN/mensual</span></div>
+        <ul class="space-y-3 text-sm text-white/90 mb-8">
+          <li>✓ Filtro inteligente para 50 prospectos nuevos al mes</li>
+          <li>✓ IA especializada en la Ley Federal del Trabajo</li>
+          <li>✓ Bandeja de consulta exclusiva con indicadores estratégicos</li>
+          <div class="inline-flex items-center gap-1.5 text-xs text-gray-400 font-medium mt-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>Resumen ejecutivo del conflicto</div>
+          <div class="inline-flex items-center gap-1.5 text-xs text-gray-400 font-medium mt-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>Estatus de la documentación del trabajador</div>
+          <div class="inline-flex items-center gap-1.5 text-xs text-gray-400 font-medium mt-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>Acceso rápido para contactar al cliente por WhatsApp con un clic</div>
+          <li>✓ 2 canales activos: Webchat y Telegram</li>
+          <li>✓ Conexión a WhatsApp (sólo para clientes con cuenta Meta)</li>
+          <li>✓ Personalización total: Tú decides cuánto cuesta tu consulta y tus horarios de contacto</li>
+          <li>✓ Historial de hasta 500 expedientes</li>
+          <li>✓ Soporte técnico prioritario 24/7</li>
+        </ul>
+        <a href="https://api.whatsapp.com/send?phone=5215561483164" target="_blank" rel="noopener noreferrer" class="block text-center bg-white text-brand-600 font-semibold py-3 rounded-full hover:bg-brand-50 transition-colors">Contratar ahora</a>
+      </div>
+ <!-- mensual -->
+      <div class="p-8 rounded-3xl border border-gray-200 bg-white">
+        <div class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Plan mensual</div>
+        <div class="text-xs text-gray-400 mb-4">CANCELA CUANDO QUIERAS</div>
+        <div class="text-4xl font-extrabold text-gray-900 mb-6">$690 <span class="text-base font-medium text-gray-500">MXN/mes</span></div>
+        <ul class="space-y-3 text-sm text-gray-600 mb-8">
+          <li>✓ Filtro inteligente para 50 prospectos nuevos al mes</li>
+          <li>✓ IA especializada en la Ley Federal del Trabajo</li>
+          <li>✓ Bandeja de consulta exclusiva con indicadores estratégicos</li>
+          <div class="inline-flex items-center gap-1.5 text-xs text-gray-400 font-medium mt-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>Resumen ejecutivo del conflicto</div>
+          <div class="inline-flex items-center gap-1.5 text-xs text-gray-400 font-medium mt-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>Estatus de la documentación del trabajador</div>
+          <div class="inline-flex items-center gap-1.5 text-xs text-gray-400 font-medium mt-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>Acceso rápido para contactar al cliente por WhatsApp con un clic</div>
+          <li>✓ 2 canales activos: Webchat y Telegram</li>
+          <li>✓ Conexión a WhatsApp (sólo para clientes con cuenta Meta)</li>
+          <li>✓ Personalización total: Tú decides cuánto cuesta tu consulta y tus horarios de contacto</li>
+          <li>✓ Historial de hasta 500 expedientes</li>
+          <li>✓ Soporte técnico prioritario 24/7</li>
+        </ul>
+        <a href="https://api.whatsapp.com/send?phone=5215561483164" target="_blank" rel="noopener noreferrer" class="block text-center border-2 border-brand-500 bg-white text-brand-600 font-semibold py-3 rounded-full hover:bg-brand-50 transition-colors">Contratar ahora</a>
+      </div>
+
+
+    </div>
+  </div>
+</section>
+
+<!-- FOTO DESTACADA / ESTADISTICA -->
+<section class="relative py-28 lg:py-36 bg-gray-900 bg-cover bg-center" style="background-image: linear-gradient(135deg, rgba(12,32,84,.85), rgba(17,17,24,.85)), url('./estudio.jpg');">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <span class="chip bg-white/10 text-brand-200 mb-6 backdrop-blur">COMIENZA HOY CON iUS</span>
+    <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight">
+      Deja que la AI de iUS filtre, analice y prepare. <br>Tu concentrate en ganar.
+    </h2>
+    <div class="w-16 h-1 bg-gradient-to-r from-sky-300 to-white rounded-full mx-auto mb-6"></div>
+    <p class="text-gray-300 max-w-2xl mx-auto text-lg leading-relaxed">
+      Enfoca tu tiempo en asuntos con verdadero potencial y en clientes listos para avanzar e invertir.
+    </p>
+  </div>
+</section>
+
+
+<!-- CLIENTES --> 
+<section id="clientes" class="py-20 lg:py-28 bg-white">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <span class="chip bg-brand-100 text-brand-700 mb-4">Nuestros Clientes</span>
+    <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Abogados que ya confían en <span class="text-gradient">iUS</span></h2>
+    <div class="w-16 h-1 bg-gradient-brand rounded-full mx-auto mb-6"></div>
+    <p class="text-gray-600 max-w-2xl mx-auto mb-10">Acompañamos profesionales independientes y despachos en derecho laboral en la calificación de sus prospectos, sin importar su tamaño.</p>
+
+    <!-- Logo strip -->
+    <div class="mb-14">
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="p-6 rounded-2xl bg-white border border-gray-200 hover:border-brand-300 hover:shadow-lg transition-all duration-300">
+        <div class="w-12 h-12 rounded-xl bg-brand-50 flex items-center justify-center mb-4 mx-auto">
+          <svg class="w-6 h-6 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 14 0v1"/>
+          </svg>
+        </div>
+
+        <h3 class="font-semibold text-gray-900 mb-1">Abogados independientes</h3>
+        <p class="text-sm text-gray-600">Profesionales que atienden asuntos por su cuenta y necesitan optimizar mejor su tiempo.</p>
+      </div>
+      <div class="p-6 rounded-2xl bg-white border border-gray-200 hover:border-brand-300 hover:shadow-lg transition-all duration-300">
+        <div class="w-12 h-12 rounded-xl bg-brand-50 flex items-center justify-center mb-4 mx-auto">
+          <svg class="w-6 h-6 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/>
+          </svg>
+        </div>
+
+        <h3 class="font-semibold text-gray-900 mb-1">Despachos boutique</h3>
+        <p class="text-sm text-gray-600">Despacho especializados en derecho laboral de bajo volumen y alto valor por asunto.</p>
+      </div>
+      <div class="p-6 rounded-2xl bg-white border border-gray-200 hover:border-brand-300 hover:shadow-lg transition-all duration-300">
+        <div class="w-12 h-12 rounded-xl bg-brand-50 flex items-center justify-center mb-4 mx-auto">
+          <svg class="w-6 h-6 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20v-6M6 20V10M18 20V4"/>
+          </svg>
+        </div>
+
+        <h3 class="font-semibold text-gray-900 mb-1">Despachos de alto volumen</h3>
+        <p class="text-sm text-gray-600">Despachos que reciben decenas de consultas diarias y necesitan priorizar casos viables.</p>
+      </div>
+      <div class="p-6 rounded-2xl bg-white border border-gray-200 hover:border-brand-300 hover:shadow-lg transition-all duration-300">
+        <div class="w-12 h-12 rounded-xl bg-brand-50 flex items-center justify-center mb-4 mx-auto">
+          <svg class="w-6 h-6 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
+          </svg>
+        </div>
+
+        <h3 class="font-semibold text-gray-900 mb-1">Firmas en expansión</h3>
+        <p class="text-sm text-gray-600">Despachos que están digitalizando su atención al cliente.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIOS -->
+<!--
+<section class="relative py-20 lg:py-28 bg-cover bg-center" style="background-image: linear-gradient(180deg, rgba(17,17,24,.88), rgba(12,32,84,.9)), url('./testimonios-bg.jpg');">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <span class="chip bg-white/10 text-brand-200 mb-4 backdrop-blur">Voces del piloto</span>
+    <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">Lo que dicen los estudios que ya lo probaron</h2>
+    <div class="w-16 h-1 bg-gradient-to-r from-sky-300 to-white rounded-full mx-auto mb-6"></div>
+    <p class="text-gray-300 max-w-2xl mx-auto mb-14">Comentarios recogidos durante la fase piloto de iUS.</p>
+    <div class="grid sm:grid-cols-3 gap-6">
+      <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 text-left flex flex-col">
+        <div class="flex gap-0.5 text-amber-400 mb-4">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+        </div>
+        <p class="text-gray-700 flex-1">"Antes contestaba a las 10 de la noche mensajes que no iban a ningún lado. Ahora sólo agendo con quien de verdad tiene un caso."</p>
+        <div class="flex items-center gap-3 mt-6 pt-6 border-t border-gray-100">
+          <div class="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-sm">MF</div>
+          <div>
+            <div class="font-semibold text-gray-900 text-sm">Mariana F.</div>
+            <div class="text-xs text-gray-500">Abogada independiente, CDMX</div>
+          </div>
+        </div>
+      </div>
+      <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 text-left flex flex-col">
+        <div class="flex gap-0.5 text-amber-400 mb-4">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+        </div>
+        <p class="text-gray-700 flex-1">"Lo que más valoro es el resumen ejecutivo. Llego a la primera reunión ya sabiendo qué tan sólido es el asunto."</p>
+        <div class="flex items-center gap-3 mt-6 pt-6 border-t border-gray-100">
+          <div class="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-sm">RC</div>
+          <div>
+            <div class="font-semibold text-gray-900 text-sm">Ricardo C.</div>
+            <div class="text-xs text-gray-500">Socio, despacho boutique</div>
+          </div>
+        </div>
+      </div>
+      <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 text-left flex flex-col">
+        <div class="flex gap-0.5 text-amber-400 mb-4">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+          <svg class="w-4 h-4 text-gray-200" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+        </div>
+        <p class="text-gray-700 flex-1">"La implementación fue más rápida de lo que esperaba. En dos semanas ya estaba filtrando consultas por WhatsApp... digo, por Webchat."</p>
+        <div class="flex items-center gap-3 mt-6 pt-6 border-t border-gray-100">
+          <div class="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-sm">LV</div>
+          <div>
+            <div class="font-semibold text-gray-900 text-sm">Lorena V.</div>
+            <div class="text-xs text-gray-500">Estudio de alto volumen</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section> -->
+
+
+
+<!-- EQUIPO -->
+<!--
+<section id="equipo" class="py-20 lg:py-28 bg-gray-200">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <span class="chip bg-brand-100 text-brand-700 mb-4">Nuestro Equipo</span>
+    <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">El equipo detrás de <span class="text-gradient">iUS</span></h2>
+    <div class="w-16 h-1 bg-gradient-brand rounded-full mx-auto mb-6"></div>
+    <p class="text-gray-600 max-w-2xl mx-auto mb-14">Abogados e ingenieros trabajando juntos para llevar IA de precisión al derecho laboral.</p>
+    <div class="grid sm:grid-cols-3 gap-6">
+      <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300">
+        <div class="w-16 h-16 rounded-2xl overflow-hidden mb-4 mx-auto">
+          <img src="./eduardo-sandoval.webp" alt="Eduardo Sandoval" class="w-full h-full object-cover" />
+        </div>
+        <h3 class="font-semibold text-gray-900">Eduardo Sandoval</h3>
+        <p class="text-sm text-brand-600 mb-2">CEO</p>
+        <p class="text-sm text-gray-500">Lidera la visión estratégica y las alianzas con estudios jurídicos.</p>
+      </div>
+      <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300">
+        <div class="w-16 h-16 rounded-2xl overflow-hidden mb-4 mx-auto">
+          <svg class="w-full h-full" viewBox="0 0 64 64">
+            <rect width="64" height="64" fill="#dbeafe"/>
+            <path d="M32 46c9 0 16 5 16 12v6H16v-6c0-7 7-12 16-12Z" fill="#1d4ed8"/>
+            <circle cx="32" cy="27" r="12" fill="#bfdbfe"/>
+            <path d="M20 24c0-7 5-12 12-12s12 5 12 12c-4 1-8-1-10-4-2 4-8 6-14 4Z" fill="#1e293b"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold text-gray-900">Camila Torres</h3>
+        <p class="text-sm text-brand-600 mb-2">CTO</p>
+        <p class="text-sm text-gray-500">Responsable del entrenamiento del agente y la arquitectura de IA.</p>
+      </div>
+      <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300">
+        <div class="w-16 h-16 rounded-2xl overflow-hidden mb-4 mx-auto">
+          <svg class="w-full h-full" viewBox="0 0 64 64">
+            <rect width="64" height="64" fill="#dbeafe"/>
+            <path d="M32 46c9 0 16 5 16 12v6H16v-6c0-7 7-12 16-12Z" fill="#1e40af"/>
+            <circle cx="32" cy="27" r="12" fill="#93c5fd"/>
+            <path d="M19 26c1-8 6-14 13-14s12 6 13 14c-2-3-6-5-9-4 0-3-2-5-4-5s-4 2-4 5c-3-1-7 1-9 4Z" fill="#1e293b"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold text-gray-900">Julián Herrera</h3>
+        <p class="text-sm text-brand-600 mb-2">Chief Legal Officer</p>
+        <p class="text-sm text-gray-500">Supervisa la precisión normativa del agente en materia laboral.</p>
+      </div>
+    </div>
+  </div>
+</section> -->
+
+<!-- FAQ -->
+<section id="faq" class="relative py-20 lg:py-24 bg-slate-100 overflow-hidden">
+  <svg class="absolute top-4 left-4 w-24 h-24 text-brand-200 opacity-60 pointer-events-none" viewBox="0 0 100 100" fill="none">
+    <g fill="currentColor"><circle cx="4" cy="4" r="3"/><circle cx="22" cy="4" r="3"/><circle cx="40" cy="4" r="3"/><circle cx="4" cy="22" r="3"/><circle cx="22" cy="22" r="3"/><circle cx="4" cy="40" r="3"/><circle cx="4" cy="58" r="3"/><circle cx="22" cy="40" r="3"/></g>
+  </svg>
+  <div class="absolute -top-24 -right-24 w-96 h-96 bg-brand-100 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
+  <div class="absolute bottom-10 right-0 w-72 h-72 bg-brand-50 rounded-full blur-3xl opacity-70 pointer-events-none"></div>
+  <svg class="absolute bottom-4 left-4 w-24 h-24 text-brand-200 opacity-60 pointer-events-none" viewBox="0 0 100 100" fill="none">
+    <g fill="currentColor"><circle cx="4" cy="96" r="3"/><circle cx="22" cy="96" r="3"/><circle cx="40" cy="96" r="3"/><circle cx="4" cy="78" r="3"/><circle cx="22" cy="78" r="3"/><circle cx="4" cy="60" r="3"/></g>
+  </svg>
+  <div class="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-14">
+      <span class="chip bg-brand-100 text-brand-700 mb-4">Preguntas Frecuentes</span>
+      <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Todo lo que necesitas saber</h2>
+      <div class="w-16 h-1 bg-gradient-brand rounded-full mx-auto mb-6"></div>
+      <p class="text-gray-600 max-w-2xl mx-auto">Resolvemos las dudas más comunes sobre iUS y cómo funciona para ti.</p>
+    </div>
+    <div class="space-y-4">
+      <details class="group p-6 rounded-2xl bg-white border border-gray-100 shadow-sm open:shadow-lg transition-all duration-300">
+        <summary class="flex items-center justify-between cursor-pointer list-none font-semibold text-gray-900">
+          <span>¿Qué es iUS y cómo funciona?</span>
+          <span class="ml-4 flex-shrink-0 text-brand-600 transition-transform duration-300 group-open:rotate-45 text-xl">+</span>
+        </summary>
+        <p class="text-gray-600 mt-4 leading-relaxed">iUS es un agente de inteligencia artificial que analiza cada consulta que recibe de tus prospectos, clasifica según su asunto y detecta quién está listo para pagar asesoría. Así tú sólo dedicas tiempo a los asuntos con verdadero potencial.</p>
+      </details>
+      <details class="group p-6 rounded-2xl bg-white border border-gray-100 shadow-sm open:shadow-lg transition-all duration-300">
+        <summary class="flex items-center justify-between cursor-pointer list-none font-semibold text-gray-900">
+          <span>¿Cuánto tiempo lleva implementarlo?</span>
+          <span class="ml-4 flex-shrink-0 text-brand-600 transition-transform duration-300 group-open:rotate-45 text-xl">+</span>
+        </summary>
+        <p class="text-gray-600 mt-4 leading-relaxed">La puesta en marcha estándar en menos de 5 días hábiles, para clientes con cuenta Meta verificada de 2 a 3 semanas</p>
+      </details>
+      <details class="group p-6 rounded-2xl bg-white border border-gray-100 shadow-sm open:shadow-lg transition-all duration-300">
+        <summary class="flex items-center justify-between cursor-pointer list-none font-semibold text-gray-900">
+          <span>¿Necesito conocimientos técnicos para usarlo?</span>
+          <span class="ml-4 flex-shrink-0 text-brand-600 transition-transform duration-300 group-open:rotate-45 text-xl">+</span>
+        </summary>
+        <p class="text-gray-600 mt-4 leading-relaxed">No. iUS está pensado para abogados, no para ingenieros. La plataforma es intuitiva y te acompañamos durante todo el proceso con soporte continuo.</p>
+      </details>
+      <details class="group p-6 rounded-2xl bg-white border border-gray-100 shadow-sm open:shadow-lg transition-all duration-300">
+        <summary class="flex items-center justify-between cursor-pointer list-none font-semibold text-gray-900">
+          <span>¿Cómo protege iUS los datos de mis clientes?</span>
+          <span class="ml-4 flex-shrink-0 text-brand-600 transition-transform duration-300 group-open:rotate-45 text-xl">+</span>
+        </summary>
+        <p class="text-gray-600 mt-4 leading-relaxed">La confidencialidad de la información de tus clientes es nuestra prioridad. Trabajamos bajo estrictos protocolos de seguridad, firmamos acuerdos de confidencialidad (NDA) y los datos nunca se comparten con terceros.</p>
+      </details>
+      <details class="group p-6 rounded-2xl bg-white border border-gray-100 shadow-sm open:shadow-lg transition-all duration-300">
+        <summary class="flex items-center justify-between cursor-pointer list-none font-semibold text-gray-900">
+          <span>¿Cómo empiezo a usar iUS?</span>
+          <span class="ml-4 flex-shrink-0 text-brand-600 transition-transform duration-300 group-open:rotate-45 text-xl">+</span>
+        </summary>
+        <p class="text-gray-600 mt-4 leading-relaxed">Escribinos por WhatsApp. Agendamos una primera reunión sin costo donde analizamos tu actividad y te mostramos el agente funcionando en vivo.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- FORMULARIO DE CONTACTO -->
+<section id="contacto" class="py-20 lg:py-10 bg-white">
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-12">
+      <span class="chip bg-brand-100 text-brand-700 mb-4">Contacto</span>
+      <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Platica con nosotros</h2>
+      <div class="w-16 h-1 bg-gradient-brand rounded-full mx-auto mb-6"></div>
+      <p class="text-gray-600 max-w-xl mx-auto">Completa el formulario y a la brevedad estaremos en contacto contigo directo por WhatsApp</p>
+    </div>
+    <form id="contact-form" class="p-6 sm:p-8 rounded-3xl bg-white border border-gray-100 shadow-sm grid sm:grid-cols-2 gap-5">
+      <div class="sm:col-span-1">
+        <label for="nombre" class="block text-sm font-medium text-gray-700 mb-1.5">Nombre</label>
+        <input type="text" id="nombre" name="nombre" required placeholder="Tu nombre" class="w-full h-12 px-4 rounded-xl border border-gray-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none transition-colors" />
+      </div>
+      <div class="sm:col-span-1">
+        <label for="estudio" class="block text-sm font-medium text-gray-700 mb-1.5">Despacho Jurídico</label>
+        <input type="text" id="estudio" name="estudio" placeholder="Nombre de tu despacho" class="w-full h-12 px-4 rounded-xl border border-gray-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none transition-colors" />
+      </div>
+      <div class="sm:col-span-2">
+        <label for="contacto-medio" class="block text-sm font-medium text-gray-700 mb-1.5">WhatsApp o email</label>
+        <input type="text" id="contacto-medio" name="contacto_medio" required placeholder="+52 55 1234 5678 o tu@email.com" class="w-full h-12 px-4 rounded-xl border border-gray-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none transition-colors" />
+      </div>
+      <div class="sm:col-span-2">
+        <label for="mensaje" class="block text-sm font-medium text-gray-700 mb-1.5">Mensaje</label>
+        <textarea id="mensaje" name="mensaje" rows="4" placeholder="Contanos en qué rama trabajás y cuántas consultas recibís al mes..." class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none transition-colors resize-none"></textarea>
+      </div>
+      <div class="sm:col-span-2">
+        <button type="submit" class="w-full bg-gradient-brand text-white font-semibold py-3.5 rounded-full hover:opacity-90 transition-all hover:scale-[1.02] shadow-lg shadow-brand-200">
+          Enviar por WhatsApp
+        </button>
+        <p class="text-xs text-gray-400 text-center mt-3">Al enviar, se abre WhatsApp con tu mensaje ya redactado.</p>
+      </div>
+    </form>
+  </div>
+</section>
+
+<script>
+  document.getElementById('contact-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var nombre = document.getElementById('nombre').value.trim();
+    var estudio = document.getElementById('estudio').value.trim();
+    var medio = document.getElementById('contacto-medio').value.trim();
+    var mensaje = document.getElementById('mensaje').value.trim();
+
+    var texto = 'Hola, soy ' + nombre + (estudio ? ' de ' + estudio : '') + '. ';
+    texto += 'Mi WhatsApp/email de contacto es ' + medio + '. ';
+    if (mensaje) texto += mensaje;
+
+    var url = 'https://api.whatsapp.com/send?phone=5215561483164&text=' + encodeURIComponent(texto);
+    window.open(url, '_blank');
+  });
+</script>
+
+
+<!-- FOOTER -->
+<footer class="bg-gray-950 text-gray-400 py-14">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid sm:grid-cols-3 gap-10">
+    <div>
+      <img src="./logo-horizontal-blanco.svg" alt="iUS" class="h-9 w-auto mb-3" />
+      <p class="text-sm leading-relaxed">Inteligencia aplicada a la selección de clientes. Agente de IA multicanal especializado en el sector legal laboral. Convierte conversaciones en clientes calificados.</p>
+    </div>
+    <div>
+      <div class="text-white font-semibold mb-3 text-sm uppercase tracking-wide">Contacto</div>
+      <ul class="space-y-3 text-sm">
+        <li class="flex items-center gap-2.5">
+          <svg class="w-4 h-4 text-brand-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M3.5 6.5l8.5 6 8.5-6"/></svg>
+          <span>hola@iusmx.com.mx</span>
+        </li>
+
+        <li class="flex items-center gap-2.5">
+          <svg class="w-4 h-4 text-brand-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+          <a href="https://api.whatsapp.com/send?phone=5215561483164&text=Hola%2C%20me%20gustar%C3%ADa%20agendar%20una%20demostraci%C3%B3n%20de%20iUS." target="_blank" rel="noopener noreferrer" class="hover:text-white">5561483164</a>
+        </li>
+
+
+        <li class="flex items-center gap-2.5">
+          <svg class="w-4 h-4 text-brand-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span>Ciudad de México, CDMX</span>
+        </li>
+        <li class="flex items-center gap-2.5">
+          <svg class="w-4 h-4 text-brand-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.58-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>
+          <a href="https://www.tiktok.com/@ius.mexico" target="_blank" rel="noopener noreferrer" class="hover:text-white">@ius.méxico</a>
+        </li>
+        <li class="flex items-center gap-2.5">
+          <svg class="w-4 h-4 text-brand-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.5" y2="6.5"/></svg>
+          <a href="https://www.instagram.com/ius.mexico" target="_blank" rel="noopener noreferrer" class="hover:text-white">@ius.méxico</a>
+        </li>
+      </ul>
+    </div>
+    <div>
+      <div class="text-white font-semibold mb-3 text-sm uppercase tracking-wide">¿Qué tenemos para ti?</div>
+      <ul class="space-y-2 text-sm">
+        <li><a href="#hero" class="hover:text-white">¿Qué es?</a></li>
+        <li><a href="#ventajas" class="hover:text-white">Ventajas</a></li>
+        <li><a href="#niveles" class="hover:text-white">Cómo clasificamos</a></li>
+        <li><a href="#costo" class="hover:text-white">Costo</a></li>
+        <li><a href="#clientes" class="hover:text-white">Clientes</a></li>
+        <!--<li><a href="#equipo" class="hover:text-white">Equipo</a></li>-->
+        <li><a href="#faq" class="hover:text-white">FAQ</a></li>
+        <li><a href="#contacto" class="hover:text-white">Contacto</a></li>
+        <li><a href="https://ius.intellify.pro/login" target="_blank">Mi panel de consulta</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 pt-6 border-t border-gray-800 text-xs text-gray-500 flex flex-col sm:flex-row items-center justify-between gap-3">
+    <span>© 2026 iUS · Agente de IA en Derecho Laboral. Todos los derechos reservados.</span>
+    <span>Desarrollado en colaboración con <a href="https://kairosgroup.ar/" target="_blank" rel="noopener noreferrer" class="text-gray-300 hover:text-white underline underline-offset-2">KairosGroup</a></span>
+  </div>
+</footer>
+
+<!-- WHATSAPP FLOTANTE -->
+<a href="https://api.whatsapp.com/send?phone=5215561483164&text=Hola%2C%20me%20interesa%20conocer%20m%C3%A1s%20sobre%20iUS."
+   target="_blank" rel="noopener noreferrer"
+   aria-label="Escribinos por WhatsApp"
+   class="fixed bottom-5 right-5 z-50 w-14 h-14 rounded-full bg-[#25D366] shadow-lg shadow-black/20 flex items-center justify-center hover:scale-110 transition-transform duration-300">
+  <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M17.6 6.3A8.9 8.9 0 0 0 12.03 3.5c-4.9 0-8.9 4-8.9 8.9 0 1.57.41 3.1 1.2 4.45L3 21.5l4.75-1.24a8.9 8.9 0 0 0 4.28 1.09h.01c4.9 0 8.9-4 8.9-8.9 0-2.37-.93-4.6-2.34-6.15Zm-5.57 13.7h-.01a7.4 7.4 0 0 1-3.77-1.03l-.27-.16-2.8.74.75-2.74-.18-.28a7.4 7.4 0 0 1-1.14-3.93c0-4.08 3.32-7.4 7.4-7.4a7.35 7.35 0 0 1 5.24 2.17 7.35 7.35 0 0 1 2.16 5.24c0 4.08-3.32 7.4-7.4 7.4Zm4.06-5.54c-.22-.11-1.31-.65-1.51-.72-.2-.07-.35-.11-.5.11-.15.22-.57.72-.7.87-.13.15-.26.17-.48.06-.22-.11-.94-.35-1.79-1.11a6.7 6.7 0 0 1-1.24-1.54c-.13-.22-.01-.34.1-.45.1-.1.22-.26.33-.39.11-.13.15-.22.22-.37.07-.15.04-.28-.02-.39-.06-.11-.5-1.2-.68-1.65-.18-.43-.36-.37-.5-.38h-.43c-.15 0-.39.06-.59.28-.2.22-.78.76-.78 1.85s.8 2.15.91 2.3c.11.15 1.57 2.4 3.81 3.36.53.23.95.37 1.27.47.53.17 1.02.15 1.4.09.43-.06 1.31-.53 1.49-1.05.18-.51.18-.95.13-1.05-.06-.09-.2-.15-.42-.26Z"/>
+  </svg>
+</a>
+
+</body>
+</html>

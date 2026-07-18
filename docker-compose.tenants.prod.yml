@@ -74,6 +74,20 @@ services:
       - "traefik.http.routers.tenant-erma.tls.certresolver=letsencrypt"
       - "traefik.http.services.tenant-erma.loadbalancer.server.port=80"
 
+  landing-ius:
+    build:
+      context: ./sites/ius-landing
+    restart: unless-stopped
+    networks:
+      - traefik_public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_public"
+      - "traefik.http.routers.landing-ius.rule=Host(`law.dev.leadtrackers.pro`)"
+      - "traefik.http.routers.landing-ius.entrypoints=websecure"
+      - "traefik.http.routers.landing-ius.tls.certresolver=letsencrypt"
+      - "traefik.http.services.landing-ius.loadbalancer.server.port=80"
+
 
 networks:
   default:
