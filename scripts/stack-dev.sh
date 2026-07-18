@@ -27,7 +27,7 @@
 #   ./stack.dev build-android device http://192.168.1.100:8000/api  # dispositivo fisico
 #   ./stack.dev clean                   # limpiar recursos
 #   docker network create traefik_public (una sola vez)
-#   /etc/hosts con: 127.0.0.1 erma.com.test ius.mx.test ius-landing.test
+#   /etc/hosts con: 127.0.0.1 erma.com.test ius.mx.test
 
 set -euo pipefail
 
@@ -36,8 +36,10 @@ COMPOSE_FILES=(-f docker-compose.yml -f docker-compose.override.yml -f docker-co
 
 CORE_SERVICES=(app frontend postgres redis traefik-local)
 TENANTS=(erma ius)
+# ius-landing comparte dominio con el tenant "ius" (routing por Path en
+# Traefik, ver docker-compose.tenants.local.yml) — mismo host que TENANTS,
+# por eso no necesita entrada propia en check_hosts()/health_check().
 SITES=(ius-landing)
-declare -A SITE_DOMAINS=(["ius-landing"]="ius-landing.test")
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -68,18 +70,14 @@ check_hosts() {
       missing+=("127.0.0.1 ${domain}")
     fi
   done
-  for site in "${SITES[@]}"; do
-    local domain="${SITE_DOMAINS[$site]}"
-    if ! grep -qE "127\.0\.0\.1\s+${domain}" /etc/hosts 2>/dev/null; then
-      missing+=("127.0.0.1 ${domain}")
-    fi
-  done
+  # SITES no necesita su propio chequeo: hoy ius-landing comparte dominio
+  # con el tenant "ius", ya cubierto arriba.
   if [ ${#missing[@]} -gt 0 ]; then
     echo -e "${YELLOW}==> Faltan entradas en /etc/hosts para dominios .test:${NC}"
     for entry in "${missing[@]}"; do
       echo -e "  ${RED}${entry}${NC}"
     done
-    echo -e "${GREEN}  sudo sh -c 'echo \"127.0.0.1 erma.com.test\" >> /etc/hosts && echo \"127.0.0.1 ius.mx.test\" >> /etc/hosts && echo \"127.0.0.1 ius-landing.test\" >> /etc/hosts'${NC}"
+    echo -e "${GREEN}  sudo sh -c 'echo \"127.0.0.1 erma.com.test\" >> /etc/hosts && echo \"127.0.0.1 ius.mx.test\" >> /etc/hosts'${NC}"
     echo ""
   fi
 }
@@ -117,12 +115,8 @@ health_check() {
       || echo -e "${YELLOW}tenant-${tenant}: sin respuesta${NC}"
   done
 
-  # Sites via Traefik en :80
-  for site in "${SITES[@]}"; do
-    local domain="${SITE_DOMAINS[$site]}"
-    curl -sf -o /dev/null -w "site-${site}: %{http_code}\n" "http://${domain}/" \
-      || echo -e "${YELLOW}site-${site}: sin respuesta${NC}"
-  done
+  # SITES no suma un check propio: ius-landing responde en el mismo host
+  # que el tenant "ius" (arriba), Traefik lo distingue por Path.
 }
 
 menu() {
@@ -211,9 +205,6 @@ cmd_up() {
         local domain="${tenant}.com.test"
         [[ "$tenant" == "ius" ]] && domain="ius.mx.test"
         echo -e "  Tenant ${tenant}: ${CYAN}http://${domain}${NC}"
-      done
-      for site in "${SITES[@]}"; do
-        echo -e "  Site ${site}: ${CYAN}http://${SITE_DOMAINS[$site]}${NC}"
       done
       cmd_ps
       return

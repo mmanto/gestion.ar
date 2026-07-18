@@ -39,8 +39,10 @@ COMPOSE_FILES=(-f docker-compose.yml -f docker-compose.prod.yml -f docker-compos
 
 CORE_SERVICES=(app frontend)
 TENANTS=(ius erma)
+# ius-landing comparte dominio con el tenant "ius" (routing por Path en
+# Traefik, ver docker-compose.tenants.prod.yml) — mismo host que TENANTS,
+# por eso no necesita entrada propia en health_check().
 SITES=(ius-landing)
-declare -A SITE_DOMAINS=(["ius-landing"]="law.dev.leadtrackers.pro")
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -85,11 +87,8 @@ health_check() {
       || echo -e "${YELLOW}$tenant: sin respuesta${NC}"
   done
 
-  for site in "${SITES[@]}"; do
-    local site_url="https://${SITE_DOMAINS[$site]}"
-    curl -sf -o /dev/null -w "$site: %{http_code}\n" "$site_url/" \
-      || echo -e "${YELLOW}$site: sin respuesta${NC}"
-  done
+  # SITES no suma un check propio: ius-landing responde en el mismo host
+  # que el tenant "ius" (arriba), Traefik lo distingue por Path.
 }
 
 menu() {

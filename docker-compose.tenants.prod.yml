@@ -48,6 +48,7 @@ services:
       - "traefik.http.routers.tenant-ius.rule=Host(`ius.intellify.pro`)"
       - "traefik.http.routers.tenant-ius.entrypoints=websecure"
       - "traefik.http.routers.tenant-ius.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.tenant-ius.priority=1"
       - "traefik.http.services.tenant-ius.loadbalancer.server.port=80"
 
   frontend-tenant-erma:
@@ -74,6 +75,13 @@ services:
       - "traefik.http.routers.tenant-erma.tls.certresolver=letsencrypt"
       - "traefik.http.services.tenant-erma.loadbalancer.server.port=80"
 
+  # landing-ius comparte dominio con frontend-tenant-ius (ius.intellify.pro):
+  # este router solo matchea "/" y los assets propios de la landing (lista
+  # fija, sin colisión con los nombres que ya sirve frontend-tenant-ius bajo
+  # /icons, /img, favicon.ico, etc.) — cualquier otra ruta (/login,
+  # /dashboard, /assets/*, /api/*...) sigue cayendo en tenant-ius. Priority
+  # explícita para no depender del cálculo automático de Traefik por
+  # longitud de regla.
   landing-ius:
     build:
       context: ./sites/ius-landing
@@ -83,9 +91,10 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_public"
-      - "traefik.http.routers.landing-ius.rule=Host(`law.dev.leadtrackers.pro`)"
+      - "traefik.http.routers.landing-ius.rule=Host(`ius.intellify.pro`) && (Path(`/`) || Path(`/favicon.svg`) || Path(`/favicon-32.png`) || Path(`/apple-touch-icon.png`) || Path(`/logo-horizontal.svg`) || Path(`/logo-horizontal-blanco.svg`) || Path(`/logo-vertical-blanco.svg`) || Path(`/despacho-hero.jpg`) || Path(`/estudio.jpg`) || Path(`/testimonios-bg.jpg`) || Path(`/eduardo-sandoval.webp`) || Path(`/og-image.png`))"
       - "traefik.http.routers.landing-ius.entrypoints=websecure"
       - "traefik.http.routers.landing-ius.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.landing-ius.priority=10"
       - "traefik.http.services.landing-ius.loadbalancer.server.port=80"
 
 
