@@ -28,6 +28,8 @@ export const Sidebar: React.FC = () => {
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + '/');
 
+  alert("logoH: " +  logoH + "logoV: " + logoV + "colapsed: " + collapsed)
+  
   return (
     <>
       {/* Overlay — mobile */}
