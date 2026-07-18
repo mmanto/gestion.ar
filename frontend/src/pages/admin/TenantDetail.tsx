@@ -49,6 +49,7 @@ export const TenantDetail = () => {
   const [brandingLogoV, setBrandingLogoV] = useState<string | undefined>();
   const [brandingColor, setBrandingColor] = useState('#25357a');
   const [brandingTagline, setBrandingTagline] = useState('');
+  const [savingBranding, setSavingBranding] = useState(false);
 
   const load = useCallback(async () => {
     if (!tenantId) return;
