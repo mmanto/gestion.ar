@@ -31,13 +31,13 @@ export const Login: React.FC = () => {
           {/* Marca */}
           <div className="flex items-center gap-3">
             {tenant?.branding.logo_url ? (
-              <img src={tenant.branding.logo_url} alt={tenant.name} className="h-12 w-12 rounded object-contain" />
+              <img src={tenant.branding.logo_url} alt={tenant.name} className="h-16 w-16 rounded object-contain" />
             ) : (
               <div
                 className="h-12 w-12 rounded-lg flex items-center justify-center text-white font-semibold text-xl"
                 style={{ background: primaryColor }}
               >
-                {(tenant?.name || '?').charAt(0).toUpperCase()}
+                {/* {(tenant?.name || '?').charAt(0).toUpperCase()} */}
               </div>
             )}
             <p className="text-xl font-semibold" style={{ color: primaryColor }}>
