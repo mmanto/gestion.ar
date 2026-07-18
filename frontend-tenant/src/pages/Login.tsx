@@ -34,6 +34,7 @@ export const Login: React.FC = () => {
             {tenant?.branding.logo_url_vertical || tenant?.branding.logo_url ? (
               <img src={tenant?.branding.logo_url_vertical || tenant?.branding.logo_url} alt={tenant?.name} className="h-32 w-32 rounded object-contain" />
             ) : (
+              <div
                 className="h-24 w-24 rounded-lg flex items-center justify-center text-white font-semibold text-4xl"
                 style={{ background: primaryColor }}
               >
