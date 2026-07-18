@@ -1,4 +1,4 @@
-import React, { createContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { TenantPublicInfo } from '../types/tenant.types';
 import publicTenantService from '../services/publicTenant.service';
@@ -45,6 +45,7 @@ interface TenantContextType {
   isLoading: boolean;
   error: string | null;
   statsTwoColsMobile: boolean;
+  refetchTenant: () => Promise<void>;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -58,21 +59,28 @@ export const TenantProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     tenantId ? null : 'Este contenedor no tiene un tenant configurado.'
   );
 
-  useEffect(() => {
+  const refetchTenant = useCallback(async () => {
     if (!tenantId) return;
 
-    publicTenantService.getTenantInfo(tenantId)
-      .then((info) => {
-        setTenant(info);
-        document.title = info.name;
-      })
-      .catch(() => setError('No se pudo cargar la información del tenant.'))
-      .finally(() => setIsLoading(false));
+    try {
+      const info = await publicTenantService.getTenantInfo(tenantId);
+      setTenant(info);
+      document.title = info.name;
+      setError(null);
+    } catch {
+      setError('No se pudo cargar la información del tenant.');
+    }
+  }, [tenantId]);
+
+  useEffect(() => {
+    if (!tenantId) return;
+    refetchTenant().finally(() => setIsLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId]);
 
   return (
     <TenantContext.Provider
-      value={{ tenantId, tenant, isLoading, error, statsTwoColsMobile: !!window.__TENANT_CONFIG__?.statsTwoColsMobile }}
+      value={{ tenantId, tenant, isLoading, error, statsTwoColsMobile: !!window.__TENANT_CONFIG__?.statsTwoColsMobile, refetchTenant }}
     >
       {children}
     </TenantContext.Provider>

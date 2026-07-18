@@ -115,6 +115,8 @@ async def update_tenant_branding(
 
     await tenant_service.update_tenant(current_user.tenant_id, TenantUpdate(branding=branding))
 
+    return {"success": True, "branding": branding}
+
 @router.delete("/branding/logo", response_model=dict)
 async def delete_tenant_logo(
     type: str = Query("horizontal", pattern="^(horizontal|vertical)$"),

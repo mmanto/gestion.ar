@@ -96,7 +96,7 @@ const LogoUploadSlot: React.FC<{
 };
 
 export const BrandingSection = () => {
-  const { tenant } = useTenant();
+  const { tenant, refetchTenant } = useTenant();
 
   const [logoH, setLogoH] = useState<string | undefined>(
     tenant?.branding.logo_url_horizontal || tenant?.branding.logo_url || undefined,
@@ -149,6 +149,7 @@ export const BrandingSection = () => {
     try {
       const url = await tenantBrandingService.uploadLogo(file, type);
       type === 'horizontal' ? setLogoH(url) : setLogoV(url);
+      await refetchTenant();
       flashSaved(`${LOGO_LABELS[type]} actualizado`);
     } catch {
       type === 'horizontal' ? setUploadErrorH('No se pudo subir el logo') : setUploadErrorV('No se pudo subir el logo');
@@ -162,6 +163,7 @@ export const BrandingSection = () => {
     try {
       await tenantBrandingService.deleteLogo(type);
       type === 'horizontal' ? setLogoH(undefined) : setLogoV(undefined);
+      await refetchTenant();
       flashSaved(`${LOGO_LABELS[type]} eliminado`);
     } catch {
       // handled by interceptor toast
@@ -175,6 +177,7 @@ export const BrandingSection = () => {
     setColorSaving(true);
     try {
       await tenantBrandingService.updateBranding({ primary_color: color });
+      await refetchTenant();
       flashSaved('Color guardado');
     } finally {
       setColorSaving(false);
@@ -185,6 +188,7 @@ export const BrandingSection = () => {
     setTaglineSaving(true);
     try {
       await tenantBrandingService.updateBranding({ tagline });
+      await refetchTenant();
       flashSaved('Tagline guardada');
     } finally {
       setTaglineSaving(false);
