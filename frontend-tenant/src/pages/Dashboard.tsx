@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { LoadingPage } from '../components/common/Spinner';
 import { PageHeader } from '../components/common/PageHeader';
@@ -125,12 +124,7 @@ export const Dashboard = () => {
                 title={COLOR_LABELS[selectedColor]}
                 titleClassName="font-semibold uppercase tracking-[0.08em]"
                 descriptionClassName="text-gray-800"
-                actions={
-                  <Button variant="outline" className="gap-2" onClick={() => setSelectedColor(null)}>
-                    <ArrowLeft className="w-4 h-4" />
-                    Volver
-                  </Button>
-                }
+                onBack={() => setSelectedColor(null)}
               />
               <ClientsGrid colorFilter={selectedColor} />
             </>

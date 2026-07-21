@@ -12,7 +12,14 @@ const LANDING_LINKS = [
   { label: 'Contacto',      id: 'contacto'       },
 ];
 
-export const Navbar: React.FC = () => {
+interface NavbarProps {
+  /** Ruta del "padre" lógico de la pantalla actual. Si se pasa, en mobile
+   * se muestra una flecha de volver en vez del botón hamburguesa — patrón
+   * de navegación jerárquica típico de apps nativas (ej. conversación -> lista). */
+  backTo?: string;
+}
+
+export const Navbar: React.FC<NavbarProps> = ({ backTo }) => {
   const { isAuthenticated } = useAuth();
   const { tenant } = useTenant();
   const { mobileOpen, toggleMobileOpen } = useSidebar();
@@ -125,17 +132,28 @@ export const Navbar: React.FC = () => {
             {/* Menú de usuario — autenticado */}
             {isAuthenticated && (
               <>
-                {/* Botón hamburguesa — abre/cierra la sidebar en mobile */}
-                <button
-                  onClick={toggleMobileOpen}
-                  className="md:hidden p-2 rounded-lg text-white hover:bg-white/10 transition-colors"
-                  aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
-                >
-                  {mobileOpen
-                    ? <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    : <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-                  }
-                </button>
+                {backTo ? (
+                  /* Flecha de volver — sustituye al hamburguesa en mobile cuando la pantalla tiene un padre lógico */
+                  <button
+                    onClick={() => navigate(backTo)}
+                    className="md:hidden p-2 rounded-lg text-white hover:bg-white/10 transition-colors"
+                    aria-label="Volver"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 12H5M12 19l-7-7 7-7" /></svg>
+                  </button>
+                ) : (
+                  /* Botón hamburguesa — abre/cierra la sidebar en mobile */
+                  <button
+                    onClick={toggleMobileOpen}
+                    className="md:hidden p-2 rounded-lg text-white hover:bg-white/10 transition-colors"
+                    aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
+                  >
+                    {mobileOpen
+                      ? <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                      : <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+                    }
+                  </button>
+                )}
                 <UserMenu variant="dark" />
               </>
             )}

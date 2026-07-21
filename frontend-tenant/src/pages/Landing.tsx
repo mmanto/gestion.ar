@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTenant } from '../hooks/useTenant';
+import { resolveAssetUrl } from '../utils/assetUrl';
 
 /**
  * Landing pública de este tenant — cada contenedor de frontend-tenant sirve a
@@ -33,8 +34,8 @@ export const Landing: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <header className="border-b border-gray-200 px-6 py-4 flex items-center gap-3">
-        {tenant.branding.logo_url_horizontal || tenant.branding.logo_url ? (
-          <img src={tenant.branding.logo_url_horizontal || tenant.branding.logo_url} alt={tenant.name} className="h-10 w-10 rounded object-contain" />
+        {resolveAssetUrl(tenant.branding.logo_url_horizontal || tenant.branding.logo_url) ? (
+          <img src={resolveAssetUrl(tenant.branding.logo_url_horizontal || tenant.branding.logo_url)} alt={tenant.name} className="h-10 w-10 rounded object-contain" />
         ) : (
           <div
             className="h-10 w-10 rounded-lg flex items-center justify-center text-white font-semibold"

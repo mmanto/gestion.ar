@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Users } from 'lucide-react';
+import { Users, Search, X } from 'lucide-react';
 import { Card } from '../common/Card';
 import { EmptyState } from '../common/EmptyState';
 import { Drawer } from '../common/Drawer';
@@ -8,6 +8,7 @@ import { ActionMenu } from '../common/ActionMenu';
 import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '../common/Table';
 import MessagesList from '../messages/MessagesList';
 import { useAuth } from '../../hooks/useAuth';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import clientsService from '../../services/clients.service';
 import type { Client, ColorFilter } from '../../types/client.types';
 import type { ConversationMessage } from '../../types/conversation.types';
@@ -29,10 +30,12 @@ interface ClientsGridProps {
 const ClientsGrid = ({ colorFilter }: ClientsGridProps) => {
   const { user } = useAuth();
   const canBlock = user?.role === 'admin';
+  const isMobile = useIsMobile();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
+  const [searchExpanded, setSearchExpanded] = useState(false);
 
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -71,6 +74,12 @@ const ClientsGrid = ({ colorFilter }: ClientsGridProps) => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setAppliedSearch(search);
+  };
+
+  const handleCloseSearch = () => {
+    setSearchExpanded(false);
+    setSearch('');
+    setAppliedSearch('');
   };
 
   const handleOpenWhatsapp = (client: Client) => {
@@ -138,18 +147,52 @@ const ClientsGrid = ({ colorFilter }: ClientsGridProps) => {
 
   return (
     <div className="mt-6">
-      <form onSubmit={handleSearch} className="flex gap-2 mb-6">
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por nombre, teléfono o email..."
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none"
-        />
-        <Button type="submit" variant="primary">
-          Buscar
-        </Button>
-      </form>
+      {isMobile ? (
+        searchExpanded ? (
+          <form onSubmit={handleSearch} className="flex items-center gap-2 mb-6">
+            <input
+              autoFocus
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por nombre, teléfono o email..."
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+            />
+            <button
+              type="button"
+              onClick={handleCloseSearch}
+              aria-label="Cerrar búsqueda"
+              className="p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors flex-shrink-0"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </form>
+        ) : (
+          <div className="flex justify-end mb-6">
+            <button
+              type="button"
+              onClick={() => setSearchExpanded(true)}
+              aria-label="Buscar"
+              className="p-2 rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+          </div>
+        )
+      ) : (
+        <form onSubmit={handleSearch} className="flex gap-2 mb-6">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por nombre, teléfono o email..."
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+          />
+          <Button type="submit" variant="primary">
+            Buscar
+          </Button>
+        </form>
+      )}
 
       {loading && clients.length === 0 ? (
         <Card shadow="none">

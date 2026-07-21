@@ -25,7 +25,7 @@ const StatsCards = ({ colorStats, selectedColor, onSelectColor }: StatsCardsProp
   const mobileCols = statsTwoColsMobile ? 'grid-cols-2' : 'grid-cols-1';
 
   return (
-    <div className={`grid ${mobileCols} md:grid-cols-2 lg:grid-cols-4 gap-6`}>
+    <div className={`grid ${mobileCols} md:grid-cols-2 lg:grid-cols-4 gap-3`}>
       <TrendStatCard
         icon={<TrafficLight color="green" />}
         title="VIABLE"

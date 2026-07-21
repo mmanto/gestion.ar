@@ -12,7 +12,7 @@ export function DefaultAppLayout({ children }: DefaultAppLayoutProps) {
   const { collapsed } = useSidebar();
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-[#F1F5F9]">
       <Navbar />
       <Sidebar />
       <main className={`flex-grow pt-12 pb-8 transition-all duration-300 ${collapsed ? 'md:ml-16' : 'md:ml-64'}`}>

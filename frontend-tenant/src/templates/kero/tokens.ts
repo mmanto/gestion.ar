@@ -6,5 +6,5 @@
 // literales `text-[#da624a]`, `bg-[#f5f5f5]`, etc. en los componentes deben
 // mantenerse escritos a mano, coincidiendo con estos valores.
 export const KERO_ACCENT = '#da624a';
-export const KERO_PAGE_BG = '#f5f5f5';
+export const KERO_PAGE_BG = '#F1F5F9';
 export const KERO_BORDER = '#dee2e6';

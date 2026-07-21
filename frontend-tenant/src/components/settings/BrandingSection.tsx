@@ -5,6 +5,7 @@ import { Button } from '../common/Button';
 import { Alert } from '../common/Alert';
 import { useTenant } from '../../hooks/useTenant';
 import tenantBrandingService from '../../services/tenantBranding.service';
+import { resolveAssetUrl } from '../../utils/assetUrl';
 
 const MAX_BYTES = 2 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
@@ -210,7 +211,7 @@ export const BrandingSection = () => {
       <div className="space-y-6 mb-6">
         <LogoUploadSlot
           type="horizontal"
-          url={logoH}
+          url={resolveAssetUrl(logoH)}
           fallbackColor={primaryColor}
           fallbackLetter={fallbackLetter}
           uploading={uploadingH}
@@ -221,7 +222,7 @@ export const BrandingSection = () => {
         />
         <LogoUploadSlot
           type="vertical"
-          url={logoV}
+          url={resolveAssetUrl(logoV)}
           fallbackColor={primaryColor}
           fallbackLetter={fallbackLetter}
           uploading={uploadingV}

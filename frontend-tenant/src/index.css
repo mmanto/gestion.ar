@@ -38,7 +38,8 @@
   }
 
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply text-gray-900 antialiased;
+    background-color: #F1F5F9;
     margin: 0;
     min-height: 100vh;
   }
@@ -142,4 +143,21 @@
 
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-gray-400;
+}
+
+/* Ripple effect (menú de cards) — el span nace en el punto de toque y crece
+   hasta cubrir el card, desvaneciéndose; ver TrendStatCard.tsx. */
+@keyframes ripple {
+  from {
+    transform: scale(0);
+    opacity: 0.45;
+  }
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+.animate-ripple {
+  animation: ripple 600ms ease-out;
 }

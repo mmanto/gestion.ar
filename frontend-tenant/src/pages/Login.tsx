@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTenant } from '../hooks/useTenant';
 import { LoginForm } from '../components/auth/LoginForm';
+import { resolveAssetUrl } from '../utils/assetUrl';
 
 export const Login: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const { tenant } = useTenant();
   const navigate = useNavigate();
+  const logo = resolveAssetUrl(tenant?.branding.logo_url_vertical || tenant?.branding.logo_url);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -31,8 +33,8 @@ export const Login: React.FC = () => {
 
           {/* Marca */}
           <div className="flex flex-col items-center gap-3">
-            {tenant?.branding.logo_url_vertical || tenant?.branding.logo_url ? (
-              <img src={tenant?.branding.logo_url_vertical || tenant?.branding.logo_url} alt={tenant?.name} className="h-32 w-32 rounded object-contain" />
+            {logo ? (
+              <img src={logo} alt={tenant?.name} className="h-32 w-32 rounded object-contain" />
             ) : (
               <div
                 className="h-24 w-24 rounded-lg flex items-center justify-center text-white font-semibold text-4xl"

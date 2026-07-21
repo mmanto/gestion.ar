@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { TenantProvider } from './context/TenantContext';
 import { AuthProvider } from './context/AuthContext';
@@ -31,6 +32,8 @@ function NativeStaffPushRegistrar() {
   return null;
 }
 
+const isNativeApp = Capacitor.isNativePlatform();
+
 function App() {
   useNativeBackButton();
 
@@ -42,8 +45,9 @@ function App() {
             <SidebarProvider>
               <NativeStaffPushRegistrar />
               <Routes>
-                {/* Rutas públicas */}
-                <Route path="/" element={<Landing />} />
+                {/* Rutas públicas — en la app nativa (staff) no hay landing pública,
+                    la raíz debe ir directo al login (ver App.tsx isNativeApp) */}
+                <Route path="/" element={isNativeApp ? <Navigate to="/login" replace /> : <Landing />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/chat/c/:channelId" element={<ChatPage />} />
                 <Route path="/chat/:botId" element={<ChatPage />} />

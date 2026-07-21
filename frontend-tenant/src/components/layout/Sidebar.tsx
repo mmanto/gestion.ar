@@ -1,18 +1,20 @@
 import React, { useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useSidebar } from '../../hooks/useSidebar';
 import { useTenant } from '../../hooks/useTenant';
 import { NAV_LINKS } from '../../config/navLinks';
+import { resolveAssetUrl } from '../../utils/assetUrl';
 
 export const Sidebar: React.FC = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const { tenant } = useTenant();
   const { collapsed, toggleCollapsed, mobileOpen, setMobileOpen } = useSidebar();
-  const logoH = tenant?.branding.logo_url_horizontal || tenant?.branding.logo_url;
-  const logoV = tenant?.branding.logo_url_vertical || tenant?.branding.logo_url;
+  const logoH = resolveAssetUrl(tenant?.branding.logo_url_horizontal || tenant?.branding.logo_url);
+  const logoV = resolveAssetUrl(tenant?.branding.logo_url_vertical || tenant?.branding.logo_url);
   const tenantName = tenant?.name || 'Backoffice';
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     setMobileOpen(false);
@@ -28,7 +30,10 @@ export const Sidebar: React.FC = () => {
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + '/');
 
-  console.log("logoH: " +  logoH + "logoV: " + logoV + "colapsed: " + collapsed);
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <>
@@ -101,6 +106,18 @@ export const Sidebar: React.FC = () => {
             )
           )}
         </nav>
+
+        <div className="md:hidden border-t border-white/10 flex-shrink-0 px-3 py-2">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Cerrar sesión
+          </button>
+        </div>
 
         <div className="hidden md:block border-t border-white/10 flex-shrink-0 px-3 py-2">
           <button

@@ -3,6 +3,7 @@ import React from 'react';
 interface CardProps {
   children: React.ReactNode;
   className?: string;
+  style?: React.CSSProperties;
   padding?: 'sm' | 'md' | 'lg' | 'none';
   shadow?: 'sm' | 'md' | 'lg' | 'none';
   hover?: boolean;
@@ -11,6 +12,7 @@ interface CardProps {
 export const Card: React.FC<CardProps> = ({
   children,
   className = '',
+  style,
   padding = 'md',
   shadow = 'md',
   hover = false,
@@ -40,6 +42,7 @@ export const Card: React.FC<CardProps> = ({
         ${hoverStyles}
         ${className}
       `}
+      style={style}
     >
       {children}
     </div>
