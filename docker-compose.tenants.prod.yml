@@ -147,8 +147,10 @@ services:
       - "traefik.http.routers.landing-ius.priority=10"
       - "traefik.http.services.landing-ius.loadbalancer.server.port=80"
 
-  # landing-laboralia / landing-proptech: placeholder simple, un único
-  # index.html sin assets propios, así que el router solo matchea Path(`/`).
+  # landing-laboralia comparte dominio con frontend-tenant-laboralia
+  # (laboralia.intellify.pro): el router solo matchea "/" y los assets
+  # propios de la landing (lista fija) — cualquier otra ruta (/login,
+  # /dashboard, /assets/*, /api/*...) sigue cayendo en tenant-laboralia.
   landing-laboralia:
     build:
       context: ./sites/laboralia-landing
@@ -158,12 +160,14 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_public"
-      - "traefik.http.routers.landing-laboralia.rule=Host(`laboralia.intellify.pro`) && Path(`/`)"
+      - "traefik.http.routers.landing-laboralia.rule=Host(`laboralia.intellify.pro`) && (Path(`/`) || Path(`/favicon.svg`) || Path(`/favicon-32.png`) || Path(`/apple-touch-icon.png`) || Path(`/logo-horizontal.svg`) || Path(`/logo-horizontal-blanco.svg`) || Path(`/logo-vertical-blanco.svg`) || Path(`/despacho-hero.jpg`) || Path(`/estudio.jpg`) || Path(`/testimonios-bg.jpg`) || Path(`/eduardo-sandoval.webp`) || Path(`/og-image.png`))"
       - "traefik.http.routers.landing-laboralia.entrypoints=websecure"
       - "traefik.http.routers.landing-laboralia.tls.certresolver=letsencrypt"
       - "traefik.http.routers.landing-laboralia.priority=10"
       - "traefik.http.services.landing-laboralia.loadbalancer.server.port=80"
 
+  # landing-proptech comparte dominio con frontend-tenant-proptech
+  # (proptech.intellify.pro): mismo criterio que landing-laboralia.
   landing-proptech:
     build:
       context: ./sites/proptech-landing
@@ -173,7 +177,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_public"
-      - "traefik.http.routers.landing-proptech.rule=Host(`proptech.intellify.pro`) && Path(`/`)"
+      - "traefik.http.routers.landing-proptech.rule=Host(`proptech.intellify.pro`) && (Path(`/`) || Path(`/favicon.svg`) || Path(`/favicon-32.png`) || Path(`/apple-touch-icon.png`) || Path(`/logo-horizontal.svg`) || Path(`/logo-horizontal-blanco.svg`) || Path(`/logo-vertical-blanco.svg`) || Path(`/hero-showroom-toyota.jpg`) || Path(`/concesionaria-showroom.jpg`) || Path(`/concesionaria-showroom-2.jpg`) || Path(`/showroom-fila-autos.jpg`) || Path(`/cliente-entrega-llaves.jpg`) || Path(`/autos-fila-lote.jpg`) || Path(`/showroom-suv-dashboard.webp`) || Path(`/testimonios-bg.jpg`) || Path(`/eduardo-sandoval.webp`) || Path(`/og-image.png`))"
       - "traefik.http.routers.landing-proptech.entrypoints=websecure"
       - "traefik.http.routers.landing-proptech.tls.certresolver=letsencrypt"
       - "traefik.http.routers.landing-proptech.priority=10"
