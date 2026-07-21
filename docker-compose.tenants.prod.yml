@@ -97,6 +97,7 @@ services:
       - "traefik.http.routers.tenant-laboralia.rule=Host(`laboralia.intellify.pro`)"
       - "traefik.http.routers.tenant-laboralia.entrypoints=websecure"
       - "traefik.http.routers.tenant-laboralia.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.tenant-laboralia.priority=1"
       - "traefik.http.services.tenant-laboralia.loadbalancer.server.port=80"
 
   frontend-tenant-proptech:
@@ -121,6 +122,7 @@ services:
       - "traefik.http.routers.tenant-proptech.rule=Host(`proptech.intellify.pro`)"
       - "traefik.http.routers.tenant-proptech.entrypoints=websecure"
       - "traefik.http.routers.tenant-proptech.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.tenant-proptech.priority=1"
       - "traefik.http.services.tenant-proptech.loadbalancer.server.port=80"
 
   # landing-ius comparte dominio con frontend-tenant-ius (ius.intellify.pro):
@@ -144,6 +146,38 @@ services:
       - "traefik.http.routers.landing-ius.tls.certresolver=letsencrypt"
       - "traefik.http.routers.landing-ius.priority=10"
       - "traefik.http.services.landing-ius.loadbalancer.server.port=80"
+
+  # landing-laboralia / landing-proptech: placeholder simple, un único
+  # index.html sin assets propios, así que el router solo matchea Path(`/`).
+  landing-laboralia:
+    build:
+      context: ./sites/laboralia-landing
+    restart: unless-stopped
+    networks:
+      - traefik_public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_public"
+      - "traefik.http.routers.landing-laboralia.rule=Host(`laboralia.intellify.pro`) && Path(`/`)"
+      - "traefik.http.routers.landing-laboralia.entrypoints=websecure"
+      - "traefik.http.routers.landing-laboralia.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.landing-laboralia.priority=10"
+      - "traefik.http.services.landing-laboralia.loadbalancer.server.port=80"
+
+  landing-proptech:
+    build:
+      context: ./sites/proptech-landing
+    restart: unless-stopped
+    networks:
+      - traefik_public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_public"
+      - "traefik.http.routers.landing-proptech.rule=Host(`proptech.intellify.pro`) && Path(`/`)"
+      - "traefik.http.routers.landing-proptech.entrypoints=websecure"
+      - "traefik.http.routers.landing-proptech.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.landing-proptech.priority=10"
+      - "traefik.http.services.landing-proptech.loadbalancer.server.port=80"
 
 
 networks:
