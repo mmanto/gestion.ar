@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 150" width="220" height="150">
+  <rect x="70" y="0" width="80" height="80" rx="20" fill="#ffffff" fill-opacity=".15"/>
+  <circle cx="110" cy="40" r="25" fill="none" stroke="#ffffff" stroke-width="5"/>
+  <circle cx="110" cy="40" r="6.5" fill="#ffffff"/>
+  <line x1="110" y1="19" x2="110" y2="27" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
+  <line x1="92" y1="51" x2="99.5" y2="46" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
+  <line x1="128" y1="51" x2="120.5" y2="46" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
+  <text x="110" y="120" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700" fill="#ffffff">Prop<tspan fill="#6ee7b7">Tech</tspan></text>
+</svg>

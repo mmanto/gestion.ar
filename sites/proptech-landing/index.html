@@ -3,51 +3,1821 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Proptech</title>
-<meta name="description" content="Proptech — próximamente." />
-<meta name="robots" content="noindex, nofollow" />
-<link rel="icon" href="data:," />
+<title>Agente de IA para Ventas y Alquileres Inmobiliarios | PropTech</title>
+<meta name="description" content="El agente de IA que califica leads para inmobiliarias. Analiza cada consulta, clasifica al prospecto y detecta quién está listo para comprar o alquilar." />
+<meta name="robots" content="index, follow" />
+<link rel="canonical" href="https://proptechmx.com/" />
+
+<!-- Favicon -->
+<link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
+
+<!-- Open Graph / Facebook / WhatsApp -->
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://proptechmx.com/" />
+<meta property="og:title" content="PropTech | Agente de IA para Ventas y Alquileres Inmobiliarios" />
+<meta property="og:description" content="PropTech analiza cada consulta, clasifica al prospecto y detecta quién está listo para comprar o alquilar — antes de que inviertas tu tiempo en la primera llamada." />
+<meta property="og:image" content="https://proptechmx.com/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:locale" content="es_MX" />
+<meta property="og:site_name" content="PropTech" />
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="PropTech | Agente de IA para Ventas y Alquileres Inmobiliarios" />
+<meta name="twitter:description" content="La IA que califica leads para inmobiliarias. Analiza, clasifica y detecta quién está listo para comprar o alquilar." />
+<meta name="twitter:image" content="https://proptechmx.com/og-image.png" />
+
+<!-- Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "PropTech",
+  "url": "https://proptechmx.com",
+  "logo": "https://proptechmx.com/favicon-32.png",
+  "description": "Agente de inteligencia artificial que califica leads para inmobiliarias.",
+  "email": "hola@proptechmx.com",
+  "sameAs": []
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "¿Qué es PropTech y cómo funciona?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "PropTech es un agente de inteligencia artificial que analiza cada consulta que recibe tu inmobiliaria, clasifica al prospecto según su interés y detecta quién está listo para comprar o alquilar."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Cuánto tiempo lleva implementarlo en mi inmobiliaria?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "La puesta en marcha estándar toma entre 1 y 2 semanas, configurando el agente con el catálogo de propiedades y los criterios de clasificación de tu inmobiliaria."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Necesito conocimientos técnicos para usarlo?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. PropTech está pensado para agentes inmobiliarios, no para ingenieros, con interfaces intuitivas y soporte continuo."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Cómo protege PropTech los datos de mis clientes?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Trabajamos bajo estrictos protocolos de seguridad, firmamos NDA con todos nuestros clientes y los datos nunca se comparten con terceros."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Cómo empiezo a usar PropTech?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Completá el formulario de contacto o escribinos por WhatsApp para agendar una primera reunión sin costo."
+      }
+    }
+  ]
+}
+</script>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: { 50:'#ecfef2',100:'#d3fde1',200:'#acfbc7',300:'#77f8a3',400:'#33f575',500:'#0bda51',600:'#09a93f',700:'#067e2f',900:'#033514' },
+          sky: { 50:'#ecfef2',100:'#d3fde1',200:'#acfbc7',300:'#77f8a3',400:'#33f575',500:'#0bda51',600:'#09a93f',700:'#067e2f',900:'#033514' }
+        },
+        fontFamily: { sans: ['system-ui','-apple-system','Segoe UI','Roboto','sans-serif'] }
+      }
+    }
+  }
+</script>
 <style>
-  :root {
-    color-scheme: light dark;
-    --bg: #0f1115;
-    --fg: #f4f4f5;
-    --muted: #9ca3af;
-  }
-  * { box-sizing: border-box; }
-  html, body {
-    height: 100%;
-    margin: 0;
-  }
-  body {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--bg);
-    color: var(--fg);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    text-align: center;
-    padding: 2rem;
-  }
-  main { max-width: 32rem; }
-  h1 {
-    font-size: clamp(2rem, 5vw, 3rem);
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    margin: 0 0 0.75rem;
-  }
-  p {
-    font-size: 1.125rem;
-    color: var(--muted);
-    margin: 0;
-    line-height: 1.6;
-  }
+  .text-gradient{background:linear-gradient(135deg,#09a93f,#33f575);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .bg-gradient-brand{background:linear-gradient(135deg,#09a93f,#33f575);}
+  .chip{display:inline-flex;align-items:center;gap:.375rem;padding:.375rem .875rem;border-radius:9999px;font-size:.75rem;font-weight:600;}
+  html{scroll-behavior:smooth;}
 </style>
 </head>
-<body>
-<main>
-  <h1>Proptech</h1>
-  <p>Estamos preparando algo nuevo. Muy pronto vas a poder conocer más.</p>
-</main>
+<body class="bg-white text-gray-900 antialiased">
+
+<!-- NAV -->
+<header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-100">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <a href="#" class="flex items-center gap-3">
+      <img src="./logo-horizontal.svg" alt="PropTech" class="h-8 w-auto" />
+      <span class="hidden sm:inline-flex chip bg-brand-50 text-brand-700">Escucha. Analiza. Decide.</span>
+    </a>
+    <nav class="hidden lg:flex items-center gap-6 text-sm font-medium text-gray-600">
+      <a href="#hero" class="hover:text-brand-600 transition-colors">¿Qué es?</a>
+      <a href="#que-es" class="hover:text-brand-600 transition-colors">Ventajas</a>
+      <a href="#niveles" class="hover:text-brand-600 transition-colors">Clasificación</a>
+      <a href="#clientes" class="hover:text-brand-600 transition-colors">Clientes</a>
+      <a href="#costo" class="hover:text-brand-600 transition-colors">Costo</a>
+      <!--<a href="#equipo" class="hover:text-brand-600 transition-colors">Equipo</a>-->
+      <a href="#faq" class="hover:text-brand-600 transition-colors">FAQ</a>
+      <a href="#contacto" class="hover:text-brand-600 transition-colors">Contacto</a>
+    </nav>
+    <div class="flex items-center gap-3">
+      <a href="https://app.law.dev.leadtrackers.pro/login" target="_blank" rel="noopener noreferrer" class="hidden sm:inline text-sm font-medium text-gray-600 hover:text-brand-600">Mi panel</a>
+      <a href="https://api.whatsapp.com/send?phone=5492212267836" target="_blank" rel="noopener noreferrer" class="hidden sm:inline-flex bg-gradient-brand text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:opacity-90 transition-all hover:scale-105">Hablar con PropTech</a>
+      <button id="menu-btn" type="button" aria-label="Abrir menú" aria-expanded="false" class="lg:hidden -mr-2 p-2 text-gray-700 hover:text-brand-600">
+        <svg id="menu-icon-open" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+        <svg id="menu-icon-close" class="w-6 h-6 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 6l12 12M18 6L6 18"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile dropdown menu -->
+  <div id="mobile-menu" class="hidden lg:hidden border-t border-gray-100 bg-white">
+    <nav class="flex flex-col px-4 sm:px-6 py-4 text-sm font-medium text-gray-700">
+      <a href="#hero" class="py-3 border-b border-gray-50 hover:text-brand-600">¿Qué es?</a>
+      <a href="#que-es" class="py-3 border-b border-gray-50 hover:text-brand-600">Ventajas</a>
+      <a href="#niveles" class="py-3 border-b border-gray-50 hover:text-brand-600">Clasificación</a>
+      <a href="#clientes" class="py-3 border-b border-gray-50 hover:text-brand-600">Clientes</a>
+      <a href="#costo" class="py-3 border-b border-gray-50 hover:text-brand-600">Costo</a>
+      <!--<a href="#equipo" class="py-3 border-b border-gray-50 hover:text-brand-600">Equipo</a>-->
+      <a href="#faq" class="py-3 border-b border-gray-50 hover:text-brand-600">FAQ</a>
+      <a href="#contacto" class="py-3 border-b border-gray-50 hover:text-brand-600">Contacto</a>
+      <a href="https://app.law.dev.leadtrackers.pro/login" target="_blank" rel="noopener noreferrer" class="py-3 border-b border-gray-50 hover:text-brand-600">Mi panel</a>
+      <a href="https://api.whatsapp.com/send?phone=5492212267836" target="_blank" rel="noopener noreferrer" class="mt-4 text-center bg-gradient-brand text-white font-semibold px-5 py-3 rounded-full hover:opacity-90 transition-all">Probar PropTech</a>
+    </nav>
+  </div>
+</header>
+
+<script>
+  (function () {
+    var btn = document.getElementById('menu-btn');
+    var menu = document.getElementById('mobile-menu');
+    var iconOpen = document.getElementById('menu-icon-open');
+    var iconClose = document.getElementById('menu-icon-close');
+
+    function closeMenu() {
+      menu.classList.add('hidden');
+      iconOpen.classList.remove('hidden');
+      iconClose.classList.add('hidden');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+
+    btn.addEventListener('click', function () {
+      var isOpen = !menu.classList.contains('hidden');
+      if (isOpen) {
+        closeMenu();
+      } else {
+        menu.classList.remove('hidden');
+        iconOpen.classList.add('hidden');
+        iconClose.classList.remove('hidden');
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    });
+
+    menu.querySelectorAll('a').forEach(function (link) {
+      link.addEventListener('click', closeMenu);
+    });
+  })();
+</script>
+
+<!-- HERO -->
+<section id="hero" class="relative overflow-hidden bg-[#0c0910] py-20 lg:py-28">
+  <!-- background photo -->
+  <img src="hero-showroom-toyota.jpg" alt="Cierre de acuerdo inmobiliario con maquetas de casas" class="absolute inset-0 w-full h-full object-cover">
+  <!-- decorative background -->
+  <div class="absolute inset-0 pointer-events-none" style="background:linear-gradient(90deg,rgba(12,9,16,.82) 0%,rgba(12,9,16,.6) 45%,rgba(12,9,16,.35) 100%);"></div>
+  <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(120% 90% at 78% 15%, rgba(249,115,22,.18) 0%, rgba(12,9,16,0) 55%);"></div>
+  <svg class="absolute top-10 right-[28%] w-[520px] h-[520px] opacity-40 pointer-events-none hidden lg:block" viewBox="0 0 520 520" fill="none">
+    <circle cx="260" cy="260" r="255" stroke="#7c3aed" stroke-opacity=".18" stroke-width="1"/>
+    <circle cx="260" cy="260" r="195" stroke="#0bda51" stroke-opacity=".22" stroke-width="1"/>
+    <circle cx="260" cy="260" r="130" stroke="#7c3aed" stroke-opacity=".2" stroke-width="1"/>
+    <circle cx="260" cy="260" r="70" stroke="#0bda51" stroke-opacity=".25" stroke-width="1"/>
+    <circle cx="100" cy="150" r="4" fill="#0bda51" fill-opacity=".6"/>
+    <circle cx="440" cy="380" r="3" fill="#7c3aed" fill-opacity=".6"/>
+  </svg>
+  <div class="absolute -bottom-24 -left-24 w-96 h-96 bg-brand-600/20 rounded-full blur-3xl pointer-events-none"></div>
+
+  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-16 items-center">
+    <div>
+      <span class="chip bg-white/10 text-white/90 border border-white/10 backdrop-blur mb-6">
+        <svg class="w-3.5 h-3.5 -ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.5 5.5L19 9l-5.5 1.5L12 16l-1.5-5.5L5 9l5.5-1.5L12 2z"/></svg>
+        Agente de IA para ventas y alquileres inmobiliarios
+      </span>
+      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.08] text-white mb-6">
+        La IA que<br />
+        <span style="background:linear-gradient(135deg,#77f8a3,#33f575);-webkit-background-clip:text;background-clip:text;color:transparent;">califica leads</span><br />
+        para inmobiliarias
+      </h1>
+      <div class="w-16 h-1 bg-brand-500 rounded-full mb-6"></div>
+      <p class="text-lg text-gray-300 leading-relaxed mb-9 max-w-md">
+        PropTech analiza cada consulta, clasifica al prospecto y detecta quién sí está listo para comprar o alquilar.
+      </p>
+      <div class="flex flex-wrap items-center gap-4 mb-14">
+        <a href="https://api.whatsapp.com/send?phone=5492212267836" target="_blank" rel="noopener noreferrer" class="group inline-flex items-center gap-4 bg-gradient-brand text-white font-semibold pl-7 pr-1.5 py-1.5 rounded-full hover:opacity-90 transition-all hover:scale-105 shadow-lg shadow-brand-900/40">
+          Pon a prueba a PropTech
+          <span class="w-9 h-9 shrink-0 rounded-full bg-white/25 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+            <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </span>
+        </a>
+        <a href="#ventajas" class="inline-flex items-center gap-3 border border-white/20 text-white font-semibold pl-1.5 pr-6 py-1.5 rounded-full hover:border-white/40 hover:bg-white/5 transition-colors">
+          <span class="w-9 h-9 shrink-0 rounded-full bg-white/10 flex items-center justify-center">
+            <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </span>
+          ¿Cómo trabaja PropTech?
+        </a>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-8 sm:divide-x sm:divide-white/15">
+        <div>
+          <svg class="w-7 h-7 text-brand-500 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          <p class="text-white text-sm font-medium leading-snug">Calificación<br />inteligente</p>
+        </div>
+        <div class="sm:pl-6">
+          <svg class="w-7 h-7 text-brand-500 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <p class="text-white text-sm font-medium leading-snug">Respuestas<br />instantáneas</p>
+        </div>
+        <div class="sm:pl-6">
+          <svg class="w-7 h-7 text-brand-500 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M8 17V11"/><path d="M13 17V7"/><path d="M18 17v-4"/></svg>
+          <p class="text-white text-sm font-medium leading-snug">Mayor conversión<br />de ventas y alquileres</p>
+        </div>
+        <div class="sm:pl-6">
+          <svg class="w-7 h-7 text-brand-500 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-8 8.5-4.5-1-8-3.5-8-8.5V6l8-4 8 4Z"/><path d="m9 12 2 2 4-4"/></svg>
+          <p class="text-white text-sm font-medium leading-snug">Información<br />confiable</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- chat mockup -->
+    <div class="relative lg:pl-6 lg:pb-16">
+      <div class="absolute -inset-10 hidden lg:block pointer-events-none" style="background:radial-gradient(60% 60% at 60% 40%, rgba(249,115,22,.15) 0%, rgba(249,115,22,0) 70%);"></div>
+
+      <!-- phone frame -->
+      <div class="relative z-0 w-[230px] sm:w-[250px] mx-auto lg:mx-0 lg:ml-6 rounded-[2.25rem] border-[6px] border-gray-900 bg-gray-900 shadow-2xl overflow-hidden">
+        <div class="bg-gradient-brand px-3.5 py-3 flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center p-1 shrink-0"><img src="./logo-vertical-blanco.svg" alt="PropTech" class="w-full h-full object-contain" /></div>
+          <div>
+            <div class="text-white font-semibold text-xs leading-tight">Asistente PropTech</div>
+            <div class="text-white/80 text-[10px] leading-tight">en línea</div>
+          </div>
+        </div>
+        <div class="bg-white p-3.5 space-y-2.5 min-h-[280px]">
+          <div class="bg-gray-100 rounded-xl rounded-tl-sm px-3 py-2 text-[11px] leading-snug text-gray-700">
+            Hola, soy el asistente PropTech 👋 Puedo ayudarte a encontrar la propiedad ideal y orientarte con la mejor oferta. Contame qué estás buscando.
+          </div>
+          <div class="bg-brand-600 text-white rounded-xl rounded-tr-sm px-3 py-2 max-w-[92%] ml-auto text-[11px] leading-snug">
+            Busco un departamento de 3 ambientes, tengo una propiedad para tomar en parte de pago y quiero financiamiento a 48 meses..
+          </div>
+          <div class="flex justify-end">
+            <span class="text-[10px] text-gray-400">10:39 ✓✓</span>
+          </div>
+          <div class="bg-white rounded-xl px-3 py-2 border border-brand-100 text-[11px]">
+            <span class="inline-block chip bg-green-100 text-green-700 text-[10px]">Lead Caliente</span>
+            <p class="mt-1.5 text-gray-600 leading-snug">Prospecto con alta intención de compra o alquiler, Prioridad para contactar hoy.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- overlapping larger card -->
+      <div class="relative lg:absolute lg:right-0 lg:bottom-0 z-10 mt-6 lg:mt-0 lg:w-[380px]">
+        <!-- floating header tab -->
+        <div class="relative bg-gradient-brand rounded-2xl shadow-xl px-5 py-4 flex items-center gap-3 max-w-xs ml-auto mb-[-1.25rem] lg:mb-[-1.5rem] mr-4 z-10">
+          <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center p-1.5 shrink-0"><img src="./logo-vertical-blanco.svg" alt="PropTech" class="w-full h-full object-contain" /></div>
+          <div>
+            <div class="text-white font-semibold text-sm">Asistente PropTech</div>
+            <div class="text-white/80 text-xs">en línea</div>
+          </div>
+        </div>
+
+        <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden">
+          <div class="p-5 sm:p-6 space-y-3 bg-gray-50">
+            <div class="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm max-w-[90%] text-sm text-gray-700">
+              Hola, soy el asistente PropTech 👋 Puedo ayudarte a encontrar la propiedad ideal y orientarte con la mejor oferta. Contame qué estás buscando.
+            </div>
+            <div class="bg-brand-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 shadow-sm max-w-[90%] ml-auto text-sm">
+              Busco un departamento de 3 ambientes, tengo una propiedad para tomar en parte de pago y quiero financiamiento a 48 meses..
+            </div>
+            <div class="flex justify-end">
+              <span class="text-[11px] text-gray-400">10:39 ✓✓</span>
+            </div>
+            <div class="bg-white rounded-2xl px-4 py-3 shadow-sm border border-brand-100 text-sm">
+              <span class="inline-block chip bg-green-100 text-green-700 text-[11px]">Lead Caliente</span>
+              <p class="mt-2 text-gray-600">Prospecto con alta intención de compra o alquiler, Prioridad para contactar hoy.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- floating WhatsApp button -->
+  <a href="https://api.whatsapp.com/send?phone=5492212267836" target="_blank" rel="noopener noreferrer" aria-label="Escribir por WhatsApp" class="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-[#25D366] shadow-lg shadow-black/30 flex items-center justify-center hover:scale-105 transition-transform">
+    <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.52 0-10 4.48-10 10 0 1.77.46 3.45 1.28 4.9L2 22l5.24-1.28A9.95 9.95 0 0 0 12.04 22c5.52 0 10-4.48 10-10s-4.48-10-10-10Zm0 18.06c-1.6 0-3.1-.43-4.39-1.18l-.31-.18-3.11.76.79-3.03-.2-.31A8.06 8.06 0 0 1 3.98 12c0-4.44 3.62-8.06 8.06-8.06s8.06 3.62 8.06 8.06-3.62 8.06-8.06 8.06Zm4.4-6.04c-.24-.12-1.43-.7-1.65-.78-.22-.08-.38-.12-.54.12-.16.24-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1.01-.37-1.92-1.18-.71-.63-1.19-1.4-1.33-1.64-.14-.24-.02-.37.1-.49.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.19-.46-.39-.4-.54-.4-.14 0-.3-.02-.46-.02-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.7 2.6 4.12 3.65.58.25 1.03.4 1.38.51.58.18 1.11.16 1.53.1.47-.07 1.43-.58 1.63-1.15.2-.57.2-1.05.14-1.15-.06-.1-.22-.16-.46-.28Z"/></svg>
+  </a>
+</section>
+
+<!-- QUE ES / PROBLEMA -->
+<section id="que-es" class="py-20 lg:py-28 relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-emerald-50">
+  <!-- top-right blob + dot grid -->
+  <div class="absolute -top-20 -right-20 w-72 h-72 bg-brand-100/70 rounded-full pointer-events-none"></div>
+  <svg class="absolute top-6 right-10 w-40 h-40 text-brand-300/50 pointer-events-none hidden sm:block" viewBox="0 0 140 140" fill="none">
+    <g fill="currentColor">
+      <circle cx="4" cy="4" r="2.2"/><circle cx="20" cy="4" r="2.2"/><circle cx="36" cy="4" r="2.2"/><circle cx="52" cy="4" r="2.2"/><circle cx="68" cy="4" r="2.2"/>
+      <circle cx="4" cy="20" r="2.2"/><circle cx="20" cy="20" r="2.2"/><circle cx="36" cy="20" r="2.2"/><circle cx="52" cy="20" r="2.2"/><circle cx="68" cy="20" r="2.2"/>
+      <circle cx="4" cy="36" r="2.2"/><circle cx="20" cy="36" r="2.2"/><circle cx="36" cy="36" r="2.2"/><circle cx="52" cy="36" r="2.2"/>
+      <circle cx="4" cy="52" r="2.2"/><circle cx="20" cy="52" r="2.2"/><circle cx="36" cy="52" r="2.2"/>
+      <circle cx="4" cy="68" r="2.2"/><circle cx="20" cy="68" r="2.2"/>
+    </g>
+  </svg>
+
+  <!-- top-left connected nodes -->
+  <svg class="absolute top-16 left-0 w-56 h-56 pointer-events-none hidden sm:block" viewBox="0 0 220 220" fill="none">
+    <path d="M20 30 C 60 60, 40 110, 100 130 S 160 190, 210 200" stroke="#0bda51" stroke-opacity=".35" stroke-width="1.5"/>
+    <path d="M10 60 C 50 90, 30 140, 90 150" stroke="#0bda51" stroke-opacity=".25" stroke-width="1.5"/>
+    <circle cx="20" cy="30" r="5" fill="#0bda51"/>
+    <circle cx="10" cy="60" r="3" fill="#0bda51" fill-opacity=".7"/>
+    <circle cx="60" cy="105" r="3.5" fill="#77f8a3"/>
+    <circle cx="100" cy="130" r="5" fill="#0bda51" fill-opacity=".85"/>
+  </svg>
+
+  <!-- bottom-left blob -->
+  <div class="absolute -bottom-16 -left-16 w-64 h-64 bg-brand-100/50 rounded-full pointer-events-none"></div>
+
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
+    <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">No todo contacto representa una <span class="text-gradient">oportunidad de venta o alquiler</span></h2>
+    <div class="w-16 h-1 bg-gradient-brand rounded-full mx-auto mb-6"></div>
+    <p class="text-gray-600 max-w-2xl mx-auto mb-14">Sólo algunos prospectos están listos para comprar o alquilar.</p>
+    <div class="grid sm:grid-cols-3 gap-8">
+      <div class="flex flex-col bg-white rounded-2xl shadow-sm p-8 text-left">
+        <div class="w-16 h-16 rounded-full bg-brand-50 flex items-center justify-center mb-5 mx-auto">
+          <svg class="w-7 h-7 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 10h.01M12 10h.01M16 10h.01"/>
+            <path d="M21 12c0 4.418-4.03 8-9 8-1.06 0-2.08-.16-3.02-.46L4 21l1.5-3.6C4.55 16.1 4 14.62 4 13.05 4 8.6 8.03 5 13 5c1.66 0 3.22.4 4.56 1.1"/>
+          </svg>
+        </div>
+        <div class="text-sm font-bold text-brand-600 uppercase tracking-wider mb-3 text-center">Sin compromiso</div>
+        <p class="text-gray-600 text-sm text-center">Hay quienes preguntan sin intención real de comprar o alquilar.</p>
+        <div class="mt-auto pt-8">
+          <div class="h-[3px] w-full bg-gradient-brand rounded-full"></div>
+        </div>
+      </div>
+      <div class="flex flex-col bg-white rounded-2xl shadow-sm p-8 text-left">
+        <div class="w-16 h-16 rounded-full bg-brand-50 flex items-center justify-center mb-5 mx-auto">
+          <svg class="w-7 h-7 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 3v5a1 1 0 0 0 1 1h5"/>
+            <path d="M6 3h8l6 6v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/>
+            <path d="m9.5 12.5 5 5M14.5 12.5l-5 5"/>
+          </svg>
+        </div>
+        <div class="text-sm font-bold text-brand-600 uppercase tracking-wider mb-3 text-center">Sin presupuesto</div>
+        <p class="text-gray-600 text-sm text-center">Otros prospectos no cuentan con el presupuesto o crédito para comprar o alquilar.</p>
+        <div class="mt-auto pt-8">
+          <div class="h-[3px] w-full bg-gradient-brand rounded-full"></div>
+        </div>
+      </div>
+      <div class="flex flex-col bg-white rounded-2xl shadow-sm p-8 text-left">
+        <div class="w-16 h-16 rounded-full bg-brand-50 flex items-center justify-center mb-5 mx-auto">
+          <svg class="w-7 h-7 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="5" width="20" height="14" rx="2"/>
+            <line x1="2" y1="10" x2="22" y2="10"/>
+          </svg>
+        </div>
+        <div class="text-sm font-bold text-brand-600 uppercase tracking-wider mb-3 text-center">Sin disposición</div>
+        <p class="text-gray-600 text-sm text-center">Y algunos sólo están cotizando, sin intención de comprar o alquilar pronto.</p>
+        <div class="mt-auto pt-8">
+          <div class="h-[3px] w-full bg-gradient-brand rounded-full"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRANSFORMA: escucha analiza decide -->
+<section id="ventajas" class="py-20 lg:py-24 bg-slate-200">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="relative overflow-hidden rounded-[2.5rem] px-6 py-14 sm:px-14 sm:py-16 bg-white shadow-sm">
+      <div class="absolute top-8 right-8 sm:right-14 w-28 h-28 opacity-70 pointer-events-none" style="background-image:radial-gradient(circle,#77f8a3 1.5px,transparent 1.5px);background-size:14px 14px;"></div>
+      <div class="absolute top-1/3 -left-8 w-2.5 h-2.5 rounded-full bg-brand-600 pointer-events-none"></div>
+      <div class="absolute top-1/2 -left-4 w-2 h-2 rounded-full bg-brand-500 pointer-events-none"></div>
+      <div class="absolute top-[58%] left-6 w-1.5 h-1.5 rounded-full bg-brand-300 pointer-events-none"></div>
+      <div class="absolute top-[68%] left-16 w-1.5 h-1.5 rounded-full bg-brand-200 pointer-events-none"></div>
+
+      <div class="relative text-center mb-14">
+        <h2 class="text-3xl sm:text-4xl font-bold mb-4" style="color:#0f1c3f;">PropTech <span class="text-brand-600">transforma</span> este escenario</h2>
+        <div class="w-16 h-1 bg-brand-600 rounded-full mx-auto mb-6"></div>
+        <p class="text-gray-600 max-w-2xl mx-auto">Antes de que interactúes con un prospecto, PropTech ya evaluó su interés, su capacidad de compra o alquiler y su nivel de urgencia.</p>
+      </div>
+
+      <div class="relative hidden sm:flex items-center justify-center max-w-2xl mx-auto mb-2">
+        <div class="w-12 h-12 shrink-0 rounded-full bg-white border-2 border-brand-500 text-brand-600 flex items-center justify-center text-lg font-bold">1</div>
+        <div class="flex-1 border-t-2 border-dashed border-brand-300 mx-3"></div>
+        <div class="w-12 h-12 shrink-0 rounded-full bg-white border-2 border-brand-500 text-brand-600 flex items-center justify-center text-lg font-bold">2</div>
+        <div class="flex-1 border-t-2 border-dashed border-brand-300 mx-3"></div>
+        <div class="w-12 h-12 shrink-0 rounded-full bg-white border-2 border-brand-500 text-brand-600 flex items-center justify-center text-lg font-bold">3</div>
+      </div>
+
+      <div class="relative grid sm:grid-cols-3 gap-10 sm:gap-8 mt-8">
+        <div class="text-center">
+          <div class="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4" style="background:radial-gradient(circle,#ecfef2 55%,#d3fde1 100%);">
+            <svg class="w-9 h-9 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 1 1-7 0"/>
+              <path d="M15 8.5a2.5 2.5 0 0 0-5 0v1a2 2 0 1 1 0 4"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold mb-2" style="color:#0f1c3f;">PropTech escucha</h3>
+          <div class="w-8 h-0.5 bg-brand-500 mx-auto mb-3"></div>
+          <p class="text-sm text-gray-500">Recopila información relevante mediante interacción guiada.</p>
+        </div>
+        <div class="text-center">
+          <div class="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4" style="background:radial-gradient(circle,#ecfef2 55%,#d3fde1 100%);">
+            <svg class="w-9 h-9 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5.5"/>
+              <path d="M13 3l4 4v2"/>
+              <path d="M9 8h4M9 12h2"/>
+              <circle cx="16.5" cy="16.5" r="3"/>
+              <path d="m19 19 1.8 1.8"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold mb-2" style="color:#0f1c3f;">PropTech analiza</h3>
+          <div class="w-8 h-0.5 bg-brand-500 mx-auto mb-3"></div>
+          <p class="text-sm text-gray-500">Evalúa el interés y la capacidad de compra o alquiler del prospecto.</p>
+        </div>
+        <div class="text-center">
+          <div class="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4" style="background:radial-gradient(circle,#ecfef2 55%,#d3fde1 100%);">
+            <svg class="w-9 h-9 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="4" width="12" height="17" rx="2"/>
+              <path d="M9 4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1z"/>
+              <path d="m9.5 13.5 2 2 3.5-3.5"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold mb-2" style="color:#0f1c3f;">PropTech decide</h3>
+          <div class="w-8 h-0.5 bg-brand-500 mx-auto mb-3"></div>
+          <p class="text-sm text-gray-500">Clasifica y prioriza conforme a criterios comerciales estratégicos.</p>
+        </div>
+      </div>
+
+      <div class="relative flex justify-center mt-12">
+        <div class="inline-flex items-center gap-3 bg-white border border-gray-100 rounded-full px-5 py-3 shadow-sm">
+          <span class="w-9 h-9 shrink-0 rounded-full bg-brand-600 flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.6 5.2L19 9l-5.4 1.8L12 16l-1.6-5.2L5 9l5.4-1.8L12 2z"/><path d="M19 15l.8 2.6L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.4z"/></svg>
+          </span>
+          <p class="text-sm sm:text-base font-medium" style="color:#0f1c3f;">Más enfoque, mejores decisiones, <span class="text-brand-600">más ventas y alquileres.</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- NIVELES DE CLASIFICACION -->
+<section id="niveles" class="py-20 lg:py-28 relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-emerald-50">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-14">
+      <span class="chip bg-brand-100 text-brand-700 mb-4">
+        <svg class="w-3.5 h-3.5 -ml-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
+        Calificación estratégica
+      </span>
+      <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Clasificamos a tus prospectos en <span class="text-brand-600">3 niveles</span></h2>
+      <div class="w-16 h-1 bg-brand-600 rounded-full mx-auto mb-4"></div>
+      <p class="text-gray-600 mt-2 max-w-2xl mx-auto">Según su intención de compra o alquiler y capacidad financiera, para que enfoques tu tiempo donde están las mejores oportunidades.</p>
+    </div>
+
+    <!-- level cards -->
+    <div class="grid sm:grid-cols-3 gap-8 max-w-6xl mx-auto">
+
+      <!-- LISTO PARA COMPRAR -->
+      <div class="relative rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden" style="background:linear-gradient(135deg,#f0fdf4 0%,#ffffff 45%);">
+        <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-green-400 to-green-600"></div>
+        <div class="px-6 pt-8 pb-6 text-center">
+          <div class="relative">
+            <div class="absolute right-6 top-2 grid grid-cols-3 gap-1">
+              <span class="w-1 h-1 rounded-full bg-green-300"></span><span class="w-1 h-1 rounded-full bg-green-300"></span><span class="w-1 h-1 rounded-full bg-green-300"></span>
+              <span class="w-1 h-1 rounded-full bg-green-300"></span><span class="w-1 h-1 rounded-full bg-green-300"></span><span class="w-1 h-1 rounded-full bg-green-300"></span>
+              <span class="w-1 h-1 rounded-full bg-green-300"></span><span class="w-1 h-1 rounded-full bg-green-300"></span><span class="w-1 h-1 rounded-full bg-green-300"></span>
+            </div>
+            <div class="relative w-28 h-28 mx-auto mb-5">
+              <svg class="w-28 h-28 -rotate-90" viewBox="0 0 112 112">
+                <circle cx="56" cy="56" r="48" fill="#f0fdf4"/>
+                <circle cx="56" cy="56" r="48" fill="none" stroke="#dcfce7" stroke-width="6"/>
+                <circle cx="56" cy="56" r="48" fill="none" stroke="#22c55e" stroke-width="6" stroke-linecap="round" stroke-dasharray="220 296" stroke-dashoffset="-15"/>
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center">
+                  <svg class="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.6">
+                    <circle cx="12" cy="12" r="9"/>
+                    <circle cx="9" cy="10" r="1" fill="#16a34a"/>
+                    <circle cx="15" cy="10" r="1" fill="#16a34a"/>
+                    <path d="M8.5 14a4 4 0 0 0 7 0" stroke-linecap="round"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-3">Listo para comprar o alquilar</h3>
+          <span class="inline-flex items-center gap-1.5 bg-green-50 text-green-700 chip mb-5">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+            Alta intención
+          </span>
+          <div class="border-t border-gray-100 pt-5 space-y-3 text-left">
+            <div class="flex items-center gap-2.5">
+              <span class="w-6 h-6 shrink-0 rounded-full bg-green-500 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <p class="text-sm text-gray-700">Interés claro en la propiedad</p>
+            </div>
+            <div class="flex items-center gap-2.5">
+              <span class="w-6 h-6 shrink-0 rounded-full bg-green-500 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <p class="text-sm text-gray-700">Presupuesto definido</p>
+            </div>
+            <div class="flex items-center gap-2.5">
+              <span class="w-6 h-6 shrink-0 rounded-full bg-green-500 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <p class="text-sm text-gray-700">Listo para cerrar la operación</p>
+            </div>
+          </div>
+        </div>
+        <div class="mx-6 mb-6 rounded-xl bg-green-50 px-4 py-3 flex items-center gap-3">
+          <svg class="w-5 h-5 text-green-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+          <div>
+            <p class="text-sm font-bold text-green-700 leading-none mb-1">Enfoque inmediato</p>
+            <p class="text-xs text-gray-600">Máxima prioridad de contacto</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- POTENCIAL -->
+      <div class="relative rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden" style="background:linear-gradient(135deg,#fff7ed 0%,#ffffff 45%);">
+        <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-400 to-orange-500"></div>
+        <div class="px-6 pt-8 pb-6 text-center">
+          <div class="relative">
+            <div class="absolute right-6 top-2 grid grid-cols-3 gap-1">
+              <span class="w-1 h-1 rounded-full bg-orange-200"></span><span class="w-1 h-1 rounded-full bg-orange-200"></span><span class="w-1 h-1 rounded-full bg-orange-200"></span>
+              <span class="w-1 h-1 rounded-full bg-orange-200"></span><span class="w-1 h-1 rounded-full bg-orange-200"></span><span class="w-1 h-1 rounded-full bg-orange-200"></span>
+              <span class="w-1 h-1 rounded-full bg-orange-200"></span><span class="w-1 h-1 rounded-full bg-orange-200"></span><span class="w-1 h-1 rounded-full bg-orange-200"></span>
+            </div>
+            <div class="relative w-28 h-28 mx-auto mb-5">
+              <svg class="w-28 h-28 -rotate-90" viewBox="0 0 112 112">
+                <circle cx="56" cy="56" r="48" fill="#fff7ed"/>
+                <circle cx="56" cy="56" r="48" fill="none" stroke="#ffedd5" stroke-width="6"/>
+                <circle cx="56" cy="56" r="48" fill="none" stroke="#f97316" stroke-width="6" stroke-linecap="round" stroke-dasharray="150 296" stroke-dashoffset="-15"/>
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center">
+                  <svg class="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="1.6">
+                    <circle cx="12" cy="12" r="9"/>
+                    <circle cx="9" cy="10" r="1" fill="#f97316"/>
+                    <circle cx="15" cy="10" r="1" fill="#f97316"/>
+                    <path d="M8.5 14.5h7" stroke-linecap="round"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-3">Potencial</h3>
+          <span class="inline-flex items-center gap-1.5 bg-orange-50 text-orange-600 chip mb-5">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+            Intención media
+          </span>
+          <div class="border-t border-gray-100 pt-5 space-y-3 text-left">
+            <div class="flex items-center gap-2.5">
+              <span class="w-6 h-6 shrink-0 rounded-full bg-orange-500 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </span>
+              <p class="text-sm text-gray-700">Buen prospecto</p>
+            </div>
+            <div class="flex items-center gap-2.5">
+              <span class="w-6 h-6 shrink-0 rounded-full bg-orange-500 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+              </span>
+              <p class="text-sm text-gray-700">Aún está evaluando opciones</p>
+            </div>
+            <div class="flex items-center gap-2.5">
+              <span class="w-6 h-6 shrink-0 rounded-full bg-orange-500 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M16 3H8a2 2 0 0 0-2 2v2h12V5a2 2 0 0 0-2-2Z"/></svg>
+              </span>
+              <p class="text-sm text-gray-700">Capacidad financiera en revisión</p>
+            </div>
+          </div>
+        </div>
+        <div class="mx-6 mb-6 rounded-xl bg-orange-50 px-4 py-3 flex items-center gap-3">
+          <svg class="w-5 h-5 text-orange-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.3 1-.9 1.5-2.2 1.5-3.7A6 6 0 0 0 6 8c0 1.5.5 2.7 1.5 3.7.8.6 1.3 1.4 1.5 2.3"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+          <div>
+            <p class="text-sm font-bold text-orange-600 leading-none mb-1">Nutrir y acompañar</p>
+            <p class="text-xs text-gray-600">Seguí en contacto y generá confianza</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- EXPLORACION -->
+      <div class="relative rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden" style="background:linear-gradient(135deg,#fef2f2 0%,#ffffff 45%);">
+        <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-red-400 to-red-600"></div>
+        <div class="px-6 pt-8 pb-6 text-center">
+          <div class="relative">
+            <div class="absolute right-6 top-2 grid grid-cols-3 gap-1">
+              <span class="w-1 h-1 rounded-full bg-red-200"></span><span class="w-1 h-1 rounded-full bg-red-200"></span><span class="w-1 h-1 rounded-full bg-red-200"></span>
+              <span class="w-1 h-1 rounded-full bg-red-200"></span><span class="w-1 h-1 rounded-full bg-red-200"></span><span class="w-1 h-1 rounded-full bg-red-200"></span>
+              <span class="w-1 h-1 rounded-full bg-red-200"></span><span class="w-1 h-1 rounded-full bg-red-200"></span><span class="w-1 h-1 rounded-full bg-red-200"></span>
+            </div>
+            <div class="relative w-28 h-28 mx-auto mb-5">
+              <svg class="w-28 h-28 -rotate-90" viewBox="0 0 112 112">
+                <circle cx="56" cy="56" r="48" fill="#fef2f2"/>
+                <circle cx="56" cy="56" r="48" fill="none" stroke="#fee2e2" stroke-width="6"/>
+                <circle cx="56" cy="56" r="48" fill="none" stroke="#ef4444" stroke-width="6" stroke-linecap="round" stroke-dasharray="90 296" stroke-dashoffset="-15"/>
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center">
+                  <svg class="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.6">
+                    <circle cx="12" cy="12" r="9"/>
+                    <circle cx="9" cy="10" r="1" fill="#dc2626"/>
+                    <circle cx="15" cy="10" r="1" fill="#dc2626"/>
+                    <path d="M8.5 15.5a4 4 0 0 1 7 0" stroke-linecap="round"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-3">Exploración</h3>
+          <span class="inline-flex items-center gap-1.5 bg-red-50 text-red-600 chip mb-5">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            Baja intención
+          </span>
+          <div class="border-t border-gray-100 pt-5 space-y-3 text-left">
+            <div class="flex items-center gap-2.5">
+              <span class="w-6 h-6 shrink-0 rounded-full bg-red-500 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </span>
+              <p class="text-sm text-gray-700">Solo está buscando información</p>
+            </div>
+            <div class="flex items-center gap-2.5">
+              <span class="w-6 h-6 shrink-0 rounded-full bg-red-500 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </span>
+              <p class="text-sm text-gray-700">Sin interés de compra o alquiler por ahora</p>
+            </div>
+            <div class="flex items-center gap-2.5">
+              <span class="w-6 h-6 shrink-0 rounded-full bg-red-500 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </span>
+              <p class="text-sm text-gray-700">Sin capacidad financiera definida</p>
+            </div>
+          </div>
+        </div>
+        <div class="mx-6 mb-6 rounded-xl bg-red-50 px-4 py-3 flex items-center gap-3">
+          <svg class="w-5 h-5 text-red-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          <div>
+            <p class="text-sm font-bold text-red-600 leading-none mb-1">Monitorear</p>
+            <p class="text-xs text-gray-600">Mantener en radar para el futuro</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- bottom bar -->
+    <div class="mt-10 max-w-6xl mx-auto rounded-2xl border border-gray-100 shadow-sm px-6 py-6 sm:px-8 sm:py-7">
+      <div class="flex flex-col lg:flex-row items-center lg:items-center gap-6 lg:gap-10">
+        <div class="flex items-center gap-4">
+          <span class="w-12 h-12 shrink-0 rounded-full bg-brand-600 flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
+          </span>
+          <div>
+            <p class="font-bold text-gray-900 leading-tight">Mejor información. Mejores decisiones.</p>
+            <p class="font-bold text-brand-600 leading-tight">Más ventas y alquileres para tu inmobiliaria.</p>
+          </div>
+        </div>
+        <div class="hidden lg:block w-0.5 h-12 bg-gray-300"></div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-8 flex-1 w-full sm:divide-x-2 sm:divide-gray-300">
+          <div class="flex items-center gap-3">
+            <svg class="w-5 h-5 shrink-0 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M21 14v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h6"/></svg>
+            <div>
+              <p class="text-sm font-bold text-gray-900 leading-tight">Priorizá tu tiempo</p>
+              <p class="text-xs text-gray-500 leading-tight">en quienes están listos</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 sm:pl-8">
+            <svg class="w-5 h-5 shrink-0 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+            <div>
+              <p class="text-sm font-bold text-gray-900 leading-tight">Aumentá tus cierres</p>
+              <p class="text-xs text-gray-500 leading-tight">con mejores oportunidades</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 sm:pl-8">
+            <svg class="w-5 h-5 shrink-0 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>
+            <div>
+              <p class="text-sm font-bold text-gray-900 leading-tight">Optimización total</p>
+              <p class="text-xs text-gray-500 leading-tight">de tu equipo comercial</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CANALES -->
+<section id="canales-conectividad" class="relative py-20 lg:py-28 bg-slate-200 overflow-hidden">
+  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <!-- top: texto + hero -->
+    <div class="grid lg:grid-cols-12 gap-10 lg:gap-8 items-center mb-16">
+      <div class="lg:col-span-5">
+        <span class="chip bg-brand-50 text-brand-700 mb-5">
+          <svg class="w-3.5 h-3.5 -ml-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          Conectividad sin fricciones
+        </span>
+        <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight mb-2">Integración directa con los canales donde</h2>
+        <h2 class="text-3xl sm:text-4xl font-bold text-brand-600 leading-tight mb-5">ya están tus clientes</h2>
+        <div class="w-16 h-1 bg-brand-600 rounded-full mb-6"></div>
+        <p class="text-gray-600 leading-relaxed">Sin apps nuevas para tus clientes. Ellos escriben donde ya están y vos recibís todo en <span class="font-bold text-brand-600">PropTech</span>.</p>
+      </div>
+
+      <!-- hero ilustrado -->
+      <div class="lg:col-span-7 relative rounded-3xl overflow-hidden h-80 sm:h-96">
+        <img src="concesionaria-showroom.jpg" alt="Agentes inmobiliarios firmando documentos" class="absolute inset-0 w-full h-full object-cover">
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-slate-900/10 to-transparent"></div>
+        <div class="absolute top-5 right-6 text-right bg-white/90 backdrop-blur px-4 py-2.5 rounded-xl shadow-lg">
+          <p class="text-sm sm:text-base font-bold text-gray-900">TU PRÓXIMA PROPIEDAD</p>
+          <p class="text-sm sm:text-base font-bold text-brand-600">TE ESTÁ ESPERANDO</p>
+        </div>
+
+        <!-- burbujas flotantes conectadas -->
+        <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 400 320" preserveAspectRatio="none">
+          <g stroke="#33f575" stroke-width="1.5" stroke-dasharray="4 4" fill="none">
+            <line x1="200" y1="90" x2="200" y2="150"/>
+            <line x1="200" y1="180" x2="140" y2="240"/>
+            <line x1="200" y1="180" x2="260" y2="240"/>
+          </g>
+        </svg>
+        <div class="absolute left-1/2 -translate-x-1/2 top-8 w-16 h-16 rounded-full bg-brand-500 shadow-lg flex items-center justify-center">
+          <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg>
+        </div>
+        <div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-white shadow-xl flex items-center justify-center">
+          <svg class="w-10 h-10 text-brand-600" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 2 19h20L12 2Zm0 5 6 10H9.5L12 12l-2.5 5H6L12 7Z"/></svg>
+        </div>
+        <div class="absolute left-[30%] -translate-x-1/2 bottom-8 w-16 h-16 rounded-full bg-white shadow-lg flex items-center justify-center">
+          <svg class="w-7 h-7 text-[#229ED9]" viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.1c.3-1.4-1-2.4-2.2-1.9L2.4 9.4c-1.4.6-1.4 2.6.1 3.1l4.2 1.4 1.6 5.1c.2.7 1 .9 1.6.4l2.5-2.2 4.2 3.1c.8.6 2 .2 2.2-.8l3.1-15.4ZM8.6 13.4l9.4-6.9c.3-.2.6.2.3.4l-8 7.6c-.2.2-.4.5-.4.8l-.2 2.9-.9-4.4Z"/></svg>
+        </div>
+        <div class="absolute left-[70%] -translate-x-1/2 bottom-8 w-16 h-16 rounded-full bg-white shadow-lg flex items-center justify-center">
+          <svg class="w-7 h-7 text-[#25D366]" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.5-.1-.6.1-.2.3-.7.9-.9 1-.1.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.6-2.1-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.1.2-.3.3-.4.1-.2 0-.3 0-.5-.1-.1-.6-1.5-.8-2-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.3.3-1 1-1 2.4s1 2.8 1.2 3c.1.2 2 3 4.8 4.3.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3Z"/><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2Zm0 18.1c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3.3.9.9-3.2-.2-.3A8.1 8.1 0 1 1 20.1 12 8.1 8.1 0 0 1 12 20.1Z"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3 tarjetas de canales -->
+    <div class="grid lg:grid-cols-3 gap-6 mb-10">
+
+      <!-- WEBCHAT -->
+      <div class="relative rounded-2xl border-2 border-brand-500 shadow-sm bg-white overflow-hidden">
+        <div class="grid grid-cols-1 sm:grid-cols-5 sm:min-h-[320px] h-full">
+          <div class="sm:col-span-3 p-6 flex flex-col">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-11 h-11 rounded-2xl bg-brand-500 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg>
+              </div>
+              <div>
+                <div class="font-bold text-base text-gray-900 leading-tight">Webchat</div>
+                <div class="inline-flex items-center gap-1.5 text-xs text-green-600 font-semibold">
+                  <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Activo
+                </div>
+              </div>
+            </div>
+            <div class="w-8 h-0.5 bg-gray-200 rounded-full mb-3"></div>
+            <p class="text-sm text-gray-600 mb-4 leading-snug">Atendé conversaciones en tu sitio web en tiempo real.</p>
+            <div class="space-y-2.5">
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 shrink-0 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
+                <p class="text-sm text-gray-700">Conversaciones instantáneas</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 shrink-0 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
+                <p class="text-sm text-gray-700">Captura de leads calificados</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 shrink-0 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
+                <p class="text-sm text-gray-700">Respuestas más rápidas</p>
+              </div>
+            </div>
+          </div>
+          <!-- mockup laptop, ocupa toda la altura -->
+          <div class="h-56 sm:h-full sm:col-span-2 relative">
+            <img src="showroom-fila-autos.jpg" alt="Cliente viendo fotos de una propiedad desde el celular" class="absolute inset-0 w-full h-full object-cover">
+            <div class="absolute inset-0 bg-white/55"></div>
+            <div class="absolute inset-0 flex items-center justify-center p-4">
+              <div class="w-full rounded-t-lg bg-gray-900 p-1.5 shadow-lg">
+                <div class="rounded bg-white p-2">
+                  <div class="bg-gray-100 rounded-lg rounded-tl-none px-2 py-1.5 mb-1.5 max-w-[90%]">
+                    <p class="text-[9px] text-gray-700">¿En qué podemos ayudarte?</p>
+                  </div>
+                  <div class="bg-brand-500 text-white rounded-lg rounded-tr-none px-2 py-1.5 max-w-[90%] ml-auto">
+                    <p class="text-[9px]">Hola, quiero más info sobre esta propiedad</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="absolute -bottom-3 left-6 w-8 h-8 rounded-full bg-brand-500 border-4 border-white flex items-center justify-center shadow-md">
+          <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 5 5L20 7"/></svg>
+        </span>
+      </div>
+
+      <!-- TELEGRAM -->
+      <div class="relative rounded-2xl border border-gray-100 shadow-sm bg-white overflow-hidden">
+        <div class="grid grid-cols-1 sm:grid-cols-5 sm:min-h-[320px] h-full">
+          <div class="sm:col-span-3 p-6 flex flex-col">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-11 h-11 rounded-2xl bg-[#229ED9] flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.1c.3-1.4-1-2.4-2.2-1.9L2.4 9.4c-1.4.6-1.4 2.6.1 3.1l4.2 1.4 1.6 5.1c.2.7 1 .9 1.6.4l2.5-2.2 4.2 3.1c.8.6 2 .2 2.2-.8l3.1-15.4ZM8.6 13.4l9.4-6.9c.3-.2.6.2.3.4l-8 7.6c-.2.2-.4.5-.4.8l-.2 2.9-.9-4.4Z"/></svg>
+              </div>
+              <div>
+                <div class="font-bold text-base text-gray-900 leading-tight">Telegram</div>
+                <div class="inline-flex items-center gap-1.5 text-xs text-green-600 font-semibold">
+                  <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Activo
+                </div>
+              </div>
+            </div>
+            <div class="w-8 h-0.5 bg-gray-200 rounded-full mb-3"></div>
+            <p class="text-sm text-gray-600 mb-4 leading-snug">Respondé consultas y gestioná leads desde Telegram.</p>
+            <div class="space-y-2.5">
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 shrink-0 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
+                <p class="text-sm text-gray-700">Notificaciones en tiempo real</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 shrink-0 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
+                <p class="text-sm text-gray-700">Gestión centralizada</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 shrink-0 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
+                <p class="text-sm text-gray-700">Historial siempre disponible</p>
+              </div>
+            </div>
+          </div>
+          <!-- mockup celular, ocupa toda la altura -->
+          <div class="h-56 sm:h-full sm:col-span-2 relative">
+            <img src="cliente-entrega-llaves.jpg" alt="Cliente recibiendo las llaves de su nueva propiedad" class="absolute inset-0 w-full h-full object-cover">
+            <div class="absolute inset-0 bg-white/55"></div>
+            <div class="absolute inset-0 flex items-center justify-center p-4">
+              <div class="w-24 rounded-2xl bg-gray-900 p-1 shadow-lg">
+                <div class="rounded-xl bg-white overflow-hidden">
+                  <div class="bg-[#229ED9] px-1.5 py-1">
+                    <p class="text-[8px] font-bold text-white">PropTech Bot</p>
+                  </div>
+                  <div class="p-1.5">
+                    <div class="bg-gray-100 rounded-lg rounded-tl-none px-1.5 py-1 mb-1">
+                      <p class="text-[7px] text-gray-700">Hola, estoy interesado en el depto en Av. Libertador</p>
+                    </div>
+                    <div class="bg-[#229ED9] text-white rounded-lg rounded-tr-none px-1.5 py-1 ml-auto w-4/5">
+                      <p class="text-[7px]">¡Genial! Te paso toda la información</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- WHATSAPP -->
+      <div class="relative rounded-2xl border border-gray-100 shadow-sm bg-white overflow-hidden">
+        <div class="grid grid-cols-1 sm:grid-cols-5 sm:min-h-[320px] h-full">
+          <div class="sm:col-span-3 p-6 flex flex-col">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-11 h-11 rounded-2xl bg-[#25D366] flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.5-.1-.6.1-.2.3-.7.9-.9 1-.1.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.6-2.1-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.1.2-.3.3-.4.1-.2 0-.3 0-.5-.1-.1-.6-1.5-.8-2-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.3.3-1 1-1 2.4s1 2.8 1.2 3c.1.2 2 3 4.8 4.3.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3Z"/><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2Zm0 18.1c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3.3.9.9-3.2-.2-.3A8.1 8.1 0 1 1 20.1 12 8.1 8.1 0 0 1 12 20.1Z"/></svg>
+              </div>
+              <div>
+                <div class="font-bold text-base text-gray-900 leading-tight">WhatsApp</div>
+                <div class="inline-flex items-center gap-1.5 text-xs text-gray-400 font-semibold">
+                  <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>Próximamente
+                </div>
+              </div>
+            </div>
+            <div class="w-8 h-0.5 bg-gray-200 rounded-full mb-3"></div>
+            <p class="text-sm text-gray-600 mb-4 leading-snug">Muy pronto podrás conectar tu cuenta de WhatsApp.</p>
+            <div class="space-y-2.5">
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 shrink-0 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
+                <p class="text-sm text-gray-700">El canal más usado</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 shrink-0 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
+                <p class="text-sm text-gray-700">Comunicación cercana</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 shrink-0 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
+                <p class="text-sm text-gray-700">Experiencia familiar</p>
+              </div>
+            </div>
+          </div>
+          <!-- mockup celular, ocupa toda la altura -->
+          <div class="h-56 sm:h-full sm:col-span-2 relative">
+            <img src="autos-fila-lote.jpg" alt="Modelo digital de una propiedad en tablet" class="absolute inset-0 w-full h-full object-cover">
+            <div class="absolute inset-0 bg-white/55"></div>
+            <div class="absolute inset-0 flex items-center justify-center p-4">
+              <div class="w-24 rounded-2xl bg-gray-900 p-1 shadow-lg">
+                <div class="rounded-xl bg-white overflow-hidden">
+                  <div class="bg-[#25D366] px-1.5 py-1">
+                    <p class="text-[8px] font-bold text-white">PropTech</p>
+                  </div>
+                  <div class="p-1.5">
+                    <div class="bg-gray-100 rounded-lg rounded-tl-none px-1.5 py-1 mb-1">
+                      <p class="text-[7px] text-gray-700">Hola, quería saber financiación para el depto del centro</p>
+                    </div>
+                    <div class="bg-[#dcf8c6] rounded-lg rounded-tr-none px-1.5 py-1 ml-auto w-4/5">
+                      <p class="text-[7px] text-gray-800">¡Hola! Te cuento las opciones disponibles</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- barra inferior CTA + beneficios -->
+    <div class="rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col lg:flex-row">
+      <a href="https://api.whatsapp.com/send?phone=5492212267836" target="_blank" rel="noopener noreferrer" class="bg-gradient-brand text-white p-6 lg:p-7 flex items-center justify-between gap-4 lg:w-80 shrink-0 hover:opacity-95 transition-opacity">
+        <div class="flex items-center gap-4">
+          <span class="w-11 h-11 shrink-0 rounded-full bg-white/20 flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </span>
+          <span class="font-bold leading-tight">Agendá una<br>demostración</span>
+        </div>
+        <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+      <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-0 lg:divide-x-2 lg:divide-gray-300 p-6 lg:p-7 items-center">
+        <div class="flex items-center gap-3 lg:pr-6">
+          <span class="w-9 h-9 shrink-0 rounded-full bg-brand-50 flex items-center justify-center">
+            <svg class="w-4 h-4 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </span>
+          <div>
+            <p class="text-sm font-bold text-gray-900 leading-tight">Sin instalación</p>
+            <p class="text-xs text-gray-500 leading-tight">Rápido y simple</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 lg:px-6">
+          <span class="w-9 h-9 shrink-0 rounded-full bg-brand-50 flex items-center justify-center">
+            <svg class="w-4 h-4 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg>
+          </span>
+          <div>
+            <p class="text-sm font-bold text-gray-900 leading-tight">Sin fricción</p>
+            <p class="text-xs text-gray-500 leading-tight">Tus clientes no cambian sus hábitos</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 lg:px-6">
+          <span class="w-9 h-9 shrink-0 rounded-full bg-brand-50 flex items-center justify-center">
+            <svg class="w-4 h-4 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-4 12.7V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.3A7 7 0 0 0 12 2Z"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+          </span>
+          <div>
+            <p class="text-sm font-bold text-gray-900 leading-tight">Más conversaciones</p>
+            <p class="text-xs text-gray-500 leading-tight">Más oportunidades de venta y alquiler</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 lg:pl-6">
+          <span class="w-9 h-9 shrink-0 rounded-full bg-brand-50 flex items-center justify-center">
+            <svg class="w-4 h-4 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>
+          </span>
+          <div>
+            <p class="text-sm font-bold text-gray-900 leading-tight">Más ventas y alquileres</p>
+            <p class="text-xs text-gray-500 leading-tight">Menos tiempo perdido, mejores resultados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FUNCIONES + INVERSION -->
+<section class="relative py-20 lg:py-24 bg-gradient-to-br from-slate-50 via-white to-emerald-50 overflow-hidden">
+  <div class="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- decorativos -->
+    <div class="absolute top-6 left-4 sm:left-8 grid grid-cols-4 gap-2 opacity-70 pointer-events-none">
+      <span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span>
+      <span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-300"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span>
+      <span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span>
+    </div>
+    <div class="absolute -top-24 -right-24 w-72 h-72 bg-brand-50 rounded-full pointer-events-none"></div>
+
+    <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 text-center mb-4">Funciones <span class="text-brand-600">potentes</span> para tu negocio</h2>
+    <div class="w-16 h-1 bg-gradient-brand rounded-full mx-auto mb-6"></div>
+    <p class="text-gray-600 text-center max-w-2xl mx-auto mb-14">Herramientas inteligentes que te ayudan a entender mejor, priorizar y convertir más <span class="font-semibold text-gray-800">oportunidades en ventas y alquileres</span>.</p>
+
+    <div class="grid sm:grid-cols-3 gap-6 mb-10">
+      <div class="group relative p-8 rounded-3xl bg-gray-50 shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+        <span class="inline-block text-sm font-extrabold text-brand-600 bg-brand-50 px-3 py-1 rounded-lg mb-5">01</span>
+        <div class="flex items-center justify-center gap-4 mb-6">
+          <div class="w-20 h-20 shrink-0 rounded-full bg-brand-50 flex items-center justify-center">
+            <svg class="w-9 h-9 text-brand-600" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2 4 5v6c0 5.2 3.4 9.6 8 11 4.6-1.4 8-5.8 8-11V5l-8-3Z"/>
+              <path d="M10 11.5V10a2 2 0 1 1 4 0v1.5a1.2 1.2 0 0 1 1 1.2v2.6a1.2 1.2 0 0 1-1.2 1.2H10.2A1.2 1.2 0 0 1 9 15.3v-2.6a1.2 1.2 0 0 1 1-1.2Zm1-1.5v1.4h2V10a1 1 0 0 0-2 0Z" fill="#fff"/>
+            </svg>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5 opacity-80">
+            <span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-300"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-300"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span>
+          </div>
+        </div>
+        <h3 class="font-bold text-lg text-gray-900 mb-2 text-center">Captura segura e inteligente de datos</h3>
+        <div class="w-10 h-1 bg-brand-500 rounded-full mx-auto mb-4"></div>
+        <p class="text-sm text-gray-600 leading-relaxed mb-6 text-center">Recolecta la información del prospecto y su interés de forma segura y protegida.</p>
+        <div class="flex justify-center">
+          <span class="inline-flex w-11 h-11 items-center justify-center rounded-full bg-brand-50 text-brand-600 group-hover:bg-brand-600 group-hover:text-white transition-colors">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </span>
+        </div>
+      </div>
+
+      <div class="group relative p-8 rounded-3xl bg-gray-50 shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+        <span class="inline-block text-sm font-extrabold text-brand-600 bg-brand-50 px-3 py-1 rounded-lg mb-5">02</span>
+        <div class="flex items-center justify-center gap-4 mb-6">
+          <div class="w-20 h-20 shrink-0 rounded-full bg-brand-50 flex items-center justify-center">
+            <svg class="w-9 h-9 text-brand-600" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h4.6c.4 0 .78.16 1.06.44L11.4 6.7c.28.28.66.44 1.06.44h7A1.5 1.5 0 0 1 21 8.64V18a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18V6.5Z"/>
+              <path d="M8 12h8v1.4H8Zm0 2.6h5.5V16H8Z" fill="#fff"/>
+            </svg>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5 opacity-80">
+            <span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-300"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-300"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span>
+          </div>
+        </div>
+        <h3 class="font-bold text-lg text-gray-900 mb-2 text-center">Ficha de prospecto automática</h3>
+        <div class="w-10 h-1 bg-brand-500 rounded-full mx-auto mb-4"></div>
+        <p class="text-sm text-gray-600 leading-relaxed mb-6 text-center">Cada conversación se convierte en una ficha lista para revisar.</p>
+        <div class="flex justify-center">
+          <span class="inline-flex w-11 h-11 items-center justify-center rounded-full bg-brand-50 text-brand-600 group-hover:bg-brand-600 group-hover:text-white transition-colors">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </span>
+        </div>
+      </div>
+
+      <div class="group relative p-8 rounded-3xl bg-gray-50 shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+        <span class="inline-block text-sm font-extrabold text-brand-600 bg-brand-50 px-3 py-1 rounded-lg mb-5">03</span>
+        <div class="flex items-center justify-center gap-4 mb-6">
+          <div class="w-20 h-20 shrink-0 rounded-full bg-brand-50 flex items-center justify-center">
+            <svg class="w-9 h-9 text-brand-600" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6 3.5A1.5 1.5 0 0 1 7.5 2h6l4.5 4.5v12A1.5 1.5 0 0 1 16.5 20h-9A1.5 1.5 0 0 1 6 18.5Z"/>
+              <circle cx="11.5" cy="12" r="3.3" fill="#fff"/>
+              <path d="M11.5 8.7v3.3h3.3a3.3 3.3 0 1 1-3.3-3.3Z" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5 opacity-80">
+            <span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-300"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-300"></span><span class="w-1.5 h-1.5 rounded-full bg-brand-200"></span>
+          </div>
+        </div>
+        <h3 class="font-bold text-lg text-gray-900 mb-2 text-center">Síntesis ejecutiva del prospecto</h3>
+        <div class="w-10 h-1 bg-brand-500 rounded-full mx-auto mb-4"></div>
+        <p class="text-sm text-gray-600 leading-relaxed mb-6 text-center">Un resumen claro del interés y presupuesto en un párrafo, listo para decidir.</p>
+        <div class="flex justify-center">
+          <span class="inline-flex w-11 h-11 items-center justify-center rounded-full bg-brand-50 text-brand-600 group-hover:bg-brand-600 group-hover:text-white transition-colors">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-4 max-w-2xl mx-auto bg-brand-50 rounded-full px-6 py-4 mb-24">
+      <span class="w-11 h-11 shrink-0 rounded-full bg-brand-600 flex items-center justify-center">
+        <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 17V9m5 8V5m5 12v-7m5 7V3"/>
+        </svg>
+      </span>
+      <p class="text-gray-700 font-medium">Más información, mejores decisiones, <span class="text-brand-600 font-bold">más ventas y alquileres.</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- INVERSION -->
+<section class="relative py-14 lg:py-16 bg-slate-200 overflow-hidden">
+  <div class="absolute inset-y-0 right-0 w-full md:w-3/5 lg:w-1/2 pointer-events-none">
+    <img src="concesionaria-showroom-2.jpg" alt="Agentes inmobiliarios firmando documentos" class="w-full h-full object-cover">
+    <div class="absolute inset-0 bg-gradient-to-r from-slate-200 via-slate-200/80 to-transparent"></div>
+  </div>
+  <div class="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-3">
+      <span class="chip bg-brand-50 text-brand-700 mb-4">
+        <svg class="w-3.5 h-3.5 -ml-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        RENTABILIDAD REAL
+      </span>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-3">Una inversión que <span class="text-brand-600">se paga sola</span></h2>
+      <div class="w-16 h-1 bg-gradient-brand rounded-full mx-auto mb-4"></div>
+      <p class="text-gray-600 max-w-2xl mx-auto">Con una sola venta o alquiler adicional al mes, PropTech puede cubrir completamente su costo. Todo lo demás es <span class="font-semibold text-brand-600">rentabilidad.</span></p>
+    </div>
+
+    <div class="relative grid sm:grid-cols-2 gap-5 max-w-5xl mx-auto mb-6 mt-8">
+      <!-- VS divider -->
+      <div class="hidden sm:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-white shadow-lg border border-gray-100 items-center justify-center font-extrabold text-gray-900 z-10">
+        <span class="absolute -top-1.5 w-2 h-2 rounded-full bg-brand-500"></span>
+        VS
+        <span class="absolute -bottom-1.5 w-2 h-2 rounded-full bg-red-400"></span>
+      </div>
+
+      <!-- ANTES -->
+      <div class="p-6 rounded-3xl bg-white border border-gray-100 shadow-sm">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="w-11 h-11 shrink-0 rounded-full bg-red-50 flex items-center justify-center">
+            <svg class="w-5 h-5 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
+          </span>
+          <div>
+            <h3 class="font-extrabold text-red-600 text-base uppercase tracking-wide">Antes de PropTech</h3>
+            <div class="w-10 h-0.5 bg-red-400 rounded-full mt-1.5"></div>
+          </div>
+        </div>
+        <ul class="divide-y divide-gray-100">
+          <li class="flex items-center gap-3 py-2.5">
+            <span class="w-6 h-6 shrink-0 rounded-full bg-red-50 text-red-500 flex items-center justify-center"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></span>
+            <span class="w-7 h-7 shrink-0 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg></span>
+            <span class="text-sm text-gray-700">10 consultas</span>
+          </li>
+          <li class="flex items-center gap-3 py-2.5">
+            <span class="w-6 h-6 shrink-0 rounded-full bg-red-50 text-red-500 flex items-center justify-center"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></span>
+            <span class="w-7 h-7 shrink-0 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1.1.4 2.2.7 3.2a2 2 0 0 1-.4 2.1L8 10.5a16 16 0 0 0 6 6l1.5-1.4a2 2 0 0 1 2.1-.4c1 .4 2.1.6 3.2.7a2 2 0 0 1 1.8 2Z"/></svg></span>
+            <span class="text-sm text-gray-700">Múltiples llamadas de seguimiento</span>
+          </li>
+          <li class="flex items-center gap-3 py-2.5">
+            <span class="w-6 h-6 shrink-0 rounded-full bg-red-50 text-red-500 flex items-center justify-center"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></span>
+            <span class="w-7 h-7 shrink-0 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 3.5"/><path d="M12 17h.01"/></svg></span>
+            <span class="text-sm text-gray-700">1 prospecto indeciso</span>
+          </li>
+          <li class="flex items-center gap-3 py-2.5">
+            <span class="w-6 h-6 shrink-0 rounded-full bg-red-50 text-red-500 flex items-center justify-center"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></span>
+            <span class="w-7 h-7 shrink-0 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span>
+            <span class="text-sm text-gray-700">Más de 10 hrs invertidas</span>
+          </li>
+          <li class="flex items-center gap-3 py-2.5">
+            <span class="w-6 h-6 shrink-0 rounded-full bg-red-50 text-red-500 flex items-center justify-center"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></span>
+            <span class="w-7 h-7 shrink-0 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20V10M10 20V4M17 20v-7"/></svg></span>
+            <span class="text-sm text-gray-700">Bajas tasas de cierre</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- DESPUÉS -->
+      <div class="p-6 rounded-3xl bg-white border border-gray-100 shadow-sm">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="w-11 h-11 shrink-0 rounded-full bg-green-50 flex items-center justify-center">
+            <svg class="w-5 h-5 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          </span>
+          <div>
+            <h3 class="font-extrabold text-green-600 text-base uppercase tracking-wide">Después con PropTech</h3>
+            <div class="w-10 h-0.5 bg-green-500 rounded-full mt-1.5"></div>
+          </div>
+        </div>
+        <ul class="divide-y divide-gray-100">
+          <li class="flex items-center gap-3 py-2.5">
+            <span class="w-6 h-6 shrink-0 rounded-full bg-green-50 text-green-600 flex items-center justify-center"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+            <span class="w-7 h-7 shrink-0 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg></span>
+            <span class="text-sm text-gray-700">10 consultas</span>
+          </li>
+          <li class="flex items-center gap-3 py-2.5">
+            <span class="w-6 h-6 shrink-0 rounded-full bg-green-50 text-green-600 flex items-center justify-center"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+            <span class="w-7 h-7 shrink-0 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3.3 3.1-5.5 7-5.5s7 2.2 7 5.5"/><path d="M16 8a3 3 0 1 1 2.5 4.7"/><path d="M18 14.5c2.3.4 4 1.7 4 3.5"/></svg></span>
+            <span class="text-sm text-gray-700">De 3 a 4 clientes calificados</span>
+          </li>
+          <li class="flex items-center gap-3 py-2.5">
+            <span class="w-6 h-6 shrink-0 rounded-full bg-green-50 text-green-600 flex items-center justify-center"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+            <span class="w-7 h-7 shrink-0 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span>
+            <span class="text-sm text-gray-700">Prospectos listos para cerrar</span>
+          </li>
+          <li class="flex items-center gap-3 py-2.5">
+            <span class="w-6 h-6 shrink-0 rounded-full bg-green-50 text-green-600 flex items-center justify-center"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+            <span class="w-7 h-7 shrink-0 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span>
+            <div>
+              <p class="text-sm text-gray-700 leading-tight">Menos de 2 horas invertidas</p>
+              <p class="text-xs font-semibold text-green-600 leading-tight">80% de ahorro en tiempo</p>
+            </div>
+          </li>
+          <li class="flex items-center gap-3 py-2.5">
+            <span class="w-6 h-6 shrink-0 rounded-full bg-green-50 text-green-600 flex items-center justify-center"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+            <span class="w-7 h-7 shrink-0 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20V13M10 20V7M17 20v-4"/><path d="m4 9 6-5 5 3 5-5"/></svg></span>
+            <div>
+              <p class="text-sm text-gray-700 leading-tight">Más cierres, más ventas y alquileres</p>
+              <p class="text-xs font-semibold text-green-600 leading-tight">Mayor rentabilidad para tu inmobiliaria</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- bottom highlight bar -->
+    <div class="rounded-3xl bg-brand-50 px-6 sm:px-8 py-5 flex flex-col lg:flex-row items-center gap-5 max-w-5xl mx-auto">
+      <div class="flex items-center gap-3">
+        <span class="w-12 h-12 shrink-0 rounded-full bg-brand-600 flex items-center justify-center shadow-md shadow-brand-200">
+          <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 2.9 6.3 6.9.7-5.1 4.7 1.5 6.8L12 17l-6.2 3.5 1.5-6.8-5.1-4.7 6.9-.7Z"/></svg>
+        </span>
+        <p class="font-bold text-gray-900 text-sm leading-snug whitespace-nowrap">Menos esfuerzo.<br>Mejores resultados.<br><span class="text-brand-600">Más ventas.</span></p>
+      </div>
+      <div class="hidden lg:block w-px self-stretch bg-brand-100"></div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-5 flex-1 text-center sm:divide-x-2 sm:divide-brand-300">
+        <div class="flex flex-col items-center gap-1.5">
+          <span class="w-10 h-10 rounded-full bg-brand-100/70 flex items-center justify-center text-brand-600">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5.2 3.4 9.6 8 11 4.6-1.4 8-5.8 8-11V5Z"/></svg>
+          </span>
+          <p class="font-bold text-gray-900 text-xs">Inversión segura</p>
+          <p class="text-[11px] text-gray-500">Sin costos ocultos</p>
+        </div>
+        <div class="flex flex-col items-center gap-1.5 sm:pl-5">
+          <span class="w-10 h-10 rounded-full bg-brand-100/70 flex items-center justify-center text-brand-600">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/></svg>
+          </span>
+          <p class="font-bold text-gray-900 text-xs">Retorno rápido</p>
+          <p class="text-[11px] text-gray-500">Resultados en semanas</p>
+        </div>
+        <div class="flex flex-col items-center gap-1.5 sm:pl-5">
+          <span class="w-10 h-10 rounded-full bg-brand-100/70 flex items-center justify-center text-brand-600">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          </span>
+          <p class="font-bold text-gray-900 text-xs">Escalable</p>
+          <p class="text-[11px] text-gray-500">Crece con tu negocio</p>
+        </div>
+        <div class="flex flex-col items-center gap-1.5 sm:pl-5">
+          <span class="w-10 h-10 rounded-full bg-brand-100/70 flex items-center justify-center text-brand-600">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 12 8 9l-4 4v3a2 2 0 0 0 2 2h2"/><path d="m13 12 3-3 4 4v3a2 2 0 0 1-2 2h-6"/><path d="M8 9 5.5 6.5a1.5 1.5 0 0 1 2-2.2L11 8"/><path d="m16 9 2.5-2.5a1.5 1.5 0 0 0-2-2.2L13 8"/></svg>
+          </span>
+          <p class="font-bold text-gray-900 text-xs">Más clientes satisfechos</p>
+          <p class="text-[11px] text-gray-500">Mejor experiencia de compra o alquiler</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="costo" class="relative py-20 lg:py-28 bg-gradient-to-br from-slate-50 via-white to-emerald-50 overflow-hidden">
+  <!-- decorativos -->
+  <svg class="absolute top-4 left-4 w-24 h-24 text-brand-200 opacity-60 pointer-events-none" viewBox="0 0 100 100" fill="none">
+    <g fill="currentColor"><circle cx="4" cy="4" r="3"/><circle cx="22" cy="4" r="3"/><circle cx="40" cy="4" r="3"/><circle cx="4" cy="22" r="3"/><circle cx="22" cy="22" r="3"/><circle cx="4" cy="40" r="3"/><circle cx="4" cy="58" r="3"/><circle cx="22" cy="40" r="3"/></g>
+  </svg>
+  <div class="absolute -top-24 -right-24 w-96 h-96 bg-brand-100 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
+  <div class="absolute bottom-10 right-0 w-72 h-72 bg-brand-50 rounded-full blur-3xl opacity-70 pointer-events-none"></div>
+  <svg class="absolute bottom-4 left-4 w-24 h-24 text-brand-200 opacity-60 pointer-events-none" viewBox="0 0 100 100" fill="none">
+    <g fill="currentColor"><circle cx="4" cy="96" r="3"/><circle cx="22" cy="96" r="3"/><circle cx="40" cy="96" r="3"/><circle cx="4" cy="78" r="3"/><circle cx="22" cy="78" r="3"/><circle cx="4" cy="60" r="3"/></g>
+  </svg>
+
+  <div class="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-14">
+      <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Empieza a convertir más prospectos hoy</h2>
+      <div class="w-16 h-1 bg-gradient-brand rounded-full mx-auto"></div>
+    </div>
+    <div class="grid sm:grid-cols-2 gap-8 max-w-4xl mx-auto">
+      <!-- mensual -->
+      <div class="p-8 rounded-3xl border-2 border-gray-200 bg-white shadow-md">
+        <div class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Plan mensual</div>
+        <div class="text-xs text-gray-400 mb-4">Cancela cuando quieras</div>
+        <div class="text-4xl font-extrabold text-gray-900 mb-6">USD50 <span class="text-base font-medium text-gray-500">mes</span></div>
+        <ul class="space-y-3 text-sm text-gray-600 mb-8">
+          <li>✓ Filtro inteligente para 50 prospectos nuevos al mes</li>
+          <li>✓ IA especializada en ventas y alquileres inmobiliarios y catálogo de propiedades</li>
+          <li>✓ Bandeja de consulta exclusiva con indicadores estratégicos</li>
+          <div class="inline-flex items-center gap-1.5 text-xs text-gray-400 font-medium mt-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>Resumen ejecutivo del prospecto</div>
+          <div class="inline-flex items-center gap-1.5 text-xs text-gray-400 font-medium mt-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>Estatus del crédito hipotecario o financiamiento del cliente</div>
+          <div class="inline-flex items-center gap-1.5 text-xs text-gray-400 font-medium mt-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>Acceso rápido para contactar al cliente por WhatsApp con un clic</div>
+          <li>✓ 2 canales activos: Webchat y Telegram</li>
+          <li>✓ Conexión a WhatsApp (sólo para clientes con cuenta Meta)</li>
+          <li>✓ Personalización total: Tú decides tus horarios de contacto y reglas de calificación</li>
+          <li>✓ Historial de hasta 500 fichas de prospectos</li>
+          <li>✓ Soporte técnico prioritario 24/7</li>
+        </ul>
+        <a href="https://api.whatsapp.com/send?phone=5492212267836" target="_blank" rel="noopener noreferrer" class="block text-center border-2 border-brand-500 text-brand-600 font-semibold py-3 rounded-full hover:bg-brand-50 transition-colors">Contratar ahora</a>
+      </div>
+      <!-- anual -->
+      <div class="relative p-8 rounded-3xl bg-gradient-brand text-white shadow-2xl">
+        <div class="absolute -top-3 left-8 chip bg-white text-brand-700 shadow">Plan recomendado</div>
+        <div class="text-sm font-semibold text-white/80 uppercase tracking-wide mb-1 mt-2">Plan anual</div>
+        <div class="text-xs text-white/70 mb-4">2 meses gratis</div>
+        <div class="text-4xl font-extrabold mb-6">USD500 <span class="text-base font-medium text-white/80">mes</span></div>
+        <ul class="space-y-3 text-sm text-white/90 mb-8">
+          <li>✓ Filtro inteligente para 50 prospectos nuevos al mes</li>
+          <li>✓ IA especializada en ventas y alquileres inmobiliarios y catálogo de propiedades</li>
+          <li>✓ Bandeja de consulta exclusiva con indicadores estratégicos</li>
+          <div class="inline-flex items-center gap-1.5 text-xs text-gray-400 font-medium mt-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>Resumen ejecutivo del prospecto</div>
+          <div class="inline-flex items-center gap-1.5 text-xs text-gray-400 font-medium mt-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>Estatus del crédito hipotecario o financiamiento del cliente</div>
+          <div class="inline-flex items-center gap-1.5 text-xs text-gray-400 font-medium mt-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>Acceso rápido para contactar al cliente por WhatsApp con un clic</div>
+          <li>✓ 2 canales activos: Webchat y Telegram</li>
+          <li>✓ Conexión a WhatsApp (sólo para clientes con cuenta Meta)</li>
+          <li>✓ Personalización total: Tú decides tus horarios de contacto y reglas de calificación</li>
+          <li>✓ Historial de hasta 500 fichas de prospectos</li>
+          <li>✓ Soporte técnico prioritario 24/7</li>
+        </ul>
+        <a href="https://api.whatsapp.com/send?phone=5492212267836" target="_blank" rel="noopener noreferrer" class="block text-center bg-white text-brand-700 font-semibold py-3 rounded-full hover:opacity-90 transition-opacity">Contratar ahora</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOTO DESTACADA / ESTADISTICA -->
+<section class="relative py-20 lg:py-28 overflow-hidden" style="background:linear-gradient(135deg,#0f1c3f 0%,#161129 55%,#0c0910 100%);">
+  <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(90% 70% at 82% 20%, rgba(249,115,22,.16) 0%, rgba(12,9,16,0) 55%);"></div>
+  <div class="absolute -bottom-24 -left-24 w-96 h-96 bg-brand-600/15 rounded-full blur-3xl pointer-events-none"></div>
+
+  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-16 items-center">
+
+    <!-- left: copy -->
+    <div>
+      <span class="chip bg-white/10 text-brand-200 mb-6 backdrop-blur border border-white/10">
+        <svg class="w-3.5 h-3.5 -ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.5 5.5L19 9l-5.5 1.5L12 16l-1.5-5.5L5 9l5.5-1.5L12 2z"/></svg>
+        COMIENZA HOY CON <span class="font-extrabold text-white">PropTech</span>
+      </span>
+      <h2 class="text-3xl sm:text-4xl font-extrabold leading-[1.2] mb-6 text-white">
+        Deja que la AI de <span class="text-brand-400">PropTech</span> filtre, analice y prepare.<br>
+        Tú concéntrate en <span class="text-brand-400">vender y alquilar.</span>
+      </h2>
+      <div class="w-16 h-1 bg-gradient-brand rounded-full mb-6"></div>
+      <p class="text-gray-300 text-lg leading-relaxed mb-10 max-w-md">
+        Enfoca tu tiempo en prospectos con verdadero potencial y listos para comprar o alquilar.
+      </p>
+
+      <!-- 4 feature icons -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-8 mb-10 sm:divide-x-2 sm:divide-white/15">
+        <div>
+          <div class="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center mb-3">
+            <svg class="w-6 h-6 text-brand-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3Z"/></svg>
+          </div>
+          <p class="font-bold text-sm text-white">Filtra</p>
+          <p class="text-gray-400 text-sm leading-snug">prospectos<br>calificados</p>
+        </div>
+        <div class="sm:pl-6">
+          <div class="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center mb-3">
+            <svg class="w-6 h-6 text-brand-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          </div>
+          <p class="font-bold text-sm text-white">Analiza</p>
+          <p class="text-gray-400 text-sm leading-snug">intención y<br>capacidad</p>
+        </div>
+        <div class="sm:pl-6">
+          <div class="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center mb-3">
+            <svg class="w-6 h-6 text-brand-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 14h6M9 18h6M9 10h1"/></svg>
+          </div>
+          <p class="font-bold text-sm text-white">Prepara</p>
+          <p class="text-gray-400 text-sm leading-snug">cada oportunidad<br>para tu equipo</p>
+        </div>
+        <div class="sm:pl-6">
+          <div class="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center mb-3">
+            <svg class="w-6 h-6 text-brand-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-4 4"/></svg>
+          </div>
+          <p class="font-bold text-sm text-white">Aumentá</p>
+          <p class="text-gray-400 text-sm leading-snug">conversiones y<br>ventas</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-5">
+        <a href="https://api.whatsapp.com/send?phone=5492212267836" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-3 bg-gradient-brand text-white font-semibold pl-7 pr-2 py-2 rounded-full hover:opacity-90 transition-all hover:scale-105 shadow-lg shadow-brand-900/40">
+          Solicitá tu demo gratuita
+          <span class="w-9 h-9 shrink-0 rounded-full bg-white/25 flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </span>
+        </a>
+        <div class="inline-flex items-center gap-2.5 text-sm text-gray-300">
+          <svg class="w-5 h-5 text-brand-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-8 8.5-4.5-1-8-3.5-8-8.5V6l8-4 8 4Z"/><path d="m9 12 2 2 4-4"/></svg>
+          <span>Más ventas y alquileres. Menos esfuerzo.<br>Resultados que se notan.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- right: illustrated dashboard -->
+    <div class="relative">
+      <div class="absolute -inset-10 hidden lg:block pointer-events-none" style="background:radial-gradient(60% 60% at 50% 50%, rgba(249,115,22,.22) 0%, rgba(249,115,22,0) 70%);"></div>
+
+      <div class="relative rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl">
+        <div class="relative aspect-[4/3] flex items-center justify-center">
+          <img src="showroom-suv-dashboard.webp" alt="Agente revisando propiedades calificadas por IA en tablet" class="absolute inset-0 w-full h-full object-cover">
+          <div class="absolute inset-0" style="background:linear-gradient(160deg,rgba(26,30,46,.55) 0%,rgba(20,16,36,.55) 55%,rgba(15,12,28,.6) 100%);"></div>
+
+          <!-- dashed connector lines from brain to each card -->
+          <svg class="absolute inset-0 w-full h-full" viewBox="0 0 400 300" fill="none" preserveAspectRatio="none">
+            <path d="M200 150 V70 H115" stroke="#33f575" stroke-opacity=".55" stroke-width="1.5" stroke-dasharray="3 4"/>
+            <path d="M200 150 H320 V115" stroke="#33f575" stroke-opacity=".55" stroke-width="1.5" stroke-dasharray="3 4"/>
+            <path d="M200 150 V220 H100" stroke="#33f575" stroke-opacity=".55" stroke-width="1.5" stroke-dasharray="3 4"/>
+          </svg>
+
+          <!-- concentric rings + brain -->
+          <svg class="absolute w-56 h-56 opacity-80" viewBox="0 0 260 260" fill="none">
+            <circle cx="130" cy="130" r="120" stroke="#33f575" stroke-opacity=".2" stroke-width="1"/>
+            <circle cx="130" cy="130" r="90" stroke="#33f575" stroke-opacity=".3" stroke-width="1"/>
+            <circle cx="130" cy="130" r="58" stroke="#33f575" stroke-opacity=".4" stroke-width="1"/>
+          </svg>
+          <div class="relative w-24 h-24 rounded-full flex items-center justify-center" style="background:radial-gradient(circle,rgba(251,146,60,.3),rgba(251,146,60,0) 70%);">
+            <div class="w-16 h-16 rounded-full bg-white/10 border border-white/15 backdrop-blur flex items-center justify-center">
+              <svg class="w-8 h-8 text-brand-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2a2.5 2.5 0 0 0-2.5 2.5v.5A2.5 2.5 0 0 0 4.5 7.5 2.5 2.5 0 0 0 3 9.9 2.5 2.5 0 0 0 4.5 14a2.5 2.5 0 0 0 2 4.24A2.5 2.5 0 0 0 9.5 22a2.5 2.5 0 0 0 2.5-2.5v-15A2.5 2.5 0 0 0 9.5 2Z"/><path d="M14.5 2a2.5 2.5 0 0 1 2.5 2.5v.5a2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1 1.5 2.4A2.5 2.5 0 0 1 19.5 14a2.5 2.5 0 0 1-2 4.24A2.5 2.5 0 0 1 14.5 22a2.5 2.5 0 0 1-2.5-2.5v-15A2.5 2.5 0 0 1 14.5 2Z"/></svg>
+            </div>
+          </div>
+
+          <!-- floating card: lead calificado -->
+          <div class="absolute top-5 left-4 sm:left-8 bg-white rounded-2xl shadow-xl p-3.5 w-44 sm:w-48">
+            <div class="flex items-start gap-2.5">
+              <div class="w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <div class="min-w-0">
+                <p class="text-[11px] font-bold leading-tight" style="color:#0f1c3f;">Lead calificado</p>
+                <p class="text-[10px] text-gray-500 leading-snug mt-0.5">Alta intención de compra</p>
+                <p class="text-[10px] text-gray-500 leading-snug">Capacidad financiera: Alta</p>
+                <div class="h-1 w-10 bg-gradient-brand rounded-full mt-2"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- floating card: interes detectado -->
+          <div class="absolute top-24 sm:top-28 right-3 sm:right-4 bg-white rounded-2xl shadow-xl p-3.5 w-44 sm:w-48">
+            <div class="flex items-start gap-2.5">
+              <div class="w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg>
+              </div>
+              <div class="min-w-0">
+                <p class="text-[11px] font-bold leading-tight" style="color:#0f1c3f;">Interés detectado</p>
+                <p class="text-[10px] text-gray-500 leading-snug mt-0.5">Depto 3 ambientes</p>
+                <p class="text-[10px] text-gray-500 leading-snug">Financiación a 48 meses</p>
+                <div class="h-1 w-10 bg-gradient-brand rounded-full mt-2"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- floating card: probabilidad de compra -->
+          <div class="absolute bottom-5 left-6 sm:left-8 bg-white rounded-2xl shadow-xl p-3.5 w-44 sm:w-48">
+            <div class="flex items-start gap-2.5">
+              <div class="w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16v-4M12 16V8M17 16v-7"/></svg>
+              </div>
+              <div class="min-w-0">
+                <p class="text-[11px] font-bold leading-tight" style="color:#0f1c3f;">Probabilidad de compra</p>
+                <p class="text-[10px] text-gray-500 leading-snug mt-0.5">Alta</p>
+                <p class="text-[10px] text-gray-500 leading-snug">Listo para contactar</p>
+                <div class="h-1 w-10 bg-gradient-brand rounded-full mt-2"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- CLIENTES --> 
+<section id="clientes" class="py-20 lg:py-28 relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-emerald-50">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <span class="chip bg-brand-100 text-brand-700 mb-4">Nuestros Clientes</span>
+    <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Inmobiliarias que ya confían en <span class="text-gradient">PropTech</span></h2>
+    <div class="w-16 h-1 bg-gradient-brand rounded-full mx-auto mb-6"></div>
+    <p class="text-gray-600 max-w-2xl mx-auto mb-10">Acompañamos agentes independientes e inmobiliarias en la calificación de sus prospectos, sin importar su tamaño.</p>
+
+    <!-- Logo strip -->
+    <div class="mb-14">
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="p-6 rounded-2xl bg-white border border-gray-200 hover:border-brand-300 hover:shadow-lg transition-all duration-300">
+        <div class="w-12 h-12 rounded-xl bg-brand-50 flex items-center justify-center mb-4 mx-auto">
+          <svg class="w-6 h-6 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 14 0v1"/>
+          </svg>
+        </div>
+
+        <h3 class="font-semibold text-gray-900 mb-1">Agentes independientes</h3>
+        <p class="text-sm text-gray-600">Asesores que atienden prospectos por su cuenta y necesitan optimizar mejor su tiempo.</p>
+      </div>
+      <div class="p-6 rounded-2xl bg-white border border-gray-200 hover:border-brand-300 hover:shadow-lg transition-all duration-300">
+        <div class="w-12 h-12 rounded-xl bg-brand-50 flex items-center justify-center mb-4 mx-auto">
+          <svg class="w-6 h-6 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/>
+          </svg>
+        </div>
+
+        <h3 class="font-semibold text-gray-900 mb-1">Agencias boutique</h3>
+        <p class="text-sm text-gray-600">Inmobiliarias especializadas en propiedades premium de bajo volumen y alto valor por operación.</p>
+      </div>
+      <div class="p-6 rounded-2xl bg-white border border-gray-200 hover:border-brand-300 hover:shadow-lg transition-all duration-300">
+        <div class="w-12 h-12 rounded-xl bg-brand-50 flex items-center justify-center mb-4 mx-auto">
+          <svg class="w-6 h-6 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20v-6M6 20V10M18 20V4"/>
+          </svg>
+        </div>
+
+        <h3 class="font-semibold text-gray-900 mb-1">Inmobiliarias de alto volumen</h3>
+        <p class="text-sm text-gray-600">Agencias que reciben decenas de consultas diarias y necesitan priorizar prospectos viables.</p>
+      </div>
+      <div class="p-6 rounded-2xl bg-white border border-gray-200 hover:border-brand-300 hover:shadow-lg transition-all duration-300">
+        <div class="w-12 h-12 rounded-xl bg-brand-50 flex items-center justify-center mb-4 mx-auto">
+          <svg class="w-6 h-6 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
+          </svg>
+        </div>
+
+        <h3 class="font-semibold text-gray-900 mb-1">Grupos en expansión</h3>
+        <p class="text-sm text-gray-600">Inmobiliarias que están digitalizando su atención al cliente.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIOS -->
+<!--
+<section class="relative py-20 lg:py-28 bg-cover bg-center" style="background-image: linear-gradient(180deg, rgba(17,17,24,.88), rgba(90,35,10,.9)), url('./testimonios-bg.jpg');">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <span class="chip bg-white/10 text-brand-200 mb-4 backdrop-blur">Voces del piloto</span>
+    <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">Lo que dicen las inmobiliarias que ya lo probaron</h2>
+    <div class="w-16 h-1 bg-gradient-to-r from-sky-300 to-white rounded-full mx-auto mb-6"></div>
+    <p class="text-gray-300 max-w-2xl mx-auto mb-14">Comentarios recogidos durante la fase piloto de PropTech.</p>
+    <div class="grid sm:grid-cols-3 gap-6">
+      <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 text-left flex flex-col">
+        <div class="flex gap-0.5 text-amber-400 mb-4">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+        </div>
+        <p class="text-gray-700 flex-1">"Antes contestaba a las 10 de la noche mensajes que no iban a ningún lado. Ahora sólo agendo con quien de verdad va a comprar o alquilar."</p>
+        <div class="flex items-center gap-3 mt-6 pt-6 border-t border-gray-100">
+          <div class="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-sm">MF</div>
+          <div>
+            <div class="font-semibold text-gray-900 text-sm">Mariana F.</div>
+            <div class="text-xs text-gray-500">Agente independiente, CDMX</div>
+          </div>
+        </div>
+      </div>
+      <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 text-left flex flex-col">
+        <div class="flex gap-0.5 text-amber-400 mb-4">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+        </div>
+        <p class="text-gray-700 flex-1">"Lo que más valoro es el resumen ejecutivo. Llego a la primera llamada ya sabiendo qué tan listo está el cliente para comprar o alquilar."</p>
+        <div class="flex items-center gap-3 mt-6 pt-6 border-t border-gray-100">
+          <div class="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-sm">RC</div>
+          <div>
+            <div class="font-semibold text-gray-900 text-sm">Ricardo C.</div>
+            <div class="text-xs text-gray-500">Gerente, inmobiliaria boutique</div>
+          </div>
+        </div>
+      </div>
+      <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 text-left flex flex-col">
+        <div class="flex gap-0.5 text-amber-400 mb-4">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+          <svg class="w-4 h-4 text-gray-200" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.9 4.4 18l1.4-6.2L1 7.5l6.4-.6L10 1z"/></svg>
+        </div>
+        <p class="text-gray-700 flex-1">"La implementación fue más rápida de lo que esperaba. En dos semanas ya estaba filtrando consultas por WhatsApp... digo, por Webchat."</p>
+        <div class="flex items-center gap-3 mt-6 pt-6 border-t border-gray-100">
+          <div class="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-sm">LV</div>
+          <div>
+            <div class="font-semibold text-gray-900 text-sm">Lorena V.</div>
+            <div class="text-xs text-gray-500">Inmobiliaria de alto volumen</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section> -->
+
+
+
+<!-- EQUIPO -->
+<!--
+<section id="equipo" class="py-20 lg:py-28 bg-gray-200">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <span class="chip bg-brand-100 text-brand-700 mb-4">Nuestro Equipo</span>
+    <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">El equipo detrás de <span class="text-gradient">PropTech</span></h2>
+    <div class="w-16 h-1 bg-gradient-brand rounded-full mx-auto mb-6"></div>
+    <p class="text-gray-600 max-w-2xl mx-auto mb-14">Agentes e ingenieros trabajando juntos para llevar IA de precisión a la venta y el alquiler inmobiliario.</p>
+    <div class="grid sm:grid-cols-3 gap-6">
+      <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300">
+        <div class="w-16 h-16 rounded-2xl overflow-hidden mb-4 mx-auto">
+          <img src="./eduardo-sandoval.webp" alt="Eduardo Sandoval" class="w-full h-full object-cover" />
+        </div>
+        <h3 class="font-semibold text-gray-900">Eduardo Sandoval</h3>
+        <p class="text-sm text-brand-600 mb-2">CEO</p>
+        <p class="text-sm text-gray-500">Lidera la visión estratégica y las alianzas con inmobiliarias.</p>
+      </div>
+      <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300">
+        <div class="w-16 h-16 rounded-2xl overflow-hidden mb-4 mx-auto">
+          <svg class="w-full h-full" viewBox="0 0 64 64">
+            <rect width="64" height="64" fill="#d3fde1"/>
+            <path d="M32 46c9 0 16 5 16 12v6H16v-6c0-7 7-12 16-12Z" fill="#09a93f"/>
+            <circle cx="32" cy="27" r="12" fill="#acfbc7"/>
+            <path d="M20 24c0-7 5-12 12-12s12 5 12 12c-4 1-8-1-10-4-2 4-8 6-14 4Z" fill="#1e293b"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold text-gray-900">Camila Torres</h3>
+        <p class="text-sm text-brand-600 mb-2">CTO</p>
+        <p class="text-sm text-gray-500">Responsable del entrenamiento del agente y la arquitectura de IA.</p>
+      </div>
+      <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300">
+        <div class="w-16 h-16 rounded-2xl overflow-hidden mb-4 mx-auto">
+          <svg class="w-full h-full" viewBox="0 0 64 64">
+            <rect width="64" height="64" fill="#d3fde1"/>
+            <path d="M32 46c9 0 16 5 16 12v6H16v-6c0-7 7-12 16-12Z" fill="#067e2f"/>
+            <circle cx="32" cy="27" r="12" fill="#77f8a3"/>
+            <path d="M19 26c1-8 6-14 13-14s12 6 13 14c-2-3-6-5-9-4 0-3-2-5-4-5s-4 2-4 5c-3-1-7 1-9 4Z" fill="#1e293b"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold text-gray-900">Julián Herrera</h3>
+        <p class="text-sm text-brand-600 mb-2">Chief Legal Officer</p>
+        <p class="text-sm text-gray-500">Supervisa la precisión comercial del agente en ventas y alquileres inmobiliarios.</p>
+      </div>
+    </div>
+  </div>
+</section> -->
+
+<!-- FAQ -->
+<section id="faq" class="relative py-20 lg:py-24 bg-slate-200 overflow-hidden">
+  <svg class="absolute top-4 left-4 w-24 h-24 text-brand-200 opacity-60 pointer-events-none" viewBox="0 0 100 100" fill="none">
+    <g fill="currentColor"><circle cx="4" cy="4" r="3"/><circle cx="22" cy="4" r="3"/><circle cx="40" cy="4" r="3"/><circle cx="4" cy="22" r="3"/><circle cx="22" cy="22" r="3"/><circle cx="4" cy="40" r="3"/><circle cx="4" cy="58" r="3"/><circle cx="22" cy="40" r="3"/></g>
+  </svg>
+  <div class="absolute -top-24 -right-24 w-96 h-96 bg-brand-100 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
+  <div class="absolute bottom-10 right-0 w-72 h-72 bg-brand-50 rounded-full blur-3xl opacity-70 pointer-events-none"></div>
+  <svg class="absolute bottom-4 left-4 w-24 h-24 text-brand-200 opacity-60 pointer-events-none" viewBox="0 0 100 100" fill="none">
+    <g fill="currentColor"><circle cx="4" cy="96" r="3"/><circle cx="22" cy="96" r="3"/><circle cx="40" cy="96" r="3"/><circle cx="4" cy="78" r="3"/><circle cx="22" cy="78" r="3"/><circle cx="4" cy="60" r="3"/></g>
+  </svg>
+  <div class="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-14">
+      <span class="chip bg-brand-100 text-brand-700 mb-4">Preguntas Frecuentes</span>
+      <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Todo lo que necesitas saber</h2>
+      <div class="w-16 h-1 bg-gradient-brand rounded-full mx-auto mb-6"></div>
+      <p class="text-gray-600 max-w-2xl mx-auto">Resolvemos las dudas más comunes sobre PropTech y cómo funciona para ti.</p>
+    </div>
+    <div class="space-y-4">
+      <details class="group p-6 rounded-2xl bg-white border border-gray-100 shadow-sm open:shadow-lg transition-all duration-300">
+        <summary class="flex items-center justify-between cursor-pointer list-none font-semibold text-gray-900">
+          <span>¿Qué es PropTech y cómo funciona?</span>
+          <span class="ml-4 flex-shrink-0 text-brand-600 transition-transform duration-300 group-open:rotate-45 text-xl">+</span>
+        </summary>
+        <p class="text-gray-600 mt-4 leading-relaxed">PropTech es un agente de inteligencia artificial que analiza cada consulta que recibe de tus prospectos, clasifica según su interés y presupuesto y detecta quién está listo para comprar o alquilar. Así tú sólo dedicas tiempo a los prospectos con verdadero potencial.</p>
+      </details>
+      <details class="group p-6 rounded-2xl bg-white border border-gray-100 shadow-sm open:shadow-lg transition-all duration-300">
+        <summary class="flex items-center justify-between cursor-pointer list-none font-semibold text-gray-900">
+          <span>¿Cuánto tiempo lleva implementarlo?</span>
+          <span class="ml-4 flex-shrink-0 text-brand-600 transition-transform duration-300 group-open:rotate-45 text-xl">+</span>
+        </summary>
+        <p class="text-gray-600 mt-4 leading-relaxed">La puesta en marcha estándar en menos de 5 días hábiles, para clientes con cuenta Meta verificada de 2 a 3 semanas</p>
+      </details>
+      <details class="group p-6 rounded-2xl bg-white border border-gray-100 shadow-sm open:shadow-lg transition-all duration-300">
+        <summary class="flex items-center justify-between cursor-pointer list-none font-semibold text-gray-900">
+          <span>¿Necesito conocimientos técnicos para usarlo?</span>
+          <span class="ml-4 flex-shrink-0 text-brand-600 transition-transform duration-300 group-open:rotate-45 text-xl">+</span>
+        </summary>
+        <p class="text-gray-600 mt-4 leading-relaxed">No. PropTech está pensado para agentes inmobiliarios, no para ingenieros. La plataforma es intuitiva y te acompañamos durante todo el proceso con soporte continuo.</p>
+      </details>
+      <details class="group p-6 rounded-2xl bg-white border border-gray-100 shadow-sm open:shadow-lg transition-all duration-300">
+        <summary class="flex items-center justify-between cursor-pointer list-none font-semibold text-gray-900">
+          <span>¿Cómo protege PropTech los datos de mis clientes?</span>
+          <span class="ml-4 flex-shrink-0 text-brand-600 transition-transform duration-300 group-open:rotate-45 text-xl">+</span>
+        </summary>
+        <p class="text-gray-600 mt-4 leading-relaxed">La confidencialidad de la información de tus clientes es nuestra prioridad. Trabajamos bajo estrictos protocolos de seguridad, firmamos acuerdos de confidencialidad (NDA) y los datos nunca se comparten con terceros.</p>
+      </details>
+      <details class="group p-6 rounded-2xl bg-white border border-gray-100 shadow-sm open:shadow-lg transition-all duration-300">
+        <summary class="flex items-center justify-between cursor-pointer list-none font-semibold text-gray-900">
+          <span>¿Cómo empiezo a usar PropTech?</span>
+          <span class="ml-4 flex-shrink-0 text-brand-600 transition-transform duration-300 group-open:rotate-45 text-xl">+</span>
+        </summary>
+        <p class="text-gray-600 mt-4 leading-relaxed">Escribinos por WhatsApp. Agendamos una primera reunión sin costo donde analizamos tu actividad y te mostramos el agente funcionando en vivo.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- FORMULARIO DE CONTACTO -->
+<section id="contacto" class="py-20 lg:py-10 relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-emerald-50">
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-12">
+      <span class="chip bg-brand-100 text-brand-700 mb-4">Contacto</span>
+      <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Hablar con nosotros</h2>
+      <div class="w-16 h-1 bg-gradient-brand rounded-full mx-auto mb-6"></div>
+      <p class="text-gray-600 max-w-xl mx-auto">Completa el formulario y a la brevedad estaremos en contacto contigo directo por WhatsApp</p>
+    </div>
+    <form id="contact-form" class="p-6 sm:p-8 rounded-3xl bg-white border border-gray-100 shadow-sm grid sm:grid-cols-2 gap-5">
+      <div class="sm:col-span-1">
+        <label for="nombre" class="block text-sm font-medium text-gray-700 mb-1.5">Nombre</label>
+        <input type="text" id="nombre" name="nombre" required placeholder="Tu nombre" class="w-full h-12 px-4 rounded-xl border border-gray-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none transition-colors" />
+      </div>
+      <div class="sm:col-span-1">
+        <label for="estudio" class="block text-sm font-medium text-gray-700 mb-1.5">Inmobiliaria / Agencia</label>
+        <input type="text" id="estudio" name="estudio" placeholder="Nombre de tu inmobiliaria" class="w-full h-12 px-4 rounded-xl border border-gray-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none transition-colors" />
+      </div>
+      <div class="sm:col-span-2">
+        <label for="contacto-medio" class="block text-sm font-medium text-gray-700 mb-1.5">WhatsApp o email</label>
+        <input type="text" id="contacto-medio" name="contacto_medio" required placeholder="+54 9 11 1234-5678 o tu@email.com" class="w-full h-12 px-4 rounded-xl border border-gray-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none transition-colors" />
+      </div>
+      <div class="sm:col-span-2">
+        <label for="mensaje" class="block text-sm font-medium text-gray-700 mb-1.5">Mensaje</label>
+        <textarea id="mensaje" name="mensaje" rows="4" placeholder="Contanos qué tipo de propiedades manejás y cuántos leads recibís al mes..." class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none transition-colors resize-none"></textarea>
+      </div>
+      <div class="sm:col-span-2">
+        <button type="submit" class="w-full bg-gradient-brand text-white font-semibold py-3.5 rounded-full hover:opacity-90 transition-all hover:scale-[1.02] shadow-lg shadow-brand-200">
+          Enviar por WhatsApp
+        </button>
+        <p class="text-xs text-gray-400 text-center mt-3">Al enviar, se abre WhatsApp con tu mensaje ya redactado.</p>
+      </div>
+    </form>
+  </div>
+</section>
+
+<script>
+  document.getElementById('contact-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var nombre = document.getElementById('nombre').value.trim();
+    var estudio = document.getElementById('estudio').value.trim();
+    var medio = document.getElementById('contacto-medio').value.trim();
+    var mensaje = document.getElementById('mensaje').value.trim();
+
+    var texto = 'Hola, soy ' + nombre + (estudio ? ' de ' + estudio : '') + '. ';
+    texto += 'Mi WhatsApp/email de contacto es ' + medio + '. ';
+    if (mensaje) texto += mensaje;
+
+    var url = 'https://api.whatsapp.com/send?phone=5492212267836&text=' + encodeURIComponent(texto);
+    window.open(url, '_blank');
+  });
+</script>
+
+
+<!-- FOOTER -->
+<footer class="bg-gray-950 text-gray-400 py-14">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid sm:grid-cols-3 gap-10">
+    <div>
+      <img src="./logo-horizontal-blanco.svg" alt="PropTech" class="h-9 w-auto mb-3" />
+      <p class="text-sm leading-relaxed">Inteligencia aplicada a la selección de clientes. Agente de IA multicanal especializado en ventas y alquileres inmobiliarios. Convierte conversaciones en clientes calificados.</p>
+    </div>
+    <div>
+      <div class="text-white font-semibold mb-3 text-sm uppercase tracking-wide">Contacto</div>
+      <ul class="space-y-3 text-sm">
+        <li class="flex items-center gap-2.5">
+          <svg class="w-4 h-4 text-brand-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M3.5 6.5l8.5 6 8.5-6"/></svg>
+          <span>hola@proptech.com.ar</span>
+        </li>
+        <li class="flex items-center gap-2.5">
+          <svg class="w-4 h-4 text-brand-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          <a href="https://api.whatsapp.com/send?phone=5492212267836" target="_blank" rel="noopener noreferrer" class="hover:text-white">+54 9 221 226-7836</a>
+        </li>
+        <li class="flex items-center gap-2.5">
+          <svg class="w-4 h-4 text-brand-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span>Buenos Aires, Argentina</span>
+        </li>
+        <li class="flex items-center gap-2.5">
+          <svg class="w-4 h-4 text-brand-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.58-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>
+          <a href="https://www.tiktok.com/@proptech.ar" target="_blank" rel="noopener noreferrer" class="hover:text-white">@proptech.ar</a>
+        </li>
+        <li class="flex items-center gap-2.5">
+          <svg class="w-4 h-4 text-brand-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.5" y2="6.5"/></svg>
+          <a href="https://www.instagram.com/proptech.ar" target="_blank" rel="noopener noreferrer" class="hover:text-white">@proptech.ar</a>
+        </li>
+      </ul>
+    </div>
+    <div>
+      <div class="text-white font-semibold mb-3 text-sm uppercase tracking-wide">¿Qué tenemos para ti?</div>
+      <ul class="space-y-2 text-sm">
+        <li><a href="#que-es" class="hover:text-white">¿Qué es?</a></li>
+        <li><a href="#ventajas" class="hover:text-white">Ventajas</a></li>
+        <li><a href="#clientes" class="hover:text-white">Clientes</a></li>
+        <li><a href="#costo" class="hover:text-white">Costo</a></li>
+        <!--<li><a href="#equipo" class="hover:text-white">Equipo</a></li>-->
+        <li><a href="#contacto" class="hover:text-white">Contacto</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 pt-6 border-t border-gray-800 text-xs text-gray-500 flex flex-col sm:flex-row items-center justify-between gap-3">
+    <span>© 2026 PropTech · Agente de IA para Ventas y Alquileres Inmobiliarios. Todos los derechos reservados.</span>
+    <span>Desarrollado en colaboración con <a href="https://kairosgroup.ar/" target="_blank" rel="noopener noreferrer" class="text-gray-300 hover:text-white underline underline-offset-2">KairosGroup</a></span>
+  </div>
+</footer>
+
+<!-- WHATSAPP FLOTANTE -->
+<a href="https://api.whatsapp.com/send?phone=5492212267836&text=Hola%2C%20me%20interesa%20conocer%20m%C3%A1s%20sobre%20PropTech."
+   target="_blank" rel="noopener noreferrer"
+   aria-label="Escribinos por WhatsApp"
+   class="fixed bottom-5 right-5 z-50 w-14 h-14 rounded-full bg-[#25D366] shadow-lg shadow-black/20 flex items-center justify-center hover:scale-110 transition-transform duration-300">
+  <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M17.6 6.3A8.9 8.9 0 0 0 12.03 3.5c-4.9 0-8.9 4-8.9 8.9 0 1.57.41 3.1 1.2 4.45L3 21.5l4.75-1.24a8.9 8.9 0 0 0 4.28 1.09h.01c4.9 0 8.9-4 8.9-8.9 0-2.37-.93-4.6-2.34-6.15Zm-5.57 13.7h-.01a7.4 7.4 0 0 1-3.77-1.03l-.27-.16-2.8.74.75-2.74-.18-.28a7.4 7.4 0 0 1-1.14-3.93c0-4.08 3.32-7.4 7.4-7.4a7.35 7.35 0 0 1 5.24 2.17 7.35 7.35 0 0 1 2.16 5.24c0 4.08-3.32 7.4-7.4 7.4Zm4.06-5.54c-.22-.11-1.31-.65-1.51-.72-.2-.07-.35-.11-.5.11-.15.22-.57.72-.7.87-.13.15-.26.17-.48.06-.22-.11-.94-.35-1.79-1.11a6.7 6.7 0 0 1-1.24-1.54c-.13-.22-.01-.34.1-.45.1-.1.22-.26.33-.39.11-.13.15-.22.22-.37.07-.15.04-.28-.02-.39-.06-.11-.5-1.2-.68-1.65-.18-.43-.36-.37-.5-.38h-.43c-.15 0-.39.06-.59.28-.2.22-.78.76-.78 1.85s.8 2.15.91 2.3c.11.15 1.57 2.4 3.81 3.36.53.23.95.37 1.27.47.53.17 1.02.15 1.4.09.43-.06 1.31-.53 1.49-1.05.18-.51.18-.95.13-1.05-.06-.09-.2-.15-.42-.26Z"/>
+  </svg>
+</a>
+
 </body>
 </html>
