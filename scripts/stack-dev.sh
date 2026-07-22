@@ -14,7 +14,7 @@
 #   restart       restart de un servicio o de todo
 #   rebuild       down + build + up (reconstruye imagenes y levanta)
 #   logs          ver logs de un servicio (requiere nombre de servicio)
-#   build-android build APK debug de la app nativa del staff de ius (emulator|device [api-url])
+#   build-android build APK debug de la app nativa de un tenant (slug emulator|device [api-url])
 #   status        mostrar estado + health checks
 #   shell         abrir shell en un servicio (requiere nombre de servicio)
 #   clean         limpiar recursos (--deep: volumes+artefactos, --all: system prune)
@@ -23,8 +23,8 @@
 #   ./stack.dev up                      # levantar todo
 #   ./stack.dev logs app                # logs del backend
 #   ./stack.dev restart frontend        # restart del frontend
-#   ./stack.dev build-android emulator                          # APK para emulador (10.0.2.2)
-#   ./stack.dev build-android device http://192.168.1.100:8000/api  # dispositivo fisico
+#   ./stack.dev build-android ius emulator                          # APK de ius para emulador (10.0.2.2)
+#   ./stack.dev build-android erma device http://192.168.1.100:8000/api  # APK de erma en dispositivo fisico
 #   ./stack.dev clean                   # limpiar recursos
 #   docker network create traefik_public (una sola vez)
 #   /etc/hosts con: 127.0.0.1 erma.com.test ius.mx.test
@@ -135,7 +135,7 @@ menu() {
   echo -e "${CYAN}║${NC} 6) ps            listar contenedores           ${CYAN}║${NC}"
   echo -e "${CYAN}║${NC} 7) status        estado + health checks        ${CYAN}║${NC}"
   echo -e "${CYAN}║${NC} 8) shell         abrir shell en servicio       ${CYAN}║${NC}"
-  echo -e "${CYAN}║${NC} 9) build-android build APK (ius staff)          ${CYAN}║${NC}"
+  echo -e "${CYAN}║${NC} 9) build-android build APK por tenant           ${CYAN}║${NC}"
   echo -e "${CYAN}║${NC} c) clean         limpiar recursos              ${CYAN}║${NC}"
   echo -e "${CYAN}║${NC} q) salir                                      ${CYAN}║${NC}"
   echo -e "${CYAN}╚══════════════════════════════════════════════════╝${NC}"
@@ -151,7 +151,7 @@ menu() {
     6) cmd_ps ;;
     7) cmd_status ;;
     8) read -r -p "Servicio (${CORE_SERVICES[*]} ${TENANTS[*]} ${SITES[*]}): " svc; cmd_shell "$svc" ;;
-    9) read -r -p "Entorno (emulator|device): " env; cmd_build_android "${env:-emulator}" ;;
+    9) read -r -p "Tenant (ius|erma): " tslug; read -r -p "Entorno (emulator|device): " env; cmd_build_android "$tslug" "${env:-emulator}" ;;
     c|C) read -r -p "Modo (Enter=ligero, deep, all): " mode; cmd_clean "${mode:-light}" ;;
     q|Q) exit 0 ;;
     *) echo -e "${RED}Opcion invalida${NC}"; menu ;;
@@ -287,26 +287,117 @@ cmd_shell() {
 }
 
 # ── Android build (host, no Docker) ────────────────────────────────────────
-# App nativa dedicada al staff de ius (ver ADR-007 en docs/dev/DECISIONS.md y
-# el plan en /home/mmanto/.claude/plans/). Un solo target de build — sin
-# fork de VITE_TARGET/MobileShell (esa fue la causa del revert anterior) —
-# el mismo `npm run build:capacitor` para cualquier entorno, cambia solo el
-# VITE_API_URL y el VITE_TENANT_ID horneados. El stack de dev solo builds
-# contra el tenant local de ius (para prod usar ./stack.prod build-android).
+# App nativa por tenant (ver ADR-007 en docs/dev/DECISIONS.md). android/ esta
+# trackeado en git como snapshot de ius: para compilar otro tenant se parchea
+# transitoriamente (applicationId/strings/iconos), se compila, y se restaura
+# con git checkout al terminar — asi ius sigue siendo la build de referencia
+# siempre limpia en el repo. Un solo target de build — sin fork de
+# VITE_TARGET/MobileShell (esa fue la causa del revert anterior) — el mismo
+# `npm run build:capacitor` para cualquier tenant/entorno, cambia solo las
+# env vars horneadas. El stack de dev solo builds contra tenants locales
+# (erma, ius — para prod usar ./stack.prod build-android).
 
-IUS_TENANT_ID_LOCAL="tenant_6a10b2076443"
+ANDROID_TENANT_SLUGS=(ius erma)
+
+android_tenant_var() {
+  # android_tenant_var erma APPID -> valor de $TENANT_APPID_ERMA
+  local slug_upper
+  slug_upper="$(echo "$1" | tr '[:lower:]' '[:upper:]')"
+  local varname="TENANT_${2}_${slug_upper}"
+  echo "${!varname:-}"
+}
+
+# Parchea android/ (applicationId, strings, icono/splash, google-services.json)
+# para el tenant indicado. Asume que `frontend-tenant/android` esta limpio
+# (verificado por el llamador). restore_android_tenant lo revierte despues.
+patch_android_tenant() {
+  local slug="$1" app_id="$2" app_name="$3" brand_color="$4"
+  local build_gradle="frontend-tenant/android/app/build.gradle"
+  local strings_xml="frontend-tenant/android/app/src/main/res/values/strings.xml"
+
+  sed -i "s/applicationId \"[^\"]*\"/applicationId \"${app_id}\"/" "$build_gradle"
+  sed -i \
+    -e "s|<string name=\"app_name\">[^<]*</string>|<string name=\"app_name\">${app_name}</string>|" \
+    -e "s|<string name=\"title_activity_main\">[^<]*</string>|<string name=\"title_activity_main\">${app_name}</string>|" \
+    -e "s|<string name=\"package_name\">[^<]*</string>|<string name=\"package_name\">${app_id}</string>|" \
+    -e "s|<string name=\"custom_url_scheme\">[^<]*</string>|<string name=\"custom_url_scheme\">${app_id}</string>|" \
+    -e "s|<string name=\"default_notification_channel_id\">[^<]*</string>|<string name=\"default_notification_channel_id\">${slug}_staff_messages</string>|" \
+    "$strings_xml"
+
+  local assets_dir="frontend-tenant/tenant-assets/${slug}"
+  if [[ -f "$assets_dir/logo.png" ]]; then
+    echo "  Regenerando icono/splash desde ${assets_dir}/logo.png ..."
+    (cd frontend-tenant && npx capacitor-assets generate --android \
+      --assetPath "tenant-assets/${slug}" \
+      --iconBackgroundColor "#ffffff" \
+      --splashBackgroundColor "${brand_color}") || {
+      echo -e "${YELLOW}  WARNING: capacitor-assets fallo (revisa que 'sharp' este instalado — ver frontend-tenant/tenant-assets/${slug}/README.md), se usa el icono/splash ya committeado.${NC}" >&2
+    }
+  else
+    echo -e "${YELLOW}  Sin ${assets_dir}/logo.png — se usa el icono/splash ya committeado (de ius).${NC}" >&2
+  fi
+
+  # google-services.json esta en frontend-tenant/android/.gitignore (nunca
+  # trackeado) — si ya existe uno real en disco (ej. el de ius), 'git
+  # checkout' NO puede restaurarlo si lo pisamos/borramos. Se hace un backup
+  # aparte y se restaura explicitamente en restore_android_tenant.
+  local gservices="frontend-tenant/android/app/google-services.json"
+  GSERVICES_BACKUP=""
+  if [[ -f "$gservices" ]]; then
+    GSERVICES_BACKUP="$(mktemp)"
+    cp "$gservices" "$GSERVICES_BACKUP"
+  fi
+
+  if [[ -f "$assets_dir/google-services.json" ]]; then
+    cp "$assets_dir/google-services.json" "$gservices"
+  elif [[ "$slug" != "ius" ]]; then
+    rm -f "$gservices"
+    echo -e "${YELLOW}  Sin ${assets_dir}/google-services.json — push notifications deshabilitadas para ${slug}.${NC}" >&2
+  fi
+}
+
+restore_android_tenant() {
+  git checkout -- frontend-tenant/android
+  local gservices="frontend-tenant/android/app/google-services.json"
+  if [[ -n "${GSERVICES_BACKUP:-}" ]]; then
+    cp "$GSERVICES_BACKUP" "$gservices"
+    rm -f "$GSERVICES_BACKUP"
+  else
+    rm -f "$gservices"
+  fi
+  GSERVICES_BACKUP=""
+}
 
 cmd_build_android() {
-  local env="${1:-emulator}"
-  local api_url="${2:-}"
+  local slug="${1:-}"
+  local env="${2:-emulator}"
+  local api_url="${3:-}"
 
+  if [[ ! " ${ANDROID_TENANT_SLUGS[*]} " =~ " ${slug} " ]]; then
+    echo -e "${RED}ERROR: tenant invalido '${slug}'. Usar: ${ANDROID_TENANT_SLUGS[*]}${NC}"
+    return 1
+  fi
   if [[ ! "$env" =~ ^(emulator|device)$ ]]; then
     echo -e "${RED}ERROR: entorno invalido '${env}'. Usar: emulator | device [api-url]${NC}"
     return 1
   fi
 
+  local app_id app_name brand_color tenant_id
+  app_id="$(android_tenant_var "$slug" APPID)"
+  app_name="$(android_tenant_var "$slug" APPNAME)"
+  brand_color="$(android_tenant_var "$slug" BRANDCOLOR)"
+  tenant_id="$(android_tenant_var "$slug" ID)"
+  if [[ -z "$app_id" || -z "$app_name" || -z "$brand_color" ]]; then
+    echo -e "${RED}ERROR: faltan TENANT_APPID_${slug^^} / TENANT_APPNAME_${slug^^} / TENANT_BRANDCOLOR_${slug^^} en ${ENV_FILE}.${NC}"
+    return 1
+  fi
+  if [[ -z "$tenant_id" ]]; then
+    echo -e "${RED}ERROR: falta TENANT_ID_${slug^^} en ${ENV_FILE}.${NC}"
+    return 1
+  fi
+
   if [[ "$env" == "device" && -z "$api_url" ]]; then
-    echo -e "${RED}ERROR: 'device' requiere la IP LAN del backend, ej: ./stack.dev build-android device http://192.168.1.50:8000/api${NC}"
+    echo -e "${RED}ERROR: 'device' requiere la IP LAN del backend, ej: ./stack.dev build-android ${slug} device http://192.168.1.50:8000/api${NC}"
     return 1
   fi
   api_url="${api_url:-http://10.0.2.2:8000/api}"
@@ -340,20 +431,33 @@ cmd_build_android() {
   fi
   chmod +x "$gradlew"
 
-  echo -e "${CYAN}── Build Android (${GREEN}${env}${CYAN}) — API: ${api_url} — tenant: ${IUS_TENANT_ID_LOCAL} ──${NC}"
+  if [[ -n "$(git status --porcelain -- frontend-tenant/android)" ]]; then
+    echo -e "${RED}ERROR: frontend-tenant/android tiene cambios sin commitear. Guardalos o descartalos antes de compilar (build-android lo parchea y lo restaura con 'git checkout').${NC}"
+    return 1
+  fi
+
+  echo -e "${CYAN}── Build Android [${GREEN}${slug}${CYAN}] (${GREEN}${env}${CYAN}) — API: ${api_url} — tenant: ${tenant_id} ──${NC}"
+
+  patch_android_tenant "$slug" "$app_id" "$app_name" "$brand_color"
+  trap restore_android_tenant RETURN
 
   # STATS_TWO_COLS_MOBILE=true replica lo que docker-compose.tenants.*.yml ya
   # setea para ius en la web (ver docker-entrypoint.sh) — sin esto el build
   # nativo horneaba statsTwoColsMobile:false y el dashboard mostraba las
   # stat cards en 1 columna en el celular en vez de 2 (StatsCards.tsx).
-  echo "  [1/3] VITE_API_URL=${api_url} VITE_TENANT_ID=${IUS_TENANT_ID_LOCAL} VITE_STATS_TWO_COLS_MOBILE=true npm run build:capacitor ..."
-  (cd "$project_dir" && VITE_API_URL="$api_url" VITE_TENANT_ID="$IUS_TENANT_ID_LOCAL" VITE_STATS_TWO_COLS_MOBILE=true npm run build:capacitor) || {
+  local stats_two_cols="false"
+  [[ "$slug" == "ius" ]] && stats_two_cols="true"
+
+  echo "  [1/3] VITE_API_URL=${api_url} VITE_TENANT_ID=${tenant_id} VITE_TENANT_APPID=${app_id} npm run build:capacitor ..."
+  (cd "$project_dir" && VITE_API_URL="$api_url" VITE_TENANT_ID="$tenant_id" VITE_STATS_TWO_COLS_MOBILE="$stats_two_cols" \
+    VITE_TENANT_APPID="$app_id" VITE_TENANT_APPNAME="$app_name" VITE_TENANT_BRANDCOLOR="$brand_color" \
+    npm run build:capacitor) || {
     echo -e "${RED}  ERROR: npm run build:capacitor fallo${NC}"
     return 1
   }
 
   echo "  [2/3] npx cap sync android ..."
-  (cd "$project_dir" && VITE_API_URL="$api_url" npx cap sync android) || {
+  (cd "$project_dir" && VITE_API_URL="$api_url" VITE_TENANT_APPID="$app_id" VITE_TENANT_APPNAME="$app_name" VITE_TENANT_BRANDCOLOR="$brand_color" npx cap sync android) || {
     echo -e "${RED}  ERROR: cap sync fallo${NC}"
     return 1
   }
@@ -364,11 +468,16 @@ cmd_build_android() {
     return 1
   }
 
-  local apk="$project_dir/android/app/build/outputs/apk/debug/app-debug.apk"
+  local built_apk="$project_dir/android/app/build/outputs/apk/debug/app-debug.apk"
+  local out_dir="$project_dir/dist-apk"
+  local apk="${out_dir}/gestionar-${slug}-debug.apk"
   echo ""
   echo -e "${GREEN}==> Build Android completo.${NC}"
+  echo "  Tenant: ${slug} (applicationId: ${app_id})"
   echo "  API URL horneada: ${api_url}"
-  if [[ -f "$apk" ]]; then
+  if [[ -f "$built_apk" ]]; then
+    mkdir -p "$out_dir"
+    cp "$built_apk" "$apk"
     local size=$(du -h "$apk" | cut -f1)
     echo -e "  ${GREEN}APK generado:${NC} ${apk} (${size})"
   fi
@@ -511,7 +620,7 @@ case "$CMD" in
   ps)            cmd_ps ;;
   status)        cmd_status ;;
   shell)         cmd_shell "${1:-}" ;;
-  build-android) cmd_build_android "${1:-emulator}" "${2:-}" ;;
+  build-android) cmd_build_android "${1:-}" "${2:-emulator}" "${3:-}" ;;
   clean)         cmd_clean "${1:-light}" ;;
   -h|--help|help)
     echo "Uso: $0 [up|down|restart|rebuild|logs|ps|status|shell|build-android|clean] [servicio|target]"
@@ -519,7 +628,7 @@ case "$CMD" in
     echo "Core: ${CORE_SERVICES[*]}"
     echo "Tenants: ${TENANTS[*]} (usa el nombre corto: erma, ius)"
     echo "Sites: ${SITES[*]} (landing estatica, sin backend detras)"
-    echo "build-android: emulator | device [api-url] (default: emulator, http://10.0.2.2:8000/api)"
+    echo "build-android: <${ANDROID_TENANT_SLUGS[*]}> emulator | device [api-url] (default: emulator, http://10.0.2.2:8000/api)"
     echo "clean: sin flag | --deep | --all"
     ;;
   *)             echo -e "${RED}Comando desconocido: $CMD${NC}"; menu ;;

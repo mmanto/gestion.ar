@@ -95,19 +95,71 @@ const ConfigTab = ({ botId, moduleInfo }: { botId: string; moduleInfo: BotModule
   );
 };
 
+const ModuleUnavailablePanel = () => (
+  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+    <p className="text-yellow-800">
+      El módulo <strong>Turnos</strong> no está disponible para este agente (ni otorgado ni incluido
+      en el plan del tenant). Otorgalo desde el detalle del agente, o agregalo al plan del tenant,
+      para poder configurarlo acá.
+    </p>
+  </div>
+);
+
+// Solo se monta cuando moduleInfo.available es true — useAppointmentsConfig
+// dispara su fetch al montar, y el backend devuelve 403 si el módulo no
+// está disponible, así que este componente no debe existir en el árbol
+// hasta confirmar disponibilidad (ver BotAppointments más abajo).
+const AppointmentsWorkspace = ({ botId, moduleInfo }: { botId: string; moduleInfo: BotModuleInfo }) => {
+  const { accent } = useAccentTheme();
+  const [activeTab, setActiveTab] = useState<TabKey>('appointments');
+  const { config, refetch: refetchConfig } = useAppointmentsConfig(botId);
+
+  return (
+    <>
+      <AppointmentsConfigBanner botId={botId} config={config} moduleInfo={moduleInfo} />
+
+      <div className="border-b border-gray-300 mb-6">
+        <nav className="flex gap-6">
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className="pb-3 text-base font-medium border-b-2 -mb-px transition-colors"
+              style={
+                activeTab === tab.key
+                  ? { borderColor: accent, color: accent }
+                  : { borderColor: 'transparent', color: '#4b5563' }
+              }
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {activeTab === 'appointments' && <AppointmentsTab botId={botId} />}
+      {activeTab === 'resources' && <ResourcesTab botId={botId} onResourcesChanged={refetchConfig} />}
+      {activeTab === 'services' && <ServicesTab botId={botId} onServicesChanged={refetchConfig} />}
+      {activeTab === 'availability' && <AvailabilityTab botId={botId} />}
+      {activeTab === 'config' && <ConfigTab botId={botId} moduleInfo={moduleInfo} />}
+    </>
+  );
+};
+
 export const BotAppointments = () => {
   const { accent } = useAccentTheme();
   const { botId } = useParams<{ botId: string }>();
-  const [activeTab, setActiveTab] = useState<TabKey>('appointments');
-  const { config, refetch: refetchConfig } = useAppointmentsConfig(botId || '');
   const [moduleInfo, setModuleInfo] = useState<BotModuleInfo | null>(null);
+  const [moduleLoading, setModuleLoading] = useState(true);
 
   useEffect(() => {
     if (!botId) return;
+    setModuleLoading(true);
     tenantAdminService
       .getBotModules(botId)
       .then((mods) => setModuleInfo(mods.find((m) => m.module_key === MODULE_KEY) || null))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setModuleLoading(false));
   }, [botId]);
 
   if (!botId) return null;
@@ -140,32 +192,13 @@ export const BotAppointments = () => {
           descriptionClassName="text-gray-800"
         />
 
-        <AppointmentsConfigBanner botId={botId} config={config} moduleInfo={moduleInfo} />
-
-        <div className="border-b border-gray-300 mb-6">
-          <nav className="flex gap-6">
-            {TABS.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className="pb-3 text-base font-medium border-b-2 -mb-px transition-colors"
-                style={
-                  activeTab === tab.key
-                    ? { borderColor: accent, color: accent }
-                    : { borderColor: 'transparent', color: '#4b5563' }
-                }
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        {activeTab === 'appointments' && <AppointmentsTab botId={botId} />}
-        {activeTab === 'resources' && <ResourcesTab botId={botId} onResourcesChanged={refetchConfig} />}
-        {activeTab === 'services' && <ServicesTab botId={botId} onServicesChanged={refetchConfig} />}
-        {activeTab === 'availability' && <AvailabilityTab botId={botId} />}
-        {activeTab === 'config' && <ConfigTab botId={botId} moduleInfo={moduleInfo} />}
+        {moduleLoading ? (
+          <p className="text-gray-700">Cargando...</p>
+        ) : moduleInfo?.available ? (
+          <AppointmentsWorkspace botId={botId} moduleInfo={moduleInfo} />
+        ) : (
+          <ModuleUnavailablePanel />
+        )}
       </div>
     </AppLayout>
   );

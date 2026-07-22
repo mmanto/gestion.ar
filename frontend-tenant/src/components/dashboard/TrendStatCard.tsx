@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import { Card } from '../common/Card';
 
-const BUTTON_BG = '#3B82F6';
+const BUTTON_BG = '#80a9eb';
 
 interface TrendStatCardProps {
   icon: ReactNode;

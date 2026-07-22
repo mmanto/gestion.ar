@@ -125,6 +125,11 @@ export interface BotModuleInfo {
   module_key: string;
   granted: boolean;
   enabled: boolean;
+  // Distinto de `granted`: true si el módulo puede usarse (otorgado O
+  // incluido en el plan del tenant, ver ADR-008). Es el campo correcto
+  // para decidir si una página puede llamar a la API del módulo sin
+  // recibir 403 — `granted` es solo para la UI de otorgamiento manual.
+  available: boolean;
   module_name?: string;
   module_description?: string;
 }

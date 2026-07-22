@@ -90,7 +90,7 @@ export function useWebSocketChat(id: string, mode: 'bot' | 'channel' = 'bot'): U
             // Usuario que regresa: cargar historial previo
             for (const h of data.history) {
               msgs.push({
-                id: crypto.randomUUID(),
+                id: generateUUID(),
                 role: h.role,
                 content: h.content,
                 timestamp: h.timestamp,
@@ -100,7 +100,7 @@ export function useWebSocketChat(id: string, mode: 'bot' | 'channel' = 'bot'): U
           } else {
             // Primera visita: mostrar mensaje de bienvenida
             msgs.push({
-              id: crypto.randomUUID(),
+              id: generateUUID(),
               role: 'assistant',
               content: data.message,
               timestamp: new Date().toISOString(),
@@ -116,7 +116,7 @@ export function useWebSocketChat(id: string, mode: 'bot' | 'channel' = 'bot'): U
         }
         case 'message': {
           const assistantMsg: ChatMessage = {
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             role: 'assistant',
             content: data.content,
             timestamp: new Date().toISOString(),
@@ -127,7 +127,7 @@ export function useWebSocketChat(id: string, mode: 'bot' | 'channel' = 'bot'): U
         }
         case 'error': {
           const errMsg: ChatMessage = {
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             role: 'system',
             content: data.message,
             timestamp: new Date().toISOString(),
@@ -181,7 +181,7 @@ export function useWebSocketChat(id: string, mode: 'bot' | 'channel' = 'bot'): U
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
 
     const userMsg: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       role: 'user',
       content,
       timestamp: new Date().toISOString(),

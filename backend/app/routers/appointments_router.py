@@ -23,6 +23,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.dependencies.auth import require_role
+from app.dependencies.modules import require_module_available
 from app.integrations.appointments_client import SlotUnavailableError, get_appointments_client
 from app.models.appointment import (
     AppointmentCancelRequest,
@@ -43,7 +44,10 @@ from app.services.client_service import get_client_service
 router = APIRouter(
     prefix="/api/bots/{bot_id}/appointments",
     tags=["appointments"],
-    dependencies=[Depends(require_role("super_admin"))],
+    dependencies=[
+        Depends(require_role("super_admin")),
+        Depends(require_module_available("appointments")),
+    ],
 )
 
 

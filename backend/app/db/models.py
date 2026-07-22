@@ -102,6 +102,22 @@ class BotModule(Base):
     )
 
 
+class PlanModule(Base):
+    """Módulos que un plan incluye por defecto (ver ADR-008,
+    docs/dev/DECISIONS.md). `BotModule.granted` sigue funcionando como
+    override puntual por encima de esto — esta tabla no reemplaza el
+    otorgamiento manual, sólo define el baseline por plan."""
+
+    __tablename__ = "plan_modules"
+
+    plan_id = Column(Text, ForeignKey("plans.plan_id", ondelete="CASCADE"), primary_key=True)
+    module_key = Column(Text, ForeignKey("modules.module_key"), primary_key=True)
+
+    __table_args__ = (
+        Index("ix_plan_modules_module_key", "module_key"),
+    )
+
+
 class User(Base):
     __tablename__ = "users"
 

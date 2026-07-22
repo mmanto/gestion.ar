@@ -50,7 +50,10 @@ def _user_out(user_in_db) -> TenantUserOut:
 
 @router.post("/plans", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_plan(data: PlanCreate):
-    plan = await get_plan_service().create_plan(data)
+    try:
+        plan = await get_plan_service().create_plan(data)
+    except ValueError as e:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e))
     return {"success": True, "plan": plan.model_dump()}
 
 
@@ -70,7 +73,10 @@ async def get_plan(plan_id: str):
 
 @router.patch("/plans/{plan_id}", response_model=dict)
 async def update_plan(plan_id: str, data: PlanUpdate):
-    plan = await get_plan_service().update_plan(plan_id, data)
+    try:
+        plan = await get_plan_service().update_plan(plan_id, data)
+    except ValueError as e:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e))
     if not plan:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Plan no encontrado")
     return {"success": True, "plan": plan.model_dump()}

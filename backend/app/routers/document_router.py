@@ -18,6 +18,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Upload
 from pydantic import BaseModel
 
 from app.dependencies.auth import require_role
+from app.dependencies.modules import require_module_available
 from app.models.bot import Bot
 from app.rag_service import get_rag_service
 from app.services.bot_service import get_bot_service
@@ -25,7 +26,10 @@ from app.services.bot_service import get_bot_service
 router = APIRouter(
     prefix="/api/bots/{bot_id}/documents",
     tags=["documents"],
-    dependencies=[Depends(require_role("super_admin"))],
+    dependencies=[
+        Depends(require_role("super_admin")),
+        Depends(require_module_available("rag")),
+    ],
 )
 
 

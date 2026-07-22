@@ -116,6 +116,11 @@ class BotModuleOut(BaseModel):
     module_key: str
     granted: bool
     enabled: bool
+    # Distinto de `granted`: True si el módulo puede habilitarse (otorgado
+    # O incluido en el plan del tenant, ver ADR-008), aunque no exista
+    # todavía una fila BotModule para este bot. La UI de autoservicio debe
+    # usar esto, no `granted`, para decidir si el toggle es accionable.
+    available: bool = False
     module_name: Optional[str] = None
     module_description: Optional[str] = None
 
