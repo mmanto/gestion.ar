@@ -9,6 +9,7 @@ import ConversationDetail from '../components/conversations/ConversationDetail';
 import conversationsService from '../services/conversations.service';
 import type { Conversation } from '../types/conversation.types';
 import { useSidebar } from '../hooks/useSidebar';
+import { useSidebarVisible } from '../hooks/useSidebarVisible';
 
 // NOTE: los estados de error y "normal" de abajo componen Navbar/Sidebar/Footer
 // directamente en vez de pasar por AppLayout, así que siempre renderizan el
@@ -17,6 +18,8 @@ export const ConversationView = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { collapsed } = useSidebar();
+  const sidebarVisible = useSidebarVisible();
+  const mainMargin = !sidebarVisible ? 'md:ml-0' : collapsed ? 'md:ml-16' : 'md:ml-64';
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,8 +55,8 @@ export const ConversationView = () => {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50">
         <Navbar backTo="/conversations" />
-        <Sidebar />
-        <main className={`flex-grow py-8 px-4 sm:px-6 lg:px-8 transition-all duration-300 ${collapsed ? 'md:ml-16' : 'md:ml-64'}`}>
+        {sidebarVisible && <Sidebar />}
+        <main className={`flex-grow py-8 px-4 sm:px-6 lg:px-8 transition-all duration-300 ${mainMargin}`}>
           <div className="max-w-7xl mx-auto">
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <p className="text-red-800">Error: {error}</p>
@@ -78,9 +81,9 @@ export const ConversationView = () => {
   return (
     <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
       <Navbar backTo="/conversations" />
-      <Sidebar />
-      <main className={`flex-1 flex flex-col overflow-hidden min-h-0 transition-all duration-300 ${collapsed ? 'md:ml-16' : 'md:ml-64'}`}>
-        <div className="flex-1 flex flex-col w-4/5 mx-auto bg-white shadow-sm overflow-hidden">
+      {sidebarVisible && <Sidebar />}
+      <main className={`flex-1 flex flex-col overflow-hidden min-h-0 transition-all duration-300 ${mainMargin}`}>
+        <div className="flex-1 flex flex-col w-4/5 mx-auto bg-gray-50 overflow-hidden">
           <ConversationDetail conversation={conversation} showMetadata={true} />
         </div>
       </main>

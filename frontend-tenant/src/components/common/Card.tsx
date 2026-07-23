@@ -33,10 +33,18 @@ export const Card: React.FC<CardProps> = ({
 
   const hoverStyles = hover ? 'hover:shadow-lg transition-shadow duration-200' : '';
 
+  // shadow="none" es "sin caja propia": todas las páginas ya envuelven su
+  // contenido en un panel blanco con sombra (el "page shell" de cada page,
+  // o un Drawer) -- agregarle a un Card interno su propio fondo blanco +
+  // borde dibujaba una caja adentro de otra caja. Con shadow="none" el Card
+  // pasa a ser solo el padding, y el panel que lo contiene es la única
+  // caja visible.
+  const boxStyles = shadow === 'none' ? '' : 'bg-white border border-gray-300 rounded-lg';
+
   return (
     <div
       className={`
-        bg-white rounded-lg border border-gray-300
+        ${boxStyles}
         ${paddingStyles[padding]}
         ${shadowStyles[shadow]}
         ${hoverStyles}

@@ -172,7 +172,7 @@ const ConversationList = ({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 bg-white border border-gray-300 sm:px-6 rounded-lg">
+        <div className="flex items-center justify-between px-4 py-3 sm:px-6">
           <div className="flex justify-between items-center w-full">
             <div>
               <p className="text-base text-gray-900">

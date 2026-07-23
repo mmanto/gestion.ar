@@ -8,11 +8,19 @@
 # Incluye tenants de ejemplo (erma, ius) via docker-compose.tenants.local.yml
 # con dominios .test resueltos a 127.0.0.1 via /etc/hosts.
 #
+# Hot-reload de los tenants (Vite dev-server en vez del build de nginx, ver
+# docker-compose.tenants.dev.yml): seteá TENANT_HOT_RELOAD=1 antes de
+# up/rebuild/restart. Sin esa variable, up/rebuild/restart SIEMPRE dejan
+# erma/ius en el build de produccion (nginx, sin hot-reload) — este wrapper
+# no lo recuerda entre corridas, hay que pasarlo cada vez que se toca el
+# stack (incluido un 'rebuild' de otro servicio).
+#   TENANT_HOT_RELOAD=1 ./stack.dev rebuild ius
+#
 # Comandos:
 #   up            levantar todo (docker compose up -d)
 #   down          detener todo
 #   restart       restart de un servicio o de todo
-#   rebuild       down + build + up (reconstruye imagenes y levanta)
+#   rebuild       down + build + up (reconstruye imagenes y levanta) — acepta servicio opcional
 #   logs          ver logs de un servicio (requiere nombre de servicio)
 #   build-android build APK debug de la app nativa de un tenant (slug emulator|device [api-url])
 #   status        mostrar estado + health checks
@@ -23,6 +31,8 @@
 #   ./stack.dev up                      # levantar todo
 #   ./stack.dev logs app                # logs del backend
 #   ./stack.dev restart frontend        # restart del frontend
+#   ./stack.dev rebuild ius             # rebuild solo del tenant ius
+#   TENANT_HOT_RELOAD=1 ./stack.dev rebuild ius  # idem, con hot-reload
 #   ./stack.dev build-android ius emulator                          # APK de ius para emulador (10.0.2.2)
 #   ./stack.dev build-android erma device http://192.168.1.100:8000/api  # APK de erma en dispositivo fisico
 #   ./stack.dev clean                   # limpiar recursos
@@ -33,6 +43,9 @@ set -euo pipefail
 
 ENV_FILE=".env.dev"
 COMPOSE_FILES=(-f docker-compose.yml -f docker-compose.override.yml -f docker-compose.tenants.local.yml)
+if [[ "${TENANT_HOT_RELOAD:-}" == "1" ]]; then
+  COMPOSE_FILES+=(-f docker-compose.tenants.dev.yml)
+fi
 
 CORE_SERVICES=(app frontend postgres redis traefik-local)
 TENANTS=(erma ius)
@@ -146,7 +159,7 @@ menu() {
     1) cmd_up ;;
     2) cmd_down ;;
     3) read -r -p "Servicio (${CORE_SERVICES[*]} ${TENANTS[*]} ${SITES[*]}): " svc; cmd_restart "$svc" ;;
-    4) cmd_rebuild ;;
+    4) read -r -p "Servicio (Enter=todo, ${CORE_SERVICES[*]} ${TENANTS[*]} ${SITES[*]}): " svc; cmd_rebuild "$svc" ;;
     5) read -r -p "Servicio (${CORE_SERVICES[*]} ${TENANTS[*]} ${SITES[*]}): " svc; cmd_logs "$svc" ;;
     6) cmd_ps ;;
     7) cmd_status ;;
@@ -240,8 +253,20 @@ cmd_restart() {
 }
 
 cmd_rebuild() {
-  echo -e "${YELLOW}==> Reconstruyendo imagenes y levantando...${NC}"
-  "${COMPOSE_CMD[@]}" up -d --build
+  local svc="${1:-}"
+  if [[ -z "$svc" ]]; then
+    echo -e "${YELLOW}==> Reconstruyendo imagenes y levantando todo el stack...${NC}"
+    "${COMPOSE_CMD[@]}" up -d --build
+  else
+    local container
+    container=$(resolve_service "$svc") || {
+      echo -e "${RED}ERROR: servicio '$svc' no valido.${NC}"
+      echo -e "Usar: ${CORE_SERVICES[*]} ${TENANTS[*]} ${SITES[*]}"
+      return 1
+    }
+    echo -e "${YELLOW}==> Reconstruyendo $container...${NC}"
+    "${COMPOSE_CMD[@]}" up -d --build "$container"
+  fi
   echo -e "${GREEN}==> Rebuild completo.${NC}"
   cmd_ps
 }
@@ -615,7 +640,7 @@ case "$CMD" in
   up)            cmd_up ;;
   down)          cmd_down ;;
   restart)       cmd_restart "${1:-}" ;;
-  rebuild)       cmd_rebuild ;;
+  rebuild)       cmd_rebuild "${1:-}" ;;
   logs)          cmd_logs "${1:-}" ;;
   ps)            cmd_ps ;;
   status)        cmd_status ;;
@@ -630,6 +655,7 @@ case "$CMD" in
     echo "Sites: ${SITES[*]} (landing estatica, sin backend detras)"
     echo "build-android: <${ANDROID_TENANT_SLUGS[*]}> emulator | device [api-url] (default: emulator, http://10.0.2.2:8000/api)"
     echo "clean: sin flag | --deep | --all"
+    echo "TENANT_HOT_RELOAD=1 antes del comando: erma/ius quedan con Vite dev-server (hot-reload) en vez del build de nginx"
     ;;
   *)             echo -e "${RED}Comando desconocido: $CMD${NC}"; menu ;;
 esac

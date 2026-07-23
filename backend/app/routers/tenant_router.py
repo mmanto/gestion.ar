@@ -41,6 +41,12 @@ ALLOWED_LOGO_CONTENT_TYPES = {
 }
 MAX_LOGO_BYTES = 2 * 1024 * 1024  # 2MB
 
+# Temas visuales disponibles para el backoffice del tenant (ver
+# frontend-tenant/src/types/template.types.ts TemplateId) — 'kero' es el
+# default para tenants nuevos, 'default' queda solo por compatibilidad con
+# tenants que ya lo tenían elegido.
+VALID_TEMPLATE_IDS = {"default", "kero"}
+
 
 # ── Branding ──────────────────────────────────────────────────────────────────
 
@@ -88,9 +94,11 @@ async def update_tenant_branding(
     body: dict,
     current_user: User = Depends(require_role("admin")),
 ):
-    """Actualiza campos de branding (primary_color, tagline)."""
+    """Actualiza campos de branding (primary_color, tagline, template_id, sidebar_visible)."""
     primary_color = body.get("primary_color")
     tagline = body.get("tagline")
+    template_id = body.get("template_id")
+    sidebar_visible = body.get("sidebar_visible")
 
     if primary_color is not None:
         if not isinstance(primary_color, str) or not re.match(r"^#[0-9a-fA-F]{6}$", primary_color):
@@ -99,12 +107,28 @@ async def update_tenant_branding(
                 "primary_color debe ser un hex color válido (ej. #ff5722)",
             )
 
+    if template_id is not None and template_id not in VALID_TEMPLATE_IDS:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"template_id debe ser uno de: {', '.join(sorted(VALID_TEMPLATE_IDS))}",
+        )
+
+    if sidebar_visible is not None and not isinstance(sidebar_visible, bool):
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "sidebar_visible debe ser un booleano",
+        )
+
     tenant_service = get_tenant_service()
     tenant = await tenant_service.get_tenant(current_user.tenant_id)
     branding = dict(tenant.branding) if tenant and tenant.branding else {}
 
     if primary_color is not None:
         branding["primary_color"] = primary_color
+    if template_id is not None:
+        branding["template_id"] = template_id
+    if sidebar_visible is not None:
+        branding["sidebar_visible"] = sidebar_visible
     if tagline is not None:
         if not isinstance(tagline, str) or len(tagline) > 200:
             raise HTTPException(

@@ -44,8 +44,8 @@ export const KeroSidebar: React.FC = () => {
             to={item.to}
             className={`flex items-center gap-3 h-[2.2rem] px-4 rounded-full text-sm font-medium transition-colors ${
               isActive(item.to)
-                ? 'text-[#da624a] bg-[#da624a]/10'
-                : 'text-gray-900 hover:text-[#da624a] hover:bg-[#da624a]/5'
+                ? 'text-blue-600 bg-blue-600/10'
+                : 'text-gray-900 hover:text-blue-600 hover:bg-blue-600/5'
             }`}
           >
             <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -72,8 +72,8 @@ export const KeroSidebar: React.FC = () => {
               collapsed ? 'justify-center w-11 h-11 mx-auto' : 'gap-3 h-[2.2rem] px-4'
             } ${
               isActive(item.to)
-                ? 'text-[#da624a] bg-[#da624a]/10'
-                : 'text-gray-900 hover:text-[#da624a] hover:bg-[#da624a]/5'
+                ? 'text-blue-600 bg-blue-600/10'
+                : 'text-gray-900 hover:text-blue-600 hover:bg-blue-600/5'
             }`}
           >
             <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -110,7 +110,7 @@ export const KeroSidebar: React.FC = () => {
 
       {/* Sidebar flotante — desktop */}
       <aside
-        className={`hidden md:flex md:flex-col fixed left-6 top-6 bottom-6 rounded-[1.4rem] bg-white shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] z-40 overflow-hidden transition-all duration-300 ${
+        className={`hidden md:flex md:flex-col fixed left-6 top-6 bottom-6 rounded-[1.4rem] bg-[#F1F5F9] z-40 overflow-hidden transition-all duration-300 ${
           collapsed ? 'w-[88px]' : 'w-[280px]'
         }`}
       >
@@ -137,7 +137,7 @@ export const KeroSidebar: React.FC = () => {
             onClick={toggleCollapsed}
             aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
             title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-            className={`w-full flex items-center gap-3 rounded-full text-sm font-medium text-gray-900 hover:text-[#da624a] hover:bg-[#da624a]/5 transition-colors ${
+            className={`w-full flex items-center gap-3 rounded-full text-sm font-medium text-gray-900 hover:text-blue-600 hover:bg-blue-600/5 transition-colors ${
               collapsed ? 'justify-center w-11 h-11 mx-auto' : 'h-[2.2rem] px-4'
             }`}
           >
@@ -175,7 +175,7 @@ export const KeroSidebar: React.FC = () => {
         <div className="border-t border-gray-200 flex-shrink-0 px-4 py-3">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 h-[2.2rem] px-4 rounded-full text-sm font-medium text-gray-900 hover:text-[#da624a] hover:bg-[#da624a]/5 transition-colors"
+            className="w-full flex items-center gap-3 h-[2.2rem] px-4 rounded-full text-sm font-medium text-gray-900 hover:text-blue-600 hover:bg-blue-600/5 transition-colors"
           >
             <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

@@ -45,3 +45,27 @@ declare module 'appointments/AppointmentConfirmWidget' {
   const AppointmentConfirmWidgetComponent: (props: Props) => ReactElement;
   export default AppointmentConfirmWidgetComponent;
 }
+
+declare module 'appointments/AppointmentsWorkspace' {
+  import type { ReactElement, ComponentType } from 'react';
+  import type { AxiosInstance } from 'axios';
+  import type { BotModuleInfo } from './tenant.types';
+  import type { InputProps } from '../components/common/Input';
+  import type { ButtonProps } from '../components/common/Button';
+  import type { CardProps } from '../components/common/Card';
+
+  interface Props {
+    botId: string;
+    moduleInfo: BotModuleInfo;
+    apiClient: AxiosInstance;
+    ui: {
+      Input: ComponentType<InputProps>;
+      Button: ComponentType<ButtonProps>;
+      Card: ComponentType<CardProps>;
+    };
+    accent: string;
+  }
+
+  const AppointmentsWorkspaceComponent: (props: Props) => ReactElement;
+  export default AppointmentsWorkspaceComponent;
+}

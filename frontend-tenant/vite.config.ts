@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { defineConfig } from 'vite'
+import type { Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { federation } from '@module-federation/vite'
 
@@ -28,11 +29,44 @@ const proxyConfig = {
   },
 }
 
+// Sirve /tenant-config.js en el dev-server leyendo TENANT_ID/TENANT_SLUG del
+// entorno del proceso — el equivalente de docker-entrypoint.sh pero sin
+// escribir ningún archivo (bake-tenant-config.mjs ya advierte: nunca tocar
+// public/, se filtraría a todos los tenants y a `npm run build`). Habilita
+// hot-reload en docker-compose.tenants.dev.yml sin perder el tenant fijo por
+// contenedor; si TENANT_ID no está seteado (dev local sin Docker), sirve un
+// tenantId vacío y TenantContext cae al fallback ?tenant=<id> de siempre.
+function tenantConfigDevMiddleware(): Plugin {
+  return {
+    name: 'tenant-config-dev-middleware',
+    configureServer(server) {
+      server.middlewares.use('/tenant-config.js', (_req, res) => {
+        const tenantId = process.env.TENANT_ID || ''
+        const statsTwoColsMobile = process.env.STATS_TWO_COLS_MOBILE === 'true'
+        res.setHeader('Content-Type', 'application/javascript')
+        res.end(`window.__TENANT_CONFIG__ = { tenantId: ${JSON.stringify(tenantId)}, statsTwoColsMobile: ${statsTwoColsMobile} };\n`)
+      })
+    },
+  }
+}
+
+// Puerto que el cliente de HMR usa para el websocket de vuelta al dev-server.
+// En un `npm run dev` normal en el host, navegador y servidor comparten el
+// puerto 5174 (default de abajo). Corriendo detrás de Traefik
+// (docker-compose.tenants.dev.yml, dominios *.test en :80) el navegador
+// entra por el 80, pero el 5174 del contenedor no está expuesto al host —
+// forzar clientPort a 5174 ahí deja al websocket de HMR intentando conectar
+// a un puerto inexistente (ERR_CONNECTION_REFUSED). VITE_HMR_CLIENT_PORT
+// permite pisar ese puerto por entorno; sin setear, se mantiene el 5174 de
+// siempre.
+const hmrClientPort = Number(process.env.VITE_HMR_CLIENT_PORT) || 5174
+
 // Puerto 5174 (distinto del frontend-admin en 5173) para poder correr ambas
 // apps en paralelo durante desarrollo local.
 export default defineConfig({
   plugins: [
     react(),
+    tenantConfigDevMiddleware(),
     federation({
       name: 'gestionar-frontend-tenant',
       remotes: {
@@ -58,7 +92,7 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5174,
     hmr: {
-      clientPort: 5174,
+      clientPort: hmrClientPort,
     },
     allowedHosts: true,
     proxy: proxyConfig,

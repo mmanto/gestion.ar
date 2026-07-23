@@ -25,11 +25,13 @@ no cambia.
 import re
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
 from zoneinfo import ZoneInfo
 
 from app.integrations.appointments_client import AppointmentsClient, SlotUnavailableError, get_appointments_client
 from app.models.bot import Bot
+from app.models.client import ClientUpdate
+from app.services.client_service import get_client_service
 from app.services.module_service import get_module_service
 
 MODULE_KEY = "appointments"
@@ -51,10 +53,25 @@ _BACK_PATTERN = re.compile(
 
 _WEEKDAY_LONG = ("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo")
 
+# Datos del paciente que se piden antes de mostrar el calendario -- el chat
+# de reserva es del canal web, así que a diferencia de whatsapp/telegram acá
+# no hay ni nombre ni teléfono conocidos de antemano. Cada uno se salta si
+# el Client ya lo tiene cargado (ver BookingState.__init__).
+_INFO_QUESTIONS: dict[str, str] = {
+    "nombre": "¿Cuál es tu nombre?",
+    "apellido": "¿Y tu apellido?",
+    "dni": "¿Tu número de DNI? (solo números)",
+    "whatsapp": "Por último, ¿tu número de WhatsApp? (para avisarte sobre el turno)",
+}
+
 # Cubre el resto del mes actual + el mes calendario siguiente completo en una
 # sola llamada a list_slots, para que el frontend pueda navegar entre esos
 # dos meses en el calendario sin pedirle al backend un re-fetch.
 DAYS_AHEAD = 62
+
+
+def _info_result(message: str) -> dict:
+    return {"message": message, "done": False, "cancelled": False, "appointment": None, "widget": None}
 
 
 def detects_booking_intent(text: str) -> bool:
@@ -70,6 +87,7 @@ def _is_back_word(text: str) -> bool:
 
 
 class BookingStage(str, Enum):
+    COLLECTING_INFO = "collecting_info"
     SELECTING_DAY = "selecting_day"
     SELECTING_TIME = "selecting_time"
     CONFIRMING = "confirming"
@@ -82,6 +100,9 @@ class BookingState:
         client_id: Optional[str],
         resource_id: str,
         service_id: Optional[str],
+        client_name: Optional[str] = None,
+        client_dni: Optional[str] = None,
+        client_phone: Optional[str] = None,
         appointments_client: Optional[AppointmentsClient] = None,
     ):
         self.bot_id = bot_id
@@ -89,13 +110,27 @@ class BookingState:
         self.resource_id = resource_id
         self.service_id = service_id
         self.client = appointments_client or get_appointments_client()
-        self.stage = BookingStage.SELECTING_DAY
         self.resource_tz: ZoneInfo = ZoneInfo("UTC")
         self.days_index: dict[str, list[dict]] = {}
         self.date_from: str = ""
         self.date_to: str = ""
         self.selected_day: Optional[str] = None
         self.selected_slot: Optional[dict] = None
+
+        # Datos del paciente que faltan (ver _INFO_QUESTIONS) -- se saltan
+        # los que el Client ya tiene cargados (por otro medio: flow, chat
+        # libre, o una reserva anterior).
+        self.pending_info: List[str] = []
+        if not client_name:
+            self.pending_info.extend(["nombre", "apellido"])
+        if not client_dni:
+            self.pending_info.append("dni")
+        if not client_phone:
+            self.pending_info.append("whatsapp")
+        self.info_index = 0
+        self.captured_info: dict[str, str] = {}
+
+        self.stage = BookingStage.COLLECTING_INFO if self.pending_info else BookingStage.SELECTING_DAY
 
     # ── Helpers de timezone / formato ───────────────────────────────────
 
@@ -210,6 +245,75 @@ class BookingState:
             },
         }
 
+    # ── Recolección de datos del paciente ────────────────────────────────
+
+    def _current_info_field(self) -> Optional[str]:
+        if self.info_index >= len(self.pending_info):
+            return None
+        return self.pending_info[self.info_index]
+
+    def _validate_info_answer(self, field: str, answer: str):
+        """Valida la respuesta a una pregunta de datos. Retorna (valid, value, error)."""
+        if field == "dni":
+            cleaned = re.sub(r"[\s.-]", "", answer)
+            if not cleaned.isdigit() or not (6 <= len(cleaned) <= 10):
+                return False, None, "Ingresá un DNI válido (solo números, sin puntos)."
+            return True, cleaned, None
+
+        if field == "whatsapp":
+            cleaned = re.sub(r'[\s\-\(\)\+]', '', answer)
+            if not cleaned.isdigit() or len(cleaned) < 7:
+                return False, None, "Ingresá un número de WhatsApp válido (ej: +54 9 11 1234-5678)."
+            return True, answer, None
+
+        # nombre / apellido: texto libre
+        if len(answer) < 2:
+            return False, None, f"Decime tu {field} completo, por favor."
+        return True, answer, None
+
+    async def _save_captured_info(self) -> None:
+        """Vuelca lo recolectado al Client. No pisa datos que no se preguntaron."""
+        if not self.client_id or not self.captured_info:
+            return
+
+        update_kwargs: dict = {}
+        nombre = self.captured_info.get("nombre")
+        apellido = self.captured_info.get("apellido")
+        if nombre or apellido:
+            update_kwargs["name"] = " ".join(part for part in (nombre, apellido) if part)
+        if "dni" in self.captured_info:
+            update_kwargs["dni"] = self.captured_info["dni"]
+        if "whatsapp" in self.captured_info:
+            update_kwargs["phone"] = self.captured_info["whatsapp"]
+
+        if not update_kwargs:
+            return
+        try:
+            await get_client_service().update_client(self.client_id, ClientUpdate(**update_kwargs))
+        except Exception:
+            pass
+
+    async def _process_info_answer(self, answer: str) -> dict:
+        field = self._current_info_field()
+        valid, value, error = self._validate_info_answer(field, answer)
+        if not valid:
+            return _info_result(error)
+
+        self.captured_info[field] = value
+        self.info_index += 1
+
+        next_field = self._current_info_field()
+        if next_field:
+            return _info_result(_INFO_QUESTIONS[next_field])
+
+        # Completamos los datos: guardar en el Client y pasar al calendario.
+        await self._save_captured_info()
+        result = await self.load_days()
+        nombre = self.captured_info.get("nombre")
+        if nombre and not result["cancelled"]:
+            result["message"] = f"¡Gracias, {nombre}! {result['message']}"
+        return result
+
     # ── Dispatch ─────────────────────────────────────────────────────────
 
     async def process_answer(self, answer: str) -> dict:
@@ -228,6 +332,8 @@ class BookingState:
                 "widget": None,
             }
 
+        if self.stage == BookingStage.COLLECTING_INFO:
+            return await self._process_info_answer(answer)
         if self.stage == BookingStage.SELECTING_DAY:
             return await self._process_day_choice(answer)
         if self.stage == BookingStage.SELECTING_TIME:
@@ -385,7 +491,29 @@ async def start_booking(bot: Bot, client_id: Optional[str]) -> tuple[Optional["B
             "widget": None,
         }
 
-    state = BookingState(bot_id=bot.bot_id, client_id=client_id, resource_id=resource_ids[0], service_id=service_id)
+    client = None
+    if client_id:
+        try:
+            client = await get_client_service().get_client(client_id)
+        except Exception:
+            client = None
+
+    state = BookingState(
+        bot_id=bot.bot_id,
+        client_id=client_id,
+        resource_id=resource_ids[0],
+        service_id=service_id,
+        client_name=client.name if client else None,
+        client_dni=client.dni if client else None,
+        client_phone=client.phone if client else None,
+    )
+
+    if state.pending_info:
+        first_field = state.pending_info[0]
+        return state, _info_result(
+            f"Para reservar el turno necesito algunos datos. {_INFO_QUESTIONS[first_field]}"
+        )
+
     result = await state.load_days()
     if result["cancelled"]:
         return None, result

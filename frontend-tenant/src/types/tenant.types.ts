@@ -10,6 +10,10 @@ export interface TenantBranding {
   logo_url_vertical?: string;
   primary_color?: string;
   tagline?: string;
+  /** Tema visual del backoffice ('default' | 'kero') — ver TemplateId en template.types.ts. */
+  template_id?: string;
+  /** Si la barra lateral de navegación se muestra en el backoffice. Default: true. */
+  sidebar_visible?: boolean;
 }
 
 export type TenantStatus = 'active' | 'suspended' | 'trial';

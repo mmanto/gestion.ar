@@ -20,6 +20,8 @@ const tenantBrandingService = {
   async updateBranding(payload: {
     primary_color?: string;
     tagline?: string;
+    template_id?: string;
+    sidebar_visible?: boolean;
   }): Promise<TenantBranding> {
     const { data } = await api.patch<{
       success: boolean;

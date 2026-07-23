@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useTenant } from '../../hooks/useTenant';
 import { useSidebar } from '../../hooks/useSidebar';
+import { useSidebarVisible } from '../../hooks/useSidebarVisible';
 import { UserMenu } from './UserMenu';
 
 const LANDING_LINKS = [
@@ -23,6 +24,7 @@ export const Navbar: React.FC<NavbarProps> = ({ backTo }) => {
   const { isAuthenticated } = useAuth();
   const { tenant } = useTenant();
   const { mobileOpen, toggleMobileOpen } = useSidebar();
+  const sidebarVisible = useSidebarVisible();
   const navigate  = useNavigate();
 
   const [scrolled,       setScrolled]       = useState(false);
@@ -66,9 +68,9 @@ export const Navbar: React.FC<NavbarProps> = ({ backTo }) => {
   }, [navigate]);
 
   const navStyle = isAuthenticated
-    ? { backgroundColor: '#2A3B4D' }
+    ? { backgroundColor: '#4d2a4d' }
     : {
-        backgroundColor: scrolled ? 'rgba(42, 59, 77, 0.95)' : 'transparent',
+        backgroundColor: scrolled ? 'rgba(74, 42, 77, 0.95)' : 'transparent',
         backdropFilter:         scrolled ? 'blur(12px)' : 'none',
         WebkitBackdropFilter:   scrolled ? 'blur(12px)' : 'none',
       };
@@ -141,7 +143,7 @@ export const Navbar: React.FC<NavbarProps> = ({ backTo }) => {
                   >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 12H5M12 19l-7-7 7-7" /></svg>
                   </button>
-                ) : (
+                ) : sidebarVisible ? (
                   /* Botón hamburguesa — abre/cierra la sidebar en mobile */
                   <button
                     onClick={toggleMobileOpen}
@@ -153,7 +155,7 @@ export const Navbar: React.FC<NavbarProps> = ({ backTo }) => {
                       : <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
                     }
                   </button>
-                )}
+                ) : null}
                 <UserMenu variant="dark" />
               </>
             )}

@@ -1,0 +1,76 @@
+# docker-compose.tenants.dev.yml — Hot reload para el stack multi-tenant
+# local (docker-compose.tenants.local.yml). Reemplaza el build de producción
+# (nginx sirviendo el bundle estático) por el dev-server de Vite con el
+# código fuente montado, así los ajustes visuales se ven al guardar sin
+# reconstruir la imagen.
+#
+# Uso:
+#   docker compose -f docker-compose.yml -f docker-compose.tenants.local.yml \
+#     -f docker-compose.tenants.dev.yml up -d --build
+#
+# TENANT_ID/TENANT_SLUG/STATS_TWO_COLS_MOBILE se heredan de
+# docker-compose.tenants.local.yml (Compose mergea `environment` por clave
+# entre -f). window.__TENANT_CONFIG__ ya no lo genera docker-entrypoint.sh
+# (no corre en este Dockerfile.dev) sino un middleware del dev-server en
+# vite.config.ts que lee esos mismos env vars — ver el comentario ahí sobre
+# por qué nunca se escribe en public/.
+#
+# Se monta el REPO ENTERO (no solo frontend-tenant/) en /app: vite.config.ts
+# resuelve `.env.dev` como `path.resolve(__dirname, '..')` — la raíz del
+# repo. Montando nada más que frontend-tenant/ ese ".." cae fuera del bind
+# mount (queda apuntando a la raíz del filesystem del contenedor), Vite no
+# encuentra .env.dev, VITE_API_URL nunca se define y las requests salen sin
+# el prefijo /api (404 contra el propio dev-server en vez de ir al backend).
+
+services:
+  frontend-tenant-erma:
+    build:
+      context: ./frontend-tenant
+      dockerfile: Dockerfile.dev
+    working_dir: /app/frontend-tenant
+    command: sh -c "npm install && npm run dev -- --host"
+    volumes:
+      - ./:/app
+      - frontend_tenant_node_modules_erma:/app/frontend-tenant/node_modules
+    environment:
+      - VITE_APPOINTMENTS_REMOTE_URL=http://localhost:8180/remoteEntry.js
+      # Traefik escucha en :80 (docker-compose.tenants.local.yml) — el
+      # navegador entra por ahí, así que el websocket de HMR tiene que
+      # reconectar al mismo puerto público en vez del 5174 interno (ver el
+      # comentario de VITE_HMR_CLIENT_PORT en vite.config.ts).
+      - VITE_HMR_CLIENT_PORT=80
+    labels:
+      - "traefik.http.services.tenant-erma.loadbalancer.server.port=5174"
+
+  frontend-tenant-ius:
+    build:
+      context: ./frontend-tenant
+      dockerfile: Dockerfile.dev
+    working_dir: /app/frontend-tenant
+    command: sh -c "npm install && npm run dev -- --host"
+    volumes:
+      - ./:/app
+      - frontend_tenant_node_modules_ius:/app/frontend-tenant/node_modules
+    environment:
+      - VITE_APPOINTMENTS_REMOTE_URL=http://localhost:8180/remoteEntry.js
+      # Traefik escucha en :80 (docker-compose.tenants.local.yml) — el
+      # navegador entra por ahí, así que el websocket de HMR tiene que
+      # reconectar al mismo puerto público en vez del 5174 interno (ver el
+      # comentario de VITE_HMR_CLIENT_PORT en vite.config.ts).
+      - VITE_HMR_CLIENT_PORT=80
+    labels:
+      - "traefik.http.services.tenant-ius.loadbalancer.server.port=5174"
+      # ius.mx.test comparte dominio con landing-ius, que matchea Host + Path(/)
+      # con prioridad 10 (ver docker-compose.tenants.local.yml) — el websocket
+      # de HMR de Vite siempre conecta contra "/" en el mismo host:puerto de la
+      # página, así que sin este router aparte cae en la landing (nginx, sin
+      # upgrade) en vez del dev-server. Prioridad 20 (> landing) y solo matchea
+      # el upgrade de websocket, así no le quita tráfico normal a la landing.
+      - "traefik.http.routers.tenant-ius-hmr.rule=Host(`ius.mx.test`) && Header(`Upgrade`, `websocket`)"
+      - "traefik.http.routers.tenant-ius-hmr.entrypoints=web"
+      - "traefik.http.routers.tenant-ius-hmr.priority=20"
+      - "traefik.http.routers.tenant-ius-hmr.service=tenant-ius"
+
+volumes:
+  frontend_tenant_node_modules_erma:
+  frontend_tenant_node_modules_ius:

@@ -5,8 +5,13 @@ interface TableProps {
   className?: string;
 }
 
+// Sin caja propia (ni bg-white/border/shadow): en esta app la Table siempre
+// vive dentro de un panel que ya es blanco con sombra (page shell o Card
+// shadow="none"), así que ese fondo+borde solo agregaba una caja repetida
+// adentro de otra. El header teñido (TableHead) y los separadores entre
+// filas (divide-y) ya alcanzan para leer la tabla sin el box extra.
 export const Table: React.FC<TableProps> = ({ children, className = '' }) => (
-  <div className={`overflow-x-auto bg-white rounded-lg border border-gray-300 shadow-sm ${className}`}>
+  <div className={`overflow-x-auto ${className}`}>
     <table className="min-w-full divide-y divide-gray-200">{children}</table>
   </div>
 );
@@ -16,7 +21,7 @@ export const TableHead: React.FC<{ children: React.ReactNode }> = ({ children })
 );
 
 export const TableBody: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <tbody className="bg-white divide-y divide-gray-200">{children}</tbody>
+  <tbody className="divide-y divide-gray-200">{children}</tbody>
 );
 
 interface TableRowProps extends React.HTMLAttributes<HTMLTableRowElement> {

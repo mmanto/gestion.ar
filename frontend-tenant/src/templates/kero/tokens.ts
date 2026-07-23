@@ -1,10 +1,12 @@
 // Constantes de color del template Kero para usos `style={{}}` (avatares, etc.).
 //
-// IMPORTANTE: no interpolar estos valores dentro de un className (Tailwind JIT
-// necesita strings literales en el código fuente, ej. `bg-[#da624a]`, para
-// generar la clase — un `` `bg-[${KERO_ACCENT}]` `` no genera CSS). Los
-// literales `text-[#da624a]`, `bg-[#f5f5f5]`, etc. en los componentes deben
-// mantenerse escritos a mano, coincidiendo con estos valores.
-export const KERO_ACCENT = '#da624a';
+// El acento (antes un terracota ad-hoc, #da624a) ahora es el blue-600 de la
+// paleta estándar de Tailwind (#2563eb) — en los componentes se usa la clase
+// `blue-600` directamente (bg-blue-600, text-blue-600, ring-blue-600/30,
+// etc.), nunca interpolando este valor en un className (Tailwind JIT
+// necesita strings literales en el código fuente para generar la clase — un
+// `` `bg-[${KERO_ACCENT}]` `` no genera CSS). Esta constante es solo para
+// los pocos casos que necesitan el hex en `style={{}}`.
+export const KERO_ACCENT = '#2563eb';
 export const KERO_PAGE_BG = '#F1F5F9';
 export const KERO_BORDER = '#dee2e6';

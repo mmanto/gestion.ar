@@ -18,7 +18,7 @@ export const Reports = () => {
 
   return (
     <AppLayout>
-      <div className="font-editorial p-1 md:bg-white md:rounded-[1.4rem] md:shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] md:p-8">
+      <div className="font-editorial p-1 md:bg-[#F1F5F9] md:p-8">
         <PageHeader
           title="Reportes"
           description="Actividad, plataformas y costos de tus agentes"

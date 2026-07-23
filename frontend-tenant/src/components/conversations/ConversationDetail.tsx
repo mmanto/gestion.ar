@@ -86,7 +86,7 @@ const ConversationDetail = ({ conversation, showMetadata = true }: ConversationD
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="p-3">
+          <Card className="p-3" shadow="none">
             <div className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4 text-primary" />
               <div>
@@ -95,7 +95,7 @@ const ConversationDetail = ({ conversation, showMetadata = true }: ConversationD
               </div>
             </div>
           </Card>
-          <Card className="p-3">
+          <Card className="p-3" shadow="none">
             <div className="flex items-center gap-2">
               <Cpu className="w-4 h-4 text-accent" />
               <div>
@@ -104,7 +104,7 @@ const ConversationDetail = ({ conversation, showMetadata = true }: ConversationD
               </div>
             </div>
           </Card>
-          <Card className="p-3">
+          <Card className="p-3" shadow="none">
             <div className="flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-pink-600" />
               <div>
@@ -113,7 +113,7 @@ const ConversationDetail = ({ conversation, showMetadata = true }: ConversationD
               </div>
             </div>
           </Card>
-          <Card className="p-3">
+          <Card className="p-3" shadow="none">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-secondary" />
               <div>

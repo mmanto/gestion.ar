@@ -3,13 +3,13 @@ import { AppLayout } from '../components/layout/AppLayout';
 import { LoadingPage } from '../components/common/Spinner';
 import { PageHeader } from '../components/common/PageHeader';
 import { Alert } from '../components/common/Alert';
-import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import StatsCards from '../components/dashboard/StatsCards';
-import ClientsGrid from '../components/dashboard/ClientsGrid';
 import { useStats } from '../hooks/useStats';
 import { useColorStats } from '../hooks/useColorStats';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { useTemplate } from '../hooks/useTemplate';
+import { TEMPLATE_MAP } from '../templates/registry';
 import botsService from '../services/bots.service';
 import { publicService } from '../services/public.service';
 import type { TenantBotSummary } from '../types/bot.types';
@@ -26,6 +26,8 @@ export const Dashboard = () => {
   const { loading, error } = useStats();
   const { colorStats } = useColorStats();
   const isMobile = useIsMobile();
+  const { templateId } = useTemplate();
+  const ClientsGrid = TEMPLATE_MAP[templateId].ClientsGrid;
   const [selectedColor, setSelectedColor] = useState<ColorFilter | null>(null);
   const [bots, setBots] = useState<TenantBotSummary[]>([]);
   const [selectedBotId, setSelectedBotId] = useState<string | null>(null);
@@ -91,7 +93,7 @@ export const Dashboard = () => {
   if (error) {
     return (
       <AppLayout>
-        <div className="font-editorial p-1 md:bg-white md:rounded-[1.4rem] md:shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] md:p-8">
+        <div className="font-editorial p-1 md:bg-[#F1F5F9] md:p-8">
           <PageHeader
             title="Escritorio"
             description="Resumen de actividad y métricas de tus agentes"
@@ -107,7 +109,7 @@ export const Dashboard = () => {
   if (isMobile) {
     return (
       <AppLayout>
-        <div className="font-editorial p-1 md:bg-white md:rounded-[1.4rem] md:shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] md:p-8">
+        <div className="font-editorial p-1 md:bg-[#F1F5F9] md:p-8">
           {selectedColor === null ? (
             <>
               <PageHeader
@@ -136,7 +138,7 @@ export const Dashboard = () => {
 
   return (
     <AppLayout>
-        <div className="font-editorial p-1 md:bg-white md:rounded-[1.4rem] md:shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] md:p-8">
+        <div className="font-editorial p-1 md:bg-[#F1F5F9] md:p-8">
           <PageHeader
             title="Escritorio"
             description="Resumen de actividad y métricas de tus agentes"
@@ -156,20 +158,18 @@ export const Dashboard = () => {
           )}
 
           {bots.length > 1 && (
-            <Card className="mb-6" shadow="none">
-              <div className="max-w-xs">
-                <label className="block text-sm font-medium text-gray-900 mb-1">Agente</label>
-                <select
-                  value={selectedBotId || ''}
-                  onChange={(e) => setSelectedBotId(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white"
-                >
-                  {bots.map((b) => (
-                    <option key={b.bot_id} value={b.bot_id}>{b.name}</option>
-                  ))}
-                </select>
-              </div>
-            </Card>
+            <div className="max-w-xs mb-6">
+              <label className="block text-sm font-medium text-gray-900 mb-1">Agente</label>
+              <select
+                value={selectedBotId || ''}
+                onChange={(e) => setSelectedBotId(e.target.value)}
+                className="w-full px-4 py-2 border-0 rounded-lg bg-transparent"
+              >
+                {bots.map((b) => (
+                  <option key={b.bot_id} value={b.bot_id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
           )}
 
           <StatsCards colorStats={colorStats} selectedColor={selectedColor} onSelectColor={handleSelectColor} />
