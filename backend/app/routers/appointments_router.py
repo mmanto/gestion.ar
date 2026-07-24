@@ -65,6 +65,7 @@ def _get_appointments_config(bot: Bot) -> dict:
     config.setdefault("resource_ids", [])
     config.setdefault("service_ids", [])
     config.setdefault("default_service_id", None)
+    config.setdefault("default_info_fields", None)
     return config
 
 
@@ -135,6 +136,8 @@ async def update_appointments_config(
         config["service_ids"] = payload.service_ids
     if payload.default_service_id is not None:
         config["default_service_id"] = payload.default_service_id
+    if payload.default_info_fields is not None:
+        config["default_info_fields"] = [f.model_dump() for f in payload.default_info_fields]
     await _save_appointments_config(bot, config)
     return {"success": True, "config": config}
 

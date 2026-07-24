@@ -46,6 +46,19 @@ declare module 'appointments/AppointmentConfirmWidget' {
   export default AppointmentConfirmWidgetComponent;
 }
 
+declare module 'appointments/AppointmentOptionsWidget' {
+  import type { ReactElement } from 'react';
+  import type { AppointmentOptionsWidget } from './chat.types';
+
+  interface Props {
+    widget: AppointmentOptionsWidget;
+    onSelectOption: (value: string) => void;
+  }
+
+  const AppointmentOptionsWidgetComponent: (props: Props) => ReactElement;
+  export default AppointmentOptionsWidgetComponent;
+}
+
 declare module 'appointments/AppointmentsWorkspace' {
   import type { ReactElement, ComponentType } from 'react';
   import type { AxiosInstance } from 'axios';

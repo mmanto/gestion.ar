@@ -11,11 +11,23 @@ from typing import Optional, List, Dict
 from pydantic import BaseModel, Field
 
 
+class InfoFieldConfig(BaseModel):
+    """Un dato a pedirle al cliente durante la reserva por chat (ver
+    appointment_booking_service.py::resolve_info_fields). "type" determina
+    qué validador se aplica (_validate_info_answer)."""
+    key: str
+    label: str
+    type: str = Field(default="text", pattern="^(text|numeric_id|phone)$")
+    min_length: Optional[int] = Field(None, ge=1)
+    max_length: Optional[int] = Field(None, ge=1)
+
+
 class AppointmentsConfigUpdate(BaseModel):
     """Actualización parcial de bot.metadata['appointments']"""
     resource_ids: Optional[List[str]] = None
     service_ids: Optional[List[str]] = None
     default_service_id: Optional[str] = None
+    default_info_fields: Optional[List[InfoFieldConfig]] = None
 
 
 class ResourceCreateRequest(BaseModel):
