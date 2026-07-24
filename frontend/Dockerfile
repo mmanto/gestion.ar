@@ -7,6 +7,13 @@ WORKDIR /app
 ARG VITE_API_URL=/api
 ENV VITE_API_URL=${VITE_API_URL}
 
+# Build argument para el remote de Module Federation de devbout-appointments
+# (ver ADR-009, docs/dev/DECISIONS.md) -- vite.config.ts lo lee via
+# process.env en build-time; sin esto el bundle de prod cae al fallback de
+# dev (localhost:5180), que no resuelve fuera de un dev-server local.
+ARG VITE_APPOINTMENTS_REMOTE_URL=https://appointments-widgets.intellify.pro/remoteEntry.js
+ENV VITE_APPOINTMENTS_REMOTE_URL=${VITE_APPOINTMENTS_REMOTE_URL}
+
 # Copiar package.json y package-lock.json
 COPY package*.json ./
 

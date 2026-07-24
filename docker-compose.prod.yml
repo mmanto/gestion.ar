@@ -51,6 +51,7 @@ services:
       dockerfile: Dockerfile
       args:
         - VITE_API_URL=${VITE_API_URL:-/api}
+        - VITE_APPOINTMENTS_REMOTE_URL=${VITE_APPOINTMENTS_REMOTE_URL:-https://appointments-widgets.intellify.pro/remoteEntry.js}
     # OJO: Compose mergea "labels" por clave, no reemplaza la lista entera.
     # docker-compose.yml (base) ya define un router/service "gestionar" para
     # este mismo servicio (Host dev.gestionar.kairosgroup.ar) — hay que
