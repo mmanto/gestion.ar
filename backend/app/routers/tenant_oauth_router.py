@@ -24,7 +24,7 @@ from pydantic import BaseModel
 from app.services.oauth_config import build_nango_config
 from app.services.tenant_service import get_tenant_service
 from app.services.user_service import get_user_service
-from devbout_oauth import NangoClient
+from devbout_oauth import NangoClient, NangoError
 from devbout_oauth.identity import fetch_identity
 
 router = APIRouter(prefix="/api/tenant/oauth", tags=["tenant-oauth"])
@@ -89,10 +89,16 @@ async def tenant_login_session(body: _SessionRequest):
 
     integration_key = _integration_key(body.provider)
     nonce_id, nonce_token = _create_nonce(body.tenant_id)
-    session_token = await _nango.create_connect_session(
-        end_user={"id": nonce_id},
-        allowed_integrations=[integration_key],
-    )
+    try:
+        session_token = await _nango.create_connect_session(
+            end_user={"id": nonce_id},
+            allowed_integrations=[integration_key],
+        )
+    except NangoError as e:
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY,
+            f"El login con {body.provider} no está disponible en este momento",
+        ) from e
     return {
         "sessionToken": session_token,
         "nonce": nonce_token,
@@ -106,7 +112,13 @@ async def tenant_login_finalize(body: _FinalizeRequest):
     integration_key = _integration_key(body.provider)
     nonce_id, tenant_id = _verify_nonce(body.nonce)
 
-    conn = await _nango.get_connection(body.connectionId, integration_key)
+    try:
+        conn = await _nango.get_connection(body.connectionId, integration_key)
+    except NangoError as e:
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY,
+            f"El login con {body.provider} no está disponible en este momento",
+        ) from e
     end_user_id = (conn.get("end_user") or {}).get("id", "")
     if end_user_id != nonce_id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Connection no coincide con la sesión")
