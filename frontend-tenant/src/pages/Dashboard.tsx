@@ -93,7 +93,7 @@ export const Dashboard = () => {
   if (error) {
     return (
       <AppLayout>
-        <div className="font-editorial p-1 md:bg-[#F1F5F9] md:p-8">
+        <div className="font-editorial p-1 md:bg-[#F8F9FD] md:p-8">
           <PageHeader
             title="Escritorio"
             description="Resumen de actividad y métricas de tus agentes"
@@ -109,7 +109,7 @@ export const Dashboard = () => {
   if (isMobile) {
     return (
       <AppLayout>
-        <div className="font-editorial p-1 md:bg-[#F1F5F9] md:p-8">
+        <div className="font-editorial p-1 md:bg-[#F8F9FD] md:p-8">
           {selectedColor === null ? (
             <>
               <PageHeader
@@ -138,7 +138,7 @@ export const Dashboard = () => {
 
   return (
     <AppLayout>
-        <div className="font-editorial p-1 md:bg-[#F1F5F9] md:p-8">
+        <div className="font-editorial p-1 md:bg-[#F8F9FD] md:p-8">
           <PageHeader
             title="Escritorio"
             description="Resumen de actividad y métricas de tus agentes"

@@ -138,7 +138,7 @@ const KeroClientsGrid = ({ colorFilter }: ClientsGridProps) => {
         // líneas verticales y horizontales entre celdas.
         <div className="border border-[#dee2e6] rounded-[1.4rem] bg-white overflow-hidden overflow-x-auto">
           <table className="min-w-full border-collapse">
-            <thead className="bg-[#F1F5F9]">
+            <thead className="bg-white">
               <tr className="divide-x divide-[#dee2e6]">
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Cliente</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Canal</th>

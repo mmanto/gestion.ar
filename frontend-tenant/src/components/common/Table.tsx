@@ -17,7 +17,7 @@ export const Table: React.FC<TableProps> = ({ children, className = '' }) => (
 );
 
 export const TableHead: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <thead className="bg-[#F1F5F9]">{children}</thead>
+  <thead className="bg-white">{children}</thead>
 );
 
 export const TableBody: React.FC<{ children: React.ReactNode }> = ({ children }) => (

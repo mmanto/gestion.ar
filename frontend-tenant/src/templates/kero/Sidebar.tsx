@@ -110,7 +110,7 @@ export const KeroSidebar: React.FC = () => {
 
       {/* Sidebar flotante — desktop */}
       <aside
-        className={`hidden md:flex md:flex-col fixed left-6 top-6 bottom-6 rounded-[1.4rem] bg-[#F1F5F9] z-40 overflow-hidden transition-all duration-300 ${
+        className={`hidden md:flex md:flex-col fixed left-6 top-6 bottom-6 rounded-[1.4rem] bg-[#F8F9FD] z-40 overflow-hidden transition-all duration-300 ${
           collapsed ? 'w-[88px]' : 'w-[280px]'
         }`}
       >

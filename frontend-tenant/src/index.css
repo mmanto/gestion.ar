@@ -39,7 +39,7 @@
 
   body {
     @apply text-gray-900 antialiased;
-    background-color: #F1F5F9;
+    background-color: #F8F9FD;
     margin: 0;
     min-height: 100vh;
   }

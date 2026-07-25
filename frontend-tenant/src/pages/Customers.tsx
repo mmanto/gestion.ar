@@ -7,7 +7,7 @@ import { Card } from '../components/common/Card';
 export const Customers = () => {
   return (
     <AppLayout>
-      <div className="font-editorial p-1 md:bg-[#F1F5F9] md:p-8">
+      <div className="font-editorial p-1 md:bg-[#F8F9FD] md:p-8">
         <PageHeader
           title="Clientes"
           titleClassName="font-semibold uppercase tracking-[0.08em]"

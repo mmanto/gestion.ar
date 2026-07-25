@@ -47,7 +47,7 @@ const StatsCards = ({ colorStats, selectedColor, onSelectColor }: StatsCardsProp
         variant="purple"
         icon={<User className="w-5 h-5 text-white" />}
         title="Solicitan contacto"
-        description="Clientes sin clasificación asignada."
+        description="Clientes que solicitaron contacto."
         value={formatNumber(colorStats.sin_clasificar)}
         onClick={onSelectColor ? () => onSelectColor('sin_clasificar') : undefined}
         selected={selectedColor === 'sin_clasificar'}

@@ -221,7 +221,7 @@ export const Settings = () => {
 
   return (
     <AppLayout>
-      <div className="font-editorial p-1 md:bg-[#F1F5F9] md:p-8">
+      <div className="font-editorial p-1 md:bg-[#F8F9FD] md:p-8">
         <PageHeader
           title="Ajustes"
           description="Información de tu cuenta"

@@ -8,5 +8,5 @@
 // `` `bg-[${KERO_ACCENT}]` `` no genera CSS). Esta constante es solo para
 // los pocos casos que necesitan el hex en `style={{}}`.
 export const KERO_ACCENT = '#2563eb';
-export const KERO_PAGE_BG = '#F1F5F9';
+export const KERO_PAGE_BG = '#F8F9FD';
 export const KERO_BORDER = '#dee2e6';

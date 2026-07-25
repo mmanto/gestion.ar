@@ -15,7 +15,7 @@ export function DefaultAppLayout({ children }: DefaultAppLayoutProps) {
   const mainMargin = !sidebarVisible ? 'md:ml-0' : collapsed ? 'md:ml-16' : 'md:ml-64';
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F1F5F9]">
+    <div className="min-h-screen flex flex-col bg-[#F8F9FD]">
       <Navbar />
       {sidebarVisible && <Sidebar />}
       <main className={`flex-grow pt-12 pb-8 transition-all duration-300 ${mainMargin}`}>
