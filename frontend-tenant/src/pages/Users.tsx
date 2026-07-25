@@ -148,7 +148,7 @@ export const Users = () => {
                 <TableHeaderCell>Email</TableHeaderCell>
                 <TableHeaderCell>Rol</TableHeaderCell>
                 <TableHeaderCell>Estado</TableHeaderCell>
-                <TableHeaderCell align="right">Acciones</TableHeaderCell>
+                <TableHeaderCell align="center">Acciones</TableHeaderCell>
               </tr>
             </TableHead>
             <TableBody>
@@ -178,8 +178,8 @@ export const Users = () => {
                       {u.disabled ? 'Deshabilitado' : 'Activo'}
                     </span>
                   </TableCell>
-                  <TableCell align="right">
-                    <div className="flex items-center justify-end gap-3">
+                  <TableCell align="center">
+                    <div className="flex items-center justify-center gap-3">
                       <button onClick={() => openEditUser(u)} className="text-sm text-gray-800 hover:underline">
                         Editar
                       </button>

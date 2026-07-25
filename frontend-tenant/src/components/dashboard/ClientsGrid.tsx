@@ -122,7 +122,7 @@ const ClientsGrid = ({ colorFilter }: ClientsGridProps) => {
           <TableHead>
             <tr>
               <TableHeaderCell>Cliente</TableHeaderCell>
-              <TableHeaderCell align="right">Acciones</TableHeaderCell>
+              <TableHeaderCell align="center">Acciones</TableHeaderCell>
             </tr>
           </TableHead>
           <TableBody>
@@ -138,8 +138,8 @@ const ClientsGrid = ({ colorFilter }: ClientsGridProps) => {
                     )}
                   </div>
                 </TableCell>
-                <TableCell align="right">
-                  <div className="flex items-center justify-end">
+                <TableCell align="center">
+                  <div className="flex items-center justify-center">
                     <ActionMenu
                       ariaLabel={`Acciones para ${client.name || client.external_id}`}
                       items={buildClientActionItems(client, {

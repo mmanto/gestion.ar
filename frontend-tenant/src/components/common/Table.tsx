@@ -17,7 +17,7 @@ export const Table: React.FC<TableProps> = ({ children, className = '' }) => (
 );
 
 export const TableHead: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <thead className="bg-white">{children}</thead>
+  <thead className="bg-white border-b border-gray-200">{children}</thead>
 );
 
 export const TableBody: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -37,14 +37,15 @@ export const TableRow: React.FC<TableRowProps> = ({ children, className = '', ..
 interface TableCellProps {
   children?: React.ReactNode;
   className?: string;
-  align?: 'left' | 'right';
+  align?: 'left' | 'right' | 'center';
   /** Color de texto del <td> — prop separada de className para que el override no compita por especificidad con el default */
   textClassName?: string;
 }
 
-const alignStyles: Record<'left' | 'right', string> = {
+const alignStyles: Record<'left' | 'right' | 'center', string> = {
   left: 'text-left',
   right: 'text-right',
+  center: 'text-center',
 };
 
 export const TableHeaderCell: React.FC<TableCellProps> = ({ children, className = '', align = 'left' }) => (

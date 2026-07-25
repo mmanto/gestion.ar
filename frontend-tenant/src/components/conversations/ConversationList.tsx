@@ -122,7 +122,7 @@ const ConversationList = ({
             <TableHeaderCell>Tokens</TableHeaderCell>
             <TableHeaderCell>Costo</TableHeaderCell>
             <TableHeaderCell>Actualizado</TableHeaderCell>
-            <TableHeaderCell align="right">Acciones</TableHeaderCell>
+            <TableHeaderCell align="center">Acciones</TableHeaderCell>
           </tr>
         </TableHead>
         <TableBody>
@@ -142,8 +142,8 @@ const ConversationList = ({
               <TableCell>{formatNumber(conversation.total_tokens_used)}</TableCell>
               <TableCell>{formatCurrency(conversation.total_cost_usd)}</TableCell>
               <TableCell>{formatDate(conversation.updated_at)}</TableCell>
-              <TableCell align="right">
-                <div className="flex items-center justify-end gap-2">
+              <TableCell align="center">
+                <div className="flex items-center justify-center gap-2">
                   <button
                     onClick={() => handleOpenConversation(conversation)}
                     title="Ver conversación"
