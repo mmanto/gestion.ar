@@ -14,6 +14,16 @@ ENV VITE_API_URL=${VITE_API_URL}
 ARG VITE_APPOINTMENTS_REMOTE_URL=https://appointments-widgets.intellify.pro/remoteEntry.js
 ENV VITE_APPOINTMENTS_REMOTE_URL=${VITE_APPOINTMENTS_REMOTE_URL}
 
+# Build arguments para el login social (Google/Microsoft vía Nango) — URLs
+# públicas que llama el browser (Connect UI + API de Nango), distintas de
+# NANGO_HOST del backend (ese es interno, red Docker). Sin esto el bundle de
+# prod cae al fallback hardcodeado localhost:3009/localhost:3003 en
+# auth.service.ts, que no resuelve fuera de un entorno de desarrollo local.
+ARG VITE_NANGO_CONNECT_URL
+ENV VITE_NANGO_CONNECT_URL=${VITE_NANGO_CONNECT_URL}
+ARG VITE_NANGO_API_URL
+ENV VITE_NANGO_API_URL=${VITE_NANGO_API_URL}
+
 # Copiar package.json y package-lock.json
 COPY package*.json ./
 
