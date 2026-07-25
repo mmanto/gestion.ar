@@ -20,7 +20,7 @@ const COLOR_LABELS: Record<ColorFilter, string> = {
   verde: 'Viable',
   amarillo: 'Potencial',
   rojo: 'Exploración',
-  sin_clasificar: 'Sin clasificar',
+  sin_clasificar: 'Solicitan contacto',
 };
 
 export const Dashboard = () => {

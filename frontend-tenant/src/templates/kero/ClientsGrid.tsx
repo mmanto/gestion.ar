@@ -141,8 +141,8 @@ const KeroClientsGrid = ({ colorFilter }: ClientsGridProps) => {
             <thead className="bg-white border-b border-[#dee2e6]">
               <tr className="divide-x divide-[#dee2e6]">
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Cliente</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Canal</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Último contacto</th>
+                <th className="hidden md:table-cell px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Canal</th>
+                <th className="hidden md:table-cell px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Último contacto</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
@@ -168,12 +168,12 @@ const KeroClientsGrid = ({ colorFilter }: ClientsGridProps) => {
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  <td className="hidden md:table-cell px-4 py-3 whitespace-nowrap">
                     <span className="text-xs font-medium text-gray-600 px-2 py-0.5 rounded-full bg-gray-100">
                       {sourceLabels[client.source] || client.source}
                     </span>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                  <td className="hidden md:table-cell px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                     {formatTimeAgo(client.last_contact_at)}
                   </td>
                   <td className="px-4 py-3 text-center">
