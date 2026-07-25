@@ -217,6 +217,84 @@ class UserService:
         token = create_access_token({"sub": username, "tenant_id": tenant_id, "role": role})
         return username, token
 
+    # ── OAuth self-service para usuarios de tenant (ver tenant_oauth_router.py) ─
+    # A diferencia de find_or_create_by_identity (administración general, sin
+    # autoregistro), acá el usuario SÍ se crea automáticamente si no existe —
+    # siempre scoped al tenant_id que originó el login.
+
+    async def _unique_username_from_email(self, email: str) -> str:
+        import re
+
+        base = re.sub(r"[^a-z0-9._-]", "", (email.split("@")[0] or "").lower()) or "user"
+        if len(base) < 3:
+            base = (base + "user")[:3]
+
+        candidate = base
+        suffix = 1
+        while await self.get_user_by_username(candidate):
+            suffix += 1
+            candidate = f"{base}{suffix}"
+        return candidate
+
+    async def find_or_create_tenant_user(
+        self,
+        tenant_id: str,
+        provider: str,
+        provider_user_id: str,
+        email: str,
+        given_name: str,
+        family_name: str,
+    ) -> tuple[str, str]:
+        from app.auth_service import create_access_token
+
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(UserModel).where(
+                    UserModel.auth_provider == provider,
+                    UserModel.provider_user_id == provider_user_id,
+                )
+            )
+            row = result.scalars().first()
+
+            if not row and email:
+                result = await session.execute(select(UserModel).where(UserModel.email == email))
+                row = result.scalars().first()
+
+            if row:
+                if row.tenant_id != tenant_id:
+                    raise ValueError(
+                        "Ya existe una cuenta con este email en otra organización."
+                    )
+                row.auth_provider = provider
+                row.provider_user_id = provider_user_id
+                await session.commit()
+                username, role = row.username, row.role
+                token = create_access_token({"sub": username, "tenant_id": tenant_id, "role": role})
+                return username, token
+
+        # No existe todavía: alta self-service, scoped a este tenant.
+        import secrets
+
+        username = await self._unique_username_from_email(email)
+        await self.create_user(
+            username=username,
+            password=secrets.token_urlsafe(32),  # cuenta OAuth-only: no se usa para login por password
+            email=email,
+            nombre=given_name,
+            apellido=family_name,
+            tenant_id=tenant_id,
+            role="operativo",
+        )
+
+        async with AsyncSessionLocal() as session:
+            new_row = await session.get(UserModel, username)
+            new_row.auth_provider = provider
+            new_row.provider_user_id = provider_user_id
+            await session.commit()
+
+        token = create_access_token({"sub": username, "tenant_id": tenant_id, "role": "operativo"})
+        return username, token
+
     async def ensure_default_admin(self):
         """
         Crear usuario admin por defecto si no existe ningún usuario.

@@ -38,6 +38,7 @@ from app.routers.staff_chat_router import router as staff_chat_router
 from app.routers.pwa_router import router as pwa_router
 from app.routers.public_router import router as public_router
 from app.routers.google_oauth_router import router as google_oauth_router
+from app.routers.tenant_oauth_router import router as tenant_oauth_router
 from app.module_registry import MODULE_REGISTRY
 from app.routers.tenant_admin_router import router as tenant_admin_router
 from app.routers.tenant_router import router as tenant_router
@@ -78,6 +79,7 @@ app.include_router(web_chat_router)          # QR code + WebSocket chat web
 app.include_router(pwa_router)               # PWA Push Notifications (VAPID)
 app.include_router(public_router)            # Endpoints públicos sin JWT
 app.include_router(google_oauth_router)      # Login/conexión OAuth (Google/Microsoft) vía Nango
+app.include_router(tenant_oauth_router)      # Login/alta self-service OAuth de usuarios de tenant
 
 # Routers de módulos first-party (ver ADR-008, docs/dev/DECISIONS.md y
 # app/module_registry.py) — el gating por entitlement pasa a nivel de
