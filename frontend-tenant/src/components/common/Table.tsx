@@ -48,7 +48,7 @@ const alignStyles: Record<'left' | 'right' | 'center', string> = {
   center: 'text-center',
 };
 
-export const TableHeaderCell: React.FC<TableCellProps> = ({ children, className = '', align = 'left' }) => (
+export const TableHeaderCell: React.FC<TableCellProps> = ({ children, className = '', align = 'center' }) => (
   <th
     className={`px-6 py-3 ${alignStyles[align]} text-base font-medium text-gray-800 uppercase tracking-wider ${className}`}
   >

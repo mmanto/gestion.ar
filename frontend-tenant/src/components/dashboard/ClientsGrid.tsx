@@ -122,7 +122,7 @@ const ClientsGrid = ({ colorFilter }: ClientsGridProps) => {
           <TableHead>
             <tr>
               <TableHeaderCell>Cliente</TableHeaderCell>
-              <TableHeaderCell align="center">Acciones</TableHeaderCell>
+              <TableHeaderCell>Acciones</TableHeaderCell>
             </tr>
           </TableHead>
           <TableBody>

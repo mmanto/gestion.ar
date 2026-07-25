@@ -148,7 +148,7 @@ export const Users = () => {
                 <TableHeaderCell>Email</TableHeaderCell>
                 <TableHeaderCell>Rol</TableHeaderCell>
                 <TableHeaderCell>Estado</TableHeaderCell>
-                <TableHeaderCell align="center">Acciones</TableHeaderCell>
+                <TableHeaderCell>Acciones</TableHeaderCell>
               </tr>
             </TableHead>
             <TableBody>

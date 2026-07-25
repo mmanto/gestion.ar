@@ -122,7 +122,7 @@ const ConversationList = ({
             <TableHeaderCell>Tokens</TableHeaderCell>
             <TableHeaderCell>Costo</TableHeaderCell>
             <TableHeaderCell>Actualizado</TableHeaderCell>
-            <TableHeaderCell align="center">Acciones</TableHeaderCell>
+            <TableHeaderCell>Acciones</TableHeaderCell>
           </tr>
         </TableHead>
         <TableBody>
