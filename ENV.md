@@ -126,21 +126,32 @@ Para apps nativas Android/iOS vía Capacitor (ver ADR-007 en `docs/dev/DECISIONS
 > **APNs:** Crear Auth Key en Apple Developer → Keys → APNs Auth Key → descargar .p8.
 ---
 
-## Google OAuth
+## Login social (Google/Microsoft vía Nango self-hosted)
+
+Nango custodia y refresca los tokens del proveedor — el backend nunca ve un
+refresh token. El self-hosted de Nango vive aparte, en el repo
+`devbout-oauth/deploy/nango` (proyecto Compose independiente, ver su propio
+README), como **instancia compartida** entre las apps que consumen
+`devbout-oauth` (gestion.ar, nexsure, ...), no vendorizada en cada una.
 
 | Variable | Requerida | Descripción | Ejemplo |
 |---|---|---|---|
-| `GOOGLE_CLIENT_ID` | ✅* | Client ID de la app en Google Cloud Console | `771897...apps.googleusercontent.com` |
-| `GOOGLE_CLIENT_SECRET` | ✅* | Client Secret | `GOCSPX-...` |
-| `GOOGLE_REDIRECT_URI` | ✅* | URI de callback registrada en Google Cloud Console | `https://api.tudominio.com/api/v1/auth/google/callback` |
+| `NANGO_HOST` | ✅* | URL base de la API de Nango, vista por el **backend** | Docker: `http://nango-server:8080` (red externa `nango_network`) · sin Docker: `http://localhost:3003` |
+| `NANGO_SECRET_KEY` | ✅* | Secret que autentica las llamadas backend → Nango (mismo valor que `deploy/nango/.env`) | — |
+| `STATE_SIGNING_KEY` | ✅* | Firma el login nonce (HS256) — separada de `JWT_SECRET_KEY` | `openssl rand -hex 32` |
 | `FRONTEND_URL` | ✅* | URL base del frontend (para redirects post-OAuth) | `https://tudominio.com` |
-| `ENCRYPTION_KEY` | ✅* | Clave Fernet para encriptar refresh tokens en MongoDB | `openssl rand -hex 32` |
-| `GOOGLE_STATE_SIGNING_KEY` | ❌ | Clave HMAC para firmar el state JWT (default: `ENCRYPTION_KEY`) | `openssl rand -hex 32` |
 
-> *Solo requeridas si se activa el flujo Google OAuth (Login con Google / Gmail Connect).
+> *Solo requeridas si se activa el login/alta social (admin general y/o
+> tenants). Ver `VITE_NANGO_CONNECT_URL`/`VITE_NANGO_API_URL` más abajo para
+> las URLs que usa el browser (distintas de `NANGO_HOST`, que es
+> contenedor-a-contenedor).
 >
-> Crear credenciales en https://console.cloud.google.com/apis/credentials → **OAuth 2.0 Client IDs** → tipo **Web application**.
-> Agregar `GOOGLE_REDIRECT_URI` en "Authorized redirect URIs" y `FRONTEND_URL` en "Authorized JavaScript origins".
+> Con Docker, `app` está unido a la red externa `nango_network`
+> (`docker-compose.yml`), compartida con `devbout-oauth/deploy/nango` —
+> se crea una sola vez con `docker network create nango_network`.
+>
+> Las integraciones Google/Microsoft (client id/secret, scopes) se
+> configuran en el dashboard de Nango, no acá.
 
 ---
 
