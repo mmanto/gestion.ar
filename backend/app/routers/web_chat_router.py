@@ -408,6 +408,7 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
             bot_id=channel.bot_id,
             external_id=session_id,
             source=channel_source,
+            channel_id=channel.channel_id,
         )
         channel_client_id = channel_client.client_id
     except Exception:

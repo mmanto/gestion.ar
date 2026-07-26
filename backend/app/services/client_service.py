@@ -10,7 +10,7 @@ from typing import Dict, List, Optional
 from sqlalchemy import func, or_, select
 
 from app.db.database import AsyncSessionLocal
-from app.db.models import Bot as BotModel, Client as ClientModel
+from app.db.models import Bot as BotModel, Channel as ChannelModel, Client as ClientModel
 from app.models.client import Client, ClientCreate, ClientSource, ClientStatus, ClientUpdate, estado_from_color
 
 
@@ -38,6 +38,8 @@ def _to_client(row: ClientModel) -> Client:
     return Client(
         client_id=row.client_id,
         bot_id=row.bot_id,
+        channel_id=row.channel_id,
+        owner_username=row.owner_username,
         external_id=row.external_id,
         source=row.source,
         name=row.name,
@@ -77,10 +79,24 @@ class ClientService:
             )
             tenant_id = bot_result.scalars().first()
 
+            # owner_username se copia del canal al momento del primer contacto
+            # (ver Channel.owner_username) y ya no cambia si el canal se
+            # reasigna después — el cliente queda del abogado que lo captó.
+            owner_username = None
+            if client_data.channel_id:
+                channel_result = await session.execute(
+                    select(ChannelModel.owner_username).where(
+                        ChannelModel.channel_id == client_data.channel_id
+                    )
+                )
+                owner_username = channel_result.scalars().first()
+
             row = ClientModel(
                 client_id=client_id,
                 tenant_id=tenant_id,
                 bot_id=client_data.bot_id,
+                channel_id=client_data.channel_id,
+                owner_username=owner_username,
                 external_id=client_data.external_id,
                 source=client_data.source.value if hasattr(client_data.source, 'value') else client_data.source,
                 name=client_data.name,
@@ -126,9 +142,16 @@ class ClientService:
         bot_id: str,
         external_id: str,
         source: str,
-        metadata: Optional[Dict] = None
+        metadata: Optional[Dict] = None,
+        channel_id: Optional[str] = None,
     ) -> Client:
-        """Obtiene o crea un cliente"""
+        """Obtiene o crea un cliente.
+
+        channel_id: canal/link por el que llegó este contacto — solo se usa
+        si el cliente es nuevo (determina su owner_username, ver
+        create_client). Un cliente ya existente conserva su owner original
+        aunque vuelva a escribir por otro canal.
+        """
         async with AsyncSessionLocal() as session:
             result = await session.execute(
                 select(ClientModel).where(
@@ -149,7 +172,8 @@ class ClientService:
             bot_id=bot_id,
             external_id=external_id,
             source=source_enum,
-            metadata=metadata
+            metadata=metadata,
+            channel_id=channel_id,
         )
         return await self.create_client(client_data)
 
@@ -209,9 +233,18 @@ class ClientService:
         status: Optional[ClientStatus] = None,
         search: Optional[str] = None,
         color_semaforo: Optional[str] = None,
+        owner_usernames: Optional[List[str]] = None,
     ) -> Dict:
-        """Obtiene clientes de un bot con paginación y filtros"""
-        return await self._query_clients([ClientModel.bot_id == bot_id], skip, limit, status, search, color_semaforo)
+        """Obtiene clientes de un bot con paginación y filtros.
+
+        owner_usernames: si se pasa, sólo devuelve clientes de esos
+        abogados (ver client_router.py — None significa "sin restricción",
+        no lista vacía, que sí debe devolver 0 resultados).
+        """
+        filters = [ClientModel.bot_id == bot_id]
+        if owner_usernames is not None:
+            filters.append(ClientModel.owner_username.in_(owner_usernames))
+        return await self._query_clients(filters, skip, limit, status, search, color_semaforo)
 
     async def get_clients_by_bot_ids(
         self,
@@ -221,17 +254,32 @@ class ClientService:
         status: Optional[ClientStatus] = None,
         search: Optional[str] = None,
         color_semaforo: Optional[str] = None,
+        owner_usernames: Optional[List[str]] = None,
     ) -> Dict:
-        """Obtiene clientes de múltiples bots con paginación y filtros"""
-        return await self._query_clients([ClientModel.bot_id.in_(bot_ids)], skip, limit, status, search, color_semaforo)
+        """Obtiene clientes de múltiples bots con paginación y filtros.
 
-    async def count_clients_by_color(self, bot_ids: List[str]) -> Dict[str, int]:
-        """Cuenta clientes de varios bots agrupados por color_semaforo (embudo de ventas)."""
+        owner_usernames: ver get_clients_by_bot — None es "sin restricción".
+        """
+        filters = [ClientModel.bot_id.in_(bot_ids)]
+        if owner_usernames is not None:
+            filters.append(ClientModel.owner_username.in_(owner_usernames))
+        return await self._query_clients(filters, skip, limit, status, search, color_semaforo)
+
+    async def count_clients_by_color(
+        self, bot_ids: List[str], owner_usernames: Optional[List[str]] = None
+    ) -> Dict[str, int]:
+        """Cuenta clientes de varios bots agrupados por color_semaforo (embudo de ventas).
+
+        owner_usernames: ver get_clients_by_bot — None es "sin restricción".
+        """
         counts = {"verde": 0, "amarillo": 0, "rojo": 0, "sin_clasificar": 0}
+        filters = [ClientModel.bot_id.in_(bot_ids)]
+        if owner_usernames is not None:
+            filters.append(ClientModel.owner_username.in_(owner_usernames))
         async with AsyncSessionLocal() as session:
             result = await session.execute(
                 select(ClientModel.color_semaforo, func.count())
-                .where(ClientModel.bot_id.in_(bot_ids))
+                .where(*filters)
                 .group_by(ClientModel.color_semaforo)
             )
             for color, count in result.all():

@@ -550,6 +550,9 @@ class PushService:
         Envía una notificación push a todo el staff suscripto de un bot (apps
         nativas) — a diferencia de broadcast_to_bot(), que apunta a clientes.
         Si request.user_id está especificado, solo envía a ese staff member.
+        Si request.user_ids está especificado, solo a esos (ver
+        UserService.get_notified_usernames — dueño del cliente + su broker +
+        admins del tenant, para no filtrar la notificación a otros abogados).
         """
         result = NotificationResult()
 
@@ -560,6 +563,8 @@ class PushService:
         ]
         if request.user_id:
             filters.append(PushSubscriptionModel.user_id == request.user_id)
+        if request.user_ids is not None:
+            filters.append(PushSubscriptionModel.user_id.in_(request.user_ids))
 
         async with AsyncSessionLocal() as session:
             db_result = await session.execute(

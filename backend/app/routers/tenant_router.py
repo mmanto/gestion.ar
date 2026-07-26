@@ -282,6 +282,7 @@ def _user_out(user_in_db) -> TenantUserOut:
         tenant_id=user_in_db.tenant_id,
         role=user_in_db.role,
         disabled=user_in_db.disabled,
+        broker_username=user_in_db.broker_username,
     )
 
 
@@ -327,6 +328,7 @@ async def create_tenant_own_user(
             avatar_url=data.avatar_url,
             tenant_id=current_user.tenant_id,
             role=data.role.value if hasattr(data.role, "value") else data.role,
+            broker_username=data.broker_username,
         )
     except ValueError as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e))
@@ -357,5 +359,7 @@ async def update_tenant_own_user(
         nombre=data.nombre,
         apellido=data.apellido,
         avatar_url=data.avatar_url,
+        broker_username=data.broker_username,
+        clear_broker=data.clear_broker,
     )
     return {"success": True, "user": _user_out(user).model_dump()}

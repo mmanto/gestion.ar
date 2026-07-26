@@ -175,9 +175,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         </button>
         <button
           type="button"
-          onClick={() => handleProviderLogin('microsoft')}
-          disabled={oauthLoading !== null || !tenantId}
-          className="flex h-9 w-full items-center justify-center gap-2 rounded-lg border bg-white text-sm font-medium transition-colors hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled
+          title="Próximamente"
+          className="flex h-9 w-full items-center justify-center gap-2 rounded-lg border bg-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ borderColor: BORDER, color: TEXT }}
         >
           <svg className="h-4 w-4" viewBox="0 0 23 23">
@@ -186,12 +186,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             <path fill="#00A4EF" d="M1 12h10v10H1z"/>
             <path fill="#FFB900" d="M12 12h10v10H12z"/>
           </svg>
-          {oauthLoading === 'microsoft' ? 'Conectando…' : 'Continuar con Microsoft'}
+          Continuar con Microsoft
         </button>
       </div>
 
       <p className="text-xs text-center" style={{ color: MUTED_FG }}>
-        ¿No tenés cuenta? Ingresá con Google o Microsoft y se crea automáticamente,
+        ¿No tenés cuenta? Ingresá con Google y se crea automáticamente,
         o pedile acceso a quien administra tu cuenta en la plataforma.
       </p>
     </form>

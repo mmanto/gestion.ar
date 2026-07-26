@@ -93,6 +93,7 @@ class ChannelBase(BaseModel):
 
 class ChannelCreate(ChannelBase):
     """Modelo para crear un canal"""
+    owner_username: Optional[str] = Field(None, description="Abogado (operativo/broker) dueño de este canal/link — sus clientes quedan asignados a él")
     whatsapp_config: Optional[WhatsAppConfig] = None
     telegram_config: Optional[TelegramConfig] = None
     web_config: Optional[WebConfig] = None
@@ -104,6 +105,7 @@ class ChannelUpdate(BaseModel):
     """Modelo para actualizar un canal"""
     name: Optional[str] = Field(None, min_length=2, max_length=100)
     status: Optional[ChannelStatus] = None
+    owner_username: Optional[str] = Field(None, description="Abogado (operativo/broker) dueño de este canal/link")
     whatsapp_config: Optional[WhatsAppConfig] = None
     telegram_config: Optional[TelegramConfig] = None
     web_config: Optional[WebConfig] = None
@@ -114,6 +116,7 @@ class ChannelUpdate(BaseModel):
 class Channel(ChannelBase):
     """Modelo completo de Channel"""
     channel_id: str
+    owner_username: Optional[str] = None
     status: ChannelStatus = ChannelStatus.PENDING
     whatsapp_config: Optional[WhatsAppConfig] = None
     telegram_config: Optional[TelegramConfig] = None

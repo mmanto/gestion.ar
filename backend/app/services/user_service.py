@@ -24,6 +24,7 @@ class UserInDB(BaseModel):
     disabled: bool = False
     tenant_id: Optional[str] = None
     role: str = "admin"
+    broker_username: Optional[str] = None
 
 
 def _to_user_in_db(row: UserModel) -> UserInDB:
@@ -37,6 +38,7 @@ def _to_user_in_db(row: UserModel) -> UserInDB:
         disabled=row.disabled,
         tenant_id=row.tenant_id,
         role=row.role,
+        broker_username=row.broker_username,
     )
 
 
@@ -67,6 +69,7 @@ class UserService:
         avatar_url: Optional[str] = None,
         tenant_id: Optional[str] = None,
         role: str = "admin",
+        broker_username: Optional[str] = None,
     ) -> UserInDB:
         """
         Crear un nuevo usuario
@@ -79,7 +82,9 @@ class UserService:
             apellido: Apellido opcional
             avatar_url: URL de la imagen de avatar, opcional
             tenant_id: Tenant al que pertenece (None sólo para super_admin)
-            role: 'super_admin' | 'admin' | 'operativo'
+            role: 'super_admin' | 'admin' | 'operativo' | 'broker'
+            broker_username: solo para role='operativo' — el broker (firma)
+                del que depende, ver ck_users_broker_username_only_operativo
 
         Returns:
             Usuario creado
@@ -103,13 +108,14 @@ class UserService:
                 disabled=False,
                 tenant_id=tenant_id,
                 role=role,
+                broker_username=broker_username,
             ))
             await session.commit()
 
         return UserInDB(
             username=username, email=email, nombre=nombre, apellido=apellido,
             avatar_url=avatar_url, hashed_password=hashed, disabled=False,
-            tenant_id=tenant_id, role=role,
+            tenant_id=tenant_id, role=role, broker_username=broker_username,
         )
 
     async def authenticate_user(self, username: str, password: str) -> Optional[User]:
@@ -323,6 +329,60 @@ class UserService:
 
     # ── Administración general: gestión de usuarios de cualquier tenant ───────
 
+    async def get_broker_team_usernames(self, broker_username: str) -> List[str]:
+        """Usernames de los operativos (abogados) que dependen de este broker
+        (users.broker_username), para que el broker vea sus clientes/
+        conversaciones además de los propios (ver client_router.py)."""
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(UserModel.username).where(UserModel.broker_username == broker_username)
+            )
+            return list(result.scalars().all())
+
+    async def get_notified_usernames(
+        self, tenant_id: str, owner_username: Optional[str]
+    ) -> Optional[List[str]]:
+        """A quién avisar (WS + push) de un mensaje entrante de un cliente.
+
+        None = avisar a todo el staff conectado al bot (cliente sin owner
+        conocido — canal general sin abogado asignado, ver
+        Channel.owner_username). Si el cliente tiene owner, solo el dueño +
+        su broker (si tiene) + los admin del tenant (ven todo) — nunca a
+        otros abogados. Ver notify_staff_of_client_message.
+        """
+        if not owner_username:
+            return None
+        async with AsyncSessionLocal() as session:
+            admins_result = await session.execute(
+                select(UserModel.username).where(
+                    UserModel.tenant_id == tenant_id, UserModel.role == "admin"
+                )
+            )
+            usernames = set(admins_result.scalars().all())
+            owner_result = await session.execute(
+                select(UserModel.broker_username).where(UserModel.username == owner_username)
+            )
+            broker_username = owner_result.scalars().first()
+        usernames.add(owner_username)
+        if broker_username:
+            usernames.add(broker_username)
+        return list(usernames)
+
+    async def get_scoped_owner_usernames(self, current_user: User) -> Optional[List[str]]:
+        """Alcance de clientes/conversaciones visibles para current_user.
+
+        None = sin restricción (admin/super_admin ven todo el tenant).
+        broker: los propios + los de su equipo (get_broker_team_usernames).
+        operativo: solo los propios. Ver client_router.py y main.py
+        (/api/clients, /api/clients/stats).
+        """
+        if current_user.role in ("admin", "super_admin"):
+            return None
+        if current_user.role == "broker":
+            team = await self.get_broker_team_usernames(current_user.username)
+            return [current_user.username, *team]
+        return [current_user.username]
+
     async def list_users(
         self, tenant_id: Optional[str] = None, skip: int = 0, limit: int = 50
     ) -> Dict:
@@ -358,10 +418,16 @@ class UserService:
         nombre: Optional[str] = None,
         apellido: Optional[str] = None,
         avatar_url: Optional[str] = None,
+        broker_username: Optional[str] = None,
+        clear_broker: bool = False,
     ) -> Optional[UserInDB]:
         """Actualiza rol/estado/email/nombre de un usuario (super_admin). El
         rol nunca lo puede fijar el propio usuario — sólo administración
-        general (para nombre/apellido/avatar, ver update_own_profile)."""
+        general (para nombre/apellido/avatar, ver update_own_profile).
+
+        clear_broker: pasar True para desasociar a un operativo de su broker
+        (broker_username=None no alcanza — indistinguible de "no tocar").
+        """
         async with AsyncSessionLocal() as session:
             row = await session.get(UserModel, username)
             if not row:
@@ -378,6 +444,10 @@ class UserService:
                 row.apellido = apellido
             if avatar_url is not None:
                 row.avatar_url = avatar_url
+            if clear_broker:
+                row.broker_username = None
+            elif broker_username is not None:
+                row.broker_username = broker_username
             await session.commit()
             await session.refresh(row)
             return _to_user_in_db(row)

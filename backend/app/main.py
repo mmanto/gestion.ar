@@ -308,13 +308,15 @@ async def get_all_clients(
 
         client_service = get_client_service()
         skip = (page - 1) * limit
+        owner_usernames = await get_user_service().get_scoped_owner_usernames(current_user)
         result = await client_service.get_clients_by_bot_ids(
             bot_ids=bot_ids,
             skip=skip,
             limit=limit,
             status=status,
             search=search,
-            color_semaforo=color_semaforo
+            color_semaforo=color_semaforo,
+            owner_usernames=owner_usernames,
         )
 
         return {
@@ -347,7 +349,8 @@ async def get_clients_color_stats(current_user: User = Depends(get_current_user)
         bot_ids = [b.bot_id for b in bots_result["bots"]]
 
         client_service = get_client_service()
-        counts = await client_service.count_clients_by_color(bot_ids)
+        owner_usernames = await get_user_service().get_scoped_owner_usernames(current_user)
+        counts = await client_service.count_clients_by_color(bot_ids, owner_usernames=owner_usernames)
 
         return {"success": True, **counts}
 
@@ -403,6 +406,7 @@ async def get_conversations(
         # Calcular skip para paginación
         skip = (page - 1) * limit
 
+        owner_usernames = await get_user_service().get_scoped_owner_usernames(current_user)
         result = await conv_service.get_all_conversations(
             skip=skip,
             limit=limit,
@@ -413,7 +417,8 @@ async def get_conversations(
             search=search,
             sort_by=sort_by,
             order=order,
-            bot_ids=tenant_bot_ids
+            bot_ids=tenant_bot_ids,
+            owner_usernames=owner_usernames
         )
 
         return {
@@ -451,7 +456,10 @@ async def get_timeline_stats(
         )
         tenant_bot_ids = [b.bot_id for b in bots_result["bots"]]
 
-        timeline = await conv_service.get_timeline_stats(days=days, bot_ids=tenant_bot_ids)
+        owner_usernames = await get_user_service().get_scoped_owner_usernames(current_user)
+        timeline = await conv_service.get_timeline_stats(
+            days=days, bot_ids=tenant_bot_ids, owner_usernames=owner_usernames
+        )
 
         return {
             "success": True,
@@ -488,7 +496,8 @@ async def get_conversation_stats(
         )
         tenant_bot_ids = [b.bot_id for b in bots_result["bots"]]
 
-        stats = await conv_service.get_conversation_stats(bot_ids=tenant_bot_ids)
+        owner_usernames = await get_user_service().get_scoped_owner_usernames(current_user)
+        stats = await conv_service.get_conversation_stats(bot_ids=tenant_bot_ids, owner_usernames=owner_usernames)
 
         return {
             "success": True,
@@ -500,6 +509,19 @@ async def get_conversation_stats(
             status_code=500,
             detail=f"Error obteniendo estadísticas: {str(e)}"
         )
+
+async def _verify_conversation_owner_access(conversation: dict, current_user: User) -> None:
+    """404 si el cliente dueño de la conversación no está en el alcance del
+    usuario actual (ver UserService.get_scoped_owner_usernames) — mismo
+    criterio que client_router.py para /api/bots/{bot_id}/clients."""
+    owner_usernames = await get_user_service().get_scoped_owner_usernames(current_user)
+    if owner_usernames is None:
+        return
+    client_id = conversation.get("client_id")
+    client = await get_client_service().get_client(client_id) if client_id else None
+    if not client or client.owner_username not in owner_usernames:
+        raise HTTPException(status_code=404, detail="Conversación no encontrada")
+
 
 @app.get("/api/conversations/{conversation_id}")
 async def get_conversation_by_id(
@@ -536,6 +558,7 @@ async def get_conversation_by_id(
                     status_code=404,
                     detail=f"Conversación {conversation_id} no encontrada"
                 )
+        await _verify_conversation_owner_access(conversation, current_user)
 
         return {
             "success": True,
@@ -579,6 +602,7 @@ async def send_agent_message(
             conv_bot = await bot_service.get_bot(conv_bot_id)
             if not conv_bot or conv_bot.tenant_id != current_user.tenant_id:
                 raise HTTPException(status_code=404, detail="Conversación no encontrada")
+        await _verify_conversation_owner_access(conversation, current_user)
 
         msg = await conv_service.add_message(
             conversation_id=conversation_id,
@@ -657,6 +681,7 @@ async def generate_conversation_summary(
             conv_bot = await bot_service.get_bot(conv_bot_id)
             if not conv_bot or conv_bot.tenant_id != current_user.tenant_id:
                 raise HTTPException(status_code=404, detail="Conversación no encontrada")
+        await _verify_conversation_owner_access(conversation, current_user)
 
         result = await generate_summary_and_update_client(conversation_id)
         return {

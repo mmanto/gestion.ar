@@ -1,13 +1,21 @@
 """
 Client Router - API endpoints for client management
+
+Visibilidad por rol (ver docs/dev/DECISIONS.md — cada abogado tiene su
+propio canal/link, y los clientes que entran por ahí quedan asignados a él,
+ver ClientService.get_or_create_client):
+  - admin/super_admin: todos los clientes del tenant.
+  - broker: los propios + los de los operativos con broker_username = él.
+  - operativo: solo los propios (owner_username = su username).
 """
 
 from fastapi import APIRouter, HTTPException, Depends, Query, status
-from typing import Optional
+from typing import List, Optional
 
 from app.models.client import ClientUpdate, ClientStatus
 from app.services.client_service import get_client_service
 from app.services.bot_service import get_bot_service
+from app.services.user_service import get_user_service
 from app.conversation_service import get_conversation_service
 from app.auth_service import User
 from app.dependencies.auth import get_current_user, require_role
@@ -30,6 +38,14 @@ async def verify_bot_access(bot_id: str, current_user: User):
     return bot
 
 
+async def _verify_client_access(client, current_user: User) -> None:
+    """404 (no 403: no revelar que el cliente existe) si el cliente no
+    pertenece al alcance del usuario actual — ver UserService.get_scoped_owner_usernames."""
+    owner_usernames = await get_user_service().get_scoped_owner_usernames(current_user)
+    if owner_usernames is not None and client.owner_username not in owner_usernames:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Cliente no encontrado")
+
+
 @router.get("", response_model=dict)
 async def get_clients(
     bot_id: str,
@@ -50,7 +66,8 @@ async def get_clients(
         skip=skip,
         limit=limit,
         status=status,
-        search=search
+        search=search,
+        owner_usernames=await get_user_service().get_scoped_owner_usernames(current_user),
     )
 
     return {
@@ -80,6 +97,7 @@ async def get_client(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Cliente no encontrado"
         )
+    await _verify_client_access(client, current_user)
 
     return {
         "success": True,
@@ -105,6 +123,7 @@ async def update_client(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Cliente no encontrado"
         )
+    await _verify_client_access(existing, current_user)
 
     client = await client_service.update_client(client_id, update_data)
 
@@ -198,6 +217,7 @@ async def get_client_conversations(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Cliente no encontrado"
         )
+    await _verify_client_access(existing, current_user)
 
     conv_service = get_conversation_service()
     result = await conv_service.get_all_conversations(
