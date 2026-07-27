@@ -80,7 +80,15 @@ async function pollLoginStatus(nonce: string, isCancelled: () => boolean): Promi
 }
 
 async function loginWithProviderNative(connectLink: string, nonce: string): Promise<{ token: string }> {
-  await Browser.open({ url: connectLink });
+  // El connect_link que devuelve el Nango self-hosted no incluye `apiURL` —
+  // sin eso, la SPA de Connect UI abierta standalone cae por default a
+  // api.nango.dev (la nube de Nango, no nuestro self-hosted) y queda en
+  // blanco porque ese sessionToken no existe ahí. La propiedad se llama
+  // "apiURL" (mismo nombre que usa @nangohq/frontend, ver createIframe en
+  // node_modules/@nangohq/frontend/dist/connectUI.js).
+  const url = new URL(connectLink);
+  url.searchParams.set('apiURL', NANGO_API_URL);
+  await Browser.open({ url: url.href });
 
   let closedByUser = false;
   const listener = await Browser.addListener('browserFinished', () => {
