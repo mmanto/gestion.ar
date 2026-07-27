@@ -138,6 +138,7 @@ README), como **instancia compartida** entre las apps que consumen
 |---|---|---|---|
 | `NANGO_HOST` | ✅* | URL base de la API de Nango, vista por el **backend** | Docker: `http://nango-server:8080` (red externa `nango_network`) · sin Docker: `http://localhost:3003` |
 | `NANGO_SECRET_KEY` | ✅* | Secret que autentica las llamadas backend → Nango | — |
+| `NANGO_WEBHOOK_SECRET` | ⛔ opcional | Verifica que `/api/tenant/oauth/webhook/nango` venga de Nango — usado por el login OAuth nativo (mobile), que no puede depender del popup `postMessage` (ver `auth.service.ts`) | — |
 | `STATE_SIGNING_KEY` | ✅* | Firma el login nonce (HS256) — separada de `JWT_SECRET_KEY` | `openssl rand -hex 32` |
 | `FRONTEND_URL` | ✅* | URL base del frontend (para redirects post-OAuth) | `https://tudominio.com` |
 
@@ -158,6 +159,17 @@ README), como **instancia compartida** entre las apps que consumen
 >
 > Las integraciones Google/Microsoft (client id/secret, scopes) se
 > configuran en el dashboard de Nango, no acá.
+>
+> **`NANGO_WEBHOOK_SECRET`**: en el login OAuth nativo (Android/iOS), el
+> OAuth de Google corre en Chrome Custom Tabs (no en el WebView de la app),
+> así que el popup no puede avisar por `window.opener.postMessage` como en
+> web — el backend se entera por un webhook de Nango en su lugar. Paso
+> manual, en el dashboard del Nango self-hosted: Environment Settings →
+> Webhook URL = `<WEBHOOK_BASE_URL>/api/tenant/oauth/webhook/nango`, y
+> copiar la Webhook Signing Key de esa misma pantalla acá (**no** es
+> `NANGO_SECRET_KEY` — son secrets distintos). Sin esto seteado, el
+> webhook igual funciona pero sin verificar firma (queda un warning en el
+> log); dejarlo sin setear en dev es aceptable, no en prod.
 >
 > **Producción**: Connect UI y API de Nango necesitan ser alcanzables desde
 > el browser de un usuario real (no solo desde la red Docker del servidor)

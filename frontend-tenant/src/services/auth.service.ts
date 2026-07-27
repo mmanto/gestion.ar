@@ -1,4 +1,6 @@
 import Nango from '@nangohq/frontend';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 import api from './api';
 import { tokenStorage } from './tokenStorage';
 import type { AuthProvider, LoginCredentials, LoginResponse, User } from '../types/auth.types';
@@ -28,6 +30,72 @@ function openNangoConnect(sessionToken: string): Promise<{ connectionId: string;
   });
 }
 
+// ── Login OAuth nativo (Android/iOS) ────────────────────────────────────────
+//
+// En web, el popup de Google se abre en un iframe controlado por nuestra
+// propia página (openNangoConnect arriba), y Nango le avisa el resultado vía
+// window.opener.postMessage. En el WebView de Capacitor eso muestra el login
+// de Google "en frío" (sin la sesión ya iniciada del dispositivo) y sin
+// selector de cuentas, porque es un WebView aislado, no el Chrome real del
+// teléfono.
+//
+// Por eso en nativo se abre el `connectLink` de Nango (un link "mágico" que
+// hace ese mismo flujo completo standalone, sin iframe) en Chrome Custom
+// Tabs vía @capacitor/browser — eso sí comparte la sesión de Google del
+// dispositivo. El problema es que Custom Tabs es un proceso aparte de Chrome:
+// no hay window.opener hacia nuestro WebView, así que el postMessage de
+// Nango nunca llega. En su lugar, el backend se entera por un webhook de
+// Nango (ver tenant_oauth_router.py) y acá se hace polling a
+// /connect/login/status hasta ver el resultado.
+const LOGIN_POLL_INTERVAL_MS = 1500;
+const LOGIN_POLL_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutos
+
+interface LoginStatusResponse {
+  status: 'pending' | 'done' | 'error';
+  token?: string;
+  message?: string;
+}
+
+async function pollLoginStatus(nonce: string, isCancelled: () => boolean): Promise<{ token: string }> {
+  const deadline = Date.now() + LOGIN_POLL_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, LOGIN_POLL_INTERVAL_MS));
+    const { data } = await api.get<LoginStatusResponse>('/tenant/oauth/connect/login/status', {
+      params: { nonce },
+    });
+    if (data.status === 'done' && data.token) {
+      return { token: data.token };
+    }
+    if (data.status === 'error') {
+      throw new Error(data.message || 'No se pudo completar el login');
+    }
+    // Sigue "pending": si el usuario ya cerró el Custom Tab, esta fue la
+    // última chance de encontrar el resultado (el webhook puede llegar justo
+    // cuando vuelve a la app) — si tampoco acá, se lo trata como cancelado.
+    if (isCancelled()) {
+      throw new Error('cancelled');
+    }
+  }
+  throw new Error('El login no se completó a tiempo. Intenta nuevamente');
+}
+
+async function loginWithProviderNative(connectLink: string, nonce: string): Promise<{ token: string }> {
+  await Browser.open({ url: connectLink });
+
+  let closedByUser = false;
+  const listener = await Browser.addListener('browserFinished', () => {
+    closedByUser = true;
+  });
+
+  try {
+    const result = await pollLoginStatus(nonce, () => closedByUser);
+    return result;
+  } finally {
+    await listener.remove();
+    await Browser.close().catch(() => {});
+  }
+}
+
 const authService = {
   /**
    * Login con username y password
@@ -53,9 +121,14 @@ const authService = {
    * crea automáticamente (self-service, rol operativo).
    */
   async loginWithProvider(provider: AuthProvider, tenantId: string): Promise<{ token: string }> {
-    const { data: sess } = await api.post<{ sessionToken: string; nonce: string; provider: string }>(
+    const { data: sess } = await api.post<{ sessionToken: string; connectLink: string; nonce: string; provider: string }>(
       '/tenant/oauth/connect/login/session', { tenant_id: tenantId, provider },
     );
+
+    if (Capacitor.isNativePlatform()) {
+      return loginWithProviderNative(sess.connectLink, sess.nonce);
+    }
+
     const { connectionId } = await openNangoConnect(sess.sessionToken);
     const { data } = await api.post<{ token: string }>(
       '/tenant/oauth/connect/login/finalize',
