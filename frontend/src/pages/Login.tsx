@@ -28,7 +28,7 @@ export const Login: React.FC = () => {
           <div className="flex items-center gap-3">
             <img src="/img/logo_vertical_ius.svg" alt="Asistente" className="h-16 w-16" />
             <p className="text-2xl font-bold" style={{ color: '#25357a' }}>
-              Comunicación inteligente
+              Gestión inteligente
             </p>
           </div>
 
