@@ -446,21 +446,36 @@ cmd_build_android() {
     return 1
   fi
 
+  # Nango self-hosted (Connect UI :3009 / API :3003) corre en la misma
+  # maquina que el backend de dev, fuera del proxy /api — auth.service.ts
+  # cae por default a http://localhost:3009|3003, que en un
+  # emulador/dispositivo apunta al propio celular, no a la PC. En prod, en
+  # cambio, Nango vive en su propio dominio (ver docker-compose.prod.yml),
+  # no en el host del backend.
+  local nango_connect_url nango_api_url
   case "$env" in
     emulator)
       api_url="${api_url:-http://10.0.2.2:8000/api}"
+      nango_connect_url="http://10.0.2.2:3009"
+      nango_api_url="http://10.0.2.2:3003"
       ;;
     device)
       if [[ -z "$api_url" ]]; then
         echo -e "${RED}ERROR: 'device' requiere la IP LAN del backend, ej: ./stack.prod build-android ${slug} device http://192.168.1.50:8000/api${NC}"
         return 1
       fi
+      local nango_host
+      nango_host="$(echo "$api_url" | sed -E 's#^https?://([^:/]+).*#\1#')"
+      nango_connect_url="http://${nango_host}:3009"
+      nango_api_url="http://${nango_host}:3003"
       ;;
     prod)
       if [[ -z "$api_url" ]]; then
         echo -e "${RED}ERROR: 'prod' requiere la URL real del backend, ej: ./stack.prod build-android ${slug} prod https://api.intellify.pro/api${NC}"
         return 1
       fi
+      nango_connect_url="https://nango.intellify.pro"
+      nango_api_url="https://api.nango.intellify.pro"
       ;;
   esac
 
@@ -508,8 +523,9 @@ cmd_build_android() {
   local stats_two_cols="false"
   [[ "$slug" == "ius" ]] && stats_two_cols="true"
 
-  echo "  [1/3] VITE_API_URL=${api_url} VITE_TENANT_ID=${tenant_id} VITE_TENANT_APPID=${app_id} npm run build:capacitor ..."
-  (cd "$project_dir" && VITE_API_URL="$api_url" VITE_TENANT_ID="$tenant_id" VITE_STATS_TWO_COLS_MOBILE="$stats_two_cols" \
+  echo "  [1/3] VITE_API_URL=${api_url} VITE_NANGO_CONNECT_URL=${nango_connect_url} VITE_NANGO_API_URL=${nango_api_url} VITE_TENANT_ID=${tenant_id} VITE_TENANT_APPID=${app_id} npm run build:capacitor ..."
+  (cd "$project_dir" && VITE_API_URL="$api_url" VITE_NANGO_CONNECT_URL="$nango_connect_url" VITE_NANGO_API_URL="$nango_api_url" \
+    VITE_TENANT_ID="$tenant_id" VITE_STATS_TWO_COLS_MOBILE="$stats_two_cols" \
     VITE_TENANT_APPID="$app_id" VITE_TENANT_APPNAME="$app_name" VITE_TENANT_BRANDCOLOR="$brand_color" \
     npm run build:capacitor) || {
     echo -e "${RED}  ERROR: npm run build:capacitor fallo${NC}"

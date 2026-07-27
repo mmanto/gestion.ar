@@ -427,6 +427,17 @@ cmd_build_android() {
   fi
   api_url="${api_url:-http://10.0.2.2:8000/api}"
 
+  # Nango self-hosted (Connect UI :3009 / API :3003) corre en la misma
+  # maquina de dev que el backend, fuera del proxy /api — mismo problema que
+  # api_url: auth.service.ts cae por default a http://localhost:3009|3003,
+  # que en un emulador/dispositivo apunta al propio celular, no a la PC.
+  # Se reusa el host resuelto de api_url (10.0.2.2 en emulador, la IP LAN en
+  # device) y se le pisan los puertos de Nango.
+  local nango_host
+  nango_host="$(echo "$api_url" | sed -E 's#^https?://([^:/]+).*#\1#')"
+  local nango_connect_url="http://${nango_host}:3009"
+  local nango_api_url="http://${nango_host}:3003"
+
   # Validar requisitos
   local missing=()
   command -v node &>/dev/null || missing+=("node (npm)")
@@ -473,8 +484,9 @@ cmd_build_android() {
   local stats_two_cols="false"
   [[ "$slug" == "ius" ]] && stats_two_cols="true"
 
-  echo "  [1/3] VITE_API_URL=${api_url} VITE_TENANT_ID=${tenant_id} VITE_TENANT_APPID=${app_id} npm run build:capacitor ..."
-  (cd "$project_dir" && VITE_API_URL="$api_url" VITE_TENANT_ID="$tenant_id" VITE_STATS_TWO_COLS_MOBILE="$stats_two_cols" \
+  echo "  [1/3] VITE_API_URL=${api_url} VITE_NANGO_CONNECT_URL=${nango_connect_url} VITE_NANGO_API_URL=${nango_api_url} VITE_TENANT_ID=${tenant_id} VITE_TENANT_APPID=${app_id} npm run build:capacitor ..."
+  (cd "$project_dir" && VITE_API_URL="$api_url" VITE_NANGO_CONNECT_URL="$nango_connect_url" VITE_NANGO_API_URL="$nango_api_url" \
+    VITE_TENANT_ID="$tenant_id" VITE_STATS_TWO_COLS_MOBILE="$stats_two_cols" \
     VITE_TENANT_APPID="$app_id" VITE_TENANT_APPNAME="$app_name" VITE_TENANT_BRANDCOLOR="$brand_color" \
     npm run build:capacitor) || {
     echo -e "${RED}  ERROR: npm run build:capacitor fallo${NC}"

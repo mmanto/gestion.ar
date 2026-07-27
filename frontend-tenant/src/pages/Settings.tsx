@@ -100,17 +100,19 @@ export const Settings = () => {
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-700 mb-1">Honorarios</p>
-                <input
-                  type="text"
-                  value={facts.honorarios ?? ''}
-                  onChange={(e) => handleHonorariosChange(e.target.value)}
-                  onBlur={persistHonorarios}
-                  disabled={loadingHonorarios || !botId}
-                  placeholder="Ej. $500 MXN por consulta inicial"
-                  className="w-full px-3 py-2 rounded-lg border-2 outline-none transition-colors disabled:opacity-50"
-                  style={{ borderColor: accent, backgroundColor: accentSoft }}
-                />
-                <p className="text-xs text-gray-500 mt-1">Expresado en pesos mexicanos (MXN).</p>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={facts.honorarios ?? ''}
+                    onChange={(e) => handleHonorariosChange(e.target.value)}
+                    onBlur={persistHonorarios}
+                    disabled={loadingHonorarios || !botId}
+                    placeholder="Ej. $500 por consulta inicial"
+                    className="flex-1 px-3 py-2 rounded-lg border-2 outline-none transition-colors disabled:opacity-50"
+                    style={{ borderColor: accent, backgroundColor: accentSoft }}
+                  />
+                  <p className="text-xs text-gray-500 whitespace-nowrap">Expresado en pesos mexicanos (MXN).</p>
+                </div>
               </div>
             </div>
           </Card>
