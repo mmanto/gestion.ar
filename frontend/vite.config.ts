@@ -47,6 +47,7 @@ export default defineConfig({
         react: { singleton: true, requiredVersion: '^19.2.0' },
         'react-dom': { singleton: true, requiredVersion: '^19.2.0' },
         'date-fns': { singleton: true, requiredVersion: '^4.1.0' },
+        'react-router-dom': { singleton: true, requiredVersion: '^7.11.0' },
       },
     }),
   ],
