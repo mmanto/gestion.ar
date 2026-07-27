@@ -9,7 +9,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql+asyncpg://gestionar_user:gestionar_dev_password@localhost:5433/gestionar",
+    "postgresql+asyncpg://gestionar_user:gestionar_dev_password@postgres:5432/gestionar",
 )
 
 engine = create_async_engine(DATABASE_URL, echo=False, future=True)

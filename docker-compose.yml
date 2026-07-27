@@ -58,7 +58,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 90s
+      start_period: 180s
     restart: unless-stopped
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     extra_hosts:
