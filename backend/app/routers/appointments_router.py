@@ -212,6 +212,10 @@ async def deactivate_resource(resource_id: str, bot: Bot = Depends(verify_bot_ac
     except httpx.HTTPStatusError as exc:
         _raise_upstream_error(exc)
 
+    config = _get_appointments_config(bot)
+    config["resource_ids"] = [rid for rid in config["resource_ids"] if rid != resource_id]
+    await _save_appointments_config(bot, config)
+
 
 @router.post("/resources/{resource_id}/availability-rules", status_code=201)
 async def create_availability_rule(
@@ -320,6 +324,12 @@ async def deactivate_service(service_id: str, bot: Bot = Depends(verify_bot_acce
         await get_appointments_client().deactivate_service(service_id)
     except httpx.HTTPStatusError as exc:
         _raise_upstream_error(exc)
+
+    config = _get_appointments_config(bot)
+    config["service_ids"] = [sid for sid in config["service_ids"] if sid != service_id]
+    if config["default_service_id"] == service_id:
+        config["default_service_id"] = config["service_ids"][0] if config["service_ids"] else None
+    await _save_appointments_config(bot, config)
 
 
 @router.post("/services/{service_id}/resources", status_code=204)
