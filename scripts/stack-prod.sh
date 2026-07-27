@@ -60,6 +60,13 @@ fi
 # shellcheck source=/dev/null
 source "$ENV_FILE"
 
+if [[ -z "${REGISTRY_IMAGE:-}" ]]; then
+  echo -e "${RED}ERROR: REGISTRY_IMAGE no está definido en $ENV_FILE.${NC}"
+  echo "Sin esto, docker compose arma tags invalidos (ej. \"/frontend:latest\")."
+  echo "Agregá algo como: REGISTRY_IMAGE=registry.gitlab.com/NAMESPACE/PROJECT (ver .env.example)."
+  exit 1
+fi
+
 COMPOSE_CMD=(docker compose --env-file "$ENV_FILE" "${COMPOSE_FILES[@]}")
 
 # Asegurar red externa

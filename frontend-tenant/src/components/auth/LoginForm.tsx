@@ -173,21 +173,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
           </svg>
           {oauthLoading === 'google' ? 'Conectando…' : 'Continuar con Google'}
         </button>
-        <button
-          type="button"
-          disabled
-          title="Próximamente"
-          className="flex h-9 w-full items-center justify-center gap-2 rounded-lg border bg-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{ borderColor: BORDER, color: TEXT }}
-        >
-          <svg className="h-4 w-4" viewBox="0 0 23 23">
-            <path fill="#F25022" d="M1 1h10v10H1z"/>
-            <path fill="#7FBA00" d="M12 1h10v10H12z"/>
-            <path fill="#00A4EF" d="M1 12h10v10H1z"/>
-            <path fill="#FFB900" d="M12 12h10v10H12z"/>
-          </svg>
-          Continuar con Microsoft
-        </button>
       </div>
 
       <p className="text-xs text-center" style={{ color: MUTED_FG }}>

@@ -44,11 +44,8 @@ export const Login: React.FC = () => {
           {/* Encabezado */}
           <div className="text-center">
             <h2 className="text-xl font-semibold" style={{ color: '#0f172a' }}>
-              Iniciar sesión
+              Bienvenido!
             </h2>
-            <p className="text-sm mt-1" style={{ color: '#64748b' }}>
-              {tenant?.branding.tagline || 'Accede a tu cuenta para continuar'}
-            </p>
           </div>
 
           {/* Formulario */}
