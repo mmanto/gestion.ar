@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useAccentTheme } from '../../hooks/useAccentTheme';
 import { publicService } from '../../services/public.service';
-import { TemplatePicker } from './TemplatePicker';
 
 interface UserMenuProps {
   /** Controla solo el estilo del botón disparador — 'dark' para fondos oscuros (navy), 'light' para fondos claros. */
@@ -82,7 +81,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
           )}
         </div>
         <span className={usernameClass}>
-          {fullName}
+          Mis datos
         </span>
         <svg className={chevronClass} fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -134,10 +133,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
               </svg>
               Ajustes
             </Link>
-          </div>
-
-          <div className="border-t border-gray-200">
-            <TemplatePicker />
           </div>
 
           {llmModel && (

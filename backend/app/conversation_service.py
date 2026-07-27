@@ -12,6 +12,7 @@ from sqlalchemy import case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import AsyncSessionLocal
+from app.db.models import Client as ClientModel
 from app.db.models import Conversation as ConversationModel
 from app.db.models import Message as MessageModel
 
@@ -334,12 +335,15 @@ class ConversationService:
             rows = result.scalars().all()
             return await self._to_conversation_dicts(session, rows)
 
-    async def get_conversation_stats(self, bot_ids: Optional[List[str]] = None) -> Dict:
+    async def get_conversation_stats(
+        self, bot_ids: Optional[List[str]] = None, owner_usernames: Optional[List[str]] = None
+    ) -> Dict:
         """
         Obtiene estadísticas generales de conversaciones
 
         Args:
             bot_ids: Lista de bot_ids para filtrar (si None, retorna todo)
+            owner_usernames: ver get_all_conversations (None = sin restricción)
 
         Returns:
             Estadísticas de uso
@@ -348,6 +352,11 @@ class ConversationService:
         if bot_ids is not None:
             # Incluir conversaciones legacy sin bot_id (bot_id=None) además de las del owner
             base_filters.append(or_(ConversationModel.bot_id.in_(bot_ids), ConversationModel.bot_id.is_(None)))
+        if owner_usernames is not None:
+            owned_client_ids = select(ClientModel.client_id).where(
+                ClientModel.owner_username.in_(owner_usernames)
+            )
+            base_filters.append(ConversationModel.client_id.in_(owned_client_ids))
 
         async with AsyncSessionLocal() as session:
             # Todo lo que sale de la tabla conversations en una sola query
@@ -405,7 +414,8 @@ class ConversationService:
         order: str = "desc",
         bot_id: Optional[str] = None,
         client_id: Optional[str] = None,
-        bot_ids: Optional[List[str]] = None
+        bot_ids: Optional[List[str]] = None,
+        owner_usernames: Optional[List[str]] = None,
     ) -> Dict:
         """
         Obtiene conversaciones con paginación y filtros
@@ -420,6 +430,9 @@ class ConversationService:
             search: Buscar en user_id o contenido de mensajes
             sort_by: Campo por el cual ordenar (updated_at, created_at, total_tokens_used)
             order: Orden (asc, desc)
+            owner_usernames: si se pasa, sólo conversaciones de clientes de
+                esos abogados (ver UserService.get_scoped_owner_usernames).
+                None = sin restricción.
 
         Returns:
             Dict con conversaciones, total y metadata de paginación
@@ -430,6 +443,12 @@ class ConversationService:
             filters.append(or_(ConversationModel.bot_id.in_(bot_ids), ConversationModel.bot_id.is_(None)))
         elif bot_id:
             filters.append(ConversationModel.bot_id == bot_id)
+
+        if owner_usernames is not None:
+            owned_client_ids = select(ClientModel.client_id).where(
+                ClientModel.owner_username.in_(owner_usernames)
+            )
+            filters.append(ConversationModel.client_id.in_(owned_client_ids))
 
         if client_id:
             filters.append(ConversationModel.client_id == client_id)
@@ -480,13 +499,17 @@ class ConversationService:
             "limit": limit
         }
 
-    async def get_timeline_stats(self, days: int = 30, bot_ids: Optional[List[str]] = None) -> Dict:
+    async def get_timeline_stats(
+        self, days: int = 30, bot_ids: Optional[List[str]] = None,
+        owner_usernames: Optional[List[str]] = None,
+    ) -> Dict:
         """
         Obtiene estadísticas por día para los últimos N días
 
         Args:
             days: Número de días hacia atrás
             bot_ids: Lista de bot_ids para filtrar (si None, retorna todo)
+            owner_usernames: ver get_all_conversations (None = sin restricción)
 
         Returns:
             Dict con timeline de estadísticas
@@ -496,6 +519,11 @@ class ConversationService:
         filters = [ConversationModel.created_at >= date_from]
         if bot_ids is not None:
             filters.append(or_(ConversationModel.bot_id.in_(bot_ids), ConversationModel.bot_id.is_(None)))
+        if owner_usernames is not None:
+            owned_client_ids = select(ClientModel.client_id).where(
+                ClientModel.owner_username.in_(owner_usernames)
+            )
+            filters.append(ConversationModel.client_id.in_(owned_client_ids))
 
         msg_count_subq = (
             select(

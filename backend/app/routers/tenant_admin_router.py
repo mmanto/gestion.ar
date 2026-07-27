@@ -43,6 +43,7 @@ def _user_out(user_in_db) -> TenantUserOut:
         tenant_id=user_in_db.tenant_id,
         role=user_in_db.role,
         disabled=user_in_db.disabled,
+        broker_username=user_in_db.broker_username,
     )
 
 
@@ -50,7 +51,10 @@ def _user_out(user_in_db) -> TenantUserOut:
 
 @router.post("/plans", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_plan(data: PlanCreate):
-    plan = await get_plan_service().create_plan(data)
+    try:
+        plan = await get_plan_service().create_plan(data)
+    except ValueError as e:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e))
     return {"success": True, "plan": plan.model_dump()}
 
 
@@ -70,7 +74,10 @@ async def get_plan(plan_id: str):
 
 @router.patch("/plans/{plan_id}", response_model=dict)
 async def update_plan(plan_id: str, data: PlanUpdate):
-    plan = await get_plan_service().update_plan(plan_id, data)
+    try:
+        plan = await get_plan_service().update_plan(plan_id, data)
+    except ValueError as e:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e))
     if not plan:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Plan no encontrado")
     return {"success": True, "plan": plan.model_dump()}
@@ -150,6 +157,7 @@ async def create_tenant_user(data: TenantUserCreate):
             avatar_url=data.avatar_url,
             tenant_id=data.tenant_id,
             role=data.role.value if hasattr(data.role, "value") else data.role,
+            broker_username=data.broker_username,
         )
     except ValueError as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e))
@@ -191,6 +199,8 @@ async def update_tenant_user(username: str, data: TenantUserUpdate):
         nombre=data.nombre,
         apellido=data.apellido,
         avatar_url=data.avatar_url,
+        broker_username=data.broker_username,
+        clear_broker=data.clear_broker,
     )
     if not user:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado")

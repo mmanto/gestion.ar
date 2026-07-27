@@ -50,6 +50,9 @@ class ClientCreate(ClientBase):
     phone: Optional[str] = None
     dni: Optional[str] = None
     metadata: Optional[Dict] = None
+    # Canal/link por el que entró el primer contacto — determina el
+    # owner_username (abogado dueño del canal, ver ClientService.create_client).
+    channel_id: Optional[str] = None
 
 
 class ClientUpdate(BaseModel):
@@ -69,6 +72,8 @@ class ClientUpdate(BaseModel):
 class Client(ClientBase):
     """Modelo completo de Cliente"""
     client_id: str
+    channel_id: Optional[str] = None
+    owner_username: Optional[str] = None
     name: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None

@@ -51,6 +51,9 @@ services:
       dockerfile: Dockerfile
       args:
         - VITE_API_URL=${VITE_API_URL:-/api}
+        - VITE_APPOINTMENTS_REMOTE_URL=${VITE_APPOINTMENTS_REMOTE_URL:-https://appointments-widgets.intellify.pro/remoteEntry.js}
+        - VITE_NANGO_CONNECT_URL=https://nango.intellify.pro
+        - VITE_NANGO_API_URL=https://api.nango.intellify.pro
     # OJO: Compose mergea "labels" por clave, no reemplaza la lista entera.
     # docker-compose.yml (base) ya define un router/service "gestionar" para
     # este mismo servicio (Host dev.gestionar.kairosgroup.ar) — hay que

@@ -9,7 +9,7 @@ from typing import Dict, Optional
 from sqlalchemy import func, select
 
 from app.db.database import AsyncSessionLocal
-from app.db.models import Channel as ChannelModel
+from app.db.models import Bot as BotModel, Channel as ChannelModel
 from app.models.channel import (
     Channel,
     ChannelCreate,
@@ -26,6 +26,7 @@ def _to_channel(row: ChannelModel) -> Channel:
         bot_id=row.bot_id,
         channel_type=row.channel_type,
         name=row.name,
+        owner_username=row.owner_username,
         status=row.status,
         whatsapp_config=row.whatsapp_config,
         telegram_config=row.telegram_config,
@@ -105,11 +106,20 @@ class ChannelService:
             )
 
         async with AsyncSessionLocal() as session:
+            # Resolver tenant_id desde el bot (requerido por la FK NOT NULL —
+            # ver ClientService.create_client, mismo patrón).
+            bot_result = await session.execute(
+                select(BotModel.tenant_id).where(BotModel.bot_id == channel_data.bot_id)
+            )
+            tenant_id = bot_result.scalars().first()
+
             row = ChannelModel(
                 channel_id=channel_id,
                 bot_id=channel_data.bot_id,
+                tenant_id=tenant_id,
                 channel_type=channel_data.channel_type.value,
                 name=channel_data.name,
+                owner_username=channel_data.owner_username,
                 status=ChannelStatus.PENDING.value,
                 whatsapp_config=channel_data.whatsapp_config.model_dump() if channel_data.whatsapp_config else None,
                 telegram_config=channel_data.telegram_config.model_dump() if channel_data.telegram_config else None,

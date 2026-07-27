@@ -32,8 +32,11 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_TARGET: staff
+        VITE_NANGO_CONNECT_URL: https://nango.intellify.pro
+        VITE_NANGO_API_URL: https://api.nango.intellify.pro
     environment:
       - TENANT_ID=${TENANT_ID_IUS}
+      - TENANT_SLUG=ius
       - STATS_TWO_COLS_MOBILE=true
     depends_on:
       app:
@@ -57,9 +60,12 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_TARGET: staff
+        VITE_NANGO_CONNECT_URL: https://nango.intellify.pro
+        VITE_NANGO_API_URL: https://api.nango.intellify.pro
     container_name: gestionar_frontend_tenant_erma
     environment:
       - TENANT_ID=${TENANT_ID_ERMA}
+      - TENANT_SLUG=erma
     depends_on:
       app:
         condition: service_healthy
@@ -81,9 +87,12 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_TARGET: staff
+        VITE_NANGO_CONNECT_URL: https://nango.intellify.pro
+        VITE_NANGO_API_URL: https://api.nango.intellify.pro
     container_name: gestionar_frontend_tenant_laboralia
     environment:
       - TENANT_ID=${TENANT_ID_LABORALIA}
+      - TENANT_SLUG=laboralia
     depends_on:
       app:
         condition: service_healthy
@@ -106,9 +115,12 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_TARGET: staff
+        VITE_NANGO_CONNECT_URL: https://nango.intellify.pro
+        VITE_NANGO_API_URL: https://api.nango.intellify.pro
     container_name: gestionar_frontend_tenant_proptech
     environment:
       - TENANT_ID=${TENANT_ID_PROPTECH}
+      - TENANT_SLUG=proptech
     depends_on:
       app:
         condition: service_healthy

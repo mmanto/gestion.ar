@@ -247,3 +247,238 @@ Razones:
   no en localStorage.
 - Las stats de `bot_service.py` (`total_clients`, `total_conversations`, `total_messages`)
   no tienen lógica que las incremente — esto es deuda existente, no bloqueante para mobile.
+
+---
+
+## ADR-008: Arquitectura de módulos/plugins (manifiesto + dos tiers de confianza)
+
+**Estado:** Aceptado
+**Fecha:** 2026-07-21
+
+### Contexto
+
+"Módulos" (`rag`, `lead_funnel`, `appointments`) son hoy solo una capa de
+entitlement en base de datos (`modules` + `bot_modules`,
+`backend/app/services/module_service.py`) — el propio docstring de `Module`
+en `backend/app/db/models.py` lo admite: la modularización real del código
+sigue siendo trabajo futuro.
+
+Problemas concretos del estado actual:
+- `backend/app/main.py` registra todos los routers de todos los módulos
+  siempre (`include_router` incondicional). El gating pasa a mano dentro de
+  cada service (`is_enabled()` llamado en puntos sueltos), y es
+  inconsistente: `appointments_router` (CRUD admin) no chequea `is_enabled`
+  en absoluto, y `rag` no parece chequearse en ningún lado.
+- El backend de `appointments` (`backend/app/integrations/appointments_client.py`,
+  adapter HTTP hacia el microservicio externo `devbout-appointments`, con
+  router propio, webhook con verificación HMAC, modelos propios) está
+  razonablemente bien desacoplado — es, sin haberlo buscado, el ejemplo más
+  maduro de "módulo" que existe hoy.
+- El frontend es donde se rompe la abstracción: `ChatInterface.tsx`
+  (duplicado casi al pixel entre `frontend/src` y `frontend-tenant/src`)
+  importa y hardcodea `AppointmentCalendarWidget`/`AppointmentTimesWidget`/
+  `AppointmentConfirmWidget` directamente en el componente de chat genérico
+  que usa todo bot, tenga o no el módulo habilitado. No existe ningún
+  `useModules()`/`ModuleGate` en el frontend — la ruta admin
+  `/bots/:botId/appointments` tampoco tiene guard de módulo (solo rol
+  `super_admin`).
+- Planes y módulos están completamente desconectados: `Tenant.plan_id` no
+  tiene relación con qué módulos están disponibles; el otorgamiento es 100%
+  manual por bot (`grant_module`).
+
+Alcance definido para la nueva arquitectura: los módulos eventualmente los
+va a poder construir un tercero (modelo marketplace, tipo Shopify Apps/Slack
+Apps), cada módulo necesita poder deployarse/actualizarse
+independientemente del resto de la app, y el plan de un tenant debe
+determinar qué módulos tiene disponibles por defecto (el otorgamiento
+manual queda como override puntual).
+
+### Opciones consideradas
+
+**Backend** (cómo se empaqueta y aísla la lógica de un módulo):
+1. **Registro in-process** (Python, código del módulo corre en el mismo
+   proceso FastAPI) — sin aislamiento real, sin deploy independiente, no
+   apto para terceros sin sandboxing. Costo bajo.
+2. **Servicio externo + adapter/webhook** (lo que `appointments` ya hace) —
+   aislamiento total de proceso/deploy/fallo, deploy independiente nativo,
+   apto para terceros (modelo "app" de Shopify/Slack: tu servidor, su API).
+   Costo medio (adapter + contrato + auth).
+3. **Sandboxing en-proceso** (subinterpreters, WASM, gVisor) — aislamiento
+   parcial, alta complejidad de infraestructura de plataforma.
+
+**Frontend** (cómo se extiende nav, páginas admin, widgets de chat):
+1. **Import estático + registro** — resuelve el hardcoding de
+   `ChatInterface.tsx` pero no deploy independiente ni terceros.
+2. **Module Federation** (Vite/Rollup, remotes en runtime) — deploy
+   independiente, buen DX, pero aislamiento bajo (mismo JS realm/origen) —
+   solo apto para módulos confiables.
+3. **iframe + postMessage** (Salesforce LWC, Shopify App Bridge, plugins de
+   Figma) — aislamiento alto (proceso/realm separado), estándar real para
+   frontend de terceros, con fricción de UX (tamaño, theming, latencia)
+   mitigable con un SDK de postMessage bien diseñado.
+4. **Web Components remotos** — aislamiento medio (Shadow DOM, mismo
+   realm), punto medio combinable con iframe como fallback no-verificado.
+
+### Decisión
+
+**Manifiesto de módulo versionado + dos tiers de confianza**, reemplazando
+el catálogo estático `modules`:
+
+```
+module_key, version, trust_tier: "first_party" | "verified" | "third_party"
+backend: base_url, webhook_url, scopes[]
+frontend: remote_entry_url, extension_points[]  # ej. "chat.widget.appointment_calendar", "admin.nav"
+```
+
+- **Backend** — un Module Registry reemplaza el `include_router`
+  incondicional de `main.py`: itera el manifiesto de los módulos
+  habilitados (derivado de `plan.included_module_keys` ∪ `BotModule.granted`
+  como override) y, según `trust_tier`, wirea código in-repo (`first_party`)
+  o llama a un cliente HTTP genérico —el mismo patrón de
+  `AppointmentsClient`, generalizado— para `verified`/`third_party`, sin
+  importar nunca código de terceros al proceso.
+- **Frontend** — un Extension Point Registry (`registerExtension(point, loader)`)
+  reemplaza los imports hardcodeados de `ChatInterface.tsx`; el loader detrás
+  de cada extension point es Module Federation para `first_party` (mismo
+  framework, buena integración visual) o iframe sandboxeado + SDK de
+  postMessage para `third_party` — mismo extension point, loader distinto.
+- **Planes → módulos** — se agrega `plan_modules` (o `plans.included_module_keys`);
+  el módulo está disponible si `module_key ∈ plan.included_module_keys OR
+  BotModule.granted = true`. `grant_module`/`revoke_module` pasan a ser
+  explícitamente overrides sobre lo que da el plan.
+
+Se elige este enfoque en vez de construir directamente el camino
+`third_party` completo porque hoy solo existe `appointments` como módulo
+real, y es `first_party`: la migración inicial prueba el patrón completo
+(manifiesto + registry backend + registry frontend) con ese único caso,
+dejando el loader `iframe`/`third_party` para cuando aparezca el primer
+módulo externo real, sobre el mismo registry, sin rediseñarlo.
+
+### Consecuencias
+
+- Requiere migración de datos: `plan_modules` + backfill desde el estado
+  actual de `bot_modules` para no perder los grants ya otorgados.
+- `backend/app/main.py` deja de tener líneas `include_router` hardcodeadas
+  para módulos — todo debe salir del registro leyendo manifiesto +
+  entitlement.
+- `ChatInterface.tsx` (las dos copias, en `frontend/src` y
+  `frontend-tenant/src`) se migra al Extension Point Registry — con
+  code-splitting, un bot con `appointments` deshabilitado no debe descargar
+  el bundle de esos widgets.
+- El SDK de postMessage/iframe para `third_party` se diseña recién cuando
+  haya un candidato real a módulo externo — no se construye especulativamente
+  ahora.
+- Implementación pendiente, en este orden: migración `plan_modules` con
+  backfill → Module Registry backend (piloteado con `appointments`) →
+  Extension Point Registry frontend + migración de `ChatInterface.tsx` →
+  recién ahí, SDK `third_party`. Cada paso requiere su propio plan de
+  implementación (no está detallado en este ADR).
+
+---
+
+## ADR-009: Frontend de turnos vía Module Federation (devbout-appointments)
+
+**Estado:** Aceptado
+**Fecha:** 2026-07-22
+
+### Contexto
+
+ADR-008 dejó `appointments` como el caso piloto de módulo `first_party`,
+pero el desacople logrado hasta ahora es solo de backend:
+`devbout-appointments` es un microservicio Python puro (sin una sola línea
+de frontend — no tiene `package.json` ni `vite.config` en el repo),
+mientras que toda la UI de turnos vive hardcodeada en `gestion.ar`:
+
+- Chat del cliente final: `frontend/src/components/chat/
+  {AppointmentCalendarWidget,AppointmentTimesWidget,AppointmentConfirmWidget}.tsx`,
+  duplicados letra por letra en `frontend-tenant/src/components/chat/`.
+- Panel admin: `frontend/src/pages/BotAppointments.tsx` +
+  `frontend/src/components/appointments/{ResourcesTab,ServicesTab,
+  AvailabilityTab,AppointmentsTab,AppointmentsConfigBanner}.tsx` (no existe
+  equivalente en `frontend-tenant`, que solo tiene los widgets de chat).
+
+Mientras el código de UI viva ahí, `appointments` no es un módulo real: no
+se puede deployar ni versionar independientemente de `gestion.ar`, y el
+patrón que ADR-008 promete para futuros módulos de terceros queda sin
+probar del lado frontend.
+
+### Opciones consideradas
+
+1. **Paquete npm versionado** — mover los componentes a un paquete
+   publicado desde `devbout-appointments`, `gestion.ar` lo instala como
+   dependencia normal. Simple, pero sigue siendo el mismo bundle final —
+   separa el código fuente, no da deploy independiente en runtime.
+2. **Module Federation (Vite)** — `devbout-appointments` sirve su propio
+   build con remotes expuestos; `gestion.ar` los carga en runtime. Deploy
+   independiente real, buen DX, pero acopla versión de React/framework
+   entre ambos repos y sigue siendo el mismo JS realm (no aislamiento de
+   proceso, solo independencia de deploy).
+3. **iframe + SDK de postMessage** — aislamiento total (proceso/realm
+   separado, hasta otro framework posible), el modelo "app" real tipo
+   Shopify/Salesforce. ADR-008 ya reservó este loader explícitamente para
+   el primer módulo `third_party` real — usarlo acá para `appointments`
+   (que es `first_party`, mismo equipo, confianza total) sería construir
+   la fricción de UX y el SDK de forma especulativa, sin necesidad.
+
+### Decisión
+
+**Module Federation**, con `@module-federation/vite` (no
+`@originjs/vite-plugin-federation` — roto contra Vite 7 según
+[originjs/vite-plugin-federation#732](https://github.com/originjs/vite-plugin-federation/issues/732),
+sin mantenimiento activo hace un año; `frontend`/`frontend-tenant` corren
+Vite `^7.2.4`, y `@module-federation/vite` sí declara soporte explícito
+Vite 5/6/7/8).
+
+Diseño de acoplamiento, resuelto por pieza según su dependencia real del
+host:
+
+- **Chat widgets** (`AppointmentCalendarWidget`/`Times`/`Confirm`): hoy son
+  puramente presentacionales (props + callbacks, sin fetch propio, sin
+  imports del design system). Se exponen tal cual — solo `react` y
+  `date-fns` (`^4.1.0` en ambos frontends) como `shared`.
+- **Panel admin**: depende de 3 piezas del design system de `gestion.ar`
+  (`Input`/`Button`/`Card`) y de `react-router-dom`. Se resuelve por
+  **inyección de props**, no duplicación ni federación del design system:
+  el remote recibe `ui={{ Input, Button, Card }}` desde `BotAppointments.tsx`,
+  sin importar nada del host directamente. Es lo correcto para un módulo
+  que algún día podría ser de un tercero real (no puede asumir que existe
+  un DS del host), a costa de refactorizar los 5 componentes para tomar
+  esas 3 piezas por props en vez de import directo. Mismo criterio para el
+  cliente HTTP: se inyecta `apiClient` (instancia ya configurada, con su
+  interceptor de 401) en vez de que el remote importe `services/api.ts`
+  del host. El color de acento (`useAccentTheme()`) se pasa como prop
+  simple (`accent: string`), no se federa el hook.
+- **Extension Point Registry** (`registerExtension`/`ExtensionSlot`) de
+  ADR-008: no se construye todavía. Wiring directo —
+  `lazy(() => import('appointments/AppointmentCalendarWidget'))` apuntando
+  al remote — mismo criterio que ADR-008 usó para descartar el
+  iframe/third-party especulativo. El registry genérico se construye
+  cuando aparezca un segundo módulo real que lo necesite.
+- **Fasado**: chat widgets primero (menor riesgo, cero acoplamiento a
+  DS/API, valida todo el pipeline nuevo — primer Node/JS en
+  `devbout-appointments`, primer static-hosting con CORS en ese repo,
+  primer router de Traefik cross-repo, compatibilidad real de
+  `@module-federation/vite` con Vite 7.2.4 en este monorepo). Panel admin
+  (con el contrato de inyección de `ui`/`apiClient`) recién con esa
+  infraestructura ya probada en producción.
+
+### Consecuencias
+
+- `devbout-appointments` gana su primer frontend (`frontend-widgets/`,
+  Vite + React 19, mismas versiones que `gestion.ar` para que el singleton
+  sharing de Module Federation dedupe de verdad) y su primer
+  static-hosting con CORS — hasta ahora el repo era 100% Python/FastAPI.
+- `devbout-appointments` no tiene tags de git ni CI hoy — versionar el
+  `remoteEntry.js` de forma independiente del deploy de `gestion.ar`
+  requiere establecer esa convención desde cero (queda detallado en el
+  plan de implementación, no en este ADR).
+- `frontend/src/components/chat/Appointment*Widget.tsx` y
+  `frontend/src/components/appointments/*` (y sus duplicados en
+  `frontend-tenant/`) se eliminan de `gestion.ar` una vez migrados y
+  verificados — el código fuente vive en un solo lugar (`devbout-appointments`),
+  no en dos repos a la vez.
+- Cualquier cambio de contrato de props (`ui`, `apiClient`, `accent`,
+  shape de `AppointmentWidget`) entre el remote y `gestion.ar` no rompe en
+  build-time (son dos builds separados) — solo en runtime. Mismo trade-off
+  ya señalado para el cliente HTTP `devbout-appointments`↔`gestion.ar`
+  backend en ADR-008.

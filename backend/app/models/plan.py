@@ -4,7 +4,7 @@ Plan models - Pydantic models para el catálogo de planes de suscripción
 """
 
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -19,6 +19,10 @@ class PlanCreate(BaseModel):
     description: Optional[str] = Field(None, max_length=500)
     amount: float = Field(..., ge=0)
     periodicity: PlanPeriodicity
+    # Módulos que este plan incluye por defecto (ver ADR-008,
+    # docs/dev/DECISIONS.md) — BotModule.granted sigue funcionando como
+    # override puntual por encima de esto.
+    included_module_keys: List[str] = Field(default_factory=list)
 
 
 class PlanUpdate(BaseModel):
@@ -26,6 +30,9 @@ class PlanUpdate(BaseModel):
     description: Optional[str] = Field(None, max_length=500)
     amount: Optional[float] = Field(None, ge=0)
     periodicity: Optional[PlanPeriodicity] = None
+    # None = no tocar el set actual; una lista (incluso vacía) reemplaza el
+    # set completo de módulos incluidos.
+    included_module_keys: Optional[List[str]] = None
 
 
 class Plan(BaseModel):
@@ -34,5 +41,6 @@ class Plan(BaseModel):
     description: Optional[str] = None
     amount: float
     periodicity: PlanPeriodicity
+    included_module_keys: List[str] = Field(default_factory=list)
     created_at: str
     updated_at: str

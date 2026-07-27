@@ -87,6 +87,7 @@ class SendNotificationRequest(BaseModel):
     channel_id: Optional[str] = Field(None, description="Solo envía a suscripciones de ese canal")
     # Staff targeting (apps nativas)
     user_id: Optional[str] = Field(None, description="Solo envía a suscripciones de ese staff member")
+    user_ids: Optional[List[str]] = Field(None, description="Solo envía a suscripciones de esos staff members")
 
 
 class NotificationResult(BaseModel):

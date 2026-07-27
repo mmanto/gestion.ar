@@ -102,6 +102,22 @@ class BotModule(Base):
     )
 
 
+class PlanModule(Base):
+    """Módulos que un plan incluye por defecto (ver ADR-008,
+    docs/dev/DECISIONS.md). `BotModule.granted` sigue funcionando como
+    override puntual por encima de esto — esta tabla no reemplaza el
+    otorgamiento manual, sólo define el baseline por plan."""
+
+    __tablename__ = "plan_modules"
+
+    plan_id = Column(Text, ForeignKey("plans.plan_id", ondelete="CASCADE"), primary_key=True)
+    module_key = Column(Text, ForeignKey("modules.module_key"), primary_key=True)
+
+    __table_args__ = (
+        Index("ix_plan_modules_module_key", "module_key"),
+    )
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -120,6 +136,10 @@ class User(Base):
     # tenant_id nullable: super_admin no pertenece a ningún tenant.
     tenant_id = Column(Text, ForeignKey("tenants.tenant_id"), nullable=True)
     role = Column(Text, nullable=False, default="admin", server_default="admin")
+    # Solo para role='operativo': el broker (firma legal) del que depende este
+    # abogado — ve sus clientes/conversaciones además de los propios (ver
+    # client_router.py). NULL = opera de forma independiente, sin firma.
+    broker_username = Column(Text, ForeignKey("users.username", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (
@@ -131,11 +151,16 @@ class User(Base):
             "provider_user_id",
         ),
         Index("ix_users_tenant_id", "tenant_id"),
-        CheckConstraint("role IN ('super_admin', 'admin', 'operativo')", name="ck_users_role"),
+        Index("ix_users_broker_username", "broker_username"),
+        CheckConstraint("role IN ('super_admin', 'admin', 'operativo', 'broker')", name="ck_users_role"),
         CheckConstraint(
             "(role = 'super_admin' AND tenant_id IS NULL) OR "
-            "(role IN ('admin', 'operativo') AND tenant_id IS NOT NULL)",
+            "(role IN ('admin', 'operativo', 'broker') AND tenant_id IS NOT NULL)",
             name="ck_users_role_tenant_consistency",
+        ),
+        CheckConstraint(
+            "broker_username IS NULL OR role = 'operativo'",
+            name="ck_users_broker_username_only_operativo",
         ),
     )
 
@@ -177,6 +202,10 @@ class Channel(Base):
     channel_id = Column(Text, primary_key=True)
     bot_id = Column(Text, ForeignKey("bots.bot_id", ondelete="CASCADE"), nullable=False)
     tenant_id = Column(Text, ForeignKey("tenants.tenant_id"), nullable=False)
+    # Abogado (operativo/broker) dueño de este canal/link — los clientes que
+    # entran por acá heredan este owner (ver Client.owner_username). NULL =
+    # canal general del tenant, sin abogado asignado.
+    owner_username = Column(Text, ForeignKey("users.username", ondelete="SET NULL"), nullable=True)
     channel_type = Column(Text, nullable=False)
     name = Column(Text, nullable=False)
     status = Column(Text, nullable=False, default="pending")
@@ -199,6 +228,7 @@ class Channel(Base):
     __table_args__ = (
         Index("ix_channels_bot_id", "bot_id"),
         Index("ix_channels_tenant_id", "tenant_id"),
+        Index("ix_channels_owner_username", "owner_username"),
         Index("ix_channels_bot_id_channel_type", "bot_id", "channel_type"),
         Index("ix_channels_status", "status"),
         Index(
@@ -214,6 +244,12 @@ class Client(Base):
     client_id = Column(Text, primary_key=True)
     bot_id = Column(Text, ForeignKey("bots.bot_id", ondelete="CASCADE"), nullable=False)
     tenant_id = Column(Text, ForeignKey("tenants.tenant_id"), nullable=False)
+    # Abogado dueño de este cliente y canal/link por el que hizo el primer
+    # contacto — copiados de Channel.owner_username al crear el cliente (ver
+    # ClientService.get_or_create_client) y ya no cambian si el canal se
+    # reasigna después. NULL en clientes de canales sin owner (o legacy).
+    owner_username = Column(Text, ForeignKey("users.username", ondelete="SET NULL"), nullable=True)
+    channel_id = Column(Text, ForeignKey("channels.channel_id", ondelete="SET NULL"), nullable=True)
     external_id = Column(Text, nullable=False)
     source = Column(Text, nullable=False)
     name = Column(Text, nullable=True)
@@ -242,6 +278,7 @@ class Client(Base):
     __table_args__ = (
         Index("ix_clients_bot_id_external_id", "bot_id", "external_id", unique=True),
         Index("ix_clients_tenant_id", "tenant_id"),
+        Index("ix_clients_owner_username", "owner_username"),
         Index("ix_clients_bot_id_status", "bot_id", "status"),
         Index("ix_clients_last_contact_at", "last_contact_at"),
         Index("ix_clients_score", "score"),

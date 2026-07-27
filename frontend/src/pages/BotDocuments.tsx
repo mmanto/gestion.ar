@@ -11,7 +11,11 @@ import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } fro
 import { useAccentTheme } from '../hooks/useAccentTheme';
 import botsService from '../services/bots.service';
 import documentsService, { type RAGDocument, type RAGStats } from '../services/documents.service';
+import tenantAdminService from '../services/tenantAdmin.service';
 import type { Bot } from '../types/bot.types';
+import type { BotModuleInfo } from '../types/tenant.types';
+
+const MODULE_KEY = 'rag';
 
 const TYPE_LABELS: Record<string, string> = {
   pdf: 'PDF',
@@ -38,9 +42,21 @@ function formatDate(iso?: string) {
   });
 }
 
-export const BotDocuments = () => {
+const ModuleUnavailablePanel = () => (
+  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+    <p className="text-yellow-800">
+      El módulo <strong>Documentos (RAG)</strong> no está disponible para este agente (ni otorgado
+      ni incluido en el plan del tenant). Otorgalo desde el detalle del agente, o agregalo al plan
+      del tenant, para poder usarlo acá.
+    </p>
+  </div>
+);
+
+// Solo se monta cuando moduleInfo.available es true — load() dispara
+// fetches contra document_router, que devuelve 403 si el módulo no está
+// disponible (ver BotDocuments más abajo).
+const DocumentsWorkspace = ({ botId }: { botId: string }) => {
   const { accent } = useAccentTheme();
-  const { botId } = useParams<{ botId: string }>();
   const [bot, setBot] = useState<Bot | null>(null);
   const [documents, setDocuments] = useState<RAGDocument[]>([]);
   const [stats, setStats] = useState<RAGStats | null>(null);
@@ -61,7 +77,6 @@ export const BotDocuments = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
-    if (!botId) return;
     try {
       setLoading(true);
       setError(null);
@@ -83,7 +98,7 @@ export const BotDocuments = () => {
   useEffect(() => { load(); }, [load]);
 
   const handleFiles = async (files: FileList | null) => {
-    if (!botId || !files || files.length === 0) return;
+    if (!files || files.length === 0) return;
     const file = files[0];
 
     const ext = file.name.split('.').pop()?.toLowerCase();
@@ -134,7 +149,6 @@ export const BotDocuments = () => {
   };
 
   const handleDelete = async (doc: RAGDocument) => {
-    if (!botId) return;
     setDeleting(doc.doc_id);
     setConfirmDelete(null);
     try {
@@ -386,6 +400,72 @@ export const BotDocuments = () => {
       )}
     </AppLayout>
   );
+};
+
+export const BotDocuments = () => {
+  const { accent } = useAccentTheme();
+  const { botId } = useParams<{ botId: string }>();
+  const [moduleInfo, setModuleInfo] = useState<BotModuleInfo | null>(null);
+  const [moduleLoading, setModuleLoading] = useState(true);
+
+  useEffect(() => {
+    if (!botId) return;
+    setModuleLoading(true);
+    tenantAdminService
+      .getBotModules(botId)
+      .then((mods) => setModuleInfo(mods.find((m) => m.module_key === MODULE_KEY) || null))
+      .catch(() => {})
+      .finally(() => setModuleLoading(false));
+  }, [botId]);
+
+  if (!botId) return null;
+
+  if (moduleLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center py-24">
+          <Spinner />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!moduleInfo?.available) {
+    return (
+      <AppLayout>
+        <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
+          <nav className="mb-4">
+            <ol className="flex items-center space-x-2 text-base text-gray-900">
+              <li>
+                <Link to="/bots" className="hover:underline" style={{ color: accent }}>
+                  Agentes
+                </Link>
+              </li>
+              <li>/</li>
+              <li>
+                <Link to={`/bots/${botId}`} className="hover:underline" style={{ color: accent }}>
+                  Agente
+                </Link>
+              </li>
+              <li>/</li>
+              <li className="text-gray-900">Documentos</li>
+            </ol>
+          </nav>
+
+          <PageHeader
+            title="Base de conocimiento"
+            description="Documentos usados por el RAG de este agente para responder consultas"
+            titleClassName="font-semibold uppercase tracking-[0.08em]"
+            descriptionClassName="text-gray-800"
+          />
+
+          <ModuleUnavailablePanel />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  return <DocumentsWorkspace botId={botId} />;
 };
 
 export default BotDocuments;

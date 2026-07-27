@@ -65,7 +65,7 @@ export const Modules = () => {
 
   return (
     <AppLayout>
-      <div className="font-editorial p-1 md:bg-white md:rounded-[1.4rem] md:shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] md:p-8">
+      <div className="font-editorial p-1 md:bg-[#F8F9FD] md:p-8">
         <PageHeader
           title="Módulos"
           description="Habilitá o deshabilitá las funcionalidades otorgadas a tu agente"

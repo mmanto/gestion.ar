@@ -122,7 +122,7 @@ const ConversationList = ({
             <TableHeaderCell>Tokens</TableHeaderCell>
             <TableHeaderCell>Costo</TableHeaderCell>
             <TableHeaderCell>Actualizado</TableHeaderCell>
-            <TableHeaderCell align="right">Acciones</TableHeaderCell>
+            <TableHeaderCell>Acciones</TableHeaderCell>
           </tr>
         </TableHead>
         <TableBody>
@@ -142,8 +142,8 @@ const ConversationList = ({
               <TableCell>{formatNumber(conversation.total_tokens_used)}</TableCell>
               <TableCell>{formatCurrency(conversation.total_cost_usd)}</TableCell>
               <TableCell>{formatDate(conversation.updated_at)}</TableCell>
-              <TableCell align="right">
-                <div className="flex items-center justify-end gap-2">
+              <TableCell align="center">
+                <div className="flex items-center justify-center gap-2">
                   <button
                     onClick={() => handleOpenConversation(conversation)}
                     title="Ver conversación"
@@ -172,7 +172,7 @@ const ConversationList = ({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 bg-white border border-gray-300 sm:px-6 rounded-lg">
+        <div className="flex items-center justify-between px-4 py-3 sm:px-6">
           <div className="flex justify-between items-center w-full">
             <div>
               <p className="text-base text-gray-900">

@@ -22,14 +22,10 @@ export const Login: React.FC = () => {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4 py-12"
-      style={{ background: '#F2F1F1' }}
+      style={{ background: '#F8F9FD' }}
     >
-      <div
-        className="max-w-md w-full rounded-xl p-8 shadow-lg"
-        style={{ background: 'white', border: '1px solid #e2e8f0' }}
-      >
+      <div className="max-w-md w-full">
         <div className="flex flex-col items-center gap-6">
-
 
           {/* Marca */}
           <div className="flex flex-col items-center gap-3">
@@ -48,11 +44,8 @@ export const Login: React.FC = () => {
           {/* Encabezado */}
           <div className="text-center">
             <h2 className="text-xl font-semibold" style={{ color: '#0f172a' }}>
-              Iniciar sesión
+              Bienvenido!
             </h2>
-            <p className="text-sm mt-1" style={{ color: '#64748b' }}>
-              {tenant?.branding.tagline || 'Accede a tu cuenta para continuar'}
-            </p>
           </div>
 
           {/* Formulario */}

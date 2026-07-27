@@ -1,3 +1,4 @@
+import { Check, Star, Search, User } from 'lucide-react';
 import TrendStatCard from './TrendStatCard';
 import { formatNumber } from '../../utils/formatters';
 import { useTenant } from '../../hooks/useTenant';
@@ -9,17 +10,6 @@ interface StatsCardsProps {
   onSelectColor?: (color: ColorFilter) => void;
 }
 
-/** Punto de semáforo — código de color por nivel (viable/potencial/exploración/sin clasificar). */
-const TrafficLight = ({ color }: { color: 'green' | 'yellow' | 'red' | 'gray' }) => {
-  const bg = {
-    green: 'bg-green-500',
-    yellow: 'bg-yellow-400',
-    red: 'bg-red-500',
-    gray: 'bg-gray-400',
-  }[color];
-  return <span className={`w-5 h-5 rounded-full flex-shrink-0 ${bg}`} />;
-};
-
 const StatsCards = ({ colorStats, selectedColor, onSelectColor }: StatsCardsProps) => {
   const { statsTwoColsMobile } = useTenant();
   const mobileCols = statsTwoColsMobile ? 'grid-cols-2' : 'grid-cols-1';
@@ -27,29 +17,37 @@ const StatsCards = ({ colorStats, selectedColor, onSelectColor }: StatsCardsProp
   return (
     <div className={`grid ${mobileCols} md:grid-cols-2 lg:grid-cols-4 gap-3`}>
       <TrendStatCard
-        icon={<TrafficLight color="green" />}
+        variant="green"
+        icon={<Check className="w-5 h-5 text-white" />}
         title="VIABLE"
+        description="Clientes con alto potencial y listos para avanzar."
         value={formatNumber(colorStats.verde)}
         onClick={onSelectColor ? () => onSelectColor('verde') : undefined}
         selected={selectedColor === 'verde'}
       />
       <TrendStatCard
-        icon={<TrafficLight color="yellow" />}
+        variant="yellow"
+        icon={<Star className="w-5 h-5 text-white" />}
         title="POTENCIAL"
+        description="Clientes interesados, con potencial de conversión."
         value={formatNumber(colorStats.amarillo)}
         onClick={onSelectColor ? () => onSelectColor('amarillo') : undefined}
         selected={selectedColor === 'amarillo'}
       />
       <TrendStatCard
-        icon={<TrafficLight color="red" />}
+        variant="red"
+        icon={<Search className="w-5 h-5 text-white" />}
         title="EXPLORACIÓN"
+        description="Clientes en evaluación inicial."
         value={formatNumber(colorStats.rojo)}
         onClick={onSelectColor ? () => onSelectColor('rojo') : undefined}
         selected={selectedColor === 'rojo'}
       />
       <TrendStatCard
-        icon={<TrafficLight color="gray" />}
-        title="SIN CLASIFICAR"
+        variant="purple"
+        icon={<User className="w-5 h-5 text-white" />}
+        title="Solicitan contacto"
+        description="Clientes que solicitaron contacto."
         value={formatNumber(colorStats.sin_clasificar)}
         onClick={onSelectColor ? () => onSelectColor('sin_clasificar') : undefined}
         selected={selectedColor === 'sin_clasificar'}

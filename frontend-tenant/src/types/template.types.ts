@@ -7,6 +7,7 @@ export interface TemplateOption {
 
 export interface TemplateContextType {
   templateId: TemplateId;
-  setTemplateId: (id: TemplateId) => void;
+  /** Persiste el tema para todo el tenant (PATCH /tenant/branding, solo admin) — ver TemplateContext.tsx. */
+  setTemplateId: (id: TemplateId) => Promise<void>;
   templates: TemplateOption[];
 }

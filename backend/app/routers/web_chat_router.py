@@ -28,6 +28,7 @@ from app.services.conversation_flow_service import create_flow_state, FlowState
 from app.services.module_service import get_module_service
 from app.services.tenant_service import get_tenant_service
 from app.services.appointment_booking_service import BookingState, detects_booking_intent, start_booking
+from app.services.client_field_extraction_service import capture_client_fields_from_message
 from app.services.prospect_auto_qualify_service import QUALIFICATION_TOOL_SPEC, build_qualification_tool_executor
 from app.models.client import Client, ClientUpdate
 
@@ -53,6 +54,15 @@ async def _notify_staff(
         content=content,
         channel=channel,
     )
+
+
+async def _capture_client_fields_background(client_id: str, user_text: str) -> None:
+    """Fire-and-forget: nunca debe tumbar el loop del websocket ni sumarle
+    latencia a la respuesta del bot (ver client_field_extraction_service.py)."""
+    try:
+        await capture_client_fields_from_message(client_id, user_text)
+    except Exception:
+        logger.exception("Error extrayendo datos del cliente en vivo (client_id=%s)", client_id)
 
 
 
@@ -187,6 +197,9 @@ async def websocket_chat(websocket: WebSocket, bot_id: str, device_id: Optional[
             user_text = (data.get("content") or "").strip()
             if not user_text:
                 continue
+
+            if web_client_id:
+                asyncio.create_task(_capture_client_fields_background(web_client_id, user_text))
 
             # Indicar que el bot está "escribiendo"
             await websocket.send_json({"type": "typing", "status": True})
@@ -395,6 +408,7 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
             bot_id=channel.bot_id,
             external_id=session_id,
             source=channel_source,
+            channel_id=channel.channel_id,
         )
         channel_client_id = channel_client.client_id
     except Exception:
@@ -503,6 +517,9 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
             user_text = (data.get("content") or "").strip()
             if not user_text:
                 continue
+
+            if channel_client_id:
+                asyncio.create_task(_capture_client_fields_background(channel_client_id, user_text))
 
             await websocket.send_json({"type": "typing", "status": True})
 

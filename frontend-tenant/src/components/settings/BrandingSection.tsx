@@ -4,8 +4,10 @@ import { Card } from '../common/Card';
 import { Button } from '../common/Button';
 import { Alert } from '../common/Alert';
 import { useTenant } from '../../hooks/useTenant';
+import { useTemplate } from '../../hooks/useTemplate';
 import tenantBrandingService from '../../services/tenantBranding.service';
 import { resolveAssetUrl } from '../../utils/assetUrl';
+import type { TemplateId } from '../../types/template.types';
 
 const MAX_BYTES = 2 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
@@ -98,6 +100,7 @@ const LogoUploadSlot: React.FC<{
 
 export const BrandingSection = () => {
   const { tenant, refetchTenant } = useTenant();
+  const { templateId, setTemplateId, templates } = useTemplate();
 
   const [logoH, setLogoH] = useState<string | undefined>(
     tenant?.branding.logo_url_horizontal || tenant?.branding.logo_url || undefined,
@@ -111,6 +114,9 @@ export const BrandingSection = () => {
   const [tagline, setTagline] = useState<string>(
     tenant?.branding.tagline || '',
   );
+  const [sidebarVisible, setSidebarVisible] = useState<boolean>(
+    tenant?.branding.sidebar_visible ?? true,
+  );
 
   const [uploadingH, setUploadingH] = useState(false);
   const [uploadingV, setUploadingV] = useState(false);
@@ -120,7 +126,10 @@ export const BrandingSection = () => {
   const [deletingV, setDeletingV] = useState(false);
   const [colorSaving, setColorSaving] = useState(false);
   const [taglineSaving, setTaglineSaving] = useState(false);
+  const [themeSaving, setThemeSaving] = useState(false);
+  const [sidebarSaving, setSidebarSaving] = useState(false);
   const [saved, setSaved] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (tenant) {
@@ -128,6 +137,7 @@ export const BrandingSection = () => {
       setLogoV(tenant.branding.logo_url_vertical || undefined);
       setPrimaryColor(tenant.branding.primary_color || '#25357a');
       setTagline(tenant.branding.tagline || '');
+      setSidebarVisible(tenant.branding.sidebar_visible ?? true);
     }
   }, [tenant]);
 
@@ -196,11 +206,45 @@ export const BrandingSection = () => {
     }
   };
 
+  const handleThemeChange = async (id: TemplateId) => {
+    if (id === templateId) return;
+    setThemeSaving(true);
+    try {
+      await setTemplateId(id);
+      flashSaved('Tema guardado');
+    } finally {
+      setThemeSaving(false);
+    }
+  };
+
+  const handleSidebarVisibleChange = async (value: boolean) => {
+    setSidebarVisible(value);
+    setSidebarSaving(true);
+    setError(null);
+    try {
+      await tenantBrandingService.updateBranding({ sidebar_visible: value });
+      await refetchTenant();
+      flashSaved('Preferencia guardada');
+    } catch (err) {
+      setSidebarVisible(!value); // revertir ante error
+      const detail = (err as { response?: { data?: { detail?: string } } }).response?.data?.detail;
+      setError(detail || 'No se pudo guardar la preferencia de la barra lateral.');
+    } finally {
+      setSidebarSaving(false);
+    }
+  };
+
   const fallbackLetter = (tenant?.name || '?').charAt(0).toUpperCase();
 
   return (
-    <Card shadow="none" className="mb-6">
+    <Card shadow="none">
       <h2 className="text-xl font-semibold text-gray-900 mb-4">Marca</h2>
+
+      {error && (
+        <Alert variant="error" className="mb-4">
+          {error}
+        </Alert>
+      )}
 
       {saved && (
         <Alert variant="success" className="mb-4">
@@ -271,6 +315,53 @@ export const BrandingSection = () => {
           >
             {taglineSaving ? 'Guardando...' : 'Guardar'}
           </Button>
+        </div>
+      </div>
+
+      {/* Tema visual */}
+      <div className="mt-6">
+        <p className="text-xs font-medium text-gray-700 mb-2">Tema visual</p>
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1.5">
+            {templates.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => handleThemeChange(t.id)}
+                disabled={themeSaving}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors disabled:opacity-50 ${
+                  templateId === t.id
+                    ? 'border-primary text-primary bg-primary-50'
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          {themeSaving && (
+            <span className="text-xs text-gray-700">Guardando...</span>
+          )}
+        </div>
+      </div>
+
+      {/* Barra lateral */}
+      <div className="mt-6">
+        <p className="text-xs font-medium text-gray-700 mb-2">Barra lateral</p>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={sidebarVisible}
+              onChange={(e) => handleSidebarVisibleChange(e.target.checked)}
+              disabled={sidebarSaving}
+              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+            />
+            <span className="text-sm text-gray-900">Mostrar la barra lateral de navegación</span>
+          </label>
+          {sidebarSaving && (
+            <span className="text-xs text-gray-700">Guardando...</span>
+          )}
         </div>
       </div>
     </Card>

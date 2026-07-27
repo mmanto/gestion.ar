@@ -114,7 +114,7 @@ export const Users = () => {
 
   return (
     <AppLayout>
-      <div className="font-editorial p-1 md:bg-white md:rounded-[1.4rem] md:shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] md:p-8">
+      <div className="font-editorial p-1 md:bg-[#F8F9FD] md:p-8">
         <PageHeader
           title="Usuarios"
           description={`${users.length} usuario${users.length !== 1 ? 's' : ''} en tu equipo`}
@@ -148,7 +148,7 @@ export const Users = () => {
                 <TableHeaderCell>Email</TableHeaderCell>
                 <TableHeaderCell>Rol</TableHeaderCell>
                 <TableHeaderCell>Estado</TableHeaderCell>
-                <TableHeaderCell align="right">Acciones</TableHeaderCell>
+                <TableHeaderCell>Acciones</TableHeaderCell>
               </tr>
             </TableHead>
             <TableBody>
@@ -178,8 +178,8 @@ export const Users = () => {
                       {u.disabled ? 'Deshabilitado' : 'Activo'}
                     </span>
                   </TableCell>
-                  <TableCell align="right">
-                    <div className="flex items-center justify-end gap-3">
+                  <TableCell align="center">
+                    <div className="flex items-center justify-center gap-3">
                       <button onClick={() => openEditUser(u)} className="text-sm text-gray-800 hover:underline">
                         Editar
                       </button>

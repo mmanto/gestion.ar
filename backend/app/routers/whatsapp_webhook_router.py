@@ -61,6 +61,7 @@ async def process_whatsapp_message(
                     bot_id=bot_id,
                     external_id=parsed_message.from_number,
                     source="whatsapp",
+                    channel_id=channel_id,
                 )
                 client_id = client.client_id
             except Exception as e:

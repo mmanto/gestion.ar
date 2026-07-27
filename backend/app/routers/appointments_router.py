@@ -23,6 +23,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.dependencies.auth import require_role
+from app.dependencies.modules import require_module_available
 from app.integrations.appointments_client import SlotUnavailableError, get_appointments_client
 from app.models.appointment import (
     AppointmentCancelRequest,
@@ -43,7 +44,10 @@ from app.services.client_service import get_client_service
 router = APIRouter(
     prefix="/api/bots/{bot_id}/appointments",
     tags=["appointments"],
-    dependencies=[Depends(require_role("super_admin"))],
+    dependencies=[
+        Depends(require_role("super_admin")),
+        Depends(require_module_available("appointments")),
+    ],
 )
 
 
@@ -61,6 +65,7 @@ def _get_appointments_config(bot: Bot) -> dict:
     config.setdefault("resource_ids", [])
     config.setdefault("service_ids", [])
     config.setdefault("default_service_id", None)
+    config.setdefault("default_info_fields", None)
     return config
 
 
@@ -131,6 +136,8 @@ async def update_appointments_config(
         config["service_ids"] = payload.service_ids
     if payload.default_service_id is not None:
         config["default_service_id"] = payload.default_service_id
+    if payload.default_info_fields is not None:
+        config["default_info_fields"] = [f.model_dump() for f in payload.default_info_fields]
     await _save_appointments_config(bot, config)
     return {"success": True, "config": config}
 
@@ -204,6 +211,10 @@ async def deactivate_resource(resource_id: str, bot: Bot = Depends(verify_bot_ac
         await get_appointments_client().deactivate_resource(resource_id)
     except httpx.HTTPStatusError as exc:
         _raise_upstream_error(exc)
+
+    config = _get_appointments_config(bot)
+    config["resource_ids"] = [rid for rid in config["resource_ids"] if rid != resource_id]
+    await _save_appointments_config(bot, config)
 
 
 @router.post("/resources/{resource_id}/availability-rules", status_code=201)
@@ -313,6 +324,12 @@ async def deactivate_service(service_id: str, bot: Bot = Depends(verify_bot_acce
         await get_appointments_client().deactivate_service(service_id)
     except httpx.HTTPStatusError as exc:
         _raise_upstream_error(exc)
+
+    config = _get_appointments_config(bot)
+    config["service_ids"] = [sid for sid in config["service_ids"] if sid != service_id]
+    if config["default_service_id"] == service_id:
+        config["default_service_id"] = config["service_ids"][0] if config["service_ids"] else None
+    await _save_appointments_config(bot, config)
 
 
 @router.post("/services/{service_id}/resources", status_code=204)

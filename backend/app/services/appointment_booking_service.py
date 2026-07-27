@@ -9,27 +9,47 @@ diferencia deliberada: sus métodos son async porque necesitan pegarle a
 devbout-appointments (list_slots/create_appointment) vía AppointmentsClient,
 algo que FlowState no necesita hacer.
 
-v1: usa siempre el primer resource_id y el default_service_id configurados en
-bot.metadata["appointments"] (ver appointments_router.py) — no deja elegir
-recurso por chat. Detección de intención por palabra clave simple (no
+v2: el bot puede tener varios recursos asociados al servicio por defecto
+(médicos, canchas, ventanillas...); antes del calendario se resuelve CUÁL
+recurso según la "selection strategy" configurada en `Service.extra.selection`
+(ver resolve_info_fields/_resolve_selection más abajo):
+  - single: implícito si el servicio tiene 1 solo recurso asociado.
+  - ask_by_name: lista los recursos por nombre, el cliente elige.
+  - filter_then_select: pregunta un atributo (ej. especialidad) calculado
+    dinámicamente entre `Resource.extra`, narrows y si queda 1 lo asigna
+    directo, si quedan varios cae a ask_by_name entre los que sobrevivieron.
+  - auto: asigna el recurso con el horario disponible más próximo, sin
+    preguntar nada (se resuelve recién al elegir el horario).
+Si el bot no tiene el servicio configurado, o el servicio no tiene recursos
+asociados (setup legacy, no migrado), se cae al comportamiento histórico: un
+único recurso (`resource_ids[0]`), sin ninguna pregunta de por medio.
+
+Los datos que se piden antes del calendario (`info_fields`) también son
+configurables (override por servicio -> default del bot -> el set
+hardcodeado histórico nombre/apellido/DNI/WhatsApp), para adaptarse a
+verticales con necesidades distintas (ej. CUIT/n° de expediente en trámites
+administrativos). Detección de intención por palabra clave simple (no
 tool-use de Claude, que no existe hoy en este codebase).
 
 Cada paso devuelve, además del texto plano de siempre (content/fallback), una
 clave "widget" lista para mandar tal cual como metadata del mensaje WebSocket
 — así el frontend puede pintar un calendario/chips clickeables. Un click en
-el widget simplemente manda como texto la fecha/horario elegido (mismo canal
-que si el usuario lo hubiera tipeado), así que el protocolo cliente→servidor
-no cambia.
+el widget simplemente manda como texto el valor elegido (mismo canal que si
+el usuario lo hubiera tipeado), así que el protocolo cliente→servidor no
+cambia.
 """
 
+import asyncio
 import re
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
 from zoneinfo import ZoneInfo
 
 from app.integrations.appointments_client import AppointmentsClient, SlotUnavailableError, get_appointments_client
 from app.models.bot import Bot
+from app.models.client import ClientUpdate
+from app.services.client_service import get_client_service
 from app.services.module_service import get_module_service
 
 MODULE_KEY = "appointments"
@@ -51,10 +71,40 @@ _BACK_PATTERN = re.compile(
 
 _WEEKDAY_LONG = ("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo")
 
+# Set histórico de datos del paciente, usado como último fallback si ni el
+# servicio ni el bot configuraron info_fields propios (ver resolve_info_fields)
+# -- así un bot que nunca tocó esta config sigue pidiendo lo mismo que antes.
+_DEFAULT_INFO_FIELDS: List[dict] = [
+    {"key": "nombre", "label": "¿Cuál es tu nombre?", "type": "text"},
+    {"key": "apellido", "label": "¿Y tu apellido?", "type": "text"},
+    {"key": "dni", "label": "¿Tu número de DNI? (solo números)", "type": "numeric_id", "min_length": 6, "max_length": 10},
+    {
+        "key": "whatsapp",
+        "label": "Por último, ¿tu número de WhatsApp? (para avisarte sobre el turno)",
+        "type": "phone",
+    },
+]
+
+# Únicos keys que se vuelcan al Client (ver _save_captured_info) porque su
+# modelo los conoce. Cualquier otro key de info_fields (cuit, numero_expediente,
+# obra_social, etc.) viaja en el metadata.custom_fields del Appointment.
+_WELL_KNOWN_INFO_KEYS = {"nombre", "apellido", "dni", "whatsapp"}
+
 # Cubre el resto del mes actual + el mes calendario siguiente completo en una
 # sola llamada a list_slots, para que el frontend pueda navegar entre esos
 # dos meses en el calendario sin pedirle al backend un re-fetch.
 DAYS_AHEAD = 62
+
+
+class ResourceSelectionStrategy(str, Enum):
+    SINGLE = "single"
+    ASK_BY_NAME = "ask_by_name"
+    FILTER_THEN_SELECT = "filter_then_select"
+    AUTO = "auto"
+
+
+def _info_result(message: str) -> dict:
+    return {"message": message, "done": False, "cancelled": False, "appointment": None, "widget": None}
 
 
 def detects_booking_intent(text: str) -> bool:
@@ -69,7 +119,56 @@ def _is_back_word(text: str) -> bool:
     return bool(_BACK_PATTERN.search(text or ""))
 
 
+def resolve_info_fields(service: Optional[dict], bot_config: dict) -> List[dict]:
+    """Cadena de fallback: override por servicio -> default del bot -> el set
+    hardcodeado histórico, para que un bot que nunca configuró nada siga
+    pidiendo exactamente lo mismo que antes."""
+    service_fields = ((service or {}).get("metadata") or {}).get("info_fields")
+    if service_fields:
+        return service_fields
+    bot_fields = bot_config.get("default_info_fields")
+    if bot_fields:
+        return bot_fields
+    return _DEFAULT_INFO_FIELDS
+
+
+def _resolve_selection(service: Optional[dict], candidate_count: int) -> dict:
+    """Estrategia de selección de recurso a usar. Si hay 0-1 candidatos no
+    hay nada que elegir, sin importar lo configurado -- preguntar sería
+    ruido. Con 2+, usa lo configurado en Service.extra.selection.strategy,
+    o ask_by_name si no hay nada configurado (o lo configurado es inválido)."""
+    if candidate_count <= 1:
+        return {"strategy": ResourceSelectionStrategy.SINGLE.value, "filter": {}}
+
+    raw = ((service or {}).get("metadata") or {}).get("selection") or {}
+    strategy = raw.get("strategy")
+    valid_strategies = {s.value for s in ResourceSelectionStrategy}
+    if strategy not in valid_strategies or strategy == ResourceSelectionStrategy.SINGLE.value:
+        strategy = ResourceSelectionStrategy.ASK_BY_NAME.value
+    return {"strategy": strategy, "filter": raw.get("filter") or {}}
+
+
+async def _load_candidate_resources(
+    client: AppointmentsClient, service_id: Optional[str], bot_resource_ids: List[str]
+) -> List[dict]:
+    """Recursos activos que ofrecen el servicio Y pertenecen al bot (aislamiento
+    entre bots, mismo criterio que appointments_router.py). Lista vacía si no
+    hay service_id, si devbout-appointments no responde, o si el servicio no
+    tiene ningún recurso asociado -- el caller decide el fallback."""
+    if not service_id:
+        return []
+    try:
+        resources = await client.list_service_resources(service_id)
+    except Exception:
+        return []
+    allowed = set(bot_resource_ids)
+    return [r for r in resources if r.get("id") in allowed and r.get("is_active", True)]
+
+
 class BookingStage(str, Enum):
+    COLLECTING_INFO = "collecting_info"
+    SELECTING_FILTER = "selecting_filter"
+    SELECTING_RESOURCE = "selecting_resource"
     SELECTING_DAY = "selecting_day"
     SELECTING_TIME = "selecting_time"
     CONFIRMING = "confirming"
@@ -80,22 +179,49 @@ class BookingState:
         self,
         bot_id: str,
         client_id: Optional[str],
-        resource_id: str,
         service_id: Optional[str],
+        candidates: List[dict],
+        service: Optional[dict],
+        info_fields: List[dict],
+        client_name: Optional[str] = None,
+        client_dni: Optional[str] = None,
+        client_phone: Optional[str] = None,
         appointments_client: Optional[AppointmentsClient] = None,
     ):
         self.bot_id = bot_id
         self.client_id = client_id
-        self.resource_id = resource_id
         self.service_id = service_id
+        self.candidates = candidates
+        self.selection = _resolve_selection(service, len(candidates))
+        self.resource_id: Optional[str] = None
+        self._resource_pool: List[dict] = []
         self.client = appointments_client or get_appointments_client()
-        self.stage = BookingStage.SELECTING_DAY
         self.resource_tz: ZoneInfo = ZoneInfo("UTC")
         self.days_index: dict[str, list[dict]] = {}
         self.date_from: str = ""
         self.date_to: str = ""
         self.selected_day: Optional[str] = None
         self.selected_slot: Optional[dict] = None
+
+        # Campos de info que faltan (ver resolve_info_fields) -- se saltan los
+        # "bien conocidos" que el Client ya tiene cargados (por otro medio:
+        # flow, chat libre, o una reserva anterior). Los custom siempre se
+        # preguntan porque el Client no tiene dónde guardarlos de antemano.
+        self.info_fields: dict[str, dict] = {f["key"]: f for f in info_fields}
+        self.pending_info: List[str] = []
+        for field in info_fields:
+            key = field["key"]
+            if key in ("nombre", "apellido") and client_name:
+                continue
+            if key == "dni" and client_dni:
+                continue
+            if key == "whatsapp" and client_phone:
+                continue
+            self.pending_info.append(key)
+        self.info_index = 0
+        self.captured_info: dict[str, str] = {}
+
+        self.stage = BookingStage.COLLECTING_INFO if self.pending_info else BookingStage.SELECTING_DAY
 
     # ── Helpers de timezone / formato ───────────────────────────────────
 
@@ -117,27 +243,163 @@ class BookingState:
     def _slot_dto(self, slot: dict) -> dict:
         return {"start_at": slot["start_at"], "end_at": slot["end_at"], "label": self._time_label(slot)}
 
+    def _active_resource_ids(self) -> List[str]:
+        if self.resource_id:
+            return [self.resource_id]
+        return [c["id"] for c in self.candidates]
+
+    def _resource_name(self, resource_id: Optional[str]) -> Optional[str]:
+        match = next((c for c in self.candidates if c.get("id") == resource_id), None)
+        return (match or {}).get("name")
+
+    # ── Selección de recurso (nuevo) ─────────────────────────────────────
+
+    def _filter_options(self) -> List[dict]:
+        attribute_path = (self.selection.get("filter") or {}).get("attribute_path") or ""
+        seen: set = set()
+        options: List[dict] = []
+        for candidate in self.candidates:
+            value = (candidate.get("metadata") or {}).get(attribute_path)
+            if value and value not in seen:
+                seen.add(value)
+                options.append({"value": value, "label": str(value)})
+        return options
+
+    def _options_result(self, message: str, options: List[dict]) -> dict:
+        return {
+            "message": message,
+            "done": False,
+            "cancelled": False,
+            "appointment": None,
+            "widget": {"widget_type": "appointment_options", "options": options},
+        }
+
+    @staticmethod
+    def _resolve_choice(options: List[dict], answer: str) -> Optional[dict]:
+        """Acepta el value exacto (lo que manda el widget al clickear), un
+        índice 1-based (fallback de texto) o el label matcheado sin importar
+        mayúsculas -- mismo espíritu que _resolve_day_answer/_find_slot."""
+        answer = (answer or "").strip()
+        for opt in options:
+            if str(opt["value"]) == answer:
+                return opt
+        try:
+            idx = int(answer) - 1
+            if 0 <= idx < len(options):
+                return options[idx]
+        except ValueError:
+            pass
+        lowered = answer.lower()
+        for opt in options:
+            if opt["label"].strip().lower() == lowered:
+                return opt
+        return None
+
+    async def enter_resource_selection(self) -> dict:
+        """Arranca (o resuelve directo) la selección de recurso según la
+        estrategia configurada en el servicio. Se llama una sola vez, al
+        terminar COLLECTING_INFO."""
+        strategy = self.selection["strategy"]
+
+        if strategy == ResourceSelectionStrategy.SINGLE.value:
+            self.resource_id = self.candidates[0]["id"]
+            return await self.load_days()
+
+        if strategy == ResourceSelectionStrategy.AUTO.value:
+            # resource_id se resuelve recién al elegir el horario (ver
+            # _process_time_choice), una vez que se sabe cuál slot ganó.
+            return await self.load_days()
+
+        if strategy == ResourceSelectionStrategy.FILTER_THEN_SELECT.value:
+            options = self._filter_options()
+            if len(options) > 1:
+                self.stage = BookingStage.SELECTING_FILTER
+                question = (self.selection.get("filter") or {}).get("question") or "¿Cuál preferís?"
+                return self._options_result(question, options)
+            # Ningún atributo distinto entre los recursos -- no hay nada
+            # real que filtrar, cae directo a elegir por nombre.
+
+        return await self._offer_or_resolve_resource(self.candidates)
+
+    async def _offer_or_resolve_resource(self, candidates: List[dict]) -> dict:
+        if len(candidates) == 1:
+            self.resource_id = candidates[0]["id"]
+            return await self.load_days()
+        self.stage = BookingStage.SELECTING_RESOURCE
+        self._resource_pool = candidates
+        options = [{"value": c["id"], "label": c.get("name") or c["id"]} for c in candidates]
+        return self._options_result("Elegí una opción:", options)
+
+    async def _process_filter_choice(self, answer: str) -> dict:
+        options = self._filter_options()
+        if _is_back_word(answer):
+            question = (self.selection.get("filter") or {}).get("question") or "¿Cuál preferís?"
+            return self._options_result(question, options)
+
+        choice = self._resolve_choice(options, answer)
+        if not choice:
+            question = (self.selection.get("filter") or {}).get("question") or "¿Cuál preferís?"
+            return self._options_result(f"No entendí esa opción. {question}", options)
+
+        attribute_path = (self.selection.get("filter") or {}).get("attribute_path") or ""
+        narrowed = [
+            c for c in self.candidates if (c.get("metadata") or {}).get(attribute_path) == choice["value"]
+        ]
+        return await self._offer_or_resolve_resource(narrowed or self.candidates)
+
+    async def _process_resource_choice(self, answer: str) -> dict:
+        pool = self._resource_pool or self.candidates
+        options = [{"value": c["id"], "label": c.get("name") or c["id"]} for c in pool]
+        if _is_back_word(answer):
+            return self._options_result("Elegí una opción:", options)
+
+        choice = self._resolve_choice(options, answer)
+        if not choice:
+            return self._options_result("No entendí esa opción. Elegí una de la lista:", options)
+
+        self.resource_id = choice["value"]
+        return await self.load_days()
+
     # ── Carga de datos ───────────────────────────────────────────────────
 
+    async def _resolve_tz(self) -> ZoneInfo:
+        resource = None
+        if self.resource_id:
+            resource = next((c for c in self.candidates if c.get("id") == self.resource_id), None)
+            if resource is None or "timezone" not in resource:
+                try:
+                    resource = await self.client.get_resource(self.resource_id)
+                except Exception:
+                    resource = None
+        elif self.candidates:
+            resource = self.candidates[0]
+
+        tz_name = (resource or {}).get("timezone")
+        try:
+            return ZoneInfo(tz_name or "UTC")
+        except Exception:
+            return ZoneInfo("UTC")
+
     async def load_days(self, days_ahead: int = DAYS_AHEAD) -> dict:
-        """Resuelve la tz del resource (una sola vez), consulta slots en la
-        ventana [hoy, hoy+days_ahead] y los agrupa por día en tz local. Sin
-        esto, agrupar "por día" directo sobre UTC pondría turnos cercanos a
+        """Resuelve la tz (una sola vez), consulta slots en la ventana [hoy,
+        hoy+days_ahead] -- para uno o varios recursos candidatos si la
+        estrategia es "auto" -- y los agrupa por día en tz local. Sin esto,
+        agrupar "por día" directo sobre UTC pondría turnos cercanos a
         medianoche en el día equivocado para resources con offset horario
         (ej. America/Argentina/Buenos_Aires, UTC-3)."""
-        try:
-            resource = await self.client.get_resource(self.resource_id)
-            self.resource_tz = ZoneInfo(resource.get("timezone") or "UTC")
-        except Exception:
-            self.resource_tz = ZoneInfo("UTC")
+        self.resource_tz = await self._resolve_tz()
 
         today_local = datetime.now(timezone.utc).astimezone(self.resource_tz).date()
         self.date_from = today_local.isoformat()
         self.date_to = (today_local + timedelta(days=days_ahead)).isoformat()
 
-        slots = await self.client.list_slots(
-            self.resource_id, self.date_from, self.date_to, service_id=self.service_id
-        )
+        async def _fetch(resource_id: str) -> list[dict]:
+            return await self.client.list_slots(
+                resource_id, self.date_from, self.date_to, service_id=self.service_id
+            )
+
+        results = await asyncio.gather(*[_fetch(rid) for rid in self._active_resource_ids()])
+        slots = [slot for group in results for slot in group]
 
         self.days_index = {}
         for slot in slots:
@@ -210,6 +472,83 @@ class BookingState:
             },
         }
 
+    # ── Recolección de datos del paciente ────────────────────────────────
+
+    def _current_info_field(self) -> Optional[str]:
+        if self.info_index >= len(self.pending_info):
+            return None
+        return self.pending_info[self.info_index]
+
+    def _validate_info_answer(self, key: str, answer: str):
+        """Valida la respuesta a una pregunta de datos según el "type"
+        configurado en info_fields. Retorna (valid, value, error)."""
+        field = self.info_fields[key]
+        field_type = field.get("type", "text")
+
+        if field_type == "numeric_id":
+            cleaned = re.sub(r"[\s.-]", "", answer)
+            min_len = field.get("min_length") or 1
+            max_len = field.get("max_length") or 20
+            if not cleaned.isdigit() or not (min_len <= len(cleaned) <= max_len):
+                return False, None, f"Ingresá un valor válido (solo números, entre {min_len} y {max_len} dígitos)."
+            return True, cleaned, None
+
+        if field_type == "phone":
+            cleaned = re.sub(r'[\s\-\(\)\+]', '', answer)
+            if not cleaned.isdigit() or len(cleaned) < 7:
+                return False, None, "Ingresá un número válido (ej: +54 9 11 1234-5678)."
+            return True, answer, None
+
+        # text: libre
+        if len(answer.strip()) < 2:
+            return False, None, "Ingresá una respuesta más completa, por favor."
+        return True, answer, None
+
+    async def _save_captured_info(self) -> None:
+        """Vuelca lo recolectado (solo los keys bien conocidos) al Client. No
+        pisa datos que no se preguntaron."""
+        if not self.client_id or not self.captured_info:
+            return
+
+        update_kwargs: dict = {}
+        nombre = self.captured_info.get("nombre")
+        apellido = self.captured_info.get("apellido")
+        if nombre or apellido:
+            update_kwargs["name"] = " ".join(part for part in (nombre, apellido) if part)
+        if "dni" in self.captured_info:
+            update_kwargs["dni"] = self.captured_info["dni"]
+        if "whatsapp" in self.captured_info:
+            update_kwargs["phone"] = self.captured_info["whatsapp"]
+
+        if not update_kwargs:
+            return
+        try:
+            await get_client_service().update_client(self.client_id, ClientUpdate(**update_kwargs))
+        except Exception:
+            pass
+
+    async def _process_info_answer(self, answer: str) -> dict:
+        field_key = self._current_info_field()
+        valid, value, error = self._validate_info_answer(field_key, answer)
+        if not valid:
+            return _info_result(error)
+
+        self.captured_info[field_key] = value
+        self.info_index += 1
+
+        next_field = self._current_info_field()
+        if next_field:
+            return _info_result(self.info_fields[next_field]["label"])
+
+        # Completamos los datos: guardar en el Client y pasar a resolver el
+        # recurso (o directo al calendario si la estrategia no pregunta nada).
+        await self._save_captured_info()
+        result = await self.enter_resource_selection()
+        nombre = self.captured_info.get("nombre")
+        if nombre and not result["cancelled"]:
+            result["message"] = f"¡Gracias, {nombre}! {result['message']}"
+        return result
+
     # ── Dispatch ─────────────────────────────────────────────────────────
 
     async def process_answer(self, answer: str) -> dict:
@@ -228,6 +567,12 @@ class BookingState:
                 "widget": None,
             }
 
+        if self.stage == BookingStage.COLLECTING_INFO:
+            return await self._process_info_answer(answer)
+        if self.stage == BookingStage.SELECTING_FILTER:
+            return await self._process_filter_choice(answer)
+        if self.stage == BookingStage.SELECTING_RESOURCE:
+            return await self._process_resource_choice(answer)
         if self.stage == BookingStage.SELECTING_DAY:
             return await self._process_day_choice(answer)
         if self.stage == BookingStage.SELECTING_TIME:
@@ -289,6 +634,10 @@ class BookingState:
             )
 
         self.selected_slot = slot
+        # Para estrategia "auto" acá es donde se termina de saber qué recurso
+        # ganó (cada slot ya viene taggeado con su resource_id de origen);
+        # para el resto, resource_id ya estaba resuelto y esto es un no-op.
+        self.resource_id = slot.get("resource_id") or self.resource_id
         self.stage = BookingStage.CONFIRMING
         return self._confirm_result(
             f"Perfecto, confirmás el turno del {self._day_label(self.selected_day)} "
@@ -310,6 +659,11 @@ class BookingState:
             )
 
         customer_ref = self.client_id or f"web-{self.bot_id}-{id(self)}"
+        custom_fields = {k: v for k, v in self.captured_info.items() if k not in _WELL_KNOWN_INFO_KEYS}
+        metadata = {"bot_id": self.bot_id, "client_id": self.client_id, "source": "web_chat"}
+        if custom_fields:
+            metadata["custom_fields"] = custom_fields
+
         try:
             appointment = await self.client.create_appointment(
                 resource_id=self.resource_id,
@@ -317,7 +671,7 @@ class BookingState:
                 end_at=self.selected_slot["end_at"],
                 customer_ref=customer_ref,
                 service_id=self.service_id,
-                metadata={"bot_id": self.bot_id, "client_id": self.client_id, "source": "web_chat"},
+                metadata=metadata,
             )
         except SlotUnavailableError:
             return await self._refresh_after_conflict()
@@ -332,11 +686,16 @@ class BookingState:
         except Exception:
             pass  # el turno ya quedó reservado (pending) aunque no se pudiera auto-confirmar
 
+        message = (
+            f"¡Listo! Tu turno para el {self._day_label(self.selected_day)} "
+            f"a las {self._time_label(self.selected_slot)} quedó confirmado."
+        )
+        resource_name = self._resource_name(self.resource_id)
+        if resource_name and len(self.candidates) > 1:
+            message += f" ({resource_name})"
+
         return {
-            "message": (
-                f"¡Listo! Tu turno para el {self._day_label(self.selected_day)} "
-                f"a las {self._time_label(self.selected_slot)} quedó confirmado."
-            ),
+            "message": message,
             "done": True,
             "cancelled": False,
             "appointment": appointment,
@@ -345,9 +704,15 @@ class BookingState:
 
     async def _refresh_after_conflict(self) -> dict:
         """Re-consulta solo el día elegido tras un 409 al confirmar (en vez
-        de recargar los ~2 meses completos)."""
+        de recargar los ~2 meses completos), sobre el/los mismo/s recurso/s
+        que ya estaban en juego para ese slot."""
         day = self.selected_day
-        fresh_slots = await self.client.list_slots(self.resource_id, day, day, service_id=self.service_id)
+
+        async def _fetch(resource_id: str) -> list[dict]:
+            return await self.client.list_slots(resource_id, day, day, service_id=self.service_id)
+
+        results = await asyncio.gather(*[_fetch(rid) for rid in self._active_resource_ids()])
+        fresh_slots = [slot for group in results for slot in group]
         fresh_slots.sort(key=lambda s: s["start_at"])
 
         if fresh_slots:
@@ -385,8 +750,49 @@ async def start_booking(bot: Bot, client_id: Optional[str]) -> tuple[Optional["B
             "widget": None,
         }
 
-    state = BookingState(bot_id=bot.bot_id, client_id=client_id, resource_id=resource_ids[0], service_id=service_id)
-    result = await state.load_days()
+    client = None
+    if client_id:
+        try:
+            client = await get_client_service().get_client(client_id)
+        except Exception:
+            client = None
+
+    appointments_client = get_appointments_client()
+
+    service = None
+    if service_id:
+        try:
+            service = await appointments_client.get_service(service_id)
+        except Exception:
+            service = None
+
+    candidates = await _load_candidate_resources(appointments_client, service_id, resource_ids)
+    if not candidates:
+        # Sin service configurado, o service sin recursos asociados (setup
+        # legacy no migrado): comportamiento histórico, un único recurso, sin
+        # ninguna pregunta de selección de por medio.
+        candidates = [{"id": resource_ids[0]}]
+
+    state = BookingState(
+        bot_id=bot.bot_id,
+        client_id=client_id,
+        service_id=service_id,
+        candidates=candidates,
+        service=service,
+        info_fields=resolve_info_fields(service, config),
+        client_name=client.name if client else None,
+        client_dni=client.dni if client else None,
+        client_phone=client.phone if client else None,
+        appointments_client=appointments_client,
+    )
+
+    if state.pending_info:
+        first_field = state.pending_info[0]
+        return state, _info_result(
+            f"Para reservar el turno necesito algunos datos. {state.info_fields[first_field]['label']}"
+        )
+
+    result = await state.enter_resource_selection()
     if result["cancelled"]:
         return None, result
 

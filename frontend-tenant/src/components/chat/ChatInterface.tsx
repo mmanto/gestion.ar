@@ -4,9 +4,7 @@ import { parseAppointmentWidget } from '../../types/chat.types';
 import { ChatHeader } from './ChatHeader';
 import { ChatInputBar } from './ChatInputBar';
 import { TypingIndicator } from './TypingIndicator';
-import { AppointmentCalendarWidget } from './AppointmentCalendarWidget';
-import { AppointmentTimesWidget } from './AppointmentTimesWidget';
-import { AppointmentConfirmWidget } from './AppointmentConfirmWidget';
+import { ChatWidget } from './ChatWidget';
 
 interface ChatInterfaceProps {
   botId?: string;
@@ -76,19 +74,12 @@ export function ChatInterface({ botId, channelId }: ChatInterfaceProps) {
                   {msg.content}
                 </div>
 
-                {widget?.widget_type === 'appointment_calendar' && (
-                  <AppointmentCalendarWidget widget={widget} onSelectDay={(d) => sendMessage(d)} />
-                )}
-                {widget?.widget_type === 'appointment_times' && (
-                  <AppointmentTimesWidget
+                {widget && (
+                  <ChatWidget
                     widget={widget}
+                    onSelectDay={(d) => sendMessage(d)}
                     onSelectTime={(s) => sendMessage(s)}
                     onBack={() => sendMessage('volver')}
-                  />
-                )}
-                {widget?.widget_type === 'appointment_confirm' && (
-                  <AppointmentConfirmWidget
-                    widget={widget}
                     onConfirm={() => sendMessage('si')}
                     onDecline={() => sendMessage('no')}
                   />

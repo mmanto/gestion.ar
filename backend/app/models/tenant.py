@@ -19,6 +19,7 @@ class UserRole(str, Enum):
     SUPER_ADMIN = "super_admin"
     ADMIN = "admin"
     OPERATIVO = "operativo"
+    BROKER = "broker"
 
 
 class TenantCreate(BaseModel):
@@ -65,6 +66,7 @@ class TenantUserCreate(BaseModel):
     avatar_url: Optional[str] = None
     tenant_id: str
     role: UserRole = UserRole.OPERATIVO
+    broker_username: Optional[str] = Field(None, description="Solo para role=operativo: el broker (firma) del que depende")
 
     class Config:
         use_enum_values = False
@@ -80,6 +82,7 @@ class TenantOwnUserCreate(BaseModel):
     apellido: Optional[str] = None
     avatar_url: Optional[str] = None
     role: UserRole = UserRole.OPERATIVO
+    broker_username: Optional[str] = Field(None, description="Solo para role=operativo: el broker (firma) del que depende")
 
     class Config:
         use_enum_values = False
@@ -92,6 +95,8 @@ class TenantUserUpdate(BaseModel):
     nombre: Optional[str] = None
     apellido: Optional[str] = None
     avatar_url: Optional[str] = None
+    broker_username: Optional[str] = Field(None, description="Solo para role=operativo: el broker (firma) del que depende")
+    clear_broker: bool = Field(False, description="True para desasociar al operativo de su broker actual")
 
 
 class TenantUserOut(BaseModel):
@@ -103,6 +108,7 @@ class TenantUserOut(BaseModel):
     tenant_id: Optional[str] = None
     role: str
     disabled: bool
+    broker_username: Optional[str] = None
 
 
 class ModuleOut(BaseModel):
@@ -116,6 +122,11 @@ class BotModuleOut(BaseModel):
     module_key: str
     granted: bool
     enabled: bool
+    # Distinto de `granted`: True si el módulo puede habilitarse (otorgado
+    # O incluido en el plan del tenant, ver ADR-008), aunque no exista
+    # todavía una fila BotModule para este bot. La UI de autoservicio debe
+    # usar esto, no `granted`, para decidir si el toggle es accionable.
+    available: bool = False
     module_name: Optional[str] = None
     module_description: Optional[str] = None
 

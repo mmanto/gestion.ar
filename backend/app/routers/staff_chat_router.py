@@ -15,6 +15,8 @@ from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 from app.auth_service import get_current_user_from_token
 from app.connection_manager import connection_manager, staff_connection_manager
 from app.services.bot_service import get_bot_service
+from app.services.client_service import get_client_service
+from app.services.user_service import get_user_service
 from app.conversation_service import get_conversation_service
 
 logger = logging.getLogger(__name__)
@@ -96,6 +98,18 @@ async def staff_chat_websocket(
                     continue
 
                 conv_service = get_conversation_service()
+                owner_usernames = await get_user_service().get_scoped_owner_usernames(user)
+                if owner_usernames is not None:
+                    conversation = await conv_service.get_conversation(conversation_id)
+                    conv_client_id = conversation.get("client_id") if conversation else None
+                    conv_client = await get_client_service().get_client(conv_client_id) if conv_client_id else None
+                    if not conv_client or conv_client.owner_username not in owner_usernames:
+                        await websocket.send_json({
+                            "type": "error",
+                            "message": "Conversación no encontrada",
+                            "conversation_id": conversation_id,
+                        })
+                        continue
                 try:
                     msg = await conv_service.add_message(
                         conversation_id=conversation_id,

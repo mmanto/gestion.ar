@@ -12,6 +12,10 @@
 #      en la raiz de ius.mx.test, ver comentario en landing-ius mas abajo)
 #
 # Para bajar solo esto: docker compose -f docker-compose.yml -f docker-compose.tenants.local.yml down
+#
+# Hot reload (ajustes visuales sin reconstruir la imagen): agregar
+# -f docker-compose.tenants.dev.yml al final de cualquiera de los comandos
+# de arriba — ver ese archivo para el detalle.
 
 services:
   traefik-local:
@@ -37,9 +41,11 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_TARGET: staff
+        VITE_APPOINTMENTS_REMOTE_URL: http://localhost:8180/remoteEntry.js
     container_name: gestionar_frontend_tenant_erma
     environment:
       - TENANT_ID=tenant_78f507331c18
+      - TENANT_SLUG=erma
     depends_on:
       app:
         condition: service_healthy
@@ -60,9 +66,11 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_TARGET: staff
+        VITE_APPOINTMENTS_REMOTE_URL: http://localhost:8180/remoteEntry.js
     container_name: gestionar_frontend_tenant_ius
     environment:
       - TENANT_ID=tenant_6a10b2076443
+      - TENANT_SLUG=ius
       - STATS_TWO_COLS_MOBILE=true
     depends_on:
       app:

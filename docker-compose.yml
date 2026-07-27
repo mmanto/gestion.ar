@@ -68,6 +68,7 @@ services:
       - 1.1.1.1
     networks:
       - default
+      - nango_network
 
   # Frontend React (Nginx — proxy /api/ y /ws/ al backend internamente)
   frontend:
@@ -142,4 +143,12 @@ networks:
   #   docker network create traefik_public
   traefik_public:
     name: traefik_public
+    external: true
+  # Red compartida con el proyecto Compose independiente de Nango
+  # (devbout-oauth/deploy/nango) — mismo motivo que traefik_public arriba:
+  # external para no destruirla/huerfanar a Nango (u otros consumidores como
+  # nexsure) con un "docker compose down" de este solo proyecto. Se crea una
+  # vez a mano: docker network create nango_network
+  nango_network:
+    name: nango_network
     external: true

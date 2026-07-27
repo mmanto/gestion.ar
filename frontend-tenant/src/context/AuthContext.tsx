@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { AuthContextType, User, LoginCredentials } from '../types/auth.types';
+import type { AuthContextType, User, LoginCredentials, AuthProvider as SocialProvider } from '../types/auth.types';
 import authService from '../services/auth.service';
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -73,6 +73,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const loginWithProvider = async (provider: SocialProvider, tenantId: string) => {
+    try {
+      const { token: appToken } = await authService.loginWithProvider(provider, tenantId);
+      await authService.saveToken(appToken);
+      // El finalize no devuelve el usuario completo; lo obtenemos de /auth/me.
+      const verifiedUser = await authService.verifyToken();
+      await authService.saveUser(verifiedUser);
+      setToken(appToken);
+      setUser(verifiedUser);
+      setIsAuthenticated(true);
+    } catch (error) {
+      console.error('Login with provider error:', error);
+      throw error;
+    }
+  };
+
   const logout = async () => {
     await authService.clearAuth();
     setToken(null);
@@ -86,6 +102,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAuthenticated,
     isLoading,
     login,
+    loginWithProvider,
     logout,
     checkAuth,
   };

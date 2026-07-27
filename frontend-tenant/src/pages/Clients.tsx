@@ -159,7 +159,7 @@ export const Clients = () => {
 
   return (
     <AppLayout>
-        <div className="font-editorial p-1 md:bg-white md:rounded-[1.4rem] md:shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] md:p-8">
+        <div className="font-editorial p-1 md:bg-[#F8F9FD] md:p-8">
           <PageHeader
             title="Clientes"
             description={`${total} contacto${total !== 1 ? 's' : ''} en total`}
@@ -218,7 +218,7 @@ export const Clients = () => {
               <TableHead>
                 <tr>
                   <TableHeaderCell>Cliente</TableHeaderCell>
-                  <TableHeaderCell align="right">Acciones</TableHeaderCell>
+                  <TableHeaderCell>Acciones</TableHeaderCell>
                 </tr>
               </TableHead>
               <TableBody>
@@ -234,8 +234,8 @@ export const Clients = () => {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell align="right" className="font-medium">
-                      <div className="flex items-center justify-end">
+                    <TableCell align="center" className="font-medium">
+                      <div className="flex items-center justify-center">
                         <ActionMenu
                           ariaLabel={`Acciones para ${client.name || client.external_id}`}
                           items={buildClientActionItems(client, {

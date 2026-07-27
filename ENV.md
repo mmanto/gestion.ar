@@ -126,21 +126,57 @@ Para apps nativas Android/iOS vía Capacitor (ver ADR-007 en `docs/dev/DECISIONS
 > **APNs:** Crear Auth Key en Apple Developer → Keys → APNs Auth Key → descargar .p8.
 ---
 
-## Google OAuth
+## Login social (Google/Microsoft vía Nango self-hosted)
+
+Nango custodia y refresca los tokens del proveedor — el backend nunca ve un
+refresh token. El self-hosted de Nango vive aparte, en el repo
+`devbout-oauth/deploy/nango` (proyecto Compose independiente, ver su propio
+README), como **instancia compartida** entre las apps que consumen
+`devbout-oauth` (gestion.ar, nexsure, ...), no vendorizada en cada una.
 
 | Variable | Requerida | Descripción | Ejemplo |
 |---|---|---|---|
-| `GOOGLE_CLIENT_ID` | ✅* | Client ID de la app en Google Cloud Console | `771897...apps.googleusercontent.com` |
-| `GOOGLE_CLIENT_SECRET` | ✅* | Client Secret | `GOCSPX-...` |
-| `GOOGLE_REDIRECT_URI` | ✅* | URI de callback registrada en Google Cloud Console | `https://api.tudominio.com/api/v1/auth/google/callback` |
+| `NANGO_HOST` | ✅* | URL base de la API de Nango, vista por el **backend** | Docker: `http://nango-server:8080` (red externa `nango_network`) · sin Docker: `http://localhost:3003` |
+| `NANGO_SECRET_KEY` | ✅* | Secret que autentica las llamadas backend → Nango | — |
+| `NANGO_WEBHOOK_SECRET` | ⛔ opcional | Verifica que `/api/tenant/oauth/webhook/nango` venga de Nango — usado por el login OAuth nativo (mobile), que no puede depender del popup `postMessage` (ver `auth.service.ts`) | — |
+| `STATE_SIGNING_KEY` | ✅* | Firma el login nonce (HS256) — separada de `JWT_SECRET_KEY` | `openssl rand -hex 32` |
 | `FRONTEND_URL` | ✅* | URL base del frontend (para redirects post-OAuth) | `https://tudominio.com` |
-| `ENCRYPTION_KEY` | ✅* | Clave Fernet para encriptar refresh tokens en MongoDB | `openssl rand -hex 32` |
-| `GOOGLE_STATE_SIGNING_KEY` | ❌ | Clave HMAC para firmar el state JWT (default: `ENCRYPTION_KEY`) | `openssl rand -hex 32` |
 
-> *Solo requeridas si se activa el flujo Google OAuth (Login con Google / Gmail Connect).
+> *Solo requeridas si se activa el login/alta social (admin general y/o
+> tenants). Ver `VITE_NANGO_CONNECT_URL`/`VITE_NANGO_API_URL` más abajo para
+> las URLs que usa el browser (distintas de `NANGO_HOST`, que es
+> contenedor-a-contenedor).
 >
-> Crear credenciales en https://console.cloud.google.com/apis/credentials → **OAuth 2.0 Client IDs** → tipo **Web application**.
-> Agregar `GOOGLE_REDIRECT_URI` en "Authorized redirect URIs" y `FRONTEND_URL` en "Authorized JavaScript origins".
+> **`NANGO_SECRET_KEY` NO es el mismo valor que `NANGO_SECRET_KEY` en
+> `deploy/nango/.env`** — ese env var no siembra el secret real. Nango
+> genera uno random por environment (dashboard → Settings → Environment) la
+> primera vez que te das de alta ahí; copiá ESE valor acá, no el del `.env`
+> del deploy.
+>
+> Con Docker, `app` está unido a la red externa `nango_network`
+> (`docker-compose.yml`), compartida con `devbout-oauth/deploy/nango` —
+> se crea una sola vez con `docker network create nango_network`.
+>
+> Las integraciones Google/Microsoft (client id/secret, scopes) se
+> configuran en el dashboard de Nango, no acá.
+>
+> **`NANGO_WEBHOOK_SECRET`**: en el login OAuth nativo (Android/iOS), el
+> OAuth de Google corre en Chrome Custom Tabs (no en el WebView de la app),
+> así que el popup no puede avisar por `window.opener.postMessage` como en
+> web — el backend se entera por un webhook de Nango en su lugar. Paso
+> manual, en el dashboard del Nango self-hosted: Environment Settings →
+> Webhook URL = `<WEBHOOK_BASE_URL>/api/tenant/oauth/webhook/nango`, y
+> copiar la Webhook Signing Key de esa misma pantalla acá (**no** es
+> `NANGO_SECRET_KEY` — son secrets distintos). Sin esto seteado, el
+> webhook igual funciona pero sin verificar firma (queda un warning en el
+> log); dejarlo sin setear en dev es aceptable, no en prod.
+>
+> **Producción**: Connect UI y API de Nango necesitan ser alcanzables desde
+> el browser de un usuario real (no solo desde la red Docker del servidor)
+> — ver `devbout-oauth/deploy/nango/docker-compose.prod.yaml` para la
+> exposición pública vía el Traefik compartido (`api.nango.<dominio>` /
+> `nango.<dominio>`, con el dashboard detrás de BasicAuth y las rutas
+> `/oauth`,`/connect`,`/connections`,`/environment` públicas sin auth).
 
 ---
 
@@ -166,8 +202,15 @@ repo), por eso el nombre de marca tiene una clave por app.
 | `VITE_API_URL` | ✅ | URL base del backend (misma para ambas apps) | `http://localhost:8000` / `/api` |
 | `VITE_APP_NAME` | ❌ | Nombre de marca de `frontend/` (panel admin) | `Asistente` |
 | `VITE_TENANT_APP_NAME` | ❌ | Nombre de marca de `frontend-tenant/` | `Backoffice` |
-| `VITE_NANGO_CONNECT_URL` | ❌ | URL de Nango Connect visible desde el browser | `http://localhost:3009` |
-| `VITE_NANGO_API_URL` | ❌ | URL de la API de Nango visible desde el browser | `http://localhost:3003` |
+| `VITE_NANGO_CONNECT_URL` | ❌* | URL de Nango Connect visible desde el browser | dev: `http://localhost:3009` · prod: `https://nango.tudominio.com` |
+| `VITE_NANGO_API_URL` | ❌* | URL de la API de Nango visible desde el browser | dev: `http://localhost:3003` · prod: `https://api.nango.tudominio.com` |
+
+> *Sin valor, caen al default hardcodeado de `auth.service.ts`
+> (`localhost:3009`/`localhost:3003`), que no resuelve en producción. Son
+> build args de Docker (`ARG`/`ENV` en `frontend/Dockerfile` y
+> `frontend-tenant/Dockerfile`), no runtime — hay que pasarlos en
+> `docker-compose.prod.yml`/`docker-compose.tenants.prod.yml`
+> (`build.args`), no alcanza con setearlos en `.env.prod`.
 
 ---
 

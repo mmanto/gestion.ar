@@ -7,7 +7,7 @@ import { Card } from '../components/common/Card';
 export const Records = () => {
   return (
     <AppLayout>
-      <div className="font-editorial p-1 md:bg-white md:rounded-[1.4rem] md:shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] md:p-8">
+      <div className="font-editorial p-1 md:bg-[#F8F9FD] md:p-8">
         <PageHeader
           title="Expedientes"
           titleClassName="font-semibold uppercase tracking-[0.08em]"

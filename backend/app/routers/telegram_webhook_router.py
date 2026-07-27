@@ -93,6 +93,7 @@ async def handle_telegram_channel_webhook(
                     external_id=str(message_data["user_id"]),
                     source="telegram",
                     metadata={"first_name": message_data.get("first_name")},
+                    channel_id=channel_id,
                 )
                 message_data["client_id"] = client.client_id
                 message_data["client"] = client

@@ -1,3 +1,4 @@
+export type AuthProvider = 'google' | 'microsoft';
 export type UserRole = 'super_admin' | 'admin' | 'operativo';
 
 export interface User {
@@ -30,6 +31,7 @@ export interface AuthState {
 
 export interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
+  loginWithProvider: (provider: AuthProvider, tenantId: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
