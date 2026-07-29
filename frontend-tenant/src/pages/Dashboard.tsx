@@ -5,6 +5,7 @@ import { PageHeader } from '../components/common/PageHeader';
 import { Alert } from '../components/common/Alert';
 import { Button } from '../components/common/Button';
 import StatsCards from '../components/dashboard/StatsCards';
+import { ChatQrModal } from '../components/dashboard/ChatQrModal';
 import { useStats } from '../hooks/useStats';
 import { useColorStats } from '../hooks/useColorStats';
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -36,6 +37,8 @@ export const Dashboard = () => {
   const [selectedBotId, setSelectedBotId] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [qrChatUrl, setQrChatUrl] = useState<string | null>(null);
 
   useEffect(() => {
     botsService.getBots({ limit: 100 })
@@ -69,17 +72,23 @@ export const Dashboard = () => {
     setSelectedColor((prev) => (prev === color ? null : color));
   };
 
-  const handleCopyChatLink = async () => {
-    if (!selectedBotId) return;
-    setCopyError(false);
+  const getChatLink = async () => {
+    if (!selectedBotId) return null;
     let publicUrl = window.location.origin;
     try {
       publicUrl = await publicService.getPublicUrl();
     } catch {
       // Sin URL pública configurada — se usa el origin actual como fallback
     }
+    return `${publicUrl}/chat/${selectedBotId}`;
+  };
+
+  const handleCopyChatLink = async () => {
+    const link = await getChatLink();
+    if (!link) return;
+    setCopyError(false);
     try {
-      await copyText(`${publicUrl}/chat/${selectedBotId}`);
+      await copyText(link);
       setLinkCopied(true);
       setTimeout(() => setLinkCopied(false), 2000);
     } catch (err) {
@@ -87,6 +96,12 @@ export const Dashboard = () => {
       setCopyError(true);
       setTimeout(() => setCopyError(false), 3000);
     }
+  };
+
+  const handleGenerateQr = async () => {
+    setQrChatUrl(null);
+    setQrModalOpen(true);
+    setQrChatUrl(await getChatLink());
   };
 
   if (loading) {
@@ -149,11 +164,23 @@ export const Dashboard = () => {
             descriptionClassName="text-gray-800"
             actions={
               bots.length > 0 && (
-                <Button variant="outline" onClick={handleCopyChatLink}>
-                  {linkCopied ? '¡Copiado!' : 'Copiar link del chat'}
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={handleCopyChatLink}>
+                    {linkCopied ? '¡Copiado!' : 'Copiar link del chat'}
+                  </Button>
+                  <Button variant="outline" onClick={handleGenerateQr}>
+                    Generar QR
+                  </Button>
+                </div>
               )
             }
+          />
+
+          <ChatQrModal
+            open={qrModalOpen}
+            onClose={() => setQrModalOpen(false)}
+            userFullName={pageTitle}
+            chatUrl={qrChatUrl}
           />
 
           {copyError && (
