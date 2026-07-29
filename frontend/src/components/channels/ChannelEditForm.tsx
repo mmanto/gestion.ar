@@ -7,9 +7,11 @@ import type {
   TelegramConfig,
   WhatsAppProvider,
 } from '../../types/channel.types';
+import type { TenantUser } from '../../types/tenant.types';
 
 interface ChannelEditFormProps {
   channel: Channel;
+  tenantUsers: TenantUser[];
   onSave: (data: ChannelUpdate) => Promise<void>;
   onCancel: () => void;
   saving: boolean;
@@ -27,16 +29,18 @@ const whatsappProviderLabels: Record<WhatsAppProvider, string> = {
   twilio: 'Twilio',
 };
 
-export const ChannelEditForm = ({ channel, onSave, onCancel, saving }: ChannelEditFormProps) => {
+export const ChannelEditForm = ({ channel, tenantUsers, onSave, onCancel, saving }: ChannelEditFormProps) => {
   const [formData, setFormData] = useState<{
     name: string;
     status: ChannelStatus;
+    owner_username: string;
     webhook_url: string;
     whatsapp_config?: WhatsAppConfig;
     telegram_config?: TelegramConfig;
   }>({
     name: channel.name,
     status: channel.status,
+    owner_username: channel.owner_username || '',
     webhook_url: channel.webhook_url || '',
     whatsapp_config: channel.whatsapp_config
       ? { ...channel.whatsapp_config }
@@ -110,6 +114,9 @@ export const ChannelEditForm = ({ channel, onSave, onCancel, saving }: ChannelEd
     const updateData: ChannelUpdate = {
       name: formData.name,
       status: formData.status,
+      // Siempre se manda, aunque sea "" (desasignar) — ver
+      // ChannelService.update_channel, que trata "" como limpiar el owner.
+      owner_username: formData.owner_username,
       webhook_url: formData.webhook_url || undefined,
     };
 
@@ -201,6 +208,31 @@ export const ChannelEditForm = ({ channel, onSave, onCancel, saving }: ChannelEd
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              Asignar a
+            </label>
+            <select
+              value={formData.owner_username}
+              onChange={(e) => setFormData({ ...formData, owner_username: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="">Sin asignar</option>
+              {tenantUsers.map((u) => {
+                const fullName = [u.nombre, u.apellido].filter(Boolean).join(' ');
+                return (
+                  <option key={u.username} value={u.username}>
+                    {fullName || u.username} ({u.username})
+                  </option>
+                );
+              })}
+            </select>
+            <p className="mt-1 text-xs text-gray-700">
+              Los pacientes/clientes que entren por este link quedan asignados a este usuario
+              apenas inician el chat.
+            </p>
           </div>
 
           <div className="md:col-span-2">

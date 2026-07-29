@@ -207,6 +207,12 @@ class ChannelService:
         """Actualiza un canal"""
         update_dict = {}
         for key, value in update_data.model_dump(exclude_unset=True).items():
+            if key == "owner_username" and value == "":
+                # "" es "desasignar" explícito (ver ChannelEditForm.tsx) — a
+                # diferencia de otros campos, acá None también es un valor
+                # válido a persistir, no solo "no tocar".
+                update_dict["owner_username"] = None
+                continue
             if value is None:
                 continue
             if key == "status":

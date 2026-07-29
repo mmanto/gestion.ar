@@ -14,7 +14,17 @@ import useChannels from '../hooks/useChannels';
 import { useAuth } from '../hooks/useAuth';
 import channelsService from '../services/channels.service';
 import { publicService } from '../services/public.service';
+import { listTenantUsers } from '../services/tenantUsers.service';
 import type { Channel, ChannelType, ChannelStatus, ChannelUpdate, WhatsAppConfig, TelegramConfig, WhatsAppProvider } from '../types/channel.types';
+import type { TenantUser } from '../types/tenant.types';
+
+function ownerLabel(users: TenantUser[], username?: string | null): string {
+  if (!username) return '';
+  const match = users.find((u) => u.username === username);
+  if (!match) return username;
+  const fullName = [match.nombre, match.apellido].filter(Boolean).join(' ');
+  return fullName || match.username;
+}
 
 const channelTypeLabels: Record<ChannelType, string> = {
   whatsapp: 'WhatsApp',
@@ -45,6 +55,7 @@ const statusLabels: Record<ChannelStatus, string> = {
 interface CreateChannelForm {
   channel_type: ChannelType;
   name: string;
+  owner_username: string;
   whatsapp_provider: WhatsAppProvider;
   whatsapp_config?: WhatsAppConfig;
   telegram_config?: TelegramConfig;
@@ -65,13 +76,22 @@ export const BotChannels = () => {
   const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
   const [qrLoading, setQrLoading] = useState(false);
   const [qrBaseUrl, setQrBaseUrl] = useState(window.location.origin);
+  const [tenantUsers, setTenantUsers] = useState<TenantUser[]>([]);
 
   useEffect(() => {
     publicService.getPublicUrl().then(setQrBaseUrl).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    // 403 esperable si quien administra canales es un operativo (ver
+    // require_role("admin") en GET /api/tenant/users) — el selector de
+    // dueño simplemente queda vacío, no rompe la página.
+    listTenantUsers().then((res) => setTenantUsers(res.users)).catch(() => {});
+  }, []);
   const [formData, setFormData] = useState<CreateChannelForm>({
     channel_type: 'whatsapp',
     name: '',
+    owner_username: '',
     whatsapp_provider: 'meta',
     webhook_url: '',
     whatsapp_config: {
@@ -138,6 +158,7 @@ export const BotChannels = () => {
       const channelData = {
         channel_type: formData.channel_type,
         name: formData.name,
+        owner_username: formData.owner_username || undefined,
         webhook_url: formData.webhook_url || undefined,
         ...(formData.channel_type === 'whatsapp'
           ? { whatsapp_config: whatsappConfig }
@@ -151,6 +172,7 @@ export const BotChannels = () => {
       setFormData({
         channel_type: 'whatsapp',
         name: '',
+        owner_username: '',
         whatsapp_provider: 'meta',
         webhook_url: '',
         whatsapp_config: {
@@ -290,6 +312,7 @@ export const BotChannels = () => {
                   channel={channel}
                   botId={botId || ''}
                   username={user?.username}
+                  tenantUsers={tenantUsers}
                   onActivate={handleActivate}
                   onDeactivate={handleDeactivate}
                   onDelete={handleDelete}
@@ -339,6 +362,28 @@ export const BotChannels = () => {
                     placeholder="Nombre identificador del canal"
                     required
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">
+                    Asignar a
+                  </label>
+                  <select
+                    value={formData.owner_username}
+                    onChange={(e) => setFormData({ ...formData, owner_username: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  >
+                    <option value="">Sin asignar</option>
+                    {tenantUsers.map((u) => (
+                      <option key={u.username} value={u.username}>
+                        {ownerLabel(tenantUsers, u.username)} ({u.username})
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-700 mt-1">
+                    Los pacientes/clientes que entren por este link quedan asignados a este usuario
+                    apenas inician el chat.
+                  </p>
                 </div>
 
                 <div>
@@ -734,6 +779,7 @@ export const BotChannels = () => {
               <h2 className="text-xl font-bold mb-4">Editar Canal</h2>
               <ChannelEditForm
                 channel={editingChannel}
+                tenantUsers={tenantUsers}
                 onSave={handleSaveEdit}
                 onCancel={() => {
                   setShowEditModal(false);
@@ -753,6 +799,7 @@ interface ChannelCardProps {
   channel: Channel;
   botId: string;
   username?: string;
+  tenantUsers: TenantUser[];
   onActivate: (channelId: string) => void;
   onDeactivate: (channelId: string) => void;
   onDelete: (channelId: string) => void;
@@ -761,7 +808,7 @@ interface ChannelCardProps {
   onGenerateQr: (channel: Channel) => void;
 }
 
-const ChannelCard = ({ channel, botId, username, onActivate, onDeactivate, onDelete, onEdit, onUpdateWebhook, onGenerateQr }: ChannelCardProps) => {
+const ChannelCard = ({ channel, botId, username, tenantUsers, onActivate, onDeactivate, onDelete, onEdit, onUpdateWebhook, onGenerateQr }: ChannelCardProps) => {
   const [isEditingWebhook, setIsEditingWebhook] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState(channel.webhook_url || '');
 
@@ -870,6 +917,13 @@ const ChannelCard = ({ channel, botId, username, onActivate, onDeactivate, onDel
           </a>
         </div>
       )}
+
+      <div className="mt-2 text-xs text-gray-700">
+        Asignado a:{' '}
+        <span className={channel.owner_username ? 'font-medium text-gray-900' : 'italic'}>
+          {channel.owner_username ? ownerLabel(tenantUsers, channel.owner_username) : 'Sin asignar'}
+        </span>
+      </div>
 
       <div className="mt-4 flex gap-2 flex-wrap">
         <button
