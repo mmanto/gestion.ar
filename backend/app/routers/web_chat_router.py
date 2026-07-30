@@ -261,21 +261,29 @@ async def websocket_chat(websocket: WebSocket, bot_id: str, device_id: Optional[
                     booking_result = await booking_state.process_answer(user_text)
 
                 if booking_result is not None:
-                    # Log de la interacción de booking
-                    await conv_service.log_chat_interaction(
-                        user_id=session_id,
-                        user_message=user_text,
-                        assistant_response=booking_result["message"],
-                        metadata={
-                            "source": "web",
-                            "booking_stage": booking_state.stage.value if booking_state else None,
-                            "widget_type": (booking_result.get("widget") or {}).get("widget_type"),
-                        },
-                        conversation_id=conversation_id,
-                        bot_id=bot_id,
-                        client_id=web_client_id,
-                        channel="web",
-                    )
+                    # Log de la interacción de booking -- nunca debe impedir que la
+                    # respuesta real le llegue al usuario (ver bug: conversation_id
+                    # no encontrado dejaba la respuesta sin enviar más abajo).
+                    try:
+                        await conv_service.log_chat_interaction(
+                            user_id=session_id,
+                            user_message=user_text,
+                            assistant_response=booking_result["message"],
+                            metadata={
+                                "source": "web",
+                                "booking_stage": booking_state.stage.value if booking_state else None,
+                                "widget_type": (booking_result.get("widget") or {}).get("widget_type"),
+                            },
+                            conversation_id=conversation_id,
+                            bot_id=bot_id,
+                            client_id=web_client_id,
+                            channel="web",
+                        )
+                    except Exception:
+                        logger.exception(
+                            "Error registrando interacción en conversación (conversation_id=%s)",
+                            conversation_id,
+                        )
 
                     # Notificar a staff conectado
                     await _notify_staff(
@@ -338,27 +346,35 @@ async def websocket_chat(websocket: WebSocket, bot_id: str, device_id: Optional[
                         outgoing_message = response["response"]
                         widget = None
 
-                    # Persistir en PostgreSQL
-                    await conv_service.log_chat_interaction(
-                        user_id=session_id,
-                        user_message=user_text,
-                        assistant_response=outgoing_message,
-                        metadata={
-                            "model": response["model"],
-                            "tokens_used": response["tokens_used"],
-                            "input_tokens": response["input_tokens"],
-                            "output_tokens": response["output_tokens"],
-                            "estimated_cost_usd": response["estimated_cost_usd"],
-                            "rag_used": bool(rag_context),
-                            "source": "web",
-                            "booking_stage": booking_state.stage.value if booking_state else None,
-                            "widget_type": (widget or {}).get("widget_type"),
-                        },
-                        conversation_id=conversation_id,
-                        bot_id=bot_id,
-                        client_id=web_client_id,
-                        channel="web",
-                    )
+                    # Persistir en PostgreSQL -- nunca debe impedir que la
+                    # respuesta real le llegue al usuario (ver bug: conversation_id
+                    # no encontrado dejaba la respuesta sin enviar más abajo).
+                    try:
+                        await conv_service.log_chat_interaction(
+                            user_id=session_id,
+                            user_message=user_text,
+                            assistant_response=outgoing_message,
+                            metadata={
+                                "model": response["model"],
+                                "tokens_used": response["tokens_used"],
+                                "input_tokens": response["input_tokens"],
+                                "output_tokens": response["output_tokens"],
+                                "estimated_cost_usd": response["estimated_cost_usd"],
+                                "rag_used": bool(rag_context),
+                                "source": "web",
+                                "booking_stage": booking_state.stage.value if booking_state else None,
+                                "widget_type": (widget or {}).get("widget_type"),
+                            },
+                            conversation_id=conversation_id,
+                            bot_id=bot_id,
+                            client_id=web_client_id,
+                            channel="web",
+                        )
+                    except Exception:
+                        logger.exception(
+                            "Error registrando interacción en conversación (conversation_id=%s)",
+                            conversation_id,
+                        )
 
                     # Notificar a staff conectado
                     await _notify_staff(
@@ -588,17 +604,24 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
                 elif flow_state and not flow_state.is_complete:
                     result = flow_state.process_answer(user_text)
 
-                    # Registrar en conversación
-                    await conv_service.log_chat_interaction(
-                        user_id=session_id,
-                        user_message=user_text,
-                        assistant_response=result.get("next_question") or bot.config.flow.completion_message,
-                        metadata={"source": channel_source, "channel_id": channel_id, "flow_field": result.get("captured_field")},
-                        conversation_id=conversation_id,
-                        bot_id=channel.bot_id,
-                        client_id=channel_client_id,
-                        channel=channel_source,
-                    )
+                    # Registrar en conversación -- nunca debe impedir que la
+                    # respuesta real le llegue al usuario más abajo.
+                    try:
+                        await conv_service.log_chat_interaction(
+                            user_id=session_id,
+                            user_message=user_text,
+                            assistant_response=result.get("next_question") or bot.config.flow.completion_message,
+                            metadata={"source": channel_source, "channel_id": channel_id, "flow_field": result.get("captured_field")},
+                            conversation_id=conversation_id,
+                            bot_id=channel.bot_id,
+                            client_id=channel_client_id,
+                            channel=channel_source,
+                        )
+                    except Exception:
+                        logger.exception(
+                            "Error registrando interacción en conversación (conversation_id=%s)",
+                            conversation_id,
+                        )
 
                     await _notify_staff(
                         channel.bot_id, conversation_id, channel_client_id,
@@ -689,27 +712,37 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
                         outgoing_message = response["response"]
                         widget = None
 
-                    await conv_service.log_chat_interaction(
-                        user_id=session_id,
-                        user_message=user_text,
-                        assistant_response=outgoing_message,
-                        metadata={
-                            "model": response["model"],
-                            "tokens_used": response["tokens_used"],
-                            "input_tokens": response["input_tokens"],
-                            "output_tokens": response["output_tokens"],
-                            "estimated_cost_usd": response["estimated_cost_usd"],
-                            "rag_used": bool(rag_context),
-                            "source": channel_source,
-                            "channel_id": channel_id,
-                            "booking_stage": booking_state.stage.value if booking_state else None,
-                            "widget_type": (widget or {}).get("widget_type"),
-                        },
-                        conversation_id=conversation_id,
-                        bot_id=channel.bot_id,
-                        client_id=channel_client_id,
-                        channel=channel_source,
-                    )
+                    # Nunca debe impedir que la respuesta real (ya generada por el
+                    # LLM) le llegue al usuario más abajo -- ver bug: un
+                    # conversation_id no encontrado en este log dejaba la
+                    # respuesta real sin enviar y el chat parecía "colgado".
+                    try:
+                        await conv_service.log_chat_interaction(
+                            user_id=session_id,
+                            user_message=user_text,
+                            assistant_response=outgoing_message,
+                            metadata={
+                                "model": response["model"],
+                                "tokens_used": response["tokens_used"],
+                                "input_tokens": response["input_tokens"],
+                                "output_tokens": response["output_tokens"],
+                                "estimated_cost_usd": response["estimated_cost_usd"],
+                                "rag_used": bool(rag_context),
+                                "source": channel_source,
+                                "channel_id": channel_id,
+                                "booking_stage": booking_state.stage.value if booking_state else None,
+                                "widget_type": (widget or {}).get("widget_type"),
+                            },
+                            conversation_id=conversation_id,
+                            bot_id=channel.bot_id,
+                            client_id=channel_client_id,
+                            channel=channel_source,
+                        )
+                    except Exception:
+                        logger.exception(
+                            "Error registrando interacción en conversación (conversation_id=%s)",
+                            conversation_id,
+                        )
 
                     await _notify_staff(
                         channel.bot_id, conversation_id, channel_client_id,
@@ -735,21 +768,27 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
                 # === Envío unificado para las dos ramas de booking de arriba
                 # (booking_state activo o recién arrancado por start_booking) ===
                 if booking_result is not None:
-                    await conv_service.log_chat_interaction(
-                        user_id=session_id,
-                        user_message=user_text,
-                        assistant_response=booking_result["message"],
-                        metadata={
-                            "source": channel_source,
-                            "channel_id": channel_id,
-                            "booking_stage": booking_state.stage.value if booking_state else None,
-                            "widget_type": (booking_result.get("widget") or {}).get("widget_type"),
-                        },
-                        conversation_id=conversation_id,
-                        bot_id=channel.bot_id,
-                        client_id=channel_client_id,
-                        channel=channel_source,
-                    )
+                    try:
+                        await conv_service.log_chat_interaction(
+                            user_id=session_id,
+                            user_message=user_text,
+                            assistant_response=booking_result["message"],
+                            metadata={
+                                "source": channel_source,
+                                "channel_id": channel_id,
+                                "booking_stage": booking_state.stage.value if booking_state else None,
+                                "widget_type": (booking_result.get("widget") or {}).get("widget_type"),
+                            },
+                            conversation_id=conversation_id,
+                            bot_id=channel.bot_id,
+                            client_id=channel_client_id,
+                            channel=channel_source,
+                        )
+                    except Exception:
+                        logger.exception(
+                            "Error registrando interacción en conversación (conversation_id=%s)",
+                            conversation_id,
+                        )
 
                     await _notify_staff(
                         channel.bot_id, conversation_id, channel_client_id,
