@@ -373,7 +373,9 @@ def _current_date_line() -> str:
 def build_effective_system_prompt(bot_config) -> str:
     """
     Construye el system prompt efectivo para un bot.
-    Si el bot tiene ius_config cargado, lo inyecta completo como JSON de configuración.
+    Si el bot tiene ius_config cargado, lo inyecta completo como JSON de configuración,
+    precedido de una línea de identidad derivada de ius_config.agent_identity (propia
+    de ESE bot -- no hardcodear un rubro/identidad fijo acá, cada tenant declara el suyo).
     Si system_prompt es JSON libre válido, lo convierte a texto legible.
     De lo contrario, devuelve bot_config.system_prompt tal cual.
     En todos los casos, interpola custom_facts (datos puntuales editables por
@@ -384,8 +386,22 @@ def build_effective_system_prompt(bot_config) -> str:
     ius = bot_config.ius_config
     if ius:
         import json as _json
+        identity = ius.get("agent_identity") or {}
+        nombre = (identity.get("nombre") or "").strip()
+        rol = (identity.get("rol") or "").strip()
+        aclaracion = (identity.get("aclaracion_de_rol") or "").strip()
+
+        if nombre and rol:
+            identity_line = f"Eres {nombre}, {rol}."
+        elif rol:
+            identity_line = f"Eres un asistente virtual: {rol}."
+        else:
+            identity_line = "Eres un asistente virtual de este negocio."
+        if aclaracion:
+            identity_line += f" {aclaracion}"
+
         prompt = (
-            "Eres IUS, un asistente de IA legal laboral. "
+            f"{identity_line} "
             "Lee el JSON de configuración completo antes de responder y sigue estrictamente "
             "el orden de ejecución definido en HOW_TO_USE.\n"
             "IMPORTANTE: Responde siempre en texto plano. "
