@@ -223,6 +223,12 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
     setFlowJsonError(null);
   };
 
+  // Cuando hay un JSON de configuración cargado (ius_config), tiene prioridad
+  // total sobre el flujo de captura de datos y lo deja sin efecto (ver
+  // web_chat_router.py: el flow solo corre si NO hay ius_config) — deshabilitar
+  // la edición para no sugerir que ambos conviven.
+  const flowInactiveByJsonConfig = !!formData.config.ius_config;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Informacion Basica */}
@@ -520,6 +526,23 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
           Guia al visitante a traves de preguntas para capturar sus datos de contacto antes de responder con IA.
         </p>
 
+        {flowInactiveByJsonConfig && (
+          <div className="mb-4 flex items-start gap-2 bg-gray-50 border border-gray-300 rounded-lg p-3">
+            <svg className="w-4 h-4 text-gray-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm text-gray-700">
+              Este flujo está <strong>inactivo</strong>: el bot tiene un JSON de configuración cargado
+              (sección "Archivo de configuración" más abajo), que reemplaza por completo tanto el System
+              Prompt como este flujo. Quitá ese JSON si querés volver a usar el flujo de captura de datos.
+            </p>
+          </div>
+        )}
+
+        <fieldset
+          disabled={flowInactiveByJsonConfig}
+          className={flowInactiveByJsonConfig ? 'opacity-50' : undefined}
+        >
         <div className="space-y-4">
           <div className="flex items-center">
             <input
@@ -715,7 +738,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
                             }
                             rows={3}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
-                            placeholder={"Divorcio\nCustodia\nPension alimenticia\nHerencia"}
+                            placeholder={"Consulta general\nPresupuesto\nSoporte\nOtro"}
                           />
                         </div>
                       )}
@@ -741,9 +764,10 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
             </div>
           )}
         </div>
+        </fieldset>
       </div>
 
-      {/* Agente IUS */}
+      {/* Archivo de configuración avanzada del agente (ius_config) */}
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-xl font-semibold text-gray-900">Archivo de configuración</h2>
@@ -760,7 +784,10 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
           )}
         </div>
         <p className="text-sm text-gray-700 mb-4">
-          Carga el archivo <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">system_prompt.json</code> para activar el agente calificador de casos laborales. Si está configurado, reemplaza el System Prompt como instrucción principal del agente.
+          Cargá un JSON de configuración avanzada, propio de este negocio (identidad, reglas de
+          calificación, tono, restricciones, etc. — ver <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">agent_identity</code> para
+          declarar quién es este agente). Si está configurado, reemplaza por completo el System
+          Prompt y el Flujo de Captura de Datos como instrucción principal del agente.
         </p>
 
         {/* Aviso: cambios sin guardar */}
@@ -783,7 +810,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
             </svg>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-green-900">
-                {iusMeta?.nombre ?? 'Agente IUS cargado'}
+                {iusMeta?.nombre ?? 'Configuración avanzada cargada'}
               </p>
               {iusMeta?.rol && (
                 <p className="text-xs text-green-700 mt-0.5 truncate">{iusMeta.rol}</p>
