@@ -43,7 +43,7 @@ import asyncio
 import re
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import List, Optional
+from typing import Callable, List, Optional
 from zoneinfo import ZoneInfo
 
 from app.integrations.appointments_client import AppointmentsClient, SlotUnavailableError, get_appointments_client
@@ -54,14 +54,9 @@ from app.services.module_service import get_module_service
 
 MODULE_KEY = "appointments"
 
-BOOKING_KEYWORDS = ("turno", "turnos", "cita", "citas", "reservar", "agendar", "reserva", "/turno")
 CANCEL_WORDS = ("cancelar", "cancela", "/cancelar")
 BACK_WORDS = ("volver", "atras", "atrás", "back")
 
-_KEYWORD_PATTERN = re.compile(
-    r"\b(" + "|".join(re.escape(k).replace(r"\/", "/") for k in BOOKING_KEYWORDS) + r")\b",
-    re.IGNORECASE,
-)
 _CANCEL_PATTERN = re.compile(
     r"\b(" + "|".join(re.escape(w) for w in CANCEL_WORDS) + r")\b", re.IGNORECASE
 )
@@ -105,10 +100,6 @@ class ResourceSelectionStrategy(str, Enum):
 
 def _info_result(message: str) -> dict:
     return {"message": message, "done": False, "cancelled": False, "appointment": None, "widget": None}
-
-
-def detects_booking_intent(text: str) -> bool:
-    return bool(_KEYWORD_PATTERN.search(text or ""))
 
 
 def _is_cancel_word(text: str) -> bool:
@@ -733,6 +724,49 @@ class BookingState:
                 "widget": None,
             }
         return self._calendar_result("Uy, ese horario ya no está disponible y no quedan más ese día. Elegí otro día.")
+
+
+BOOKING_TOOL_NAME = "iniciar_reserva_turno"
+
+BOOKING_TOOL_SPEC = {
+    "name": BOOKING_TOOL_NAME,
+    "description": (
+        "Inicia la reserva de un turno real en el calendario con un especialista/profesional. "
+        "Llamala UNICAMENTE cuando ya calificaste el caso siguiendo tus instrucciones de "
+        "configuración (reglas de calificación / semáforo, si las tenés) y el usuario confirmó "
+        "explícitamente que quiere agendar una cita. No la invoques por una simple mención de "
+        "palabras como 'turno', 'cita' o 'agendar' si todavía no completaste la calificación del "
+        "caso — primero segui haciendo las preguntas que correspondan."
+    ),
+    "parameters": {"type": "object", "properties": {}},
+}
+
+
+def build_booking_tool_executor(
+    bot: Bot, client_id: Optional[str], output: dict
+) -> Callable[[str, dict], dict]:
+    """
+    Arma la función síncrona que ejecuta la tool de inicio de reserva cuando el
+    LLM la invoca (mismo patrón que build_qualification_tool_executor, ver
+    prospect_auto_qualify_service.py).
+
+    A diferencia de la tool de calificación, esta necesita exportar el
+    BookingState resultante hacia el router (para que los próximos mensajes
+    del usuario se enruten por booking_state.process_answer en vez de volver
+    a pasar por el LLM) — por eso escribe en `output`, un dict mutable provisto
+    por el caller, en vez de solo devolver el tool_result para Claude.
+    """
+
+    def _executor(tool_name: str, args: dict) -> dict:
+        if tool_name != BOOKING_TOOL_NAME:
+            return {"error": f"Tool desconocida: {tool_name}"}
+
+        state, result = asyncio.run(start_booking(bot, client_id))
+        output["state"] = state
+        output["result"] = result
+        return {"iniciado": True}
+
+    return _executor
 
 
 async def start_booking(bot: Bot, client_id: Optional[str]) -> tuple[Optional["BookingState"], dict]:

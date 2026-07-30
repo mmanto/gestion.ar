@@ -27,9 +27,19 @@ from app.services.client_service import get_client_service
 from app.services.conversation_flow_service import create_flow_state, FlowState
 from app.services.module_service import get_module_service
 from app.services.tenant_service import get_tenant_service
-from app.services.appointment_booking_service import BookingState, detects_booking_intent, start_booking
+from app.services.appointment_booking_service import (
+    BOOKING_TOOL_NAME,
+    BOOKING_TOOL_SPEC,
+    BookingState,
+    build_booking_tool_executor,
+    start_booking,
+)
 from app.services.client_field_extraction_service import capture_client_fields_from_message
-from app.services.prospect_auto_qualify_service import QUALIFICATION_TOOL_SPEC, build_qualification_tool_executor
+from app.services.prospect_auto_qualify_service import (
+    QUALIFICATION_TOOL_NAME,
+    QUALIFICATION_TOOL_SPEC,
+    build_qualification_tool_executor,
+)
 from app.models.client import Client, ClientUpdate
 
 logger = logging.getLogger(__name__)
@@ -63,6 +73,44 @@ async def _capture_client_fields_background(client_id: str, user_text: str) -> N
         await capture_client_fields_from_message(client_id, user_text)
     except Exception:
         logger.exception("Error extrayendo datos del cliente en vivo (client_id=%s)", client_id)
+
+
+async def _build_llm_tools(bot, client: Optional[Client], client_id: Optional[str], canal: str):
+    """
+    Arma la lista de tools + executor dispatcher para una llamada al LLM
+    (calificación por semáforo y/o inicio de reserva de turnos), y el
+    "output box" donde build_booking_tool_executor exporta el BookingState
+    si el LLM decide iniciar una reserva (ver appointment_booking_service.py).
+
+    La reserva de turnos se dispara únicamente cuando el propio LLM invoca
+    la tool, siguiendo sus instrucciones de configuración (ius_config u
+    otras) — no por palabra clave sobre el texto crudo del usuario, que
+    ignoraría por completo cualquier calificación previa del caso.
+    """
+    tools: List[dict] = []
+    executors: dict = {}
+
+    if bot.config.auto_qualify_colors and client:
+        tools.append(QUALIFICATION_TOOL_SPEC)
+        executors[QUALIFICATION_TOOL_NAME] = build_qualification_tool_executor(
+            client=client, canal=canal, allowed_colors=bot.config.auto_qualify_colors,
+        )
+
+    booking_output: dict = {}
+    if await get_module_service().is_enabled(bot.bot_id, "appointments"):
+        tools.append(BOOKING_TOOL_SPEC)
+        executors[BOOKING_TOOL_NAME] = build_booking_tool_executor(bot, client_id, booking_output)
+
+    if not tools:
+        return None, None, booking_output
+
+    def _dispatch(tool_name: str, args: dict) -> dict:
+        executor = executors.get(tool_name)
+        if not executor:
+            return {"error": f"Tool desconocida: {tool_name}"}
+        return executor(tool_name, args)
+
+    return tools, _dispatch, booking_output
 
 
 
@@ -211,8 +259,6 @@ async def websocket_chat(websocket: WebSocket, bot_id: str, device_id: Optional[
 
                 if booking_state is not None:
                     booking_result = await booking_state.process_answer(user_text)
-                elif detects_booking_intent(user_text):
-                    booking_state, booking_result = await start_booking(bot, web_client_id)
 
                 if booking_result is not None:
                     # Log de la interacción de booking
@@ -246,23 +292,18 @@ async def websocket_chat(websocket: WebSocket, bot_id: str, device_id: Optional[
                         booking_state = None
 
                 else:
-                    # === Flujo normal: chat RAG ===
-                    # Obtener contexto RAG si está habilitado
+                    # === Flujo normal: LLM (con tools de calificación por semáforo
+                    # y/o inicio de reserva de turnos, si el bot los tiene habilitados
+                    # — ver _build_llm_tools) ===
                     rag_context: Optional[str] = None
                     if bot.config.use_rag:
                         rag_context = rag.get_context(
                             user_text, bot_id=bot_id, n_results=bot.config.rag_results_count
                         )
 
-                    # Tool calling de calificación por semáforo
-                    qualify_tools, qualify_executor = (None, None)
-                    if bot.config.auto_qualify_colors and web_client:
-                        qualify_tools = [QUALIFICATION_TOOL_SPEC]
-                        qualify_executor = build_qualification_tool_executor(
-                            client=web_client,
-                            canal="web",
-                            allowed_colors=bot.config.auto_qualify_colors,
-                        )
+                    tools, tool_dispatch, booking_output = await _build_llm_tools(
+                        bot, web_client, web_client_id, "web"
+                    )
 
                     # Llamar a Claude
                     response = await asyncio.to_thread(
@@ -274,8 +315,8 @@ async def websocket_chat(websocket: WebSocket, bot_id: str, device_id: Optional[
                         conversation_history,
                         bot.config.max_tokens,
                         bot.config.llm_thinking or None,
-                        qualify_tools,
-                        qualify_executor,
+                        tools,
+                        tool_dispatch,
                     )
 
                     # Actualizar historial en memoria
@@ -284,11 +325,24 @@ async def websocket_chat(websocket: WebSocket, bot_id: str, device_id: Optional[
                         ChatMessage(role="assistant", content=response["response"])
                     )
 
+                    # Si el LLM invocó la tool de inicio de reserva, lo que se le
+                    # muestra al usuario es el mensaje/widget del booking (calendario),
+                    # no la narración de texto de Claude — misma UX que el resto del
+                    # flujo de booking más arriba.
+                    started_booking = booking_output.get("result")
+                    if started_booking is not None:
+                        booking_state = booking_output.get("state")
+                        outgoing_message = started_booking["message"]
+                        widget = started_booking.get("widget")
+                    else:
+                        outgoing_message = response["response"]
+                        widget = None
+
                     # Persistir en PostgreSQL
                     await conv_service.log_chat_interaction(
                         user_id=session_id,
                         user_message=user_text,
-                        assistant_response=response["response"],
+                        assistant_response=outgoing_message,
                         metadata={
                             "model": response["model"],
                             "tokens_used": response["tokens_used"],
@@ -297,6 +351,8 @@ async def websocket_chat(websocket: WebSocket, bot_id: str, device_id: Optional[
                             "estimated_cost_usd": response["estimated_cost_usd"],
                             "rag_used": bool(rag_context),
                             "source": "web",
+                            "booking_stage": booking_state.stage.value if booking_state else None,
+                            "widget_type": (widget or {}).get("widget_type"),
                         },
                         conversation_id=conversation_id,
                         bot_id=bot_id,
@@ -317,17 +373,12 @@ async def websocket_chat(websocket: WebSocket, bot_id: str, device_id: Optional[
                         except Exception:
                             pass
 
-                    await websocket.send_json(
-                        {
-                            "type": "message",
-                            "role": "assistant",
-                            "content": response["response"],
-                            "metadata": {
-                                "tokens_used": response["tokens_used"],
-                                "model": response["model"],
-                            },
-                        }
-                    )
+                    payload = {"type": "message", "role": "assistant", "content": outgoing_message}
+                    if widget:
+                        payload["metadata"] = widget
+                    elif started_booking is None:
+                        payload["metadata"] = {"tokens_used": response["tokens_used"], "model": response["model"]}
+                    await websocket.send_json(payload)
 
             except Exception as e:
                 logger.error("Error generando respuesta (bot_id=%s): %s\n%s", bot_id, e, traceback.format_exc())
@@ -594,26 +645,19 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
                             await websocket.send_json(
                                 {"type": "message", "role": "assistant", "content": next_q}
                             )
-                elif detects_booking_intent(user_text):
-                    # === Detección de intención de reserva de turno ===
-                    booking_state, booking_result = await start_booking(bot, channel_client_id)
-
                 else:
-                    # === Flujo completado o no configurado: chat RAG normal ===
+                    # === Flujo completado o no configurado: LLM (con tools de
+                    # calificación por semáforo y/o inicio de reserva de turnos,
+                    # si el bot los tiene habilitados — ver _build_llm_tools) ===
                     rag_context: Optional[str] = None
                     if bot.config.use_rag:
                         rag_context = rag.get_context(
                             user_text, bot_id=channel.bot_id, n_results=bot.config.rag_results_count
                         )
 
-                    qualify_tools, qualify_executor = (None, None)
-                    if bot.config.auto_qualify_colors and channel_client:
-                        qualify_tools = [QUALIFICATION_TOOL_SPEC]
-                        qualify_executor = build_qualification_tool_executor(
-                            client=channel_client,
-                            canal=channel_source,
-                            allowed_colors=bot.config.auto_qualify_colors,
-                        )
+                    tools, tool_dispatch, booking_output = await _build_llm_tools(
+                        bot, channel_client, channel_client_id, channel_source
+                    )
 
                     response = await asyncio.to_thread(
                         _sync_generate,
@@ -624,8 +668,8 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
                         conversation_history,
                         bot.config.max_tokens,
                         bot.config.llm_thinking or None,
-                        qualify_tools,
-                        qualify_executor,
+                        tools,
+                        tool_dispatch,
                     )
 
                     conversation_history.append(ChatMessage(role="user", content=user_text))
@@ -633,10 +677,22 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
                         ChatMessage(role="assistant", content=response["response"])
                     )
 
+                    # Si el LLM invocó la tool de inicio de reserva, lo que se le
+                    # muestra al usuario es el mensaje/widget del booking
+                    # (calendario), no la narración de texto de Claude.
+                    started_booking = booking_output.get("result")
+                    if started_booking is not None:
+                        booking_state = booking_output.get("state")
+                        outgoing_message = started_booking["message"]
+                        widget = started_booking.get("widget")
+                    else:
+                        outgoing_message = response["response"]
+                        widget = None
+
                     await conv_service.log_chat_interaction(
                         user_id=session_id,
                         user_message=user_text,
-                        assistant_response=response["response"],
+                        assistant_response=outgoing_message,
                         metadata={
                             "model": response["model"],
                             "tokens_used": response["tokens_used"],
@@ -646,6 +702,8 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
                             "rag_used": bool(rag_context),
                             "source": channel_source,
                             "channel_id": channel_id,
+                            "booking_stage": booking_state.stage.value if booking_state else None,
+                            "widget_type": (widget or {}).get("widget_type"),
                         },
                         conversation_id=conversation_id,
                         bot_id=channel.bot_id,
@@ -667,17 +725,12 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
 
                     await channel_service.increment_message_counters(channel_id, received=1, sent=1)
 
-                    await websocket.send_json(
-                        {
-                            "type": "message",
-                            "role": "assistant",
-                            "content": response["response"],
-                            "metadata": {
-                                "tokens_used": response["tokens_used"],
-                                "model": response["model"],
-                            },
-                        }
-                    )
+                    payload = {"type": "message", "role": "assistant", "content": outgoing_message}
+                    if widget:
+                        payload["metadata"] = widget
+                    elif started_booking is None:
+                        payload["metadata"] = {"tokens_used": response["tokens_used"], "model": response["model"]}
+                    await websocket.send_json(payload)
 
                 # === Envío unificado para las dos ramas de booking de arriba
                 # (booking_state activo o recién arrancado por start_booking) ===
