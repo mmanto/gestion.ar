@@ -11,7 +11,6 @@ import { Button } from '../components/common/Button';
 import { useAccentTheme } from '../hooks/useAccentTheme';
 import { ChannelEditForm } from '../components/channels/ChannelEditForm';
 import useChannels from '../hooks/useChannels';
-import { useAuth } from '../hooks/useAuth';
 import channelsService from '../services/channels.service';
 import { publicService } from '../services/public.service';
 import { listTenantUsers } from '../services/tenantUsers.service';
@@ -66,7 +65,6 @@ export const BotChannels = () => {
   const { accent } = useAccentTheme();
   const { botId } = useParams<{ botId: string }>();
   const { channels, loading, error, refetch } = useChannels(botId || '');
-  const { user } = useAuth();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingChannel, setEditingChannel] = useState<Channel | null>(null);
@@ -311,7 +309,6 @@ export const BotChannels = () => {
                   key={channel.channel_id}
                   channel={channel}
                   botId={botId || ''}
-                  username={user?.username}
                   tenantUsers={tenantUsers}
                   onActivate={handleActivate}
                   onDeactivate={handleDeactivate}
@@ -746,9 +743,9 @@ export const BotChannels = () => {
                 >
                   Descargar PNG
                 </a>
-                {user?.username && (
+                {qrChannel.owner_username && (
                   <a
-                    href={`${qrBaseUrl.replace(/\/$/, '')}/u/${user.username}`}
+                    href={`${qrBaseUrl.replace(/\/$/, '')}/u/${qrChannel.owner_username}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-block px-4 py-2 border border-indigo-600 text-indigo-600 rounded-lg hover:bg-indigo-50 text-sm"
@@ -798,7 +795,6 @@ export const BotChannels = () => {
 interface ChannelCardProps {
   channel: Channel;
   botId: string;
-  username?: string;
   tenantUsers: TenantUser[];
   onActivate: (channelId: string) => void;
   onDeactivate: (channelId: string) => void;
@@ -808,7 +804,7 @@ interface ChannelCardProps {
   onGenerateQr: (channel: Channel) => void;
 }
 
-const ChannelCard = ({ channel, botId, username, tenantUsers, onActivate, onDeactivate, onDelete, onEdit, onUpdateWebhook, onGenerateQr }: ChannelCardProps) => {
+const ChannelCard = ({ channel, botId, tenantUsers, onActivate, onDeactivate, onDelete, onEdit, onUpdateWebhook, onGenerateQr }: ChannelCardProps) => {
   const [isEditingWebhook, setIsEditingWebhook] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState(channel.webhook_url || '');
 
@@ -940,9 +936,9 @@ const ChannelCard = ({ channel, botId, username, tenantUsers, onActivate, onDeac
             Ver QR
           </button>
         )}
-        {(isWebChannel || isPwaChannel) && channel.status === 'active' && username && (
+        {(isWebChannel || isPwaChannel) && channel.status === 'active' && channel.owner_username && (
           <a
-            href={`/u/${username}`}
+            href={`/u/${channel.owner_username}`}
             target="_blank"
             rel="noopener noreferrer"
             className="px-3 py-1 text-sm border border-indigo-400 text-indigo-600 rounded hover:bg-indigo-50"

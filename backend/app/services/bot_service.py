@@ -90,40 +90,6 @@ class BotService:
                 return _to_bot(row)
             return None
 
-    async def get_bots_by_owner(
-        self,
-        owner_id: str,
-        skip: int = 0,
-        limit: int = 20,
-        status: Optional[BotStatus] = None
-    ) -> Dict:
-        """Obtiene bots de un propietario con paginación"""
-        filters = [BotModel.owner_id == owner_id]
-        if status:
-            filters.append(BotModel.status == status.value)
-
-        async with AsyncSessionLocal() as session:
-            total = (await session.execute(
-                select(func.count()).select_from(BotModel).where(*filters)
-            )).scalar_one()
-
-            result = await session.execute(
-                select(BotModel)
-                .where(*filters)
-                .order_by(BotModel.created_at.desc())
-                .offset(skip)
-                .limit(limit)
-            )
-            rows = result.scalars().all()
-
-        return {
-            "bots": [_to_bot(r) for r in rows],
-            "total": total,
-            "page": (skip // limit) + 1 if limit > 0 else 1,
-            "pages": (total + limit - 1) // limit if limit > 0 else 0,
-            "limit": limit
-        }
-
     async def get_bots_by_tenant(
         self,
         tenant_id: Optional[str],

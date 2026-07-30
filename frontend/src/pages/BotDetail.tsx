@@ -9,7 +9,6 @@ import { useAccentTheme } from '../hooks/useAccentTheme';
 import { BotEditForm } from '../components/bots/BotEditForm';
 import botsService from '../services/bots.service';
 import tenantAdminService from '../services/tenantAdmin.service';
-import { publicService } from '../services/public.service';
 import { ModuleCard, type ModuleConfigLink } from '../components/bots/ModuleCard';
 import { formatNumber } from '../utils/formatters';
 import type { Bot, BotStats, BotStatus, BotUpdate } from '../types/bot.types';
@@ -39,7 +38,6 @@ export const BotDetail = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [linkCopied, setLinkCopied] = useState(false);
   const [modules, setModules] = useState<BotModuleInfo[]>([]);
   const [modulesUpdating, setModulesUpdating] = useState<string | null>(null);
 
@@ -132,23 +130,6 @@ export const BotDetail = () => {
     setSaveError(null);
   };
 
-  const handleCopyChatLink = async () => {
-    if (!botId) return;
-    try {
-      let publicUrl = window.location.origin;
-      try {
-        publicUrl = await publicService.getPublicUrl();
-      } catch {
-        // Sin URL pública configurada — se usa el origin actual como fallback
-      }
-      await navigator.clipboard.writeText(`${publicUrl}/chat/${botId}`);
-      setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 2000);
-    } catch (err) {
-      console.error('Error copiando el link:', err);
-    }
-  };
-
   if (loading) {
     return <LoadingPage />;
   }
@@ -231,9 +212,6 @@ export const BotDetail = () => {
                     </span>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" onClick={handleCopyChatLink}>
-                      {linkCopied ? '¡Copiado!' : 'Copiar link del chat'}
-                    </Button>
                     <Button variant="primary" onClick={() => setIsEditing(true)}>
                       Editar
                     </Button>

@@ -13,6 +13,7 @@ import { useAuth } from './hooks/useAuth';
 import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
 import { ChatPage } from './pages/ChatPage';
+import { UserLandingPage } from './pages/UserLandingPage';
 import { Dashboard } from './pages/Dashboard';
 import { Customers } from './pages/Customers';
 import { Clients } from './pages/Clients';
@@ -51,6 +52,7 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/chat/c/:channelId" element={<ChatPage />} />
                 <Route path="/chat/:botId" element={<ChatPage />} />
+                <Route path="/u/:username" element={<UserLandingPage />} />
 
                 {/* Backoffice de tenant — admin y operativo */}
                 <Route

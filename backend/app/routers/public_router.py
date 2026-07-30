@@ -235,38 +235,34 @@ async def get_public_user_info(username: str):
     bot_service = get_bot_service()
     channel_service = get_channel_service()
 
-    bots_result = await bot_service.get_bots_by_owner(
-        owner_id=username,
+    bots_result = await bot_service.get_bots_by_tenant(
+        tenant_id=user.tenant_id,
         limit=50,
         status=BotStatus.ACTIVE
     )
 
+    bot_ids = [bot.bot_id for bot in bots_result["bots"]]
+    channels_by_bot = await channel_service.get_active_web_channels_by_owner(bot_ids, username)
+
     bots_data = []
     for bot in bots_result["bots"]:
-        # Obtener canales web/pwa activos del bot
-        web_channels = []
-        for channel_type in (ChannelType.WEB, ChannelType.PWA):
-            result = await channel_service.get_channels_by_bot(
-                bot_id=bot.bot_id,
-                channel_type=channel_type,
-                status=ChannelStatus.ACTIVE,
-                limit=10
-            )
-            for ch in result["channels"]:
-                web_channels.append({
-                    "channel_id": ch.channel_id,
-                    "name": ch.name,
-                    "channel_type": ch.channel_type,
-                })
+        # A lo sumo un canal web activo por (bot, username) — ver
+        # uq_channels_bot_owner_web.
+        channel = channels_by_bot.get(bot.bot_id)
+        if not channel:
+            continue
 
-        if web_channels:
-            bots_data.append({
-                "bot_id": bot.bot_id,
-                "name": bot.name,
-                "description": bot.description,
-                "business_type": bot.business_type,
-                "web_channels": web_channels,
-            })
+        bots_data.append({
+            "bot_id": bot.bot_id,
+            "name": bot.name,
+            "description": bot.description,
+            "business_type": bot.business_type,
+            "web_channels": [{
+                "channel_id": channel.channel_id,
+                "name": channel.name,
+                "channel_type": channel.channel_type,
+            }],
+        })
 
     return {
         "username": username,
