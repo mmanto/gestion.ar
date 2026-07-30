@@ -9,6 +9,7 @@ from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 from sqlalchemy import case, func, or_, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import AsyncSessionLocal
@@ -159,6 +160,46 @@ class ConversationService:
 
         return conversation_id
 
+    async def ensure_conversation(
+        self,
+        conversation_id: str,
+        user_id: str,
+        bot_id: Optional[str] = None,
+        client_id: Optional[str] = None,
+        channel: Optional[str] = None,
+        metadata: Optional[Dict] = None,
+    ) -> None:
+        """
+        Garantiza que exista una fila en `conversations` para conversation_id,
+        vía INSERT ... ON CONFLICT DO NOTHING -- no falla ni duplica si ya
+        existe, así que es seguro llamarla siempre antes de add_message.
+
+        Defensa ante conversation_id "huérfano": bajo condiciones aún no
+        explicadas (ver logs de producción, IntegrityError intermitente en
+        add_message), la fila creada por create_conversation() al abrir la
+        conexión WS a veces no llega a persistir antes de que se logueen
+        mensajes contra ese mismo conversation_id, y el INSERT en `messages`
+        revienta por la FK -- perdiendo la respuesta real del bot en el
+        camino (ver web_chat_router.py). Esto la recrea in extremis con el
+        MISMO id en vez de fallar.
+        """
+        metadata = metadata or {}
+        async with AsyncSessionLocal() as session:
+            stmt = pg_insert(ConversationModel).values(
+                conversation_id=conversation_id,
+                bot_id=bot_id,
+                client_id=client_id,
+                user_id=user_id,
+                channel=channel,
+                source=metadata.get("source"),
+                channel_id=metadata.get("channel_id"),
+                total_tokens_used=0,
+                total_cost_usd=0,
+                metadata_=metadata,
+            ).on_conflict_do_nothing(index_elements=["conversation_id"])
+            await session.execute(stmt)
+            await session.commit()
+
     async def add_message(
         self,
         conversation_id: str,
@@ -245,6 +286,15 @@ class ConversationService:
                 bot_id=bot_id,
                 client_id=client_id,
                 channel=channel
+            )
+        else:
+            await self.ensure_conversation(
+                conversation_id,
+                user_id=user_id,
+                bot_id=bot_id,
+                client_id=client_id,
+                channel=channel,
+                metadata={"source": channel or "api_chat"},
             )
 
         await self.add_message(
