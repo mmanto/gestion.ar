@@ -18,7 +18,7 @@ python-docx==1.1.0
 python-multipart==0.0.6
 
 # PASO 3: Dependencias Claude API
-anthropic==0.34.2
+anthropic==0.120.2
 
 # PASO 4: Dependencias de Autenticación JWT
 python-jose[cryptography]==3.3.0
