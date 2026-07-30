@@ -6,7 +6,7 @@ pydantic==2.10.6
 pydantic-settings==2.7.1
 pytest==7.4.3
 pytest-asyncio==0.21.1
-httpx==0.27.2
+httpx==0.28.1
 
 # PASO 2: Dependencias RAG
 chromadb==0.4.22
@@ -18,7 +18,7 @@ python-docx==1.1.0
 python-multipart==0.0.6
 
 # PASO 3: Dependencias Claude API
-anthropic==0.34.2
+anthropic==0.120.2
 
 # PASO 4: Dependencias de Autenticación JWT
 python-jose[cryptography]==3.3.0

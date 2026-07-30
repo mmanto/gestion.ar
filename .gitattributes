@@ -1,0 +1,5 @@
+# Los scripts corren dentro de contenedores Linux — con core.autocrlf=true
+# (Windows) git los convierte a CRLF al checkout, lo que rompe el shebang
+# (#!/bin/sh\r) y hace fallar "exec ./entrypoint.sh: no such file or
+# directory" dentro del contenedor. Forzar LF siempre evita eso.
+*.sh text eol=lf
