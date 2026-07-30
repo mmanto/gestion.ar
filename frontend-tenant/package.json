@@ -23,7 +23,6 @@
     "capacitor-secure-storage-plugin": "^0.13.0",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.562.0",
-    "qrcode.react": "^4.2.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.11.0",
