@@ -235,6 +235,14 @@ class Channel(Base):
             "ix_channels_twilio_phone_number",
             text("(whatsapp_config -> 'twilio_config' ->> 'phone_number')"),
         ),
+        # A lo sumo un canal web por (bot, owner) — ver
+        # get_or_create_owner_web_channel en channel_service.py.
+        Index(
+            "uq_channels_bot_owner_web",
+            "bot_id", "owner_username", "channel_type",
+            unique=True,
+            postgresql_where=text("owner_username IS NOT NULL AND channel_type = 'web'"),
+        ),
     )
 
 

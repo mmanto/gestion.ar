@@ -8,6 +8,7 @@ import json
 import asyncio
 from typing import Optional, List, Callable
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import anthropic
 from anthropic import Anthropic
 from pydantic import BaseModel
@@ -346,22 +347,61 @@ def _append_custom_facts(prompt: str, custom_facts: dict) -> str:
     return result
 
 
+_WEEKDAYS_ES = ("lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo")
+_MONTHS_ES = (
+    "enero", "febrero", "marzo", "abril", "mayo", "junio",
+    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+)
+
+
+def _current_date_line() -> str:
+    """Fecha/hora real (no la de entrenamiento del modelo) para que el LLM no
+    asuma un año viejo al hablar de turnos u otras fechas relativas ("mañana",
+    "la semana que viene"). AR hardcodeado: hoy todos los tenants son
+    negocios argentinos (ver resource_tz en appointment_booking_service.py
+    para el caso, distinto, de la disponibilidad real de turnos)."""
+    now = datetime.now(ZoneInfo("America/Argentina/Buenos_Aires"))
+    weekday = _WEEKDAYS_ES[now.weekday()]
+    month = _MONTHS_ES[now.month - 1]
+    return (
+        f"Fecha y hora actual: {weekday} {now.day} de {month} de {now.year}, "
+        f"{now.strftime('%H:%M')} (hora de Argentina). Usá siempre este dato como \"hoy\" real "
+        "-- ignorá cualquier otra fecha que creas recordar de tu entrenamiento."
+    )
+
+
 def build_effective_system_prompt(bot_config) -> str:
     """
     Construye el system prompt efectivo para un bot.
-    Si el bot tiene ius_config cargado, lo inyecta completo como JSON de configuración.
+    Si el bot tiene ius_config cargado, lo inyecta completo como JSON de configuración,
+    precedido de una línea de identidad derivada de ius_config.agent_identity (propia
+    de ESE bot -- no hardcodear un rubro/identidad fijo acá, cada tenant declara el suyo).
     Si system_prompt es JSON libre válido, lo convierte a texto legible.
     De lo contrario, devuelve bot_config.system_prompt tal cual.
     En todos los casos, interpola custom_facts (datos puntuales editables por
-    el admin del tenant, ej. honorarios) al final.
+    el admin del tenant, ej. honorarios) e informa la fecha/hora real al final.
     """
     custom_facts = getattr(bot_config, "custom_facts", None) or {}
 
     ius = bot_config.ius_config
     if ius:
         import json as _json
+        identity = ius.get("agent_identity") or {}
+        nombre = (identity.get("nombre") or "").strip()
+        rol = (identity.get("rol") or "").strip()
+        aclaracion = (identity.get("aclaracion_de_rol") or "").strip()
+
+        if nombre and rol:
+            identity_line = f"Eres {nombre}, {rol}."
+        elif rol:
+            identity_line = f"Eres un asistente virtual: {rol}."
+        else:
+            identity_line = "Eres un asistente virtual de este negocio."
+        if aclaracion:
+            identity_line += f" {aclaracion}"
+
         prompt = (
-            "Eres IUS, un asistente de IA legal laboral. "
+            f"{identity_line} "
             "Lee el JSON de configuración completo antes de responder y sigue estrictamente "
             "el orden de ejecución definido en HOW_TO_USE.\n"
             "IMPORTANTE: Responde siempre en texto plano. "
@@ -369,17 +409,20 @@ def build_effective_system_prompt(bot_config) -> str:
             "Usa saltos de línea simples para separar párrafos.\n\n"
             + _json.dumps(ius, ensure_ascii=False, indent=2)
         )
-        return _append_custom_facts(prompt, custom_facts)
+        result = _append_custom_facts(prompt, custom_facts)
+    else:
+        raw = bot_config.system_prompt
+        try:
+            import json as _json
+            parsed = _json.loads(raw)
+            if isinstance(parsed, (dict, list)):
+                result = _append_custom_facts(_json_to_text(parsed), custom_facts)
+            else:
+                result = _append_custom_facts(raw, custom_facts)
+        except (ValueError, TypeError):
+            result = _append_custom_facts(raw, custom_facts)
 
-    raw = bot_config.system_prompt
-    try:
-        import json as _json
-        parsed = _json.loads(raw)
-        if isinstance(parsed, (dict, list)):
-            return _append_custom_facts(_json_to_text(parsed), custom_facts)
-    except (ValueError, TypeError):
-        pass
-    return _append_custom_facts(raw, custom_facts)
+    return f"{result}\n\n{_current_date_line()}"
 
 
 def get_effective_welcome_message(bot_config) -> str:

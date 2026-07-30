@@ -11,6 +11,8 @@ import { useAuth } from '../hooks/useAuth';
 import { useAccentTheme } from '../hooks/useAccentTheme';
 import botsService from '../services/bots.service';
 import modulesService from '../services/modules.service';
+import myChannelService, { type MyChannel } from '../services/myChannel.service';
+import { publicService } from '../services/public.service';
 
 export const Settings = () => {
   const { user } = useAuth();
@@ -25,6 +27,11 @@ export const Settings = () => {
   const [loadingHonorarios, setLoadingHonorarios] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [myChannel, setMyChannel] = useState<MyChannel | null>(null);
+  const [loadingMyChannel, setLoadingMyChannel] = useState(true);
+  const [publicUrl, setPublicUrl] = useState<string>(window.location.origin);
+  const [copied, setCopied] = useState(false);
+
   useEffect(() => {
     botsService.getBots({ limit: 1 })
       .then((r) => {
@@ -32,11 +39,13 @@ export const Settings = () => {
           setBotId(r.bots[0].bot_id);
         } else {
           setLoadingHonorarios(false);
+          setLoadingMyChannel(false);
         }
       })
       .catch((err) => {
         setError(err instanceof Error ? err.message : 'Error cargando datos');
         setLoadingHonorarios(false);
+        setLoadingMyChannel(false);
       });
   }, []);
 
@@ -47,6 +56,27 @@ export const Settings = () => {
       .catch((err) => setError(err instanceof Error ? err.message : 'Error cargando honorarios'))
       .finally(() => setLoadingHonorarios(false));
   }, [botId]);
+
+  useEffect(() => {
+    if (!botId) return;
+    Promise.all([
+      myChannelService.getMyChannel(botId),
+      publicService.getPublicUrl(),
+    ])
+      .then(([channel, url]) => {
+        setMyChannel(channel);
+        setPublicUrl(url);
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : 'Error cargando el link de chat'))
+      .finally(() => setLoadingMyChannel(false));
+  }, [botId]);
+
+  const handleCopyMyChannelLink = async () => {
+    if (!myChannel) return;
+    await navigator.clipboard.writeText(`${publicUrl}/chat/c/${myChannel.channel_id}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleHonorariosChange = (value: string) => {
     setFacts((prev) => ({ ...prev, honorarios: value }));
@@ -118,6 +148,38 @@ export const Settings = () => {
           </Card>
 
           {user?.role === 'admin' && <BrandingSection />}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start mb-6">
+          <Card shadow="none">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Mi link de chat</h2>
+            {loadingMyChannel ? (
+              <p className="text-sm text-gray-700">Cargando...</p>
+            ) : !myChannel ? (
+              <p className="text-sm text-gray-700">No hay un bot configurado todavía.</p>
+            ) : (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                <img
+                  src={publicService.getQrCodeUrl(myChannel.channel_id, publicUrl)}
+                  alt="QR de tu chat"
+                  className="w-32 h-32 rounded-lg border border-gray-200 flex-shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-gray-700 mb-1">
+                    Compartí este link o QR con tus clientes — quedan asignados a vos.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 min-w-0 text-xs bg-gray-100 p-2 rounded overflow-x-auto whitespace-nowrap">
+                      {publicUrl}/chat/c/{myChannel.channel_id}
+                    </code>
+                    <Button variant="outline" onClick={handleCopyMyChannelLink}>
+                      {copied ? '¡Copiado!' : 'Copiar'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </Card>
         </div>
       </div>
     </AppLayout>

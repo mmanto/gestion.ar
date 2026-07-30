@@ -45,3 +45,16 @@ declare module 'appointments/AppointmentConfirmWidget' {
   const AppointmentConfirmWidgetComponent: (props: Props) => ReactElement;
   export default AppointmentConfirmWidgetComponent;
 }
+
+declare module 'appointments/AppointmentOptionsWidget' {
+  import type { ReactElement } from 'react';
+  import type { AppointmentOptionsWidget } from './chat.types';
+
+  interface Props {
+    widget: AppointmentOptionsWidget;
+    onSelectOption: (value: string) => void;
+  }
+
+  const AppointmentOptionsWidgetComponent: (props: Props) => ReactElement;
+  export default AppointmentOptionsWidgetComponent;
+}

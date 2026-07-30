@@ -79,6 +79,7 @@ export function ChatInterface({ botId, channelId }: ChatInterfaceProps) {
                     widget={widget}
                     onSelectDay={(d) => sendMessage(d)}
                     onSelectTime={(s) => sendMessage(s)}
+                    onSelectOption={(v) => sendMessage(v)}
                     onBack={() => sendMessage('volver')}
                     onConfirm={() => sendMessage('si')}
                     onDecline={() => sendMessage('no')}

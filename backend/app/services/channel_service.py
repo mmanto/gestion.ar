@@ -4,9 +4,10 @@ Channel Service - CRUD operations for channels in PostgreSQL (ver ADR-006 en doc
 
 import os
 import uuid
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 
 from app.db.database import AsyncSessionLocal
 from app.db.models import Bot as BotModel, Channel as ChannelModel
@@ -207,6 +208,12 @@ class ChannelService:
         """Actualiza un canal"""
         update_dict = {}
         for key, value in update_data.model_dump(exclude_unset=True).items():
+            if key == "owner_username" and value == "":
+                # "" es "desasignar" explícito (ver ChannelEditForm.tsx) — a
+                # diferencia de otros campos, acá None también es un valor
+                # válido a persistir, no solo "no tocar".
+                update_dict["owner_username"] = None
+                continue
             if value is None:
                 continue
             if key == "status":
@@ -333,6 +340,78 @@ class ChannelService:
             )
             row = result.scalars().first()
             return _to_channel(row) if row else None
+
+    async def get_or_create_owner_web_channel(
+        self,
+        bot_id: str,
+        owner_username: str,
+        name: str,
+    ) -> Channel:
+        """
+        Devuelve el canal web de (bot_id, owner_username), creándolo si no existe.
+
+        Idempotente ante carreras concurrentes: si el INSERT choca contra
+        `uq_channels_bot_owner_web`, se asume que otro request ganó la carrera
+        y se relee la fila ya existente en vez de propagar el error.
+        """
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(ChannelModel).where(
+                    ChannelModel.bot_id == bot_id,
+                    ChannelModel.owner_username == owner_username,
+                    ChannelModel.channel_type == ChannelType.WEB.value,
+                )
+            )
+            row = result.scalars().first()
+            if row:
+                return _to_channel(row)
+
+        try:
+            return await self.create_channel(
+                ChannelCreate(
+                    bot_id=bot_id,
+                    channel_type=ChannelType.WEB,
+                    name=name,
+                    owner_username=owner_username,
+                )
+            )
+        except IntegrityError:
+            async with AsyncSessionLocal() as session:
+                result = await session.execute(
+                    select(ChannelModel).where(
+                        ChannelModel.bot_id == bot_id,
+                        ChannelModel.owner_username == owner_username,
+                        ChannelModel.channel_type == ChannelType.WEB.value,
+                    )
+                )
+                row = result.scalars().first()
+                return _to_channel(row)
+
+    async def get_active_web_channels_by_owner(
+        self, bot_ids: List[str], owner_username: str
+    ) -> Dict[str, Channel]:
+        """
+        Trae los canales web ACTIVOS de un owner entre varios bots.
+
+        Returns:
+            Dict bot_id -> Channel (a lo sumo un canal web por bot, ver
+            uq_channels_bot_owner_web).
+        """
+        if not bot_ids:
+            return {}
+
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(ChannelModel).where(
+                    ChannelModel.bot_id.in_(bot_ids),
+                    ChannelModel.owner_username == owner_username,
+                    ChannelModel.channel_type == ChannelType.WEB.value,
+                    ChannelModel.status == ChannelStatus.ACTIVE.value,
+                )
+            )
+            rows = result.scalars().all()
+
+        return {row.bot_id: _to_channel(row) for row in rows}
 
     async def get_channel_by_telegram_token(self, bot_token: str) -> Optional[Channel]:
         """

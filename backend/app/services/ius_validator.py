@@ -7,9 +7,14 @@ HOW_TO_USE, qualification, traffic_light, objection_handling, etc., que
 varían por bot). Por eso la validación estructural sólo chequea invariantes
 genéricos de JSON y los pocos campos que el runtime
 (app/claude_service.py: build_effective_system_prompt/get_effective_welcome_message)
-efectivamente lee (agent_identity.nombre/rol/presentacion). La validación
-semántica delega en un modelo de lenguaje para detectar contradicciones
-internas, ya que el contenido de negocio no es analizable con reglas fijas.
+efectivamente lee (agent_identity.nombre/rol/presentacion). agent_identity es
+obligatorio (severidad "error" si falta): build_effective_system_prompt lo usa
+para declarar la identidad propia de CADA bot en el prompt efectivo -- sin él
+cae a un fallback genérico, y un bot nunca debe quedar en producción sin su
+propia identidad declarada (evita que un bot se presente con el rubro/identidad
+de otro tenant). La validación semántica delega en un modelo de lenguaje para
+detectar contradicciones internas, ya que el contenido de negocio no es
+analizable con reglas fijas.
 """
 
 import asyncio
@@ -38,19 +43,26 @@ def validate_structure(config: Dict[str, Any]) -> List[ValidationIssue]:
         issues.append(_issue("$", "El JSON está vacío.", "warning"))
 
     identity = config.get("agent_identity")
-    if identity is not None:
-        if not isinstance(identity, dict):
-            issues.append(_issue("agent_identity", "Debe ser un objeto.", "error"))
-        else:
-            for key in ("nombre", "rol", "presentacion"):
-                value = identity.get(key)
-                if not value or not isinstance(value, str) or not value.strip():
-                    issues.append(_issue(
-                        f"agent_identity.{key}",
-                        f"'{key}' está vacío o ausente. Se usa en tiempo de ejecución "
-                        "(mensaje de bienvenida y prompt efectivo del agente).",
-                        "warning",
-                    ))
+    if identity is None:
+        issues.append(_issue(
+            "agent_identity",
+            "Falta 'agent_identity'. Es obligatorio: sin él, el prompt efectivo del "
+            "agente usa una identidad genérica en vez de la propia de este bot.",
+            "error",
+        ))
+    elif not isinstance(identity, dict):
+        issues.append(_issue("agent_identity", "Debe ser un objeto.", "error"))
+    else:
+        for key in ("nombre", "rol", "presentacion"):
+            value = identity.get(key)
+            if not value or not isinstance(value, str) or not value.strip():
+                issues.append(_issue(
+                    f"agent_identity.{key}",
+                    f"'{key}' está vacío o ausente. Es obligatorio: se usa en tiempo de "
+                    "ejecución (mensaje de bienvenida y prompt efectivo del agente) para "
+                    "que este bot se presente con su propia identidad, no con la de otro tenant.",
+                    "error",
+                ))
 
     serialized = json.dumps(config, ensure_ascii=False)
     approx_tokens = len(serialized) // 4

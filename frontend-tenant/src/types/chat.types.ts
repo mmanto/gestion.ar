@@ -92,7 +92,24 @@ export interface AppointmentConfirmWidget {
   slot: AppointmentSlotDTO & { label_day: string };
 }
 
-export type AppointmentWidget = AppointmentCalendarWidget | AppointmentTimesWidget | AppointmentConfirmWidget;
+export interface AppointmentOptionDTO {
+  value: string;
+  label: string;
+}
+
+// Paso previo al calendario cuando el bot tiene más de un recurso asociado
+// al servicio (elegir especialidad, luego médico/cancha/ventanilla puntual)
+// -- ver selection.strategy en appointment_booking_service.py.
+export interface AppointmentOptionsWidget {
+  widget_type: 'appointment_options';
+  options: AppointmentOptionDTO[];
+}
+
+export type AppointmentWidget =
+  | AppointmentCalendarWidget
+  | AppointmentTimesWidget
+  | AppointmentConfirmWidget
+  | AppointmentOptionsWidget;
 
 /**
  * Narrowing defensivo del metadata laxo del wire. Devuelve null ante
@@ -110,6 +127,8 @@ export function parseAppointmentWidget(metadata: Record<string, unknown> | undef
       return Array.isArray(metadata.slots) ? (metadata as unknown as AppointmentTimesWidget) : null;
     case 'appointment_confirm':
       return metadata.slot ? (metadata as unknown as AppointmentConfirmWidget) : null;
+    case 'appointment_options':
+      return Array.isArray(metadata.options) ? (metadata as unknown as AppointmentOptionsWidget) : null;
     default:
       return null;
   }

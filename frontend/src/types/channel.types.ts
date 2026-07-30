@@ -60,6 +60,7 @@ export interface Channel {
   channel_type: ChannelType;
   name: string;
   status: ChannelStatus;
+  owner_username?: string | null;
   whatsapp_config?: WhatsAppConfig;
   telegram_config?: TelegramConfig;
   web_config?: WebConfig;
@@ -77,6 +78,7 @@ export interface ChannelCreate {
   bot_id: string;
   channel_type: ChannelType;
   name: string;
+  owner_username?: string;
   whatsapp_config?: WhatsAppConfig;
   telegram_config?: TelegramConfig;
   web_config?: WebConfig;
@@ -87,6 +89,7 @@ export interface ChannelCreate {
 export interface ChannelUpdate {
   name?: string;
   status?: ChannelStatus;
+  owner_username?: string;
   whatsapp_config?: Partial<WhatsAppConfig>;
   telegram_config?: Partial<TelegramConfig>;
   web_config?: Partial<WebConfig>;

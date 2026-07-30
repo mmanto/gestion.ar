@@ -23,11 +23,13 @@ from app.auth_service import User
 from app.dependencies.auth import get_current_user, require_role
 from app.models.bot import BotStatus, BotUpdate
 from app.models.tenant import AutoQualifyColorsUpdate, CustomFactsUpdate, ModuleEnableRequest, TenantOwnUserCreate, TenantUpdate, TenantUserOut, TenantUserUpdate
+from app.models.channel import ChannelStatus
 from app.services.bot_service import get_bot_service
 from app.routers.upload_router import UPLOADS_DIR
 from app.services.tenant_service import get_tenant_service
 from app.services.module_service import get_module_service
 from app.services.user_service import get_user_service
+from app.services.channel_service import get_channel_service
 
 router = APIRouter(prefix="/api/tenant", tags=["tenant"])
 
@@ -189,6 +191,24 @@ async def get_tenant_bots(
         "pages": result["pages"],
         "limit": result["limit"],
     }
+
+
+@router.post("/bots/{bot_id}/my-channel", response_model=dict)
+async def get_my_channel(bot_id: str, current_user: User = Depends(get_current_user)):
+    """Autoservicio: obtiene (o crea) el canal web propio del usuario logueado
+    para este bot — a lo sumo un canal por (bot, owner_username), ver
+    uq_channels_bot_owner_web. Cualquier rol de tenant gestiona el suyo."""
+    await _verify_tenant_bot(bot_id, current_user)
+
+    channel_service = get_channel_service()
+    channel = await channel_service.get_or_create_owner_web_channel(
+        bot_id, current_user.username, f"Chat directo — {current_user.username}"
+    )
+    if channel.status != ChannelStatus.ACTIVE.value:
+        await channel_service.activate_channel(channel.channel_id)
+        channel = await channel_service.get_channel(channel.channel_id)
+
+    return {"success": True, "channel": channel.model_dump()}
 
 
 @router.get("/bots/{bot_id}/modules", response_model=dict)
