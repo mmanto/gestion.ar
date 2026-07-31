@@ -89,8 +89,10 @@ export const AppointmentsCalendar = () => {
     try {
       const [list, res, svc] = await Promise.all([
         appointmentsService.list({
-          date_from: `${format(gridStart, 'yyyy-MM-dd')}T00:00:00`,
-          date_to: `${format(gridEnd, 'yyyy-MM-dd')}T23:59:59`,
+          // El microservicio de turnos espera fecha simple (YYYY-MM-DD) acá,
+          // no datetime completo -- devuelve 422 si se manda con hora.
+          date_from: format(gridStart, 'yyyy-MM-dd'),
+          date_to: format(gridEnd, 'yyyy-MM-dd'),
         }),
         appointmentsService.listResources(),
         appointmentsService.listServices(),
@@ -349,7 +351,8 @@ const AppointmentFormModal: React.FC<AppointmentFormModalProps> = ({
     setLoadingSlots(true);
     setSelectedSlot(null);
     appointmentsService
-      .listSlots(resourceId, `${date}T00:00:00`, `${date}T23:59:59`, serviceId || undefined)
+      // Fecha simple (YYYY-MM-DD), ver comentario en loadMonth() más arriba.
+      .listSlots(resourceId, date, date, serviceId || undefined)
       .then(setSlots)
       .catch(() => setSlots([]))
       .finally(() => setLoadingSlots(false));

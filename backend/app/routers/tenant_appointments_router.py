@@ -137,7 +137,10 @@ async def list_my_appointments(
         )
         return result["items"]
 
-    results = await asyncio.gather(*[_fetch(rid) for rid in config["resource_ids"]])
+    try:
+        results = await asyncio.gather(*[_fetch(rid) for rid in config["resource_ids"]])
+    except httpx.HTTPStatusError as exc:
+        _raise_upstream_error(exc)
     merged = [item for items in results for item in items]
     merged.sort(key=lambda a: a["start_at"])
 
