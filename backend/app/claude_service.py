@@ -270,8 +270,26 @@ precisa y amigable."""
                     })
             current_messages.append({"role": "user", "content": tool_result_blocks})
 
+        # Se agotaron los reintentos y el modelo sigue devolviendo tool_use en
+        # vez de texto plano. Antes esto devolvía "response": "" -- el usuario
+        # recibía un mensaje vacío y el chat parecía colgado (ver mismo bug en
+        # DeepSeekService.sync_generate). Forzamos una última llamada SIN
+        # tools para que sintetice una respuesta en texto con lo que ya se
+        # sabe, en vez de dejar al usuario sin nada.
+        final_kwargs = {
+            "model": self.model,
+            "max_tokens": max_tokens,
+            "system": system_prompt,
+            "messages": current_messages,
+        }
+        response = self.client.messages.create(**final_kwargs)
+        total_input_tokens += response.usage.input_tokens
+        total_output_tokens += response.usage.output_tokens
+        assistant_text = "".join(
+            block.text for block in response.content if block.type == "text"
+        )
         return {
-            "response": "",
+            "response": assistant_text,
             "tokens_used": total_input_tokens + total_output_tokens,
             "input_tokens": total_input_tokens,
             "output_tokens": total_output_tokens,

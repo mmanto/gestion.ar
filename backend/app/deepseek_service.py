@@ -157,8 +157,36 @@ class DeepSeekService:
                     "content": content,
                 })
 
+        # Se agotaron los reintentos y el modelo sigue devolviendo tool_calls
+        # en vez de texto plano. Antes esto devolvía "response": "" -- el
+        # usuario recibía un mensaje vacío y el chat parecía colgado (ver bug
+        # reportado: pasa justo cuando el usuario da una respuesta amplia/
+        # ambigua, ej. "la semana que viene, a la mañana o a la tarde", y el
+        # modelo no logra resolverla en una tool call). Forzamos una última
+        # llamada SIN tools para que sintetice una respuesta en texto con lo
+        # que ya se sabe, en vez de dejar al usuario sin nada.
+        final_payload = {
+            "model": self.model,
+            "messages": current_messages,
+            "max_tokens": max_tokens,
+            "stream": False,
+            "thinking": {"type": "enabled" if use_thinking else "disabled"},
+        }
+        with httpx.Client(timeout=self.timeout) as client:
+            response = client.post(f"{self.base_url}/chat/completions", json=final_payload, headers=headers)
+            if response.is_error:
+                raise RuntimeError(
+                    f"DeepSeek API error {response.status_code}: {response.text}"
+                )
+            data = response.json()
+
+        message = data["choices"][0]["message"]
+        usage = data.get("usage", {})
+        total_input_tokens += usage.get("prompt_tokens", 0)
+        total_output_tokens += usage.get("completion_tokens", 0)
+
         return {
-            "response": "",
+            "response": message.get("content") or "",
             "tokens_used": total_input_tokens + total_output_tokens,
             "input_tokens": total_input_tokens,
             "output_tokens": total_output_tokens,
