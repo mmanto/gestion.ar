@@ -8,6 +8,13 @@ import { useTemplate } from '../../hooks/useTemplate';
 import tenantBrandingService from '../../services/tenantBranding.service';
 import { resolveAssetUrl } from '../../utils/assetUrl';
 import type { TemplateId } from '../../types/template.types';
+import type { TenantIndustry } from '../../types/tenant.types';
+
+const INDUSTRY_OPTIONS: { id: TenantIndustry; label: string }[] = [
+  { id: 'legal', label: 'Legal' },
+  { id: 'salud', label: 'Salud' },
+  { id: 'generico', label: 'Genérico' },
+];
 
 const MAX_BYTES = 2 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
@@ -117,6 +124,9 @@ export const BrandingSection = () => {
   const [sidebarVisible, setSidebarVisible] = useState<boolean>(
     tenant?.branding.sidebar_visible ?? true,
   );
+  const [industry, setIndustry] = useState<TenantIndustry>(
+    tenant?.branding.industry || 'legal',
+  );
 
   const [uploadingH, setUploadingH] = useState(false);
   const [uploadingV, setUploadingV] = useState(false);
@@ -128,6 +138,7 @@ export const BrandingSection = () => {
   const [taglineSaving, setTaglineSaving] = useState(false);
   const [themeSaving, setThemeSaving] = useState(false);
   const [sidebarSaving, setSidebarSaving] = useState(false);
+  const [industrySaving, setIndustrySaving] = useState(false);
   const [saved, setSaved] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -138,6 +149,7 @@ export const BrandingSection = () => {
       setPrimaryColor(tenant.branding.primary_color || '#25357a');
       setTagline(tenant.branding.tagline || '');
       setSidebarVisible(tenant.branding.sidebar_visible ?? true);
+      setIndustry(tenant.branding.industry || 'legal');
     }
   }, [tenant]);
 
@@ -231,6 +243,25 @@ export const BrandingSection = () => {
       setError(detail || 'No se pudo guardar la preferencia de la barra lateral.');
     } finally {
       setSidebarSaving(false);
+    }
+  };
+
+  const handleIndustryChange = async (value: TenantIndustry) => {
+    if (value === industry) return;
+    const previous = industry;
+    setIndustry(value);
+    setIndustrySaving(true);
+    setError(null);
+    try {
+      await tenantBrandingService.updateBranding({ industry: value });
+      await refetchTenant();
+      flashSaved('Rubro guardado');
+    } catch (err) {
+      setIndustry(previous); // revertir ante error
+      const detail = (err as { response?: { data?: { detail?: string } } }).response?.data?.detail;
+      setError(detail || 'No se pudo guardar el rubro.');
+    } finally {
+      setIndustrySaving(false);
     }
   };
 
@@ -340,6 +371,36 @@ export const BrandingSection = () => {
             ))}
           </div>
           {themeSaving && (
+            <span className="text-xs text-gray-700">Guardando...</span>
+          )}
+        </div>
+      </div>
+
+      {/* Rubro */}
+      <div className="mt-6">
+        <p className="text-xs font-medium text-gray-700 mb-2">Rubro</p>
+        <p className="text-xs text-gray-500 mb-2">
+          Adapta el vocabulario del menú (ej. "Pacientes" en vez de "Clientes") y el contenido del Escritorio a tu negocio.
+        </p>
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1.5">
+            {INDUSTRY_OPTIONS.map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => handleIndustryChange(opt.id)}
+                disabled={industrySaving}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors disabled:opacity-50 ${
+                  industry === opt.id
+                    ? 'border-primary text-primary bg-primary-50'
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {industrySaving && (
             <span className="text-xs text-gray-700">Guardando...</span>
           )}
         </div>

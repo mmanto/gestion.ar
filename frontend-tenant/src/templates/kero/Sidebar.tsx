@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { NAV_LINKS } from '../../config/navLinks';
+import { getNavLinks } from '../../config/navLinks';
 import { useSidebar } from '../../hooks/useSidebar';
 import { useAuth } from '../../hooks/useAuth';
 import { useTenant } from '../../hooks/useTenant';
@@ -29,7 +29,7 @@ export const KeroSidebar: React.FC = () => {
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + '/');
 
-  const visibleLinks = NAV_LINKS.filter(
+  const visibleLinks = getNavLinks(tenant?.branding.industry).filter(
     (item) => item.type === 'separator' || !item.roles || (user && item.roles.includes(user.role))
   );
 

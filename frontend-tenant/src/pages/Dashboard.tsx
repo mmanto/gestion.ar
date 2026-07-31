@@ -4,11 +4,13 @@ import { LoadingPage } from '../components/common/Spinner';
 import { PageHeader } from '../components/common/PageHeader';
 import { Alert } from '../components/common/Alert';
 import StatsCards from '../components/dashboard/StatsCards';
+import AppointmentsCalendar from '../components/dashboard/AppointmentsCalendar';
 import { useStats } from '../hooks/useStats';
 import { useColorStats } from '../hooks/useColorStats';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { useAuth } from '../hooks/useAuth';
 import { useTemplate } from '../hooks/useTemplate';
+import { useTenant } from '../hooks/useTenant';
 import { TEMPLATE_MAP } from '../templates/registry';
 import type { ColorFilter } from '../types/client.types';
 
@@ -28,6 +30,12 @@ export const Dashboard = () => {
   const { templateId } = useTemplate();
   const ClientsGrid = TEMPLATE_MAP[templateId].ClientsGrid;
   const [selectedColor, setSelectedColor] = useState<ColorFilter | null>(null);
+  const { tenant } = useTenant();
+  // Rubro 'salud' (ver BrandingSection.tsx / navLinks.tsx): el semáforo
+  // verde/amarillo/rojo es un concepto propio de calificación de leads
+  // (bots tipo IUS) que no aplica a un centro de salud -- se reemplaza por
+  // el calendario de turnos, manteniendo la grilla de pacientes debajo.
+  const isSalud = tenant?.branding.industry === 'salud';
 
   const handleSelectColor = (color: ColorFilter) => {
     setSelectedColor((prev) => (prev === color ? null : color));
@@ -54,6 +62,23 @@ export const Dashboard = () => {
   }
 
   if (isMobile) {
+    if (isSalud) {
+      return (
+        <AppLayout>
+          <div className="font-editorial p-1 md:bg-[#F8F9FD] md:p-8">
+            <PageHeader
+              title={pageTitle}
+              description="Turnos y pacientes"
+              titleClassName="font-semibold uppercase tracking-[0.08em]"
+              descriptionClassName="text-gray-800"
+            />
+            <AppointmentsCalendar />
+            <ClientsGrid />
+          </div>
+        </AppLayout>
+      );
+    }
+
     return (
       <AppLayout>
         <div className="font-editorial p-1 md:bg-[#F8F9FD] md:p-8">
@@ -93,9 +118,13 @@ export const Dashboard = () => {
             descriptionClassName="text-gray-800"
           />
 
-          <StatsCards colorStats={colorStats} selectedColor={selectedColor} onSelectColor={handleSelectColor} />
+          {isSalud ? (
+            <AppointmentsCalendar />
+          ) : (
+            <StatsCards colorStats={colorStats} selectedColor={selectedColor} onSelectColor={handleSelectColor} />
+          )}
 
-          <ClientsGrid colorFilter={selectedColor ?? undefined} />
+          <ClientsGrid colorFilter={isSalud ? undefined : (selectedColor ?? undefined)} />
         </div>
     </AppLayout>
   );

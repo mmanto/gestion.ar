@@ -49,6 +49,13 @@ MAX_LOGO_BYTES = 2 * 1024 * 1024  # 2MB
 # tenants que ya lo tenían elegido.
 VALID_TEMPLATE_IDS = {"default", "kero"}
 
+# Rubro del tenant (branding.industry) -- eje de personalización de
+# contenido (labels del menú, contenido del Escritorio) DISTINTO del tema
+# visual (template_id, que es solo skin/layout). 'legal' es el default
+# implícito para tenants que no lo eligieron (comportamiento heredado del
+# bot IUS original, ver frontend-tenant/src/config/navLinks.tsx).
+VALID_INDUSTRIES = {"legal", "salud", "generico"}
+
 
 # ── Branding ──────────────────────────────────────────────────────────────────
 
@@ -96,11 +103,12 @@ async def update_tenant_branding(
     body: dict,
     current_user: User = Depends(require_role("admin")),
 ):
-    """Actualiza campos de branding (primary_color, tagline, template_id, sidebar_visible)."""
+    """Actualiza campos de branding (primary_color, tagline, template_id, sidebar_visible, industry)."""
     primary_color = body.get("primary_color")
     tagline = body.get("tagline")
     template_id = body.get("template_id")
     sidebar_visible = body.get("sidebar_visible")
+    industry = body.get("industry")
 
     if primary_color is not None:
         if not isinstance(primary_color, str) or not re.match(r"^#[0-9a-fA-F]{6}$", primary_color):
@@ -113,6 +121,12 @@ async def update_tenant_branding(
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             f"template_id debe ser uno de: {', '.join(sorted(VALID_TEMPLATE_IDS))}",
+        )
+
+    if industry is not None and industry not in VALID_INDUSTRIES:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"industry debe ser uno de: {', '.join(sorted(VALID_INDUSTRIES))}",
         )
 
     if sidebar_visible is not None and not isinstance(sidebar_visible, bool):
@@ -131,6 +145,8 @@ async def update_tenant_branding(
         branding["template_id"] = template_id
     if sidebar_visible is not None:
         branding["sidebar_visible"] = sidebar_visible
+    if industry is not None:
+        branding["industry"] = industry
     if tagline is not None:
         if not isinstance(tagline, str) or len(tagline) > 200:
             raise HTTPException(

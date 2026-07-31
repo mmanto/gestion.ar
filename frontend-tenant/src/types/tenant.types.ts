@@ -14,7 +14,17 @@ export interface TenantBranding {
   template_id?: string;
   /** Si la barra lateral de navegación se muestra en el backoffice. Default: true. */
   sidebar_visible?: boolean;
+  /**
+   * Rubro del tenant -- eje de personalización de CONTENIDO (labels del
+   * menú, qué se muestra en el Escritorio), distinto de template_id (que es
+   * solo tema visual/layout). Sin elegir, se comporta como 'legal'
+   * (heredado del bot IUS original). Ver config/navLinks.tsx e
+   * industry.ts.
+   */
+  industry?: TenantIndustry;
 }
+
+export type TenantIndustry = 'legal' | 'salud' | 'generico';
 
 export type TenantStatus = 'active' | 'suspended' | 'trial';
 

@@ -42,6 +42,7 @@ from app.routers.tenant_oauth_router import router as tenant_oauth_router
 from app.module_registry import MODULE_REGISTRY
 from app.routers.tenant_admin_router import router as tenant_admin_router
 from app.routers.tenant_router import router as tenant_router
+from app.routers.tenant_appointments_router import router as tenant_appointments_router
 from app.routers.upload_router import router as upload_router, UPLOADS_DIR
 from app.telegram_handlers import (
     handle_telegram_command,
@@ -89,6 +90,7 @@ for _module_def in MODULE_REGISTRY:
 
 app.include_router(tenant_admin_router)      # Administración general: tenants, usuarios, módulos
 app.include_router(tenant_router)            # Backoffice de tenant: bots (read-only), módulos, entrenamiento
+app.include_router(tenant_appointments_router)  # Backoffice de tenant: calendario de turnos (scoped por tenant, ver docstring)
 app.include_router(upload_router)            # Subida de archivos (avatares)
 
 # Sirve los archivos subidos (avatares) bajo /api/uploads/* — mismo prefijo

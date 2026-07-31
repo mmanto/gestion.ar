@@ -3,7 +3,7 @@
  */
 
 import api from './api';
-import type { TenantBranding } from '../types/tenant.types';
+import type { TenantBranding, TenantIndustry } from '../types/tenant.types';
 
 const tenantBrandingService = {
   async uploadLogo(file: File, type: 'horizontal' | 'vertical' = 'horizontal'): Promise<string> {
@@ -22,6 +22,7 @@ const tenantBrandingService = {
     tagline?: string;
     template_id?: string;
     sidebar_visible?: boolean;
+    industry?: TenantIndustry;
   }): Promise<TenantBranding> {
     const { data } = await api.patch<{
       success: boolean;

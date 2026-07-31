@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { UserRole } from '../types/auth.types';
+import type { TenantIndustry } from '../types/tenant.types';
 
 export interface NavLink {
   type?: 'link';
@@ -48,3 +49,29 @@ export const NAV_LINKS: NavItem[] = [
     icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />,
   },
 ];
+
+/**
+ * Overrides de label por rubro (branding.industry, ver tenant.types.ts) —
+ * distinto tenant, distinto vocabulario para el mismo concepto de negocio
+ * (ej. ERMA es un centro de salud, "Clientes"/"Expedientes" heredado del
+ * bot IUS original no tiene sentido ahí). Solo pisa el label, el resto del
+ * item (ruta, ícono, roles) se mantiene igual.
+ */
+const LABEL_OVERRIDES_BY_INDUSTRY: Partial<Record<TenantIndustry, Record<string, string>>> = {
+  salud: {
+    '/clients': 'Pacientes',
+    '/records': 'Historia Clínica',
+  },
+};
+
+/** Links del menú lateral, con los labels adaptados al rubro del tenant. */
+export function getNavLinks(industry?: TenantIndustry): NavItem[] {
+  const overrides = industry ? LABEL_OVERRIDES_BY_INDUSTRY[industry] : undefined;
+  if (!overrides) return NAV_LINKS;
+
+  return NAV_LINKS.map((item) =>
+    item.type === 'separator' || !(item.to in overrides)
+      ? item
+      : { ...item, label: overrides[item.to] }
+  );
+}

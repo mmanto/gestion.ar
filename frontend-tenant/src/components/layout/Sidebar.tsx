@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useSidebar } from '../../hooks/useSidebar';
 import { useTenant } from '../../hooks/useTenant';
-import { NAV_LINKS } from '../../config/navLinks';
+import { getNavLinks } from '../../config/navLinks';
 import { resolveAssetUrl } from '../../utils/assetUrl';
 
 export const Sidebar: React.FC = () => {
@@ -23,7 +23,7 @@ export const Sidebar: React.FC = () => {
 
   if (!isAuthenticated) return null;
 
-  const visibleLinks = NAV_LINKS.filter(
+  const visibleLinks = getNavLinks(tenant?.branding.industry).filter(
     (item) => item.type === 'separator' || !item.roles || (user && item.roles.includes(user.role))
   );
 
