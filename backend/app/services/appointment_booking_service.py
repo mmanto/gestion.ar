@@ -757,11 +757,27 @@ def build_booking_tool_executor(
     por el caller, en vez de solo devolver el tool_result para Claude.
     """
 
+    # _executor corre dentro de un thread aparte (asyncio.to_thread, ver
+    # DeepSeekService/ClaudeService.sync_generate) para no bloquear el loop
+    # principal mientras se llama al LLM. Capturamos ACÁ el loop principal
+    # -- build_booking_tool_executor se llama desde _build_llm_tools, que es
+    # async y corre en el loop principal -- porque start_booking() usa el
+    # engine de Postgres compartido de toda la app (AsyncSessionLocal), cuyas
+    # conexiones quedan atadas al loop en el que se usan. Antes acá se hacía
+    # asyncio.run(start_booking(...)), que crea un loop NUEVO en el thread:
+    # eso corrompía conexiones pooleadas del engine principal (se veían como
+    # sesiones "idle in transaction" colgadas para siempre, bloqueando el
+    # resto de la app con locks -- incidente 2026-07-31). Agendar la
+    # corrutina en el loop principal con run_coroutine_threadsafe evita tocar
+    # el engine desde un loop distinto al que lo creó.
+    main_loop = asyncio.get_running_loop()
+
     def _executor(tool_name: str, args: dict) -> dict:
         if tool_name != BOOKING_TOOL_NAME:
             return {"error": f"Tool desconocida: {tool_name}"}
 
-        state, result = asyncio.run(start_booking(bot, client_id))
+        future = asyncio.run_coroutine_threadsafe(start_booking(bot, client_id), main_loop)
+        state, result = future.result()
         output["state"] = state
         output["result"] = result
         return {"iniciado": True}

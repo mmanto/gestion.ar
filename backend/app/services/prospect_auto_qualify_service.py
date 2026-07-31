@@ -75,10 +75,17 @@ def build_qualification_tool_executor(
     Arma la función síncrona que ejecuta la tool cuando el LLM la invoca.
 
     Corre dentro del thread de asyncio.to_thread en el que vive sync_generate
-    (sin event loop propio) — por eso usa asyncio.run() para invocar el
-    método async de ClientService, patrón estándar para puentear async
-    desde un thread síncrono.
+    (sin event loop propio) — por eso puentea al método async de
+    ClientService vía run_coroutine_threadsafe sobre el loop principal
+    (capturado acá, en build_qualification_tool_executor, que se llama desde
+    _build_llm_tools -- async, corre en el loop principal). Antes se usaba
+    asyncio.run(), que crea un loop NUEVO en el thread: como ClientService
+    usa el engine de Postgres compartido de toda la app (AsyncSessionLocal),
+    cuyas conexiones quedan atadas al loop en el que se usan, eso corrompía
+    conexiones pooleadas del engine principal -- mismo bug identificado y
+    arreglado en appointment_booking_service.py (incidente 2026-07-31).
     """
+    main_loop = asyncio.get_running_loop()
 
     def _executor(tool_name: str, args: dict) -> dict:
         if tool_name != QUALIFICATION_TOOL_NAME:
@@ -107,7 +114,10 @@ def build_qualification_tool_executor(
             email=email if (email and not client.email) else None,
         )
 
-        asyncio.run(get_client_service().update_client(client.client_id, client_update))
+        future = asyncio.run_coroutine_threadsafe(
+            get_client_service().update_client(client.client_id, client_update), main_loop
+        )
+        future.result()
         return {"registered": True, "client_id": client.client_id}
 
     return _executor
