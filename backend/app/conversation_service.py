@@ -231,7 +231,19 @@ class ConversationService:
                 metadata_=metadata,
             ))
 
-            conv_row = await session.get(ConversationModel, conversation_id)
+            # no_autoflush: sin esto, session.get() flushea el MessageModel
+            # recién agregado ANTES de que sepamos si la conversación padre
+            # existe -- si no existe, el flush revienta con IntegrityError
+            # a mitad de un rollback interno por savepoint, y en producción
+            # eso dejó sesiones "idle in transaction" colgadas para siempre,
+            # sosteniendo locks que bloquearon el resto de la app durante
+            # varios minutos (ver pg_stat_activity, incidente 2026-07-31).
+            # ensure_conversation() en log_chat_interaction ya garantiza que
+            # la fila padre existe antes de llegar acá; esto es una segunda
+            # defensa para que ese fallo, si ocurre, nunca vuelva a dejar la
+            # sesión en un estado a medio terminar.
+            with session.no_autoflush:
+                conv_row = await session.get(ConversationModel, conversation_id)
             if conv_row:
                 conv_row.updated_at = timestamp
                 if "tokens_used" in metadata:
