@@ -72,10 +72,19 @@ export const AppointmentsCalendar = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [rescheduling, setRescheduling] = useState<Appointment | null>(null);
 
-  const monthStart = startOfMonth(monthCursor);
-  const monthEnd = endOfMonth(monthCursor);
-  const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 });
-  const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+  // Memoizado por monthCursor: sin esto, gridStart/gridEnd eran objetos
+  // Date NUEVOS en cada render (aunque el valor fuera el mismo), lo que
+  // hacía que loadMonth (useCallback dependiente de ellos) cambiara de
+  // referencia en cada render y disparara su useEffect en loop infinito --
+  // de ahí las llamadas repetidas al backend reportadas en producción.
+  const { gridStart, gridEnd } = useMemo(() => {
+    const monthStart = startOfMonth(monthCursor);
+    const monthEnd = endOfMonth(monthCursor);
+    return {
+      gridStart: startOfWeek(monthStart, { weekStartsOn: 1 }),
+      gridEnd: endOfWeek(monthEnd, { weekStartsOn: 1 }),
+    };
+  }, [monthCursor]);
   const days = useMemo(() => eachDayOfInterval({ start: gridStart, end: gridEnd }), [gridStart, gridEnd]);
 
   const resourceById = useMemo(
