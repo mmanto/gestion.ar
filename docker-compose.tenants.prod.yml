@@ -78,10 +78,20 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_public"
-      - "traefik.http.routers.tenant-erma.rule=Host(`erma.intellify.pro`)"
+      - "traefik.http.routers.tenant-erma.rule=Host(`erma.com.ar`)"
       - "traefik.http.routers.tenant-erma.entrypoints=websecure"
       - "traefik.http.routers.tenant-erma.tls.certresolver=letsencrypt"
       - "traefik.http.services.tenant-erma.loadbalancer.server.port=80"
+      # --- Redirect temporal del dominio viejo (quitar cuando el cliente
+      # termine de migrar bookmarks/enlaces externos a erma.com.ar) ---
+      - "traefik.http.middlewares.erma-legacy-redirect.redirectregex.regex=^https://erma\\.intellify\\.pro/(.*)"
+      - "traefik.http.middlewares.erma-legacy-redirect.redirectregex.replacement=https://erma.com.ar/$${1}"
+      - "traefik.http.middlewares.erma-legacy-redirect.redirectregex.permanent=true"
+      - "traefik.http.routers.tenant-erma-legacy.rule=Host(`erma.intellify.pro`)"
+      - "traefik.http.routers.tenant-erma-legacy.entrypoints=websecure"
+      - "traefik.http.routers.tenant-erma-legacy.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.tenant-erma-legacy.middlewares=erma-legacy-redirect"
+      - "traefik.http.routers.tenant-erma-legacy.service=tenant-erma"
 
   frontend-tenant-laboralia:
     build:
