@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useAccentTheme } from '../../hooks/useAccentTheme';
-import { publicService } from '../../services/public.service';
+// import { publicService } from '../../services/public.service';
 
 interface UserMenuProps {
   /** Controla solo el estilo del botón disparador — 'dark' para fondos oscuros (navy), 'light' para fondos claros. */
