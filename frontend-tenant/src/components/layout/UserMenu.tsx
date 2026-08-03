@@ -125,17 +125,16 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
               </svg>
               Ajustes
             </Link>
+            <button
+              onClick={handleLogout}
+              className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-white bg-black/20 hover:bg-black/30 transition-colors"
+            >
+              <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Salir
+            </button>
           </div>
-          <button
-            onClick={handleLogout}
-            className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-white bg-black/20 hover:bg-black/30 transition-colors"
-          >
-            <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            Salir
-          </button>
-
         </div>
       )}
     </div>
