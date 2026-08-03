@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useAccentTheme } from '../../hooks/useAccentTheme';
-import { publicService } from '../../services/public.service';
+// import { publicService } from '../../services/public.service';
 import { TemplatePicker } from './TemplatePicker';
 
 interface UserMenuProps {
@@ -16,14 +16,14 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [llmModel, setLlmModel] = useState<string | null>(null);
+  // const [llmModel, setLlmModel] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
   const menuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    publicService.getLlmInfo().then((info) => setLlmModel(info.model)).catch(() => {});
-  }, []);
+  // useEffect(() => {
+  //   publicService.getLlmInfo().then((info) => setLlmModel(info.model)).catch(() => {});
+  // }, []);
 
   // Cerrar dropdown al hacer click fuera
   useEffect(() => {
