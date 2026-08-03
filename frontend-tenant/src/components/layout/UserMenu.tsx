@@ -21,7 +21,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    publicService.getLlmInfo().then((info) => setLlmModel(info.model)).catch(() => {});
+    publicService.getLlmInfo().then((info) => setLlmModel(info.model)).catch(() => { });
   }, []);
 
   // Cerrar dropdown al hacer click fuera
@@ -81,7 +81,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
           )}
         </div>
         <span className={usernameClass}>
-          Mis datos
+          Opciones
         </span>
         <svg className={chevronClass} fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -93,15 +93,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
 
           {/* Banner superior — color de acento del template activo */}
           <div className="relative px-4 pt-4 pb-5" style={{ backgroundColor: accent }}>
-            <button
-              onClick={handleLogout}
-              className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-white bg-black/20 hover:bg-black/30 transition-colors"
-            >
-              <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              Salir
-            </button>
+
             <div className="flex items-center gap-3 pr-16">
               <div className="w-12 h-12 bg-white/20 ring-2 ring-white/30 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
                 {user?.avatar_url ? (
@@ -134,21 +126,16 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
               Ajustes
             </Link>
           </div>
+          <button
+            onClick={handleLogout}
+            className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-white bg-black/20 hover:bg-black/30 transition-colors"
+          >
+            <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Salir
+          </button>
 
-          {llmModel && (
-            <div className="border-t border-gray-200">
-              <p className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">Sistema</p>
-              <div className="flex items-center gap-3 px-4 pb-3">
-                <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-2" />
-                </svg>
-                <div className="min-w-0">
-                  <p className="text-xs text-gray-400">Modelo</p>
-                  <p className="text-xs font-medium text-gray-900 truncate" title={llmModel}>{llmModel}</p>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>
