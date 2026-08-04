@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aviso de Privacidad Integral — iUS</title>
+<link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+<style>
+  :root{
+    --navy-deep:#050b1f;
+    --navy:#0d1a3d;
+    --navy-light:#16255c;
+    --blue:#2f6fed;
+    --blue-light:#7cb0ff;
+    --ink:#0d1a3d;
+    --paper:#f6f8fc;
+    --line:#e3e8f4;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI', Roboto, Arial, sans-serif;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(47,111,237,0.25), transparent 45%),
+      linear-gradient(135deg, var(--navy-deep), var(--navy) 55%, var(--navy-light));
+    color:#fff;
+    min-height:100vh;
+  }
+  .back-link{
+    position:fixed; top:20px; left:24px; z-index:10;
+    display:inline-flex; align-items:center; gap:8px;
+    color:#cfe0ff; font-size:13px; font-weight:600; text-decoration:none;
+    background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15);
+    padding:9px 16px; border-radius:999px;
+  }
+  .back-link:hover{ background:rgba(255,255,255,0.14); }
+  .wrap{
+    max-width:1500px;
+    margin:0 auto;
+    padding:96px 32px 48px;
+    display:grid;
+    grid-template-columns:1.1fr 1.4fr;
+    gap:48px;
+    align-items:start;
+  }
+  /* LEFT SIDE */
+  .left{ padding-top:20px; position:sticky; top:96px; }
+  h1{
+    font-size:clamp(34px,4vw,54px);
+    line-height:1.05;
+    margin:0 0 6px 0;
+    font-weight:800;
+    letter-spacing:-0.5px;
+  }
+  .accent{ color:var(--blue-light); }
+  .sub{
+    font-size:clamp(15px,1.6vw,19px);
+    font-weight:700;
+    color:#c7d3ec;
+    margin:6px 0 22px 0;
+    letter-spacing:0.5px;
+  }
+  .rule{
+    width:70px; height:4px; background:var(--blue);
+    border-radius:2px; margin-bottom:22px;
+  }
+  .lead{
+    color:#c3cde3;
+    font-size:16px;
+    line-height:1.6;
+    max-width:480px;
+    margin-bottom:34px;
+  }
+
+  /* RIGHT SIDE — CARD */
+  .card{
+    background:var(--paper);
+    border-radius:20px;
+    overflow:hidden;
+    box-shadow:0 30px 60px rgba(0,0,0,0.35);
+    color:var(--ink);
+  }
+  .clause{
+    padding:26px 28px;
+    border-bottom:1px solid var(--line);
+  }
+  .clause:last-child{ border-bottom:none; }
+  .clause h3{
+    margin:2px 0 10px 0;
+    font-size:15px;
+    color:#333846;
+    letter-spacing:0.2px;
+  }
+  .clause h4{
+    margin:16px 0 6px 0;
+    font-size:13.2px;
+    color:#4a5372;
+    font-weight:700;
+  }
+  .clause p{
+    margin:0 0 6px 0;
+    font-size:13.6px;
+    line-height:1.7;
+    color:#2a3350;
+  }
+
+  @media (max-width:960px){
+    .wrap{
+      grid-template-columns:1fr;
+      padding:88px 20px 32px;
+      gap:32px;
+    }
+    .left{ padding-top:0; position:static; }
+    .lead{ max-width:100%; }
+  }
+  @media (max-width:480px){
+    .wrap{ padding:80px 16px 24px; }
+    .clause{ padding:20px 20px; }
+  }
+</style>
+</head>
+<body>
+<a href="./index.html" class="back-link">← Volver a iUS</a>
+<div class="wrap">
+
+  <!-- LEFT COLUMN -->
+  <div class="left">
+    <h1>AVISO DE<br><span class="accent">PRIVACIDAD</span></h1>
+    <div class="sub">INTEGRAL</div>
+    <div class="rule"></div>
+    <p class="lead">Así tratamos, resguardamos y protegemos los datos personales de abogados y prospectos dentro de la plataforma iUS.</p>
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div class="card">
+
+    <div class="clause">
+      <h3>I. RESPONSABLE DEL TRATAMIENTO DE SUS DATOS PERSONALES.</h3>
+      <p>iUS, con domicilio para oír y recibir notificaciones en hola@ius_mx.com.mx, es responsable de salvaguardar la privacidad, confidencialidad y seguridad de sus datos personales, de conformidad con la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP) mexicana.</p>
+    </div>
+
+    <div class="clause">
+      <h3>II. DATOS PERSONALES QUE SE RECABARÁN.</h3>
+      <h4>De los Abogados Contratantes:</h4>
+      <p>Nombre completo, correo electrónico, identificador de cuenta de Google, datos de WhatsApp y, en caso de solicitar facturación, datos fiscales (RFC, Régimen Fiscal, Código Postal y Razón Social).</p>
+      <h4>De los Prospectos / Trabajadores (En el chat):</h4>
+      <p>Nombre, número telefónico, correo electrónico, horarios de contacto, antecedentes de su situación laboral actual y estatus/comentarios sobre la documentación comprobatoria disponible.</p>
+    </div>
+
+    <div class="clause">
+      <h3>III. FINALIDADES DEL TRATAMIENTO.</h3>
+      <h4>Para Abogados:</h4>
+      <p>Gestionar el acceso al panel, procesar los cobros recurrentes y emitir los CFDI correspondientes conforme a las leyes fiscales aplicables en México.</p>
+      <h4>Para Prospectos / Trabajadores:</h4>
+      <p>Realizar la auditoría de viabilidad jurídica mediante IA, calcular los plazos de prescripción de acciones de acuerdo con la Ley Federal del Trabajo y transferir el expediente-resumen ejecutivo exclusivamente al abogado titular de la cuenta para su posterior contacto.</p>
+    </div>
+
+    <div class="clause">
+      <h3>IV. DE INTELIGENCIA ARTIFICIAL (DPA).</h3>
+      <p>iUS garantiza que los relatos, nombres de empresas y hechos de los trabajadores procesados dentro del chat no serán utilizados para entrenar modelos públicos de Inteligencia Artificial de terceros. Toda la información se procesa bajo entornos cifrados de extremo a extremo y de forma aislada para cada despacho.</p>
+    </div>
+
+    <div class="clause">
+      <h3>V. DERECHOS ARCO.</h3>
+      <p>Para ejercer sus derechos de Acceso, Rectificación, Cancelación u Oposición, el titular podrá dirigir una solicitud formal al correo electrónico: hola@ius_mx.com.mx.</p>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

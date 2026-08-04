@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iUS — Programa de Abogados Fundadores</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+<style>
+  :root{
+    --navy-deep:#050b1f;
+    --navy:#0d1a3d;
+    --navy-light:#16255c;
+    --blue:#2f6fed;
+    --blue-light:#7cb0ff;
+    --ink:#0d1a3d;
+    --paper:#f6f8fc;
+    --line:#e7ebf5;
+    --green:#25c46b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI', Roboto, Arial, sans-serif;
+    background:
+      radial-gradient(circle at 20% 15%, rgba(47,111,237,0.30), transparent 45%),
+      linear-gradient(160deg, var(--navy-deep), var(--navy) 55%, var(--navy-light));
+    color:#fff;
+    min-height:100vh;
+  }
+  .wrap{
+    max-width:1500px;
+    margin:0 auto;
+    padding:56px 32px;
+    display:grid;
+    grid-template-columns:1fr 1.15fr;
+    gap:48px;
+    align-items:start;
+  }
+
+  /* ---------- LEFT ---------- */
+  .left{ padding-top:6px; }
+  .logo-row{ display:flex; align-items:center; gap:14px; margin-bottom:18px; }
+  .logo{ font-size:34px; font-weight:800; letter-spacing:-1px; display:flex; align-items:center; position:relative; }
+  .logo .dot{ width:7px; height:7px; border-radius:50%; background:#f5b731; position:absolute; top:2px; left:1px; }
+  .founder-badge{
+    display:inline-block;
+    border:1px solid var(--blue-light);
+    color:var(--blue-light);
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:1px;
+    padding:6px 16px;
+    border-radius:8px;
+    margin-bottom:30px;
+  }
+  .badge{
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.15);
+    padding:9px 18px;
+    border-radius:999px;
+    font-size:13.5px;
+    color:#dce6ff;
+    margin-bottom:28px;
+  }
+  h1{
+    font-size:clamp(32px,4vw,46px);
+    line-height:1.12;
+    margin:0 0 20px 0;
+    font-weight:800;
+    letter-spacing:-0.5px;
+  }
+  .accent{ color:var(--blue-light); }
+  .rule{
+    width:60px; height:4px; background:var(--blue);
+    border-radius:2px; margin-bottom:22px;
+  }
+  .lead{
+    color:#c3cde3;
+    font-size:16px;
+    line-height:1.65;
+    max-width:440px;
+    margin-bottom:34px;
+  }
+
+  .feature-box{
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:16px;
+    padding:8px 22px;
+    margin-bottom:26px;
+  }
+  .feature{
+    display:flex;
+    gap:16px;
+    padding:18px 0;
+    border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+  .feature:last-child{ border-bottom:none; }
+  .feature .fi{
+    flex:0 0 auto;
+    width:42px;height:42px;
+    border-radius:12px;
+    background:var(--blue);
+    display:flex;align-items:center;justify-content:center;
+    font-size:19px;
+  }
+  .feature h3{ margin:0 0 4px 0; font-size:15.5px; }
+  .feature p{ margin:0; font-size:13.5px; color:#b9c4de; line-height:1.5; }
+
+  /* ---------- RIGHT CARD ---------- */
+  .card{
+    background:var(--paper);
+    border-radius:22px;
+    overflow:hidden;
+    box-shadow:0 30px 70px rgba(0,0,0,0.4);
+    color:var(--ink);
+  }
+  .card-header{
+    background:linear-gradient(90deg, #14356e, #2f6fed);
+    padding:22px 28px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .logo-badge{
+    width:42px;height:42px;border-radius:11px;
+    background:rgba(255,255,255,0.15);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-size:15px;
+    line-height:1;
+  }
+  .logo-badge .lb-word{ font-size:9px; font-weight:700; margin-top:2px; letter-spacing:0.5px; }
+  .card-header p.eyebrow{ margin:0; font-size:11.5px; letter-spacing:1px; color:#cfe0ff; }
+  .card-header h2{ margin:2px 0 0 0; font-size:16.5px; letter-spacing:0.3px; }
+
+  .card-body{ padding:36px 32px 30px 32px; }
+  .check-wrap{ text-align:center; margin-bottom:20px; position:relative; }
+  .check-wrap svg.deco{ position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
+  .check-circle{
+    width:74px;height:74px;border-radius:50%;
+    border:2px solid var(--blue);
+    display:flex;align-items:center;justify-content:center;
+    margin:0 auto 18px auto;
+    font-size:30px;
+    color:var(--blue);
+  }
+  .headline{ text-align:center; font-size:23px; font-weight:800; line-height:1.3; margin-bottom:22px; }
+  .headline .accent2{ color:var(--blue); }
+  .divider{ height:1px; background:var(--line); margin:0 0 26px 0; }
+
+  .steps-title{ display:flex; align-items:center; gap:12px; font-weight:700; font-size:15px; margin-bottom:18px; }
+  .steps-title .ic{ font-size:18px; }
+
+  .step-list{ position:relative; padding-left:0; }
+  .step-list::before{
+    content:"";
+    position:absolute;
+    left:13px; top:8px; bottom:8px;
+    width:1px;
+    background:var(--line);
+  }
+  .step{ display:flex; align-items:flex-start; gap:14px; margin-bottom:16px; position:relative; }
+  .step .num{
+    flex:0 0 auto; width:26px; height:26px; border-radius:50%;
+    background:var(--blue); color:#fff; font-weight:700; font-size:13px;
+    display:flex; align-items:center; justify-content:center;
+    position:relative; z-index:1;
+  }
+  .step p{ margin:2px 0 0 0; font-size:14.5px; color:#2a3350; }
+
+  .deliverables{
+    background:#eef1f8;
+    border-radius:14px;
+    margin:14px 0 24px 46px;
+    overflow:hidden;
+  }
+  .deliv-item{
+    display:flex; align-items:center; gap:16px;
+    padding:16px 18px;
+    border-bottom:1px solid #dfe4f0;
+  }
+  .deliv-item:last-child{ border-bottom:none; }
+  .deliv-item .di{
+    flex:0 0 auto; width:38px;height:38px; border-radius:10px;
+    background:#dbe6ff; color:var(--blue);
+    display:flex;align-items:center;justify-content:center; font-size:17px;
+  }
+  .deliv-item p{ margin:0; font-size:14px; color:#2a3350; line-height:1.4; }
+
+  .apk-legal-box{
+    background:#eef3ff;
+    border:1px solid #d3e0fb;
+    border-radius:14px;
+    padding:18px 20px;
+    margin:0 0 20px 0;
+    display:flex;
+    gap:14px;
+    align-items:flex-start;
+  }
+  .apk-legal-box .lock-icon{
+    flex:0 0 auto;
+    width:34px;height:34px;
+    border-radius:50%;
+    background:#dbe6ff;
+    color:var(--blue);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .apk-legal-box h4{
+    font-size:11.5px;
+    font-weight:800;
+    letter-spacing:0.4px;
+    color:var(--blue);
+    text-transform:uppercase;
+    margin:0 0 8px 0;
+  }
+  .apk-legal-box p{
+    font-size:12.5px;
+    line-height:1.6;
+    color:#374063;
+    margin:0 0 8px 0;
+  }
+  .apk-legal-box p:last-child{ margin-bottom:0; }
+  .apk-legal-box a{ color:var(--blue); font-weight:600; }
+
+  .whatsapp-btn{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    background:var(--green);
+    color:#fff; font-weight:700; font-size:15.5px;
+    border:none; border-radius:12px;
+    padding:17px; width:100%; cursor:pointer;
+    margin-bottom:14px;
+    text-decoration:none;
+  }
+  .lock-note{
+    display:flex; align-items:flex-start; gap:10px;
+    font-size:12.5px; color:#6a7391; line-height:1.5;
+  }
+
+  .wa-float{
+    position:fixed; bottom:26px; right:26px;
+    width:54px;height:54px; border-radius:50%;
+    background:var(--green);
+    display:flex;align-items:center;justify-content:center;
+    font-size:24px; color:#fff;
+    box-shadow:0 10px 24px rgba(0,0,0,0.35);
+  }
+
+  @media (max-width:960px){
+    .wrap{ grid-template-columns:1fr; padding:32px 20px; gap:32px; }
+    .lead{ max-width:100%; }
+    .deliverables{ margin-left:0; }
+  }
+  @media (max-width:480px){
+    .wrap{ padding:24px 16px; }
+    .card-body{ padding:26px 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- LEFT COLUMN -->
+  <div class="left">
+    <div class="logo-row">
+      <div class="logo"><span class="dot">•</span>iUS</div>
+    </div>
+    <div class="founder-badge">FOUNDER</div>
+    <br>
+    <div class="badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7cb0ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 3a3 3 0 0 0-3 3v.2A3 3 0 0 0 4 9v1a3 3 0 0 0 1 2.2V13a3 3 0 0 0 3 3h.5"/><path d="M14.5 3a3 3 0 0 1 3 3v.2A3 3 0 0 1 20 9v1a3 3 0 0 1-1 2.2V13a3 3 0 0 1-3 3h-.5"/><path d="M9.5 3v15a2.5 2.5 0 0 0 5 0V3"/></svg> Agente de IA para abogados laboralistas</div>
+
+    <h1>La IA que<br><span class="accent">califica clientes</span><br>para abogados<br>laboralistas</h1>
+    <div class="rule"></div>
+    <p class="lead">iUS analiza cada asunto, clasifica al cliente y detecta quién sí está listo para pagar asesoría.</p>
+
+    <div class="feature-box">
+      <div class="feature">
+        <div class="fi"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 3a3 3 0 0 0-3 3v.2A3 3 0 0 0 4 9v1a3 3 0 0 0 1 2.2V13a3 3 0 0 0 3 3h.5"/><path d="M14.5 3a3 3 0 0 1 3 3v.2A3 3 0 0 1 20 9v1a3 3 0 0 1-1 2.2V13a3 3 0 0 1-3 3h-.5"/><path d="M9.5 3v15a2.5 2.5 0 0 0 5 0V3"/></svg></div>
+        <div>
+          <h3>Calificación inteligente</h3>
+          <p>Nuestra IA entiende el contexto, urgencia y viabilidad del caso.</p>
+        </div>
+      </div>
+      <div class="feature">
+        <div class="fi"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
+        <div>
+          <h3>Ahorra tiempo</h3>
+          <p>Responde al instante y filtra consultas para que te enfoques en lo importante.</p>
+        </div>
+      </div>
+      <div class="feature">
+        <div class="fi"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3z"/><path d="m9 12 2 2 4-4"/></svg></div>
+        <div>
+          <h3>Listos para asesorar</h3>
+          <p>Detecta clientes con alta viabilidad y prioridad para tu agenda.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT CARD -->
+  <div class="card">
+    <div class="card-header">
+      <div class="logo-badge">🦉<span class="lb-word">iUS</span></div>
+      <div>
+        <p class="eyebrow">PROGRAMA DE</p>
+        <h2>ABOGADOS FUNDADORES</h2>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="check-wrap">
+        <svg class="deco" viewBox="0 0 200 100" aria-hidden="true">
+          <circle cx="35" cy="40" r="4" fill="#a78bfa"/>
+          <circle cx="55" cy="65" r="3" fill="#2f6fed"/>
+          <circle cx="20" cy="60" r="2.5" fill="#c7d3ec"/>
+          <circle cx="165" cy="40" r="4" fill="#2f6fed"/>
+          <circle cx="145" cy="65" r="3" fill="#a78bfa"/>
+          <circle cx="180" cy="60" r="2.5" fill="#c7d3ec"/>
+        </svg>
+        <div class="check-circle">✓</div>
+      </div>
+      <div class="headline">¡Suscripción Activada,<br><span class="accent2">Abogad@!</span> 🎉</div>
+      <div class="divider"></div>
+
+      <div class="steps-title"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d1a3d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/></svg> Sigue estos pasos para comenzar:</div>
+
+      <div class="step-list">
+        <div class="step">
+          <div class="num">1</div>
+          <p>Da clic abajo.</p>
+        </div>
+        <div class="step">
+          <div class="num">2</div>
+          <p>Envía el WhatsApp automático.</p>
+        </div>
+        <div class="step">
+          <div class="num">3</div>
+          <p>Te entregaremos:</p>
+        </div>
+      </div>
+
+      <div class="deliverables">
+        <div class="deliv-item">
+          <div class="di"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>
+          <p><b>archivo APK</b><br>(tu módulo de consulta).</p>
+        </div>
+        <div class="deliv-item">
+          <div class="di"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+          <p>La URL para tus prospectos</p>
+        </div>
+        <div class="deliv-item">
+          <div class="di"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 3.7 2.4 11.4c-1 .4-1 1.9.1 2.2l4.6 1.5 1.8 5.7c.3.9 1.5 1.1 2 .3l2.6-3.4 4.7 3.5c.8.6 2 .2 2.2-.8l3-16.6c.2-1.1-1-1.9-1.9-1.5zM8.6 14.6l-1.1 3.4-1-3.2 10.8-6.9-8.7 6.7z"/></svg></div>
+          <p>Integración a tu cuenta de telegram.</p>
+        </div>
+        <div class="deliv-item">
+          <div class="di"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 15a4 4 0 1 1 0-6c1.5 0 2.5 1 3.5 3s2 3 3.5 3a4 4 0 1 0 0-6"/></svg></div>
+          <p>Integración a tus cuentas META.</p>
+        </div>
+      </div>
+
+      <!-- DOCUMENTO 3: Aviso de Privacidad Simplificado para la instalación de la APK -->
+      <div class="apk-legal-box">
+        <div class="lock-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        </div>
+        <div>
+          <h4>Antes de instalar tu APK</h4>
+          <p>iUS recopila exclusivamente tu nombre de usuario, correo electrónico y token de sesión cifrado, con el único fin de autenticar tu ingreso a la consola móvil y activar tus notificaciones push. La app <b>no</b> accede a tus contactos, fotos, micrófono, cámara ni ubicación. Tus datos y tu teléfono están 100% seguros y libres de malware.</p>
+          <p><a href="./aviso-privacidad-apk.html" target="_blank" rel="noopener noreferrer">Leer el Aviso de Privacidad Simplificado completo →</a></p>
+        </div>
+      </div>
+
+      <a id="wa-apk-btn" href="#" target="_blank" rel="noopener noreferrer" class="whatsapp-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.1-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.2-.7.8-.8 1-.2.2-.3.2-.5.1-.2-.1-1-.4-1.9-1.2-.7-.6-1.2-1.4-1.3-1.6-.1-.2 0-.4.1-.5.1-.1.2-.3.4-.4.1-.1.2-.2.2-.4.1-.1.1-.3 0-.4-.1-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.6.3-.2.2-.8.8-.8 1.9 0 1.1.8 2.2.9 2.4.1.2 1.6 2.5 4 3.4.6.2 1 .4 1.3.5.6.2 1.1.1 1.5 0 .5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2-.1-.1-.2-.2-.4-.3z"/></svg> Solicitar mi APK por WhatsApp</a>
+      <div class="lock-note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:0 0 auto; margin-top:2px;"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Te redirigirá a WhatsApp con un mensaje pre-llenado para solicitar tus accesos.</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="wa-float"><svg width="26" height="26" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.1-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.2-.7.8-.8 1-.2.2-.3.2-.5.1-.2-.1-1-.4-1.9-1.2-.7-.6-1.2-1.4-1.3-1.6-.1-.2 0-.4.1-.5.1-.1.2-.3.4-.4.1-.1.2-.2.2-.4.1-.1.1-.3 0-.4-.1-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.6.3-.2.2-.8.8-.8 1.9 0 1.1.8 2.2.9 2.4.1.2 1.6 2.5 4 3.4.6.2 1 .4 1.3.5.6.2 1.1.1 1.5 0 .5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2-.1-.1-.2-.2-.4-.3z"/></svg></div>
+
+<script>
+  var texto = 'Hola, soy Abogado Fundador de iUS y ya activé mi suscripción. Solicito mi archivo APK, usuario y contraseña temporal, así como el link de mis bots de Webchat y Telegram.';
+  document.getElementById('wa-apk-btn').setAttribute('href', 'https://api.whatsapp.com/send?phone=5215561483164&text=' + encodeURIComponent(texto));
+</script>
+
+</body>
+</html>

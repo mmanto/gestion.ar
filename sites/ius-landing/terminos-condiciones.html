@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Términos y Condiciones — iUS</title>
+<link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+<style>
+  :root{
+    --navy-deep:#050b1f;
+    --navy:#0d1a3d;
+    --navy-light:#16255c;
+    --blue:#2f6fed;
+    --blue-light:#7cb0ff;
+    --ink:#0d1a3d;
+    --paper:#f6f8fc;
+    --line:#e3e8f4;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI', Roboto, Arial, sans-serif;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(47,111,237,0.25), transparent 45%),
+      linear-gradient(135deg, var(--navy-deep), var(--navy) 55%, var(--navy-light));
+    color:#fff;
+    min-height:100vh;
+  }
+  .back-link{
+    position:fixed; top:20px; left:24px; z-index:10;
+    display:inline-flex; align-items:center; gap:8px;
+    color:#cfe0ff; font-size:13px; font-weight:600; text-decoration:none;
+    background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15);
+    padding:9px 16px; border-radius:999px;
+  }
+  .back-link:hover{ background:rgba(255,255,255,0.14); }
+  .wrap{
+    max-width:1500px;
+    margin:0 auto;
+    padding:96px 32px 48px;
+    display:grid;
+    grid-template-columns:1.1fr 1.4fr;
+    gap:48px;
+    align-items:start;
+  }
+  /* LEFT SIDE */
+  .left{ padding-top:20px; }
+  h1{
+    font-size:clamp(38px,4.2vw,58px);
+    line-height:1.02;
+    margin:0 0 6px 0;
+    font-weight:800;
+    letter-spacing:-0.5px;
+  }
+  .accent{ color:var(--blue-light); }
+  .sub{
+    font-size:clamp(18px,2vw,24px);
+    font-weight:700;
+    color:#c7d3ec;
+    margin:6px 0 22px 0;
+    letter-spacing:0.5px;
+  }
+  .rule{
+    width:70px; height:4px; background:var(--blue);
+    border-radius:2px; margin-bottom:22px;
+  }
+  .lead{
+    color:#c3cde3;
+    font-size:16px;
+    line-height:1.6;
+    max-width:480px;
+    margin-bottom:34px;
+  }
+
+  /* RIGHT SIDE — CARD */
+  .card{
+    background:var(--paper);
+    border-radius:20px;
+    overflow:hidden;
+    box-shadow:0 30px 60px rgba(0,0,0,0.35);
+    color:var(--ink);
+  }
+  .card-header{
+    background:linear-gradient(90deg, #14356e, #2f6fed);
+    padding:22px 28px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .logo-badge{
+    width:44px;height:44px;border-radius:12px;
+    background:rgba(255,255,255,0.15);
+    display:flex;align-items:center;justify-content:center;
+    font-size:20px;
+  }
+  .card-header h2{ margin:0; font-size:20px; }
+  .card-header p{ margin:2px 0 0 0; font-size:13px; color:#cfe0ff; }
+
+  .clause{
+    display:flex;
+    gap:18px;
+    padding:22px 28px;
+    border-bottom:1px solid var(--line);
+  }
+  .clause:last-child{ border-bottom:none; }
+  .clause h3{
+    margin:2px 0 8px 0;
+    font-size:15px;
+    color:#333846;
+    letter-spacing:0.2px;
+  }
+  .clause p, .clause li{
+    margin:0 0 6px 0;
+    font-size:13.6px;
+    line-height:1.65;
+    color:#2a3350;
+  }
+  .clause ul{ margin:8px 0 8px 0; padding-left:20px; }
+  .note{
+    background:#eef3ff;
+    border-left:3px solid var(--blue);
+    padding:10px 14px;
+    border-radius:8px;
+    margin-top:8px;
+    font-size:13.2px;
+    color:#26356b;
+  }
+  .note b{ color:var(--blue); }
+
+  @media (max-width:960px){
+    .wrap{
+      grid-template-columns:1fr;
+      padding:88px 20px 32px;
+      gap:32px;
+    }
+    .left{ padding-top:0; }
+    .lead{ max-width:100%; }
+  }
+  @media (max-width:480px){
+    .wrap{ padding:80px 16px 24px; }
+    .clause{ padding:20px 20px; }
+  }
+</style>
+</head>
+<body>
+<a href="./index.html" class="back-link">← Volver a iUS</a>
+<div class="wrap">
+
+  <!-- LEFT COLUMN -->
+  <div class="left">
+    <h1>TÉRMINOS Y<br><span class="accent">CONDICIONES</span></h1>
+    <div class="sub">DE USO DE LA PLATAFORMA iUS</div>
+    <div class="rule"></div>
+    <p class="lead">Al utilizar iUS, aceptas los siguientes términos y condiciones que regulan el uso de nuestra plataforma tecnológica.</p>
+
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div class="card">
+    <div class="clause">
+      <div>
+        <h3>PRIMERA: OBJETO.</h3>
+        <p>El presente contrato regula los términos y condiciones aplicables al uso de la plataforma tecnológica "iUS" (en adelante, "el SaaS"), un software de pre-calificación jurídica mediante Inteligencia Artificial diseñado exclusivamente para abogados especialistas en Derecho Laboral en los Estados Unidos Mexicanos.</p>
+      </div>
+    </div>
+
+    <div class="clause">
+      <div>
+        <h3>SEGUNDA: REGISTRO Y AUTENTICACIÓN.</h3>
+        <p>El usuario podrá registrarse mediante formulario manual o a través del protocolo de autenticación Google OAuth. Es responsabilidad exclusiva del usuario resguardar sus credenciales de acceso.</p>
+      </div>
+    </div>
+
+    <div class="clause">
+      <div>
+        <h3>TERCERA: TARIFAS Y EXCLUSIÓN DE IVA.</h3>
+        <p>Las contraprestaciones por el uso de las licencias de iUS se fijan en moneda nacional (MXN). El usuario acepta expresamente que todas las tarifas publicadas son más IVA. En caso de requerir el Comprobante Fiscal Digital por Internet (CFDI/Factura), este se procesará y emitirá conforme a las leyes fiscales de México, adicionando el 16% correspondiente al impuesto mencionado, en estricto cumplimiento con el Artículo 1o., fracción IV, en relación con el Artículo 1o.-B de la Ley del Impuesto al Valor Agregado (LIVA) y el Código Fiscal de la Federación aplicable a la prestación de servicios digitales. El usuario deberá solicitar su factura dentro del mes calendario en que realizó el pago aportando su Constancia de Situación Fiscal actualizada.</p>
+      </div>
+    </div>
+
+    <div class="clause">
+      <div>
+        <h3>CUARTA: PLANES, RENOVACIÓN Y CANCELACIÓN.</h3>
+        <p>El servicio opera bajo modelos de suscripción mensual ($690.00 MXN + IVA) o anual ($5,490.00 MXN + IVA), facturados automáticamente mediante la pasarela de pagos Mercado Pago. El usuario tiene el derecho de cancelar la renovación automática en cualquier momento y de forma directa desde su panel de suscripciones de Mercado Pago, surtiendo efectos al finalizar el periodo contratado. No existen plazos forzosos ni reembolsos parciales o retroactivos.</p>
+      </div>
+    </div>
+
+    <div class="clause">
+      <div>
+        <h3>QUINTA: PLAZOS DE IMPLEMENTACIÓN TÉCNICA.</h3>
+        <p>El usuario reconoce que la activación de los canales inteligentes requiere un proceso de aprovisionamiento tecnológico y conexión de servidores. iUS establece los siguientes plazos estimados para la entrega operativa de las herramientas, contados a partir de que el usuario proporcione la totalidad de las credenciales, tokens y accesos técnicos requeridos:</p>
+        <ul>
+          <li><b>Integración en Portal Web (Webchat):</b> De 5 a 15 días hábiles.</li>
+          <li><b>Integración con Telegram Bot:</b> De 5 a 15 días hábiles.</li>
+          <li><b>Integración con WhatsApp (META):</b> De 5 a 15 días hábiles.</li>
+        </ul>
+        <div class="note"><b>Nota restrictiva:</b> Este canal queda estrictamente condicionado a que el usuario cuente con una cuenta registrada y verificada dentro de Meta Business Suite; iUS no se hace responsable por retrasos, suspensiones o negativas de activación imputables directamente a las políticas de aprobación de Meta Platforms, Inc.</div>
+      </div>
+    </div>
+
+    <div class="clause">
+      <div>
+        <h3>SEXTA: LIMITACIÓN DE RESPONSABILIDAD JURÍDICA.</h3>
+        <p>iUS es un desarrollo tecnológico automatizado de pre-calificación, filtro y asistencia. iUS no provee asesoría legal ni garantiza el éxito de ningún litigio. La decisión final de aceptar, tramitar o descartar un asunto (identificado bajo el semáforo Verde, Amarillo o Rojo) y la posterior estrategia de defensa jurídica ante los tribunales locales o federales son responsabilidad única, civil y profesional del abogado contratante.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
