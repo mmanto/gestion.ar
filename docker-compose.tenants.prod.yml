@@ -167,7 +167,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_public"
-      - "traefik.http.routers.landing-ius.rule=Host(`ius.intellify.pro`) && (Path(`/`) || Path(`/favicon.svg`) || Path(`/favicon-32.png`) || Path(`/apple-touch-icon.png`) || Path(`/logo-horizontal.svg`) || Path(`/logo-horizontal-blanco.svg`) || Path(`/logo-vertical-blanco.svg`) || Path(`/despacho-hero.jpg`) || Path(`/estudio.jpg`) || Path(`/testimonios-bg.jpg`) || Path(`/eduardo-sandoval.webp`) || Path(`/og-image.png`))"
+      - "traefik.http.routers.landing-ius.rule=Host(`ius.intellify.pro`) && (Path(`/`) || Path(`/contacto.html`) || Path(`/bienvenido-ius.html`) || Path(`/registro.html`) || Path(`/procesar-pago.html`) || Path(`/exito-fundador.html`) || Path(`/fundadores.html`) || Path(`/fundadores-pago.html`) || Path(`/condiciones-modulo-consulta.html`) || Path(`/transparencia-pago.html`) || Path(`/aviso-privacidad.html`) || Path(`/aviso-privacidad-apk.html`) || Path(`/terminos-condiciones.html`) || Path(`/favicon.svg`) || Path(`/favicon-32.png`) || Path(`/apple-touch-icon.png`) || Path(`/logo-horizontal.svg`) || Path(`/logo-horizontal-blanco.svg`) || Path(`/logo-vertical-blanco.svg`) || Path(`/despacho-hero.jpg`) || Path(`/estudio.jpg`) || Path(`/testimonios-bg.jpg`) || Path(`/eduardo-sandoval.webp`) || Path(`/og-image.png`))"
       - "traefik.http.routers.landing-ius.entrypoints=websecure"
       - "traefik.http.routers.landing-ius.tls.certresolver=letsencrypt"
       - "traefik.http.routers.landing-ius.priority=10"
@@ -186,7 +186,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_public"
-      - "traefik.http.routers.landing-laboralia.rule=Host(`laboralia.intellify.pro`) && (Path(`/`) || Path(`/favicon.svg`) || Path(`/favicon-32.png`) || Path(`/apple-touch-icon.png`) || Path(`/logo-horizontal.svg`) || Path(`/logo-horizontal-blanco.svg`) || Path(`/logo-vertical-blanco.svg`) || Path(`/despacho-hero.jpg`) || Path(`/estudio.jpg`) || Path(`/testimonios-bg.jpg`) || Path(`/eduardo-sandoval.webp`) || Path(`/og-image.png`))"
+      - "traefik.http.routers.landing-laboralia.rule=Host(`laboralia.intellify.pro`) && (Path(`/`) || Path(`/contacto.html`) || Path(`/favicon.svg`) || Path(`/favicon-32.png`) || Path(`/apple-touch-icon.png`) || Path(`/logo-horizontal.svg`) || Path(`/logo-horizontal-blanco.svg`) || Path(`/logo-vertical-blanco.svg`) || Path(`/despacho-hero.jpg`) || Path(`/estudio.jpg`) || Path(`/testimonios-bg.jpg`) || Path(`/eduardo-sandoval.webp`) || Path(`/og-image.png`))"
       - "traefik.http.routers.landing-laboralia.entrypoints=websecure"
       - "traefik.http.routers.landing-laboralia.tls.certresolver=letsencrypt"
       - "traefik.http.routers.landing-laboralia.priority=10"
@@ -203,7 +203,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_public"
-      - "traefik.http.routers.landing-proptech.rule=Host(`proptech.intellify.pro`) && (Path(`/`) || Path(`/favicon.svg`) || Path(`/favicon-32.png`) || Path(`/apple-touch-icon.png`) || Path(`/logo-horizontal.svg`) || Path(`/logo-horizontal-blanco.svg`) || Path(`/logo-vertical-blanco.svg`) || Path(`/hero-showroom-toyota.jpg`) || Path(`/concesionaria-showroom.jpg`) || Path(`/concesionaria-showroom-2.jpg`) || Path(`/showroom-fila-autos.jpg`) || Path(`/cliente-entrega-llaves.jpg`) || Path(`/autos-fila-lote.jpg`) || Path(`/showroom-suv-dashboard.webp`) || Path(`/testimonios-bg.jpg`) || Path(`/eduardo-sandoval.webp`) || Path(`/og-image.png`))"
+      - "traefik.http.routers.landing-proptech.rule=Host(`proptech.intellify.pro`) && (Path(`/`) || Path(`/contacto.html`) || Path(`/favicon.svg`) || Path(`/favicon-32.png`) || Path(`/apple-touch-icon.png`) || Path(`/logo-horizontal.svg`) || Path(`/logo-horizontal-blanco.svg`) || Path(`/logo-vertical-blanco.svg`) || Path(`/hero-showroom-toyota.jpg`) || Path(`/concesionaria-showroom.jpg`) || Path(`/concesionaria-showroom-2.jpg`) || Path(`/showroom-fila-autos.jpg`) || Path(`/cliente-entrega-llaves.jpg`) || Path(`/autos-fila-lote.jpg`) || Path(`/showroom-suv-dashboard.webp`) || Path(`/testimonios-bg.jpg`) || Path(`/eduardo-sandoval.webp`) || Path(`/og-image.png`))"
       - "traefik.http.routers.landing-proptech.entrypoints=websecure"
       - "traefik.http.routers.landing-proptech.tls.certresolver=letsencrypt"
       - "traefik.http.routers.landing-proptech.priority=10"
