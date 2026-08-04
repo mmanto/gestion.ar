@@ -56,6 +56,14 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 - Sistema de notificaciones toast (`useToast`) enganchado al interceptor de errores de `api.ts`: cualquier error de una petición al backend (validación, conflicto, red, etc.) ahora se le informa siempre al usuario, en vez de quedar solo en la consola del navegador (ej. dar de alta un usuario con un nombre ya existente no mostraba ningún aviso)
 
 ### Corregido
+- Páginas HTML de las landings (`sites/*/nginx.conf`): no emitían
+  `Cache-Control`, así que nginx aplicaba caché heurística y el navegador
+  guardaba una copia por URL (query incluido). Tras un deploy, una URL ya
+  visitada (p.ej. `registro.html?plan=anual`) podía seguir mostrando una
+  versión vieja mientras otra no visitada (`?plan=mensual`) traía la actual —
+  daba la impresión de que "sólo cambia el parámetro" pero una fallaba.
+  Ahora todo `.html` de la landing se sirve con `Cache-Control: no-cache`
+  (revalida por ETag); los assets estáticos mantienen `expires 1y, immutable`.
 - Ruteo Traefik de las landings que comparten dominio con el tenant
   (`docker-compose.tenants.prod.yml` / `.local.yml`): los routers `landing-*`
   matcheaban una lista fija de paths, así que cualquier página `.html` nueva
