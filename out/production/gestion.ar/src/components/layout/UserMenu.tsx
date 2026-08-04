@@ -137,7 +137,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
               type="button"
               onClick={handleLogout}
               aria-label="Cerrar sesión"
-              className="absolute top-3 right-3 z-10 flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-white bg-black/20 hover:bg-black/30 transition-colors"
+              className="z-10 flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-white bg-black/20 hover:bg-black/30 transition-colors"
             >
               <svg
                 className="w-3 h-3 flex-shrink-0"
