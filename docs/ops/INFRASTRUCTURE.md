@@ -131,6 +131,29 @@ traefik:
 
 ---
 
+## Ruteo de landings en dominio compartido con tenant
+
+Cada landing (ius, laboralia, proptech, ver `docker-compose.tenants.prod.yml`)
+comparte el dominio con el SPA de su tenant (`frontend-tenant-*`). El SPA es un
+app de una sola página cuyo nginx sirve `index.html` para casi cualquier ruta
+(`try_files $uri /index.html`), así que si una página estática de la landing
+cae en el router del tenant, "no se ve" (devuelve el index del SPA).
+
+Por eso el router de la landing lleva prioridad explícita y matchea por path:
+
+- **cualquier página `.html`** de la landing vía `PathRegexp(^/.*\.html$)` — así
+  se agregan páginas nuevas (ej. `contacto.html`) **sin tocar esta regla**;
+- la raíz `/` y los assets propios de la landing (svg/png/jpg/webp, lista fija
+  sin colisión con `/icons`, `/img`, `favicon.ico` del SPA).
+
+Cualquier otra ruta (`/login`, `/dashboard`, `/assets/*`, `/api/*`, `/ws/*`)
+sigue cayendo en el tenant. No listar cada `.html` a mano: si una página no se
+ve, primero verificar que el `.html` exista dentro del contenedor de la landing
+(`docker exec <landing> ls /usr/share/nginx/html`); si la ruta es correcta y el
+archivo existe, el `PathRegexp` ya la enruta al contenedor correcto.
+
+---
+
 ## Backups
 
 ```bash

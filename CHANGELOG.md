@@ -56,6 +56,13 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 - Sistema de notificaciones toast (`useToast`) enganchado al interceptor de errores de `api.ts`: cualquier error de una petición al backend (validación, conflicto, red, etc.) ahora se le informa siempre al usuario, en vez de quedar solo en la consola del navegador (ej. dar de alta un usuario con un nombre ya existente no mostraba ningún aviso)
 
 ### Corregido
+- Ruteo Traefik de las landings que comparten dominio con el tenant
+  (`docker-compose.tenants.prod.yml` / `.local.yml`): los routers `landing-*`
+  matcheaban una lista fija de paths, así que cualquier página `.html` nueva
+  (p.ej. `contacto.html`) caía en el SPA del tenant y su nginx la reemplazaba
+  por `index.html`, quedando "invisible". Ahora usan `PathRegexp(^/.*\.html$)`
+  → cualquier `.html` de la landing la sirve su propio contenedor, sin
+  editar la regla por cada archivo.
 - Build Android nativo (`cmd_build_android` en `stack.dev`/`stack.prod`): no seteaba `VITE_STATS_TWO_COLS_MOBILE`, por lo que `bake-tenant-config.mjs` horneaba `statsTwoColsMobile: false` en el APK — el dashboard mostraba las stat cards en 1 columna en el celular en vez de 2, a diferencia de la web de `ius` (que sí seteaba `STATS_TWO_COLS_MOBILE=true` vía `docker-compose.tenants.*.yml`)
 - Dropdown de tenant al crear un agente (`frontend/src/pages/Bots.tsx`): pedía `limit=200` al listar tenants, pero el backend (`GET /api/admin/tenants`) rechaza `limit>100` (422 Unprocessable Content), dejando el desplegable vacío
 - Aislamiento de datos por agente en RAG (ChromaDB): cada documento ahora pertenece a un único bot_id, tanto en la ingesta como en la búsqueda/listado/borrado (antes la knowledge base era global y compartida entre todos los agentes)
