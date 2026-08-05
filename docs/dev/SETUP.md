@@ -77,6 +77,13 @@ npm run build:embed                 # genera dist-embed/register-embed.js
 cp dist-embed/register-embed.js ../sites/ius-landing/register-embed.js
 ```
 
+> El build lee `.env.prod` de la raíz, incluidas `VITE_NANGO_CONNECT_URL` /
+> `VITE_NANGO_API_URL` (las URLs del Nango self-hosted visibles al navegador).
+> Sin ellas, `auth.service` cae al default de dev (`localhost:3009`) y el login
+> con Google abre el Connect UI contra el Nango equivocado — el backend rechaza
+> el token con "Your session has expired, please refresh the modal". Para el
+> deploy de prod esas dos están definidas en `.env.prod`.
+
 Reutiliza el mismo `src/components/auth/RegisterForm.tsx` que la página
 `/registro` del panel, así que la UI vive en un solo lugar.
 
