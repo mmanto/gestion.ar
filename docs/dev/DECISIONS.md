@@ -578,3 +578,46 @@ vía `window.__IUS_REGISTER__` (defaults horneados = ius prod).
   y landing; el riesgo es que el bundle de la landing quede desactualizado si
   no se recompila tras tocar el form.
 
+
+---
+
+## ADR-012: Login OAuth (Google) — backend crea la sesión de Nango en la instancia pública
+
+**Estado:** Aceptado
+**Fecha:** 2026-08-04
+
+### Contexto
+
+El login con Google de panel y landing (mismo flujo `authService.loginWithProvider`)
+abría el Connect UI de Nango, pero el WebSocket que abre ese Connect UI a
+`wss://api.nango.intellify.pro/` moría con **401 Unauthorized**. Era un problema
+compartido (panel y embed daban exactamente el mismo error), no del micro-frontend.
+
+### Diagnóstico
+
+- La API pública `api.nango.intellify.pro` **acepta** el `NANGO_SECRET_KEY` de prod
+  (`POST /connect/sessions` → 201) y devuelve un `connect_link` a
+  `nango.intellify.pro`. Con un token creado **directamente en la API pública**, el
+  Connect UI valida y muestra "Vincular cuenta de Gmail".
+- El backend (`oauth_config`) creaba la sesión contra `NANGO_HOST=http://nango-server:8080`
+  (nombre de servicio Docker interno). En prod el contenedor `app` está en
+  `default` + `traefik_public` (no en `nango_network`) y ese `nango-server` interno
+  no es la misma instancia que sirve los hostnames públicos.
+- Conclusión: el `sessionToken` que producía el backend pertenecía a otra instancia
+  de Nango → no existía en la API pública → el Connect UI lo rechazaba con 401.
+
+### Decisión
+
+Apuntar `NANGO_HOST` del backend (`.env.prod`) a la URL pública
+`https://api.nango.intellify.pro` (mismo secret). Así el backend crea las
+"connect sessions" sobre la **misma** instancia que consume el browser, y el
+token del Connect UI valida. Es un fix de configuración, sin cambio de código.
+
+### Consecuencias
+
+- El backend necesita salida HTTPS saliente a `api.nango.intellify.pro` (por DNS
+  público). Verificar desde el contenedor: `docker exec <backend> curl -sS https://api.nango.intellify.pro/connect/health`.
+- Fix corto-plazo. El fix de fondo es alinear la instancia interna de Nango con la
+  pública (que `nango-server` interno y los hostnames públicos sirvan el MISMO
+  server/secret), para volver a un tráfico interno-a-interno sin depender de la salida
+  pública del backend.

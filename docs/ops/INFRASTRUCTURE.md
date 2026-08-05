@@ -161,6 +161,16 @@ lista de `Path(...)` del router `landing-ius` — si se suman más assets no-htm
 `expires -1` sobre ese bundle porque su nombre es fijo entre redeploys
 (cache heurística del navegador podría servir una versión vieja).
 
+**Nango (login OAuth Google/Microsoft, ADR-012):** el backend crea las "connect
+sessions" apuntando a `NANGO_HOST` (ver `.env.prod`). Hoy apunta a la **URL
+pública** `https://api.nango.intellify.pro` para que el `sessionToken` valide en
+el Connect UI que usa el browser (mismo secret `NANGO_SECRET_KEY`). Antes
+apuntaba al nombre interno `nango-server:8080`; en prod ese contenedor no era la
+misma instancia que sirve los hostnames públicos, y el login de Google moría con
+401 en `wss://api.nango.intellify.pro/`. Requiere que el backend tenga salida
+HTTPS a ese host público. El fix de fondo es alinear la instancia interna de
+Nango con la pública (devbout-oauth/deploy/nango) para volver a interno-a-interno.
+
 ---
 
 ## Backups

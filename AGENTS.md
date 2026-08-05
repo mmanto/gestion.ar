@@ -1,3 +1,4 @@
+<!-- DOCS: Fuente de verdad: devbout-docs (https://github.com/… /home/mmanto/workspace/devbout-docs/). Si este archivo contradice a devbout-docs, prevalece devbout-docs. Antes de cerrar tarea, verifica si un doc de devbout-docs/docs/ debe actualizarse. -->
 # AGENTS.md
 
 Instrucciones para agentes de IA que trabajen en este repositorio.
