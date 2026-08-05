@@ -18,6 +18,12 @@
 | Chat Web | `/chat/:botId` | Chat público embebible para canal web |
 | Chat Canal | `/chat/c/:channelId` | Chat público de un canal específico |
 
+**Frontend de tenant (`frontend-tenant/`, un panel por tenant):**
+
+| Pantalla | Ruta | Descripción |
+|---|---|---|
+| Registro "Crea tu cuenta" | `/registro` (alias `/register`) | Autoregistro público de un admin del tenant: plan mensual/anual, nombre/correo/contraseña y pago Mercado Pago. Réplica del bloque de la landing ius. |
+
 ---
 
 ## Pantallas pendientes / por definir

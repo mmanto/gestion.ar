@@ -18,6 +18,12 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 - Docker Compose para entorno de desarrollo y producción
 
 ### Agregado
+- **Pantalla de registro "Crea tu cuenta" en `frontend-tenant`** (`/registro`):
+  autoregistro público de un admin del tenant con selección de plan
+  (mensual/anual), login con Google y formulario nombre/correo/contraseña con
+  términos — réplica del bloque de la landing ius. Se apoya en
+  `POST /api/auth/register` (antes deprecado), que crea el usuario y devuelve
+  token JWT + URL de pago de Mercado Pago del plan (`payment.url`).
 - **App Android nativa del staff de ius (ADR-007), Capacitor:** empaqueta el
   mismo panel de `frontend-tenant/` (`appId: ius.intellify.pro`, `appName:
   'ius Staff'`) tal cual, sin fork de build ni de componentes — un solo

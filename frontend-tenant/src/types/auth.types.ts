@@ -22,6 +22,30 @@ export interface LoginResponse {
   user: User;
 }
 
+export type RegisterPlan = 'mensual' | 'anual';
+
+export interface RegisterPayload {
+  tenant_id: string;
+  nombre: string;
+  email: string;
+  password: string;
+  plan: RegisterPlan;
+}
+
+export interface RegisterPayment {
+  plan: RegisterPlan;
+  amount: number;
+  price_label: string;
+  url: string;
+}
+
+export interface RegisterResponse {
+  access_token: string;
+  token_type: string;
+  user: User;
+  payment: RegisterPayment;
+}
+
 export interface AuthState {
   user: User | null;
   token: string | null;
@@ -32,6 +56,7 @@ export interface AuthState {
 export interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
   loginWithProvider: (provider: AuthProvider, tenantId: string) => Promise<void>;
+  register: (payload: RegisterPayload) => Promise<RegisterResponse>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }

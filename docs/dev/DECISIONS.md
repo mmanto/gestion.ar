@@ -482,3 +482,43 @@ host:
   build-time (son dos builds separados) — solo en runtime. Mismo trade-off
   ya señalado para el cliente HTTP `devbout-appointments`↔`gestion.ar`
   backend en ADR-008.
+---
+
+## ADR-010: Re-activar autoregistro público de admin para un tenant (flujo "Crea tu cuenta")
+
+**Estado:** Aceptado
+**Fecha:** 2026-08-04
+
+### Contexto
+La landing ius tiene un bloque "Crea tu cuenta" (plan mensual/anual +
+pago Mercado Pago) que el cliente quería replicar dentro del panel del
+tenant (`frontend-tenant`). El backend tenía `POST /api/auth/register`
+**deprecado (410)** con la política de que "los tenants y sus usuarios los
+crea administración general".
+
+### Opciones consideradas
+1. Dejar el alta solo por administración general (`/api/admin/users`) — no
+   satisface el pedido de autoregistro del tenant.
+2. Endpoint público que crea un admin sin ningún control — demasiado
+   expuesto: cualquiera podría darse de alta en cualquier tenant.
+3. **Re-activar el registro público pero acotado**: el tenant debe existir y
+   estar **activo** (grilla contra el problema de crear cuentas en tenants
+   suspendidos/borrados), el usuario se crea con rol `admin` de ese tenant
+   y el email actúa como username único.
+
+### Decisión
+Opción 3. `POST /api/auth/register` pasa de devolver 410 a crear un usuario
+`admin` para un `tenant_id` recibido, siempre que el tenant exista y esté
+`active`. Devuelve token JWT (login inmediato) + `payment` con la URL de
+suscripción de Mercado Pago del plan (precios y URLs por env
+`MP_LINK_MENSUAL`/`MP_LINK_ANUAL`, con placeholder por defecto, igual que la
+landing).
+
+### Consecuencias
+- Riesgo residual: cualquier persona que conozca un `tenant_id` activo puede
+  crear un admin en él. Se mitiga porque el tenant_id no es un dato público
+  trivial y el registro es el mecanismo de onboarding por diseño de este
+  producto; si se quiere cerrar el alta pública (invitaciones, tokens de
+  onboarding), este ADR se reabre.
+- La URL de pago es un link de suscripción de MP pre-armado; no hay
+  integración con la API de MP (checkout/preference) hoy.

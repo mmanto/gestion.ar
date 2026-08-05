@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTenant } from '../hooks/useTenant';
 import { LoginForm } from '../components/auth/LoginForm';
@@ -51,6 +51,12 @@ export const Login: React.FC = () => {
           {/* Formulario */}
           <div className="w-full">
             <LoginForm />
+            <div className="mt-5 text-center text-sm" style={{ color: '#64748b' }}>
+              ¿No tenés cuenta?{' '}
+              <Link to="/registro" className="font-semibold hover:underline" style={{ color: primaryColor }}>
+                Crea una
+              </Link>
+            </div>
           </div>
         </div>
       </div>

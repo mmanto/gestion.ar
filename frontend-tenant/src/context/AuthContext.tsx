@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { AuthContextType, User, LoginCredentials, AuthProvider as SocialProvider } from '../types/auth.types';
+import type { AuthContextType, User, LoginCredentials, AuthProvider as SocialProvider, RegisterPayload, RegisterResponse } from '../types/auth.types';
 import authService from '../services/auth.service';
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -73,8 +73,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const loginWithProvider = async (provider: SocialProvider, tenantId: string) => {
+  const register = async (payload: RegisterPayload): Promise<RegisterResponse> => {
     try {
+      const response = await authService.register(payload);
+      await authService.saveToken(response.access_token);
+      await authService.saveUser(response.user);
+      setToken(response.access_token);
+      setUser(response.user);
+      setIsAuthenticated(true);
+      return response;
+    } catch (error) {
+      console.error('Register error:', error);
+      throw error;
+    }
+  };
+
+  const loginWithProvider = async (provider: SocialProvider, tenantId: string) => {    try {
       const { token: appToken } = await authService.loginWithProvider(provider, tenantId);
       await authService.saveToken(appToken);
       // El finalize no devuelve el usuario completo; lo obtenemos de /auth/me.
@@ -103,6 +117,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     login,
     loginWithProvider,
+    register,
     logout,
     checkAuth,
   };

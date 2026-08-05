@@ -12,6 +12,7 @@ import { useAuth } from './hooks/useAuth';
 // Pages
 import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
+import { Register } from './pages/Register';
 import { ChatPage } from './pages/ChatPage';
 import { UserLandingPage } from './pages/UserLandingPage';
 import { Dashboard } from './pages/Dashboard';
@@ -50,6 +51,8 @@ function App() {
                     la raíz debe ir directo al login (ver App.tsx isNativeApp) */}
                 <Route path="/" element={isNativeApp ? <Navigate to="/login" replace /> : <Landing />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/registro" element={<Register />} />
+                <Route path="/register" element={<Register />} />
                 <Route path="/chat/c/:channelId" element={<ChatPage />} />
                 <Route path="/chat/:botId" element={<ChatPage />} />
                 <Route path="/u/:username" element={<UserLandingPage />} />

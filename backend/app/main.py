@@ -6,7 +6,7 @@ from pydantic import BaseModel
 import os
 import json
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Literal
 import httpx
 
 from app.rag_service import get_rag_service
@@ -25,6 +25,8 @@ from app.dependencies.auth import get_current_user
 from app.connection_manager import connection_manager, staff_connection_manager
 from app.routers import bot_router, client_router, channel_router
 from app.services.user_service import get_user_service
+from app.services.tenant_service import get_tenant_service
+from app.models.tenant import TenantStatus
 from app.services.bot_service import get_bot_service
 from app.services.client_service import get_client_service
 from app.services.channel_service import get_channel_service
@@ -257,18 +259,111 @@ async def update_me(
     }
 
 
+class RegisterRequest(BaseModel):
+    """Datos del autoregistro público (flujo "Crea tu cuenta")."""
+    tenant_id: str
+    nombre: str
+    email: str
+    password: str
+    plan: Literal["mensual", "anual"] = "mensual"
+
+
+# Planes de la landing ius + URL de suscripción de Mercado Pago.
+# Las URLs se leen de env (MP_LINK_MENSUAL / MP_LINK_ANUAL); si no están
+# configuradas quedan los placeholders igual que en la landing, para poder
+# desenvolver el flujo antes de conectar los links reales de MP.
+PLAN_PRECIOS: Dict[str, Dict[str, Any]] = {
+    "mensual": {
+        "amount": 690.0,
+        "price_label": "$690.00 MXN /mes",
+        "url": os.getenv(
+            "MP_LINK_MENSUAL",
+            "https://www.mercadopago.com.mx/subscriptions/REEMPLAZAR-LINK-MENSUAL",
+        ),
+    },
+    "anual": {
+        "amount": 5490.0,
+        "price_label": "$5,490.00 MXN /año",
+        "url": os.getenv(
+            "MP_LINK_ANUAL",
+            "https://www.mercadopago.com.mx/subscriptions/REEMPLAZAR-LINK-ANUAL",
+        ),
+    },
+}
+
+
 @app.post("/api/auth/register")
-async def register():
+async def register(data: RegisterRequest):
     """
-    Endpoint deprecado: no hay autoregistro público. Los tenants y sus
-    usuarios (UsuarioAdmin/Usuario) los crea administración general desde
-    /api/admin/tenants y /api/admin/users.
+    Autoregistro público de un usuario admin para un tenant existente
+    (flujo "Crea tu cuenta" del frontend-tenant).
+
+    Crea el usuario (rol admin) dentro del tenant indicado y devuelve un
+    token JWT (login inmediato) junto con la URL de pago de Mercado Pago
+    para el plan elegido. No provee tenants: el tenant debe existir y estar
+    activo (ver /api/admin/tenants).
+
+    Args:
+        data: Datos de registro (tenant_id, nombre, email, password, plan)
+
+    Returns:
+        Token de acceso, datos del usuario y payload de pago del plan.
     """
-    raise HTTPException(
-        status_code=410,
-        detail="Endpoint deprecado. El alta de usuarios la hace administración "
-               "general vía /api/admin/users."
+    tenant = await get_tenant_service().get_tenant(data.tenant_id)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant no encontrado")
+    if tenant.status != TenantStatus.ACTIVE:
+        raise HTTPException(
+            status_code=403,
+            detail="El tenant no admite registros en este momento.",
+        )
+
+    email = (data.email or "").strip().lower()
+    if len(email) < 5 or "@" not in email:
+        raise HTTPException(status_code=422, detail="Correo electrónico inválido")
+    if len(data.password) < 8:
+        raise HTTPException(status_code=422, detail="La contraseña debe tener al menos 8 caracteres")
+
+    # username único = email (mismo formato que usa el resto del sistema).
+    username = email
+
+    try:
+        user = await get_user_service().create_user(
+            username=username,
+            password=data.password,
+            email=email,
+            nombre=data.nombre.strip(),
+            tenant_id=tenant.tenant_id,
+            role="admin",
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username, "tenant_id": user.tenant_id, "role": user.role},
+        expires_delta=access_token_expires,
     )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "username": user.username,
+            "email": user.email,
+            "nombre": user.nombre,
+            "apellido": user.apellido,
+            "avatar_url": user.avatar_url,
+            "tenant_id": user.tenant_id,
+            "role": user.role,
+        },
+        "payment": {
+            "plan": data.plan,
+            "amount": PLAN_PRECIOS[data.plan]["amount"],
+            "price_label": PLAN_PRECIOS[data.plan]["price_label"],
+            "url": PLAN_PRECIOS[data.plan]["url"],
+        },
+    }
 
 # ==================== ENDPOINTS RAG ====================
 # Movidos a app/routers/document_router.py, scoped por bot_id:

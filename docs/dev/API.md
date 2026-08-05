@@ -38,21 +38,47 @@ username=admin&password=tu_password
 
 ### POST `/api/auth/register`
 
-Registrar nuevo usuario. Usa `application/x-www-form-urlencoded`.
+Autoregistro público de un usuario **admin** para un tenant existente
+(flujo "Crea tu cuenta" del frontend-tenant). Crea el usuario y devuelve un
+token JWT (login inmediato) junto con la URL de pago de Mercado Pago del
+plan elegido. No provee tenants: el tenant debe existir y estar activo. Es
+el reintento de la funcionalidad que antes estuvo deprecada (410).
 
-**Request (form):**
+Usa `application/json`.
+
+**Request (JSON):**
+```json
+{
+  "tenant_id": "tenant_6a10b2076443",
+  "nombre": "Ana García",
+  "email": "ana@despacho.com",
+  "password": "mi_password_seguro",
+  "plan": "mensual"
+}
 ```
-username=nuevo_usuario&password=mi_password&email=email@ejemplo.com
-```
+- `plan`: `"mensual"` | `"anual"` (default `"mensual"`).
+- `password`: mínimo 8 caracteres. `email` se usa como `username` único.
 
 **Response 200:**
 ```json
 {
-  "success": true,
-  "message": "Usuario creado exitosamente",
-  "user": { "username": "nuevo_usuario", "email": "email@ejemplo.com" }
+  "access_token": "eyJ...",
+  "token_type": "bearer",
+  "user": { "username": "ana@despacho.com", "email": "ana@despacho.com", "nombre": "Ana García", "tenant_id": "tenant_6a10b2076443", "role": "admin" },
+  "payment": {
+    "plan": "mensual",
+    "amount": 690.0,
+    "price_label": "$690.00 MXN /mes",
+    "url": "https://www.mercadopago.com.mx/subscriptions/..."
+  }
 }
 ```
+La `payment.url` apunta a la suscripción de Mercado Pago del plan (précios y
+URLs configurados vía env `MP_LINK_MENSUAL` / `MP_LINK_ANUAL`).
+
+**Errores:** `404` si el tenant no existe; `403` si no está activo;
+`409` si el email/username ya existe; `422` si el email o password no
+cumplen lo mínimo.
 
 ---
 

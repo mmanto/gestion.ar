@@ -180,6 +180,19 @@ README), como **instancia compartida** entre las apps que consumen
 
 ---
 
+## Mercado Pago (autoregistro "Crea tu cuenta")
+
+| Variable | Requerida | Descripción | Ejemplo |
+|---|---|---|---|
+| `MP_LINK_MENSUAL` | ❌ | URL de suscripción de Mercado Pago del plan mensual (lo devuelve `POST /api/auth/register`) | `https://www.mercadopago.com.mx/subscriptions/XXXXX` |
+| `MP_LINK_ANUAL` | ❌ | URL de suscripción de Mercado Pago del plan anual | `https://www.mercadopago.com.mx/subscriptions/YYYYY` |
+
+> Sin configurar, caen al placeholder `.../REEMPLAZAR-LINK-*` (igual que la
+> landing) — el flujo funciona pero el pago no se procesa hasta definir las
+> URLs reales de suscripción.
+
+---
+
 ## URLs públicas
 
 | Variable | Requerida | Descripción | Ejemplo |

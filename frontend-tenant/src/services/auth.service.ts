@@ -3,7 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import api from './api';
 import { tokenStorage } from './tokenStorage';
-import type { AuthProvider, LoginCredentials, LoginResponse, User } from '../types/auth.types';
+import type { AuthProvider, LoginCredentials, LoginResponse, RegisterPayload, RegisterResponse, User } from '../types/auth.types';
 
 // URLs del Nango self-hosted, visibles desde el browser.
 const NANGO_CONNECT_URL = import.meta.env.VITE_NANGO_CONNECT_URL || 'http://localhost:3009';
@@ -105,6 +105,15 @@ async function loginWithProviderNative(connectLink: string, nonce: string): Prom
 }
 
 const authService = {
+  /**
+   * Autoregistro público de un admin para el tenant actual (flujo
+   * "Crea tu cuenta"). Devuelve token + usuario + URL de pago del plan.
+   */
+  async register(payload: RegisterPayload): Promise<RegisterResponse> {
+    const response = await api.post<RegisterResponse>('/auth/register', payload);
+    return response.data;
+  },
+
   /**
    * Login con username y password
    */
