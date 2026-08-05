@@ -522,3 +522,59 @@ landing).
   onboarding), este ADR se reabre.
 - La URL de pago es un link de suscripción de MP pre-armado; no hay
   integración con la API de MP (checkout/preference) hoy.
+
+---
+
+## ADR-011: Registro real embebido en la landing estática de ius (micro-frontend)
+
+**Estado:** Aceptado
+**Fecha:** 2026-08-04
+
+### Contexto
+
+La landing de ius (`sites/ius-landing/`) es un sitio HTML estático servido
+por nginx detrás de Traefik (mismo dominio `ius.intellify.pro` que el panel
+React `frontend-tenant`, separados por Path rules). Su página de registro
+(`registro.html`) era un formulario estático demo: no creaba cuentas reales
+(solo guardaba en `sessionStorage` y redirigía a un `procesar-pago.html` mock,
+y el botón de Google hacía `alert('demo')`). Mientras tanto, el panel ganó un
+registro real (`POST /api/auth/register`, ver ADR-010). El pedido fue quitar
+el bloque de registro estático de la landing y mostrar el formulario real.
+
+### Opciones consideradas
+
+1. Redirigir los CTA a `/registro` del panel React — simple, pero el usuario
+   abandona la landing y se pierde el layout de 2 columnas (pitch + card).
+2. Embeber el `/registro` del panel en un iframe — bloqueado por
+   `X-Frame-Options: SAMEORIGIN` en ambos nginx y pierde el pitch.
+3. **Micro-frontend**: compilar el `RegisterForm` (ya compartido con la
+   página `/registro`) a un bundle IIFE autocontenido y montarlo en un div de
+   la landing.
+
+### Decisión
+
+Opción 3. Se refactorizó la tarjeta de registro en un componente compartido
+`RegisterForm` (`frontend-tenant/src/components/auth/RegisterForm.tsx`)
+agnóstico a router/contextos, que recibe `submit`/`google` como props. La
+página `/registro` y el embed lo reutilizan; cada uno inyecta su adaptador de
+red. El embed (`src/embed/registerEmbed.tsx`) usa el mismo `authService` del
+panel y se compila con `vite.embed.config.ts` a `register-embed.js`. La
+landing lo carga en `registro.html`, y el tenantId/marca de ius se configuran
+vía `window.__IUS_REGISTER__` (defaults horneados = ius prod).
+
+### Consecuencias
+
+- **Deploy**: `npm run build:embed` (en `frontend-tenant/`) regenera
+  `dist-embed/register-embed.js`; hay que copiarlo a `sites/ius-landing/` (el
+  Dockerfile de la landing lo incluye) y el bundle se sirve desde la landing.
+- **Routing**: `/register-embed.js` se agregó a la rule Path del router
+  `landing-ius` de `docker-compose.tenants.prod.yml` (si no, Traefik lo
+  mandaba al panel React). El nginx de la landing setea `expires -1` al
+  bundle (nombre fijo entre redeploys → hay que evitar el caché heurístico).
+- **Peso**: el bundle incluye React + `authService` (axios/Capacitor/Nango)
+  por reutilizar el servicio real; ~204 KB gzip. Aceptable para una landing
+  que ya sirve imágenes de varios MB.
+- **UI en un solo lugar**: cualquier cambio al formulario se propaga a página
+  y landing; el riesgo es que el bundle de la landing quede desactualizado si
+  no se recompila tras tocar el form.
+

@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build --mode prod",
     "build:capacitor": "tsc -b && vite build --mode capacitor && node scripts/bake-tenant-config.mjs",
     "lint": "eslint .",
-    "preview": "vite preview --mode prod"
+    "preview": "vite preview --mode prod",
+    "build:embed": "vite build --config vite.embed.config.ts --mode prod"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.2",

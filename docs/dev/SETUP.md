@@ -64,6 +64,22 @@ npm install
 npm run dev   # http://localhost:5173 — lee .env.dev de la raíz automáticamente
 ```
 
+### frontend-tenant (panel por tenant) — micro-frontend de registro
+
+El formulario de registro real de la landing ius se compila aparte a un bundle
+autocontenido que la landing sirve en `/register-embed.js` (ver ADR-011). Tras
+tocar cualquier cambio del form (o de `authService`) hay que regenerarlo y
+copiarlo a la landing:
+
+```bash
+cd frontend-tenant
+npm run build:embed                 # genera dist-embed/register-embed.js
+cp dist-embed/register-embed.js ../sites/ius-landing/register-embed.js
+```
+
+Reutiliza el mismo `src/components/auth/RegisterForm.tsx` que la página
+`/registro` del panel, así que la UI vive en un solo lugar.
+
 ---
 
 ## Configuración de canales de mensajería

@@ -24,6 +24,12 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   términos — réplica del bloque de la landing ius. Se apoya en
   `POST /api/auth/register` (antes deprecado), que crea el usuario y devuelve
   token JWT + URL de pago de Mercado Pago del plan (`payment.url`).
+- **Landing ius embebe el registro real (micro-frontend):** el bloque de
+  registro estático de `sites/ius-landing/registro.html` (demo, no creaba
+  cuentas) se reemplazó por el mismo `RegisterForm` del panel, compilado a un
+  bundle autocontenido (`npm run build:embed` → `register-embed.js`, servido
+  por la landing en `/register-embed.js`). El formulario crea el admin y
+  redirige al pago real de Mercado Pago del plan; Google login idem al panel.
 - **App Android nativa del staff de ius (ADR-007), Capacitor:** empaqueta el
   mismo panel de `frontend-tenant/` (`appId: ius.intellify.pro`, `appName:
   'ius Staff'`) tal cual, sin fork de build ni de componentes — un solo

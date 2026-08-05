@@ -152,6 +152,15 @@ ve, primero verificar que el `.html` exista dentro del contenedor de la landing
 (`docker exec <landing> ls /usr/share/nginx/html`); si la ruta es correcta y el
 archivo existe, el `PathRegexp` ya la enruta al contenedor correcto.
 
+**Micro-frontend de registro (ADR-011):** la landing ius sirve
+`/register-embed.js` (bundle IIFE del formulario de registro real, ver
+`frontend-tenant/src/embed/` y `npm run build:embed`). Como no matchea el
+`PathRegexp` de `.html` ni es un asset de imagen, se lo agregó **a mano** a la
+lista de `Path(...)` del router `landing-ius` — si se suman más assets no-html
+(js/css propios) hay que listarlos igual ahí. El nginx de la landing setea
+`expires -1` sobre ese bundle porque su nombre es fijo entre redeploys
+(cache heurística del navegador podría servir una versión vieja).
+
 ---
 
 ## Backups
