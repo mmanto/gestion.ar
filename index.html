@@ -1,0 +1,86 @@
+<div style="font-family: sans-serif; max-width: 900px; margin: auto; padding: 20px; background: #111; color: #eee">
+  <h2>Piano Bar - Layer Builder</h2>
+  <p style="color:#aaa">This does NOT include copyrighted music. Load a file you own via upload OR paste.</p>
+
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+    <div>
+      <h4>Option 1: Upload</h4>
+      <input type="file" id="fileInput" accept=".musicxml,.xml,.mxl" />
+      <button id="demoBtn" style="display:block; margin-top:10px">Load Original Demo Etude</button>
+    </div>
+    <div>
+      <h4>Option 2: Paste</h4>
+      <textarea id="pasteArea" rows="8" style="width:100%; background:#222; color:#eee; padding:8px" placeholder="Paste MusicXML text here..."></textarea>
+      <button id="loadPaste" style="margin-top:8px">Load Pasted XML</button>
+    </div>
+  </div>
+
+  <div style="margin: 15px 0; border-top: 1px solid #333; padding-top: 15px;">
+    <button data-level="1">Level 1: Melody Only</button>
+    <button data-level="2">Level 2: + Roots</button>
+    <button data-level="3">Level 3: + Shells</button>
+    <button data-level="4">Level 4: Full Simplified</button>
+    <button data-level="5">Level 5: Original</button>
+  </div>
+  <div id="osmd-container" style="background:white; min-height:200px; padding:10px"></div>
+  <a id="download" style="display:block; margin-top:15px; color:#8cf"></a>
+  <pre id="xmlPreview" style="background:#222; color:#aaa; padding:10px; max-height:200px; overflow:auto; margin-top:15px; font-size:11px"></pre>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@1.8.7/build/opensheetmusicdisplay.min.js"></script>
+<script>
+const demoXML = `<?xml version="1.0"?><!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 3.1 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd"><score-partwise version="3.1"><part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list><part id="P1"><measure number="1"><attributes><divisions>4</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time><staves>2</staves><clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef></attributes><note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note><note><pitch><step>E</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note><note><pitch><step>G</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note><note><pitch><step>A</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note><note><pitch><step>C</step><octave>3</octave></pitch><duration>16</duration><voice>2</voice><type>whole</type><staff>2</staff></note></measure></part></score-partwise>`;
+
+let levels = {};
+const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay("osmd-container");
+function cloneDoc(s){ return new DOMParser().parseFromString(s, "text/xml"); }
+function serializeDoc(d){ return new XMLSerializer().serializeToString(d); }
+
+function buildLevels(xmlStr){
+  levels = {}; levels[5] = xmlStr;
+  let doc1 = cloneDoc(xmlStr);
+  doc1.querySelectorAll('note').forEach(n=>{ if(n.querySelector('staff')?.textContent==='2') n.remove(); });
+  doc1.querySelectorAll('note').forEach(n=>{ if(n.querySelector('chord')) n.remove(); });
+  levels[1] = serializeDoc(doc1);
+
+  let doc2 = cloneDoc(xmlStr);
+  doc2.querySelectorAll('measure').forEach(m=>{
+    let left=[...m.querySelectorAll('note')].filter(n=>n.querySelector('staff')?.textContent==='2');
+    left.slice(1).forEach(n=>n.remove());
+    if(left[0]){ left[0].querySelector('duration').textContent='16'; left[0].querySelector('type').textContent='whole'; }
+  });
+  levels[2] = serializeDoc(doc2);
+
+  let doc3 = cloneDoc(xmlStr);
+  doc3.querySelectorAll('measure').forEach(m=>{
+    let left=[...m.querySelectorAll('note')].filter(n=>n.querySelector('staff')?.textContent==='2');
+    left.slice(2).forEach(n=>n.remove());
+  });
+  levels[3] = serializeDoc(doc3);
+  levels[4] = xmlStr;
+  renderLevel(1);
+}
+
+async function renderLevel(l){
+  if(!levels[l]) return;
+  try { await osmd.load(levels[l]); osmd.render(); } catch(e){ document.getElementById('osmd-container').innerText = 'Preview failed, but download still works: '+e }
+  document.getElementById('xmlPreview').textContent = levels[l].slice(0,2000);
+  const blob = new Blob([levels[l]], {type: 'application/xml'});
+  const url = URL.createObjectURL(blob);
+  const dl = document.getElementById('download');
+  dl.href = url; dl.download = `level-${l}.musicxml`;
+  dl.textContent = `Download Level ${l} as MusicXML`;
+}
+
+document.getElementById('fileInput').addEventListener('change', e=>{
+  const r = new FileReader();
+  r.onload = () => buildLevels(r.result);
+  r.readAsText(e.target.files[0]);
+});
+document.getElementById('loadPaste').addEventListener('click', ()=>{
+  const txt = document.getElementById('pasteArea').value.trim();
+  if(txt) buildLevels(txt);
+});
+document.getElementById('demoBtn').addEventListener('click', ()=> buildLevels(demoXML));
+document.querySelectorAll('[data-level]').forEach(b=> b.addEventListener('click', ()=> renderLevel(parseInt(b.dataset.level))));
+</script>
