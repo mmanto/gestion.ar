@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.auth_service import User, get_password_hash
 from app.dependencies.auth import get_current_user, require_role
-from app.models.plan import PlanCreate, PlanUpdate
+from app.models.plan import PlanCreate, PlanUpdate, UserPlanApproval
 from app.models.tenant import (
     ModuleOut,
     Tenant,
@@ -43,6 +43,8 @@ def _user_out(user_in_db) -> TenantUserOut:
         tenant_id=user_in_db.tenant_id,
         role=user_in_db.role,
         disabled=user_in_db.disabled,
+        requested_plan_id=getattr(user_in_db, "requested_plan_id", None),
+        subscription_status=getattr(user_in_db, "subscription_status", "active"),
         broker_username=user_in_db.broker_username,
     )
 
@@ -130,6 +132,22 @@ async def update_tenant(tenant_id: str, data: TenantUpdate):
     if not tenant:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Tenant no encontrado")
     return {"success": True, "tenant": tenant.model_dump()}
+
+
+@router.patch("/users/{username}/plan-request", response_model=dict)
+async def approve_user_plan_request(username: str, data: UserPlanApproval):
+    """Aprueba (manual) el plan que el usuario pidió al darse de alta.
+
+    Pasa subscription_status de 'pending' a approved|active. El plan del
+    usuario es requested_plan_id (el que eligió al registrarse). Ver ADR-013.
+    """
+    try:
+        user = await get_user_service().approve_plan_request(username, data.status.value)
+    except ValueError as e:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e)) from e
+    if not user:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado")
+    return {"success": True, "user": _user_out(user).model_dump()}
 
 
 # ── Usuarios (UsuarioAdmin / Usuario) de cualquier tenant ───────────────────

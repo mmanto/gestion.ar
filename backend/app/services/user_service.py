@@ -24,6 +24,8 @@ class UserInDB(BaseModel):
     disabled: bool = False
     tenant_id: Optional[str] = None
     role: str = "admin"
+    requested_plan_id: Optional[str] = None
+    subscription_status: str = "active"
     broker_username: Optional[str] = None
 
 
@@ -38,6 +40,8 @@ def _to_user_in_db(row: UserModel) -> UserInDB:
         disabled=row.disabled,
         tenant_id=row.tenant_id,
         role=row.role,
+        requested_plan_id=row.requested_plan_id,
+        subscription_status=row.subscription_status,
         broker_username=row.broker_username,
     )
 
@@ -484,6 +488,38 @@ class UserService:
                 tenant_id=row.tenant_id,
                 role=row.role,
             )
+
+    async def set_requested_plan(self, username: str, requested_plan_id: str) -> Optional[UserInDB]:
+        """Registra el plan que el usuario quiere contratar al darse de alta
+        (autoregistro por formulario o gmail), dejándolo en estado Pendiente.
+        El pase a aprobado/vigente lo hace super_admin (approve_plan_request)."""
+        async with AsyncSessionLocal() as session:
+            row = await session.get(UserModel, username)
+            if not row:
+                return None
+            row.requested_plan_id = requested_plan_id
+            row.subscription_status = "pending"
+            await session.commit()
+            await session.refresh(row)
+            return _to_user_in_db(row)
+
+    async def approve_plan_request(self, username: str, status: str) -> Optional[UserInDB]:
+        """Aprueba la solicitud de plan de un usuario (manual, super_admin).
+
+        Marca subscription_status como approved|active. El plan del usuario
+        es requested_plan_id (el que eligió al darse de alta). Si no pidió
+        plan, no se cambia nada más que el estado.
+        """
+        if status not in ("approved", "active"):
+            raise ValueError(f"Estado de suscripción inválido: {status}")
+        async with AsyncSessionLocal() as session:
+            row = await session.get(UserModel, username)
+            if not row:
+                return None
+            row.subscription_status = status
+            await session.commit()
+            await session.refresh(row)
+            return _to_user_in_db(row)
 
     async def delete_user(self, username: str) -> bool:
         """Elimina un usuario. Falla (False) si tiene bots asociados

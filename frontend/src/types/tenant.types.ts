@@ -5,6 +5,9 @@
 export type TenantStatus = 'active' | 'suspended' | 'trial';
 export type TenantUserRole = 'admin' | 'operativo';
 export type PlanPeriodicity = 'monthly' | 'annual';
+// Estado de la solicitud de plan del tenant: 'pending' al darse de alta por
+// autoregistro/gmail; el pase a approved/active lo hace super_admin (ADR-013).
+export type SubscriptionStatus = 'pending' | 'approved' | 'active';
 
 export interface TenantBranding {
   logo_url?: string;
@@ -83,6 +86,11 @@ export interface TenantUser {
   tenant_id?: string | null;
   role: string;
   disabled: boolean;
+  // Plan que el usuario eligió al darse de alta (autoregistro/gmail) y su
+  // estado de aprobación: pending → approved/active (manual, super_admin,
+  // ver ADR-013).
+  requested_plan_id?: string | null;
+  subscription_status?: SubscriptionStatus;
 }
 
 export interface TenantUserCreate {

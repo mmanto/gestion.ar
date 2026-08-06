@@ -20,6 +20,7 @@ import logging
 import os
 import uuid
 from datetime import datetime, timedelta, timezone
+from typing import Literal, Optional
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request, status
@@ -28,6 +29,7 @@ from pydantic import BaseModel
 
 from app.services.oauth_config import build_nango_config
 from app.services.oauth_login_store import get_oauth_login_store
+from app.services.plan_service import get_plan_service
 from app.services.tenant_service import get_tenant_service
 from app.services.user_service import get_user_service
 from devbout_oauth import NangoClient, NangoError
@@ -95,6 +97,10 @@ class _FinalizeRequest(BaseModel):
     connectionId: str
     provider: str
     nonce: str
+    # Plan elegido en el autoregistro por gmail ("Crea tu cuenta"): se
+    # registra en el tenant en estado Pendiente (ver ADR-013). Opcional: el
+    # login normal de usuarios ya existentes no lo envía.
+    plan: Optional[Literal["mensual", "anual"]] = None
 
 
 class _LoginError(Exception):
@@ -171,6 +177,7 @@ async def _complete_tenant_login(
     await user_service.save_connection(username, provider, connection_id, identity.email)
     return {
         "token": app_token,
+        "username": username,
         "email": identity.email,
         "given_name": identity.given_name,
         "family_name": identity.family_name,
@@ -213,9 +220,27 @@ async def tenant_login_session(body: _SessionRequest):
 async def tenant_login_finalize(body: _FinalizeRequest):
     nonce_id, tenant_id = _verify_nonce(body.nonce)
     try:
-        return await _complete_tenant_login(tenant_id, body.provider, body.connectionId, nonce_id)
+        result = await _complete_tenant_login(tenant_id, body.provider, body.connectionId, nonce_id)
     except _LoginError as e:
         raise HTTPException(e.status_code, str(e)) from e
+
+    # Autoregistro por gmail: registrar en el usuario el plan elegido en
+    # estado Pendiente (requested_plan_id + subscription_status='pending').
+    # El pase a aprobado/vigente es manual (super_admin, ver ADR-013). El
+    # login normal de usuarios ya existentes no manda plan y no toca nada.
+    if body.plan and result.get("username"):
+        await _record_pending_plan(result["username"], body.plan)
+    return result
+
+
+async def _record_pending_plan(username: str, plan: str) -> None:
+    """Resuelve el plan del catálogo por periodicidad y lo deja pendiente en
+    el usuario que acaba de darse de alta vía el login OAuth del tenant."""
+    plan_period = "monthly" if plan == "mensual" else "annual"
+    catalog_plans = await get_plan_service().list_plans()
+    catalog_plan = next((p for p in catalog_plans if p.periodicity.value == plan_period), None)
+    if catalog_plan:
+        await get_user_service().set_requested_plan(username, catalog_plan.plan_id)
 
 
 @router.post("/webhook/nango")

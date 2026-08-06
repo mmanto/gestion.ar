@@ -42,10 +42,10 @@ if (mount) {
       branding={branding}
       initialPlan={initialPlan}
       submit={async (payload) => (await authService.register(payload)).payment.url}
-      google={async (t) => {
+      google={async (t, plan) => {
         // Mismo flujo que AuthContext.loginWithProvider (podría extraerse a
         // un helper compartido si se reutiliza en más lugares).
-        const { token } = await authService.loginWithProvider('google', t);
+        const { token } = await authService.loginWithProvider('google', t, plan);
         await authService.saveToken(token);
         await authService.saveUser(await authService.verifyToken());
       }}

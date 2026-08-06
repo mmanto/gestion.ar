@@ -3,7 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import api from './api';
 import { tokenStorage } from './tokenStorage';
-import type { AuthProvider, LoginCredentials, LoginResponse, RegisterPayload, RegisterResponse, User } from '../types/auth.types';
+import type { AuthProvider, LoginCredentials, LoginResponse, RegisterPayload, RegisterPlan, RegisterResponse, User } from '../types/auth.types';
 
 // URLs del Nango self-hosted, visibles desde el browser.
 const NANGO_CONNECT_URL = import.meta.env.VITE_NANGO_CONNECT_URL || 'http://localhost:3009';
@@ -137,7 +137,7 @@ const authService = {
    * Si es la primera vez que este email entra a este tenant, la cuenta se
    * crea automáticamente (self-service, rol operativo).
    */
-  async loginWithProvider(provider: AuthProvider, tenantId: string): Promise<{ token: string }> {
+  async loginWithProvider(provider: AuthProvider, tenantId: string, plan?: RegisterPlan): Promise<{ token: string }> {
     const { data: sess } = await api.post<{ sessionToken: string; connectLink: string; nonce: string; provider: string }>(
       '/tenant/oauth/connect/login/session', { tenant_id: tenantId, provider },
     );
@@ -149,7 +149,7 @@ const authService = {
     const { connectionId } = await openNangoConnect(sess.sessionToken);
     const { data } = await api.post<{ token: string }>(
       '/tenant/oauth/connect/login/finalize',
-      { connectionId, provider, nonce: sess.nonce },
+      { connectionId, provider, nonce: sess.nonce, plan },
     );
     return { token: data.token };
   },

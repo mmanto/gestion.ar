@@ -6,6 +6,21 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 
 ## [Sin versión] - En desarrollo
 
+### Agregado
+- **Borrado de usuario del propio tenant:** `DELETE /api/tenant/users/{username}`
+  (admin del tenant), para quitar cuentas de prueba creadas por autoregistro/
+  gmail en desarrollo. Siempre scoped al tenant; no permite borrarse a sí
+  mismo.
+
+### Agregado
+- **Registro del plan solicitado en el alta (estado Pendiente):** al darse de
+  alta un usuario por autoregistro (formulario "Crea tu cuenta" o gmail), el
+  plan que quiere suscribirse se registra **sobre el usuario** en estado
+  **Pendiente** (`requested_plan_id` + `subscription_status='pending'`). Cada
+  usuario elige y paga su propio plan. El pase a aprobado/vigente es **manual**
+  (super_admin) vía el nuevo endpoint `PATCH /api/admin/users/{username}/plan-request`
+  (ver ADR-013). El detalle del tenant muestra las solicitudes pendientes por
+  usuario y permite aprobarlas.
 ### Implementado
 - Bot multi-canal: WhatsApp (Meta + Twilio), Telegram, Web (WebSocket), PWA
 - Sistema RAG con ChromaDB y sentence-transformers

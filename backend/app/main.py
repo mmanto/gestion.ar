@@ -26,6 +26,7 @@ from app.connection_manager import connection_manager, staff_connection_manager
 from app.routers import bot_router, client_router, channel_router
 from app.services.user_service import get_user_service
 from app.services.tenant_service import get_tenant_service
+from app.services.plan_service import get_plan_service
 from app.models.tenant import TenantStatus
 from app.services.bot_service import get_bot_service
 from app.services.client_service import get_client_service
@@ -338,6 +339,15 @@ async def register(data: RegisterRequest):
         )
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc))
+
+    # Registra en el usuario el plan que quiere suscribirse, en estado
+    # Pendiente (requested_plan_id + subscription_status='pending'). El pase
+    # a aprobado/vigente es manual (super_admin, ADR-013).
+    plan_period = "monthly" if data.plan == "mensual" else "annual"
+    catalog_plans = await get_plan_service().list_plans()
+    catalog_plan = next((p for p in catalog_plans if p.periodicity.value == plan_period), None)
+    if catalog_plan:
+        await get_user_service().set_requested_plan(user.username, catalog_plan.plan_id)
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(

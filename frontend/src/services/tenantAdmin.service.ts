@@ -65,6 +65,19 @@ const tenantAdminService = {
     return response.data.tenant;
   },
 
+  /**
+   * Aprueba (manual, super_admin) el plan que un usuario pidió al darse de
+   * alta por autoregistro/gmail: subscription_status pasa a approved|active
+   * (el plan del usuario es requested_plan_id). Ver ADR-013.
+   */
+  async approveUserPlanRequest(username: string, status: 'approved' | 'active'): Promise<TenantUser> {
+    const response = await api.patch<{ success: boolean; user: TenantUser }>(
+      `/admin/users/${username}/plan-request`,
+      { status },
+    );
+    return response.data.user;
+  },
+
   async listUsers(tenantId?: string, page = 1, limit = 50): Promise<TenantUsersResponse> {
     const params = new URLSearchParams({ page: String(page), limit: String(limit) });
     if (tenantId) params.append('tenant_id', tenantId);

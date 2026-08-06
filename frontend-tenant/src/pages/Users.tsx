@@ -9,6 +9,7 @@ import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { AvatarPicker } from '../components/common/AvatarPicker';
 import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '../components/common/Table';
+import { useAuth } from '../hooks/useAuth';
 import tenantUsersService from '../services/tenantUsers.service';
 import type { TenantUser, TenantUserRole } from '../types/tenantUser.types';
 
@@ -17,6 +18,7 @@ const emptyCreateForm = {
 };
 
 export const Users = () => {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<TenantUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,6 +76,29 @@ export const Users = () => {
   const handleToggleDisabled = async (user: TenantUser) => {
     await tenantUsersService.updateUser(user.username, { disabled: !user.disabled });
     fetchUsers();
+  };
+
+  const handleDeleteUser = async (user: TenantUser) => {
+    if (!window.confirm(`¿Borrar el usuario "${user.username}"? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+    try {
+      setError(null);
+      await tenantUsersService.deleteUser(user.username);
+      fetchUsers();
+    } catch (err) {
+      let detail: string | undefined;
+      if (err && typeof err === 'object' && 'response' in err) {
+        const res = err.response;
+        if (res && typeof res === 'object' && 'data' in res) {
+          const data = res.data;
+          if (data && typeof data === 'object' && 'detail' in data && typeof data.detail === 'string') {
+            detail = data.detail;
+          }
+        }
+      }
+      setError(detail || 'No se pudo eliminar el usuario.');
+    }
   };
 
   const openEditUser = (user: TenantUser) => {
@@ -186,6 +211,11 @@ export const Users = () => {
                       <button onClick={() => handleToggleDisabled(u)} className="text-sm text-gray-800 hover:underline">
                         {u.disabled ? 'Habilitar' : 'Deshabilitar'}
                       </button>
+                      {u.username !== currentUser?.username && (
+                        <button onClick={() => handleDeleteUser(u)} className="text-sm text-red-600 hover:underline">
+                          Eliminar
+                        </button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

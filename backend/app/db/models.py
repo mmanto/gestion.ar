@@ -136,6 +136,14 @@ class User(Base):
     # tenant_id nullable: super_admin no pertenece a ningún tenant.
     tenant_id = Column(Text, ForeignKey("tenants.tenant_id"), nullable=True)
     role = Column(Text, nullable=False, default="admin", server_default="admin")
+    # Plan al que el usuario quiere suscribirse al darse de alta
+    # (autoregistro / gmail) y su estado de aprobación: cada usuario elige y
+    # paga su propio plan (ver ADR-013). 'pending' al registrarse; el pase a
+    # approved/active lo hace super_admin manualmente.
+    requested_plan_id = Column(Text, ForeignKey("plans.plan_id"), nullable=True)
+    subscription_status = Column(
+        Text, nullable=False, default="active", server_default="active"
+    )
     # Solo para role='operativo': el broker (firma legal) del que depende este
     # abogado — ve sus clientes/conversaciones además de los propios (ver
     # client_router.py). NULL = opera de forma independiente, sin firma.
@@ -161,6 +169,10 @@ class User(Base):
         CheckConstraint(
             "broker_username IS NULL OR role = 'operativo'",
             name="ck_users_broker_username_only_operativo",
+        ),
+        CheckConstraint(
+            "subscription_status IN ('pending', 'approved', 'active')",
+            name="ck_users_subscription_status",
         ),
     )
 

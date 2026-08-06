@@ -399,3 +399,35 @@ async def update_tenant_own_user(
         clear_broker=data.clear_broker,
     )
     return {"success": True, "user": _user_out(user).model_dump()}
+
+
+@router.delete("/users/{username}", response_model=dict)
+async def delete_tenant_own_user(
+    username: str,
+    current_user: User = Depends(require_role("admin")),
+):
+    """Elimina un usuario del propio tenant (útil en desarrollo para quitar
+    cuentas creadas por autoregistro/gmail). Siempre scoped a
+    current_user.tenant_id — no se puede borrar otro tenant ni super_admin.
+
+    No se permite borrarse a sí mismo (dejaría el tenant sin ese admin).
+    """
+    if username == current_user.username:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "No podés borrar tu propio usuario. Pedíselo a otro admin del tenant.",
+        )
+
+    user_service = get_user_service()
+    existing = await user_service.get_user_by_username(username)
+    if not existing or existing.tenant_id != current_user.tenant_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado")
+
+    deleted = await user_service.delete_user(username)
+    if not deleted:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "No se pudo eliminar el usuario: tiene bots u otros recursos asociados. "
+            "Borrá primero sus agentes y canales relacionados.",
+        )
+    return {"success": True, "message": "Usuario eliminado"}

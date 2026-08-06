@@ -38,7 +38,7 @@ export const Register: React.FC = () => {
           tenantId={tenantId}
           branding={{ tenantName, primaryColor, logoUrl: logo }}
           submit={async (payload) => (await register(payload)).payment.url}
-          google={(t) => loginWithProvider('google', t)}
+          google={(t, plan) => loginWithProvider('google', t, plan)}
         />
       </div>
     </div>

@@ -143,6 +143,13 @@ export const TenantDetail = () => {
     load();
   };
 
+  // Aprueba (manual) el plan que un usuario pidió al darse de alta por
+  // autoregistro/gmail (pending → approved/active). Ver ADR-013.
+  const handleApproveUserPlan = async (username: string, status: 'approved' | 'active') => {
+    await tenantAdminService.approveUserPlanRequest(username, status);
+    load();
+  };
+
   const openEditUser = (user: TenantUser) => {
     setEditingUser(user);
     setEditForm({
@@ -340,6 +347,7 @@ export const TenantDetail = () => {
                 <th className="px-4 py-2">Email</th>
                 <th className="px-4 py-2">Rol</th>
                 <th className="px-4 py-2">Estado</th>
+                <th className="px-4 py-2">Plan</th>
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
@@ -370,6 +378,26 @@ export const TenantDetail = () => {
                       {u.disabled ? 'Deshabilitado' : 'Activo'}
                     </span>
                   </td>
+                  <td className="px-4 py-2">
+                    {u.requested_plan_id ? (
+                      <div className="flex items-center gap-2">
+                        {plans.find((p) => p.plan_id === u.requested_plan_id)?.name ?? 'Plan'}
+                        {u.subscription_status === 'pending' && (
+                          <span className="px-2 py-0.5 rounded-full text-xs bg-orange-100 text-orange-800">Pendiente</span>
+                        )}
+                        {u.subscription_status === 'pending' && (
+                          <button
+                            onClick={() => handleApproveUserPlan(u.username, 'active')}
+                            className="text-xs text-blue-700 hover:underline"
+                          >
+                            Aprobar
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-2 text-right whitespace-nowrap">
                     <button onClick={() => openEditUser(u)} className="text-xs text-gray-800 hover:underline mr-3">
                       Editar
@@ -385,7 +413,7 @@ export const TenantDetail = () => {
               ))}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-6 text-center text-gray-400">
+                  <td colSpan={7} className="px-4 py-6 text-center text-gray-400">
                     Sin usuarios todavía
                   </td>
                 </tr>

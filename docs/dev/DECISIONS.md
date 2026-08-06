@@ -621,3 +621,53 @@ token del Connect UI valida. Es un fix de configuración, sin cambio de código.
   pública (que `nango-server` interno y los hostnames públicos sirvan el MISMO
   server/secret), para volver a un tráfico interno-a-interno sin depender de la salida
   pública del backend.
+
+
+## ADR-013: Registro del plan solicitado por el usuario en el alta (estado Pendiente)
+
+**Estado:** Aceptado
+**Fecha:** 2026-08-05
+
+### Contexto
+
+El flujo "Crea tu cuenta" (autoregistro por formulario `POST /api/auth/register`
+o por gmail `POST /api/tenant/oauth/connect/login/finalize`) dejaba seleccionar
+un plan, pero el plan **no se persistía en ningún lado**: el backend solo
+devolvía la URL de pago de Mercado Pago. El pedido: al darse de alta un usuario,
+registrar el plan que quiere suscribirse, dejarlo en estado **Pendiente**, y que
+el pase a aprobado/vigente sea **manual** por administración general.
+
+La suscripción es **por usuario**: cada usuario (admin u operativo) elige y paga
+su propio plan. El `tenants` de gestion.ar representa a los clientes de nuestro
+negocio y no se gestionan ahí las suscripciones — por eso el plan vive en
+`users`, no en `tenants`.
+
+### Opciones consideradas
+
+1. Persistir sobre `tenants` (plan solicitado + estado) — **rechazado**: gestion.ar
+   no gestiona las suscripciones en el tenant; cada usuario tiene la suya.
+2. **Persistir sobre el `users`**: `requested_plan_id` + `subscription_status`.
+3. No persistir y resolver solo por la URL de pago — no cumple el pedido.
+
+### Decisión
+
+Opción 2. Se agregan a `users`:
+- `requested_plan_id` (opt, FK → `plans.plan_id`) — el plan del catálogo que el
+  usuario eligió al darse de alta (y su plan mientras está pendiente/vigente).
+- `subscription_status` (`pending` | `approved` | `active`, default `active`).
+
+El plan se resuelve del **catálogo** por periodicidad (`mensual`→`monthly`,
+`anual`→`annual`), no de los valores fijos de precio del formulario. El alta
+(formulario o gmail) deja `requested_plan_id` + `subscription_status='pending'`.
+Nuevo endpoint `PATCH /api/admin/users/{username}/plan-request` (super_admin)
+hace la aprobación manual: marca `approved`/`active` (el plan del usuario es
+`requested_plan_id`).
+
+### Consecuencias
+
+- El pase de Pendiente a aprobado/vigente es **exclusivamente manual**
+  (super_admin); no hay cron de auto-aprobación.
+- El gmail por flujo mobile (webhook de Nango) no lleva el plan (Nango no
+  lo propaga); solo el flujo web (finalize) y el formulario registran el plan.
+- Migraciones Alembic `20260805_0000_add_tenant_plan_request.py` (descartada) y
+  `20260805_0100_move_plan_request_to_users.py` (mueve el plan de tenant a user).

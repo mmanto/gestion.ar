@@ -33,6 +33,11 @@ const tenantUsersService = {
     );
     return response.data.user;
   },
+
+  /** Borra un usuario del propio tenant (no a ti mismo). */
+  async deleteUser(username: string): Promise<void> {
+    await api.delete(`/tenant/users/${username}`);
+  },
 };
 
 export default tenantUsersService;

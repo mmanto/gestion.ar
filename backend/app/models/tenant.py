@@ -108,6 +108,8 @@ class TenantUserOut(BaseModel):
     tenant_id: Optional[str] = None
     role: str
     disabled: bool
+    requested_plan_id: Optional[str] = None
+    subscription_status: str = "active"
     broker_username: Optional[str] = None
 
 

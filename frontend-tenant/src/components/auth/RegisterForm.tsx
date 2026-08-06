@@ -26,7 +26,7 @@ interface RegisterFormProps {
   /** Ejecuta el autoregistro y resuelve con la URL de pago del plan. */
   submit: (payload: RegisterPayload) => Promise<string>;
   /** Conecta el OAuth de Google (login previo al registro) y resuelve al autenticar. */
-  google: (tenantId: string) => Promise<void>;
+  google: (tenantId: string, plan: RegisterPlan) => Promise<void>;
 }
 
 const PRIMARY = '#25357a';
@@ -56,7 +56,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ tenantId, branding, 
     setError('');
     setOauthLoading('google');
     try {
-      await google(tenantId);
+      await google(tenantId, plan);
       window.location.href = '/dashboard';
     } catch (err: unknown) {
       const message = err instanceof Error && err.message !== 'cancelled' ? err.message : 'No se pudo completar el registro con Google.';

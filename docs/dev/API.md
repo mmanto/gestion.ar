@@ -76,6 +76,11 @@ Usa `application/json`.
 La `payment.url` apunta a la suscripción de Mercado Pago del plan (précios y
 URLs configurados vía env `MP_LINK_MENSUAL` / `MP_LINK_ANUAL`).
 
+El plan elegido se **registra en el usuario en estado Pendiente**
+(`requested_plan_id` = plan del catálogo de la periodicidad correspondiente,
+`subscription_status='pending'`). El pase a aprobado/vigente es manual
+(super_admin) vía `PATCH /api/admin/users/{username}/plan-request` (ver ADR-013).
+
 **Errores:** `404` si el tenant no existe; `403` si no está activo;
 `409` si el email/username ya existe; `422` si el email o password no
 cumplen lo mínimo.
@@ -497,6 +502,42 @@ Eliminar el logo del tenant (solo la referencia — no borra el archivo en disco
 ```
 
 ---
+
+## Tenant — Usuarios
+
+Gestión de usuarios del propio tenant (requiere JWT con rol `admin` del
+tenant). Todos los endpoints están scoped a `current_user.tenant_id`.
+
+### GET `/api/tenant/users`
+
+Lista los usuarios del tenant. Query: `page`, `limit`.
+
+### POST `/api/tenant/users`
+
+Crea un usuario en el tenant. `tenant_id` se fuerza desde el JWT (no se
+acepta en el body). Rol: `admin` | `operativo` (nunca `super_admin`).
+
+### PATCH `/api/tenant/users/{username}`
+
+Edita un usuario del tenant (email, nombre, apellido, avatar, rol, estado).
+
+### DELETE `/api/tenant/users/{username}`
+
+Elimina un usuario del propio tenant (p.ej. para quitar cuentas de prueba
+creadas por autoregistro/gmail en desarrollo).
+
+- `400` si intentás borrarte a ti mismo.
+- `404` si el usuario no existe o no pertenece a tu tenant.
+- `409` si el usuario tiene recursos asociados (bots/canales) que impiden el
+  borrado.
+
+**Response 200:**
+```json
+{ "success": true, "message": "Usuario eliminado" }
+```
+
+---
+
 ## Sistema
 
 ### GET `/`

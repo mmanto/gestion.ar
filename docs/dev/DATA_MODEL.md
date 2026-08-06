@@ -33,9 +33,14 @@ Usuarios del dashboard (propietarios de bots).
 | `auth_provider` / `provider_user_id` | `TEXT` (opt) | Identidad de login social (Nango) |
 | `google_id` | `TEXT` (opt) | Legacy, login Google directo |
 | `nango_connection_id` / `gmail_sender_email` | `TEXT` (opt) | Conexión de email vía Nango (envío, no login) |
+| `requested_plan_id` | `TEXT` (opt) → FK `plans.plan_id` | Plan que el usuario eligió al darse de alta (autoregistro/gmail); su plan de suscripción |
+| `subscription_status` | `TEXT NOT NULL` | `pending` / `approved` / `active` — estado del plan del usuario; `pending` al registrarse, el pase es manual (ADR-013) |
 | `created_at` | `TIMESTAMPTZ` | Fecha de creación |
 
 Índices: `google_id` único parcial (`WHERE google_id IS NOT NULL`), `email`, `(auth_provider, provider_user_id)`.
+
+Cada usuario suscribe su propio plan. `PATCH /api/admin/users/{username}/plan-request`
+(super_admin) aprueba la solicitud pendiente → `approved`/`active` (ver ADR-013).
 
 ---
 
@@ -200,6 +205,25 @@ soporta tres transportes: VAPID (web/PWA), FCM (Android), APNs (iOS).
 **Registro desde la app nativa:** `POST /api/push/subscribe` acepta `platform: "fcm"|"apns"` +
 `device_token` (en vez de `endpoint`+`keys`), más `user_id` para staff o `client_id` para clientes.
 Si `user_id` viene poblado, `client_id` debe ser null y viceversa.
+
+### `tenants`
+
+Contenedor multi-tenant (una cuenta de cliente / organización de nuestro
+negocio). El tenant tiene un **plan de suscripción** (`plan_id`) que gestiona
+administración general. Las suscripciones de los clientes que se dan de alta
+por autoregistro/gmail viven por **usuario** en `users` (ver `users` y ADR-013),
+no en el tenant.
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `tenant_id` | `TEXT PK` | |
+| `name` | `TEXT NOT NULL` | Nombre del tenant |
+| `domain` | `TEXT (opt)` | Dominio propio, único cuando no es null |
+| `status` | `TEXT NOT NULL` | `active` / `suspended` / `trial` |
+| `branding` | `JSONB` | Marca (logo, color, tagline) |
+| `plan_id` | `TEXT` → FK `plans.plan_id` | Plan de suscripción al que está dado de alta el tenant |
+| `created_at` / `updated_at` | `TIMESTAMPTZ` | |
+
 ---
 
 ## ChromaDB (Knowledge Base)
