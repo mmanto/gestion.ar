@@ -88,6 +88,9 @@ class TenantOwnUserCreate(BaseModel):
         use_enum_values = False
 
 
+from app.models.plan import SubscriptionStatus
+
+
 class TenantUserUpdate(BaseModel):
     role: Optional[UserRole] = None
     disabled: Optional[bool] = None
@@ -95,6 +98,9 @@ class TenantUserUpdate(BaseModel):
     nombre: Optional[str] = None
     apellido: Optional[str] = None
     avatar_url: Optional[str] = None
+    # Estado de la suscripción del plan asociado al usuario. El admin del
+    # tenant puede aprobar un plan pendiente (pending -> approved/active).
+    subscription_status: Optional[SubscriptionStatus] = None
     broker_username: Optional[str] = Field(None, description="Solo para role=operativo: el broker (firma) del que depende")
     clear_broker: bool = Field(False, description="True para desasociar al operativo de su broker actual")
 

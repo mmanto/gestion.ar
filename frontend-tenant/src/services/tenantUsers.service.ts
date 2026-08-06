@@ -38,6 +38,15 @@ const tenantUsersService = {
   async deleteUser(username: string): Promise<void> {
     await api.delete(`/tenant/users/${username}`);
   },
+
+  /** Aprobar/editar el estado de la suscripción del plan de un usuario. */
+  async setSubscriptionStatus(username: string, subscription_status: 'approved' | 'active' | 'pending'): Promise<TenantUser> {
+    const response = await api.patch<{ success: boolean; user: TenantUser }>(
+      `/tenant/users/${username}`,
+      { subscription_status },
+    );
+    return response.data.user;
+  },
 };
 
 export default tenantUsersService;

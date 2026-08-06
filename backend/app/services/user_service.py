@@ -504,13 +504,15 @@ class UserService:
             return _to_user_in_db(row)
 
     async def approve_plan_request(self, username: str, status: str) -> Optional[UserInDB]:
-        """Aprueba la solicitud de plan de un usuario (manual, super_admin).
+        """Setea el estado de la suscripción del plan de un usuario
+        (pending | approved | active).
 
-        Marca subscription_status como approved|active. El plan del usuario
-        es requested_plan_id (el que eligió al darse de alta). Si no pidió
-        plan, no se cambia nada más que el estado.
+        Lo usan super_admin (PATCH /api/admin/users/{username}/plan-request) y
+        el admin del tenant (PATCH /api/tenant/users/{username}) para aprobar
+        un plan pendiente o corregir el estado. El plan del usuario es
+        requested_plan_id (el que eligió al darse de alta).
         """
-        if status not in ("approved", "active"):
+        if status not in ("pending", "approved", "active"):
             raise ValueError(f"Estado de suscripción inválido: {status}")
         async with AsyncSessionLocal() as session:
             row = await session.get(UserModel, username)

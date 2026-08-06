@@ -342,10 +342,13 @@ async def register(data: RegisterRequest):
 
     # Registra en el usuario el plan que quiere suscribirse, en estado
     # Pendiente (requested_plan_id + subscription_status='pending'). El pase
-    # a aprobado/vigente es manual (super_admin, ADR-013).
+    # a aprobado/vigente es manual (super_admin, ADR-013). Solo hay dos planes
+    # para el tenant ius (Pro Mensual/Pro Anual): se resuelve por periodicidad
+    # y se elige el plan pagado (no el Plan Básico por defecto, amount=0).
     plan_period = "monthly" if data.plan == "mensual" else "annual"
     catalog_plans = await get_plan_service().list_plans()
-    catalog_plan = next((p for p in catalog_plans if p.periodicity.value == plan_period), None)
+    candidates = [p for p in catalog_plans if p.periodicity.value == plan_period]
+    catalog_plan = max(candidates, key=lambda p: p.amount, default=None)
     if catalog_plan:
         await get_user_service().set_requested_plan(user.username, catalog_plan.plan_id)
 

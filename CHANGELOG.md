@@ -7,6 +7,21 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **Gestión de suscripción por el admin del tenant:** el admin (p.ej. ius)
+  puede modificar el **estado de la suscripción** del plan de cada usuario
+  (`pending` → `approved`/`active`) desde la gestión de usuarios del panel
+  (`PATCH /api/tenant/users/{username}`), además de editar/dar de baja
+  usuarios. Ver ADR-013.
+
+### Agregado
+- **Asignación de suscripción en el alta por gmail (tenant ius):** al darse de
+  alta por gmail/formulario se asigna el plan elegido (`mensual` → **Pro
+  Mensual**, `anual` → **Pro Anual**), seedeados en el catálogo
+  (`plan_pro_mensual` / `plan_pro_anual`). La resolución elige el plan pagado
+  de la periodicidad en lugar del Plan Básico por defecto; queda en estado
+  Pendiente y la aprobación es manual (ver ADR-013).
+
+### Agregado
 - **Borrado de usuario del propio tenant:** `DELETE /api/tenant/users/{username}`
   (admin del tenant), para quitar cuentas de prueba creadas por autoregistro/
   gmail en desarrollo. Siempre scoped al tenant; no permite borrarse a sí

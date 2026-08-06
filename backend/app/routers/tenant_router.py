@@ -318,6 +318,8 @@ def _user_out(user_in_db) -> TenantUserOut:
         tenant_id=user_in_db.tenant_id,
         role=user_in_db.role,
         disabled=user_in_db.disabled,
+        requested_plan_id=getattr(user_in_db, "requested_plan_id", None),
+        subscription_status=getattr(user_in_db, "subscription_status", "active"),
         broker_username=user_in_db.broker_username,
     )
 
@@ -378,7 +380,8 @@ async def update_tenant_own_user(
     data: TenantUserUpdate,
     current_user: User = Depends(require_role("admin")),
 ):
-    """Edita un usuario del propio tenant (nombre/apellido/avatar/email/rol/estado)."""
+    """Edita un usuario del propio tenant (nombre/apellido/avatar/email/rol/
+    estado y estado de la suscripción del plan)."""
     if data.role == "super_admin":
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "No se puede asignar el rol super_admin desde el tenant")
 
@@ -398,6 +401,13 @@ async def update_tenant_own_user(
         broker_username=data.broker_username,
         clear_broker=data.clear_broker,
     )
+
+    # El admin del tenant modifica el estado de la suscripción del plan
+    # asociado al usuario (p.ej. aprobar un plan pendiente). Siempre scoped
+    # al tenant (ya verificado arriba).
+    if data.subscription_status is not None:
+        user = await user_service.approve_plan_request(username, data.subscription_status.value)
+
     return {"success": True, "user": _user_out(user).model_dump()}
 
 

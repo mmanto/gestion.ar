@@ -11,7 +11,7 @@ import { AvatarPicker } from '../components/common/AvatarPicker';
 import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '../components/common/Table';
 import { useAuth } from '../hooks/useAuth';
 import tenantUsersService from '../services/tenantUsers.service';
-import type { TenantUser, TenantUserRole } from '../types/tenantUser.types';
+import type { TenantSubscriptionStatus, TenantUser, TenantUserRole } from '../types/tenantUser.types';
 
 const emptyCreateForm = {
   username: '', password: '', email: '', nombre: '', apellido: '', avatar_url: '', role: 'operativo' as TenantUserRole,
@@ -101,6 +101,18 @@ export const Users = () => {
     }
   };
 
+  // Modifica el estado de la suscripción del plan asociado al usuario
+  // (p.ej. aprobar un plan pendiente).
+  const handleSubscriptionChange = async (user: TenantUser, status: TenantSubscriptionStatus) => {
+    try {
+      setError(null);
+      await tenantUsersService.setSubscriptionStatus(user.username, status);
+      fetchUsers();
+    } catch (err) {
+      setError('No se pudo modificar el estado de la suscripción.');
+    }
+  };
+
   const openEditUser = (user: TenantUser) => {
     setEditingUser(user);
     setEditForm({
@@ -173,6 +185,7 @@ export const Users = () => {
                 <TableHeaderCell>Email</TableHeaderCell>
                 <TableHeaderCell>Rol</TableHeaderCell>
                 <TableHeaderCell>Estado</TableHeaderCell>
+                <TableHeaderCell>Plan</TableHeaderCell>
                 <TableHeaderCell>Acciones</TableHeaderCell>
               </tr>
             </TableHead>
@@ -202,6 +215,21 @@ export const Users = () => {
                     <span className={`px-2 py-1 text-base font-medium rounded-full ${u.disabled ? 'bg-red-200 text-red-950' : 'bg-green-200 text-green-950'}`}>
                       {u.disabled ? 'Deshabilitado' : 'Activo'}
                     </span>
+                  </TableCell>
+                  <TableCell>
+                    {u.requested_plan_id ? (
+                      <select
+                        value={u.subscription_status || 'pending'}
+                        onChange={(e) => handleSubscriptionChange(u, e.target.value as TenantSubscriptionStatus)}
+                        className="text-sm border border-gray-300 rounded-lg px-2 py-1"
+                      >
+                        <option value="pending">Pendiente</option>
+                        <option value="approved">Aprobado</option>
+                        <option value="active">Vigente</option>
+                      </select>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
                   </TableCell>
                   <TableCell align="center">
                     <div className="flex items-center justify-center gap-3">

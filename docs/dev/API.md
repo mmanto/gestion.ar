@@ -81,6 +81,12 @@ El plan elegido se **registra en el usuario en estado Pendiente**
 `subscription_status='pending'`). El pase a aprobado/vigente es manual
 (super_admin) vía `PATCH /api/admin/users/{username}/plan-request` (ver ADR-013).
 
+Para el tenant ius solo hay dos planes — **Pro Mensual** (`monthly`) y
+**Pro Anual** (`annual`), seedeados como `plan_pro_mensual` /
+`plan_pro_anual`. La resolución elige el **plan pagado** de la periodicidad
+(no el Plan Básico por defecto `plan_000000000000`, amount 0): `mensual` →
+Pro Mensual, `anual` → Pro Anual.
+
 **Errores:** `404` si el tenant no existe; `403` si no está activo;
 `409` si el email/username ya existe; `422` si el email o password no
 cumplen lo mínimo.
@@ -519,7 +525,16 @@ acepta en el body). Rol: `admin` | `operativo` (nunca `super_admin`).
 
 ### PATCH `/api/tenant/users/{username}`
 
-Edita un usuario del tenant (email, nombre, apellido, avatar, rol, estado).
+Edita un usuario del tenant (email, nombre, apellido, avatar, rol, estado) y el
+**estado de la suscripción** del plan asociado (`subscription_status`:
+`pending` | `approved` | `active`) — el admin del tenant puede aprobar un plan
+pendiente, de acuerdo al flujo de ADR-013. El usuario debe pertenecer al tenant
+del admin autenticado.
+
+**Request (JSON, solo se envían los campos a cambiar):**
+```json
+{ "subscription_status": "active" }
+```
 
 ### DELETE `/api/tenant/users/{username}`
 

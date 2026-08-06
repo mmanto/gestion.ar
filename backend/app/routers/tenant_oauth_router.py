@@ -235,10 +235,15 @@ async def tenant_login_finalize(body: _FinalizeRequest):
 
 async def _record_pending_plan(username: str, plan: str) -> None:
     """Resuelve el plan del catálogo por periodicidad y lo deja pendiente en
-    el usuario que acaba de darse de alta vía el login OAuth del tenant."""
+    el usuario que acaba de darse de alta vía el login OAuth del tenant.
+
+    Solo hay dos planes para el tenant ius (Pro Mensual/Pro Anual): se elige
+    el plan pagado de la periodicidad (no el Plan Básico por defecto, amount=0).
+    """
     plan_period = "monthly" if plan == "mensual" else "annual"
     catalog_plans = await get_plan_service().list_plans()
-    catalog_plan = next((p for p in catalog_plans if p.periodicity.value == plan_period), None)
+    candidates = [p for p in catalog_plans if p.periodicity.value == plan_period]
+    catalog_plan = max(candidates, key=lambda p: p.amount, default=None)
     if catalog_plan:
         await get_user_service().set_requested_plan(username, catalog_plan.plan_id)
 
