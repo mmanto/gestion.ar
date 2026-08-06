@@ -7,6 +7,12 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **Plan y estado de suscripción en el menú del avatar:** el menú del usuario
+  (frontend-tenant) muestra el plan al que está suscripto y su estado
+  (Pendiente/Aprobado/Vigente). `/auth/me` ahora devuelve `requested_plan_id`,
+  `subscription_status` y `plan_name`.
+
+### Agregado
 - **Gestión de suscripción por el admin del tenant:** el admin (p.ej. ius)
   puede modificar el **estado de la suscripción** del plan de cada usuario
   (`pending` → `approved`/`active`) desde la gestión de usuarios del panel

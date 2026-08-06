@@ -9,6 +9,10 @@ export interface User {
   avatar_url?: string;
   tenant_id?: string | null;
   role: UserRole;
+  // Plan al que está suscripto el usuario y su estado (vienen de /auth/me).
+  requested_plan_id?: string | null;
+  subscription_status?: 'pending' | 'approved' | 'active';
+  plan_name?: string | null;
 }
 
 export interface LoginCredentials {

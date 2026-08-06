@@ -209,8 +209,15 @@ async def get_me(current_user: User = Depends(get_current_user)):
         current_user: Usuario actual (inyectado por dependency)
 
     Returns:
-        Datos del usuario actual
+        Datos del usuario actual (incluye el plan suscripto y su estado)
     """
+    user = await get_user_service().get_user_by_username(current_user.username)
+    requested_plan_id = user.requested_plan_id if user else None
+    subscription_status = user.subscription_status if user else "active"
+    plan_name = None
+    if requested_plan_id:
+        plan = await get_plan_service().get_plan(requested_plan_id)
+        plan_name = plan.name if plan else None
     return {
         "username": current_user.username,
         "email": current_user.email,
@@ -219,6 +226,9 @@ async def get_me(current_user: User = Depends(get_current_user)):
         "avatar_url": current_user.avatar_url,
         "tenant_id": current_user.tenant_id,
         "role": current_user.role,
+        "requested_plan_id": requested_plan_id,
+        "subscription_status": subscription_status,
+        "plan_name": plan_name,
     }
 
 

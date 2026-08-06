@@ -111,6 +111,26 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
                 )}
               </div>
             </div>
+
+            {(user?.plan_name || user?.subscription_status) && (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {user?.plan_name && (
+                  <span className="inline-flex items-center text-[11px] font-semibold text-white bg-white/15 ring-1 ring-white/25 rounded-full px-2.5 py-1">
+                    {user.plan_name}
+                  </span>
+                )}
+                {user?.subscription_status && (
+                  <span className={`inline-flex items-center text-[11px] font-semibold rounded-full px-2.5 py-1 ${
+                    user.subscription_status === 'active' ? 'bg-green-500/90 text-white' :
+                    user.subscription_status === 'approved' ? 'bg-blue-500/90 text-white' :
+                    'bg-amber-400/95 text-amber-950'
+                  }`}>
+                    {user.subscription_status === 'active' ? 'Vigente' :
+                     user.subscription_status === 'approved' ? 'Aprobado' : 'Pendiente'}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           <p className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">Mi cuenta</p>
