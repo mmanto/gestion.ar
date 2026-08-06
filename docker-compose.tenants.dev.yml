@@ -34,6 +34,8 @@ services:
       - frontend_tenant_node_modules_erma:/app/frontend-tenant/node_modules
     environment:
       - VITE_APPOINTMENTS_REMOTE_URL=http://localhost:8180/remoteEntry.js
+      - VITE_NANGO_CONNECT_URL=https://nango.intellify.pro
+      - VITE_NANGO_API_URL=https://api.nango.intellify.pro
       # Traefik escucha en :80 (docker-compose.tenants.local.yml) — el
       # navegador entra por ahí, así que el websocket de HMR tiene que
       # reconectar al mismo puerto público en vez del 5174 interno (ver el
@@ -53,6 +55,8 @@ services:
       - frontend_tenant_node_modules_ius:/app/frontend-tenant/node_modules
     environment:
       - VITE_APPOINTMENTS_REMOTE_URL=http://localhost:8180/remoteEntry.js
+      - VITE_NANGO_CONNECT_URL=https://nango.intellify.pro
+      - VITE_NANGO_API_URL=https://api.nango.intellify.pro
       # Traefik escucha en :80 (docker-compose.tenants.local.yml) — el
       # navegador entra por ahí, así que el websocket de HMR tiene que
       # reconectar al mismo puerto público en vez del 5174 interno (ver el
