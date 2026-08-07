@@ -60,14 +60,26 @@ async function pollLoginStatus(nonce: string, isCancelled: () => boolean): Promi
   const deadline = Date.now() + LOGIN_POLL_TIMEOUT_MS;
   while (Date.now() < deadline) {
     await new Promise((resolve) => setTimeout(resolve, LOGIN_POLL_INTERVAL_MS));
-    const { data } = await api.get<LoginStatusResponse>('/tenant/oauth/connect/login/status', {
-      params: { nonce },
-    });
-    if (data.status === 'done' && data.token) {
-      return { token: data.token };
+
+    let status: LoginStatusResponse;
+    try {
+      const { data } = await api.get<LoginStatusResponse>('/tenant/oauth/connect/login/status', {
+        params: { nonce },
+      });
+      status = data;
+    } catch {
+      // Error de red transitorio: el poll lanza Network Error cuando la
+      // WebView retoma tras cerrarse el Chrome Custom Tab (la primera request
+      // se aborta). No es una falla del login — se reintenta hasta el deadline
+      // en vez de tirar todo el flujo a la basura.
+      continue;
     }
-    if (data.status === 'error') {
-      throw new Error(data.message || 'No se pudo completar el login');
+
+    if (status.status === 'done' && status.token) {
+      return { token: status.token };
+    }
+    if (status.status === 'error') {
+      throw new Error(status.message || 'No se pudo completar el login');
     }
     // Sigue "pending": si el usuario ya cerró el Custom Tab, esta fue la
     // última chance de encontrar el resultado (el webhook puede llegar justo

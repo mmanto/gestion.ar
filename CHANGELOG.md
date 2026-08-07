@@ -6,6 +6,14 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 
 ## [Sin versión] - En desarrollo
 
+### Corregido
+- **Login OAuth nativo (Android):** el polling a
+  `/tenant/oauth/connect/login/status` moría con `AxiosError: Network Error` al
+  volver del Chrome Custom Tab — la primera request tras retomar la WebView se
+  aborta y, como el poll no manejaba errores de red, tiraba todo el login.
+  Ahora los errores de red transitorios se reintentan hasta el deadline en vez
+  de abortar el flujo.
+
 ### Agregado
 - **Login con huella dactilar (app nativa Android):** el staff puede iniciar
   sesión con su huella en lugar de usuario+contraseña. En Settings se habilita
