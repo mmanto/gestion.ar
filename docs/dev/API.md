@@ -99,6 +99,88 @@ Obtener usuario autenticado actual. Requiere JWT.
 
 ---
 
+### POST `/api/auth/biometric/enroll`
+
+Registra o actualiza la credencial biométrica (huella) de un dispositivo. **Requiere JWT** (el usuario ya se logueó con password o OAuth). Solo se guarda el hash SHA-256 del secreto del dispositivo, nunca el secreto en claro.
+
+**Request:**
+```json
+{
+  "device_id": "uuid-del-dispositivo",
+  "secret_hash": "<sha256 hex de 64 chars del secreto>",
+  "device_name": "Motorola G73 de Juan",
+  "platform": "android"
+}
+```
+
+**Response 200:**
+```json
+{ "success": true, "device_id": "uuid-del-dispositivo", "updated": false, "message": "Credencial biométrica registrada" }
+```
+
+Re-enrolar el mismo `device_id` es un update (`updated: true`) — cubre el cambio de huellas (el Keystore invalida el secreto anterior).
+
+---
+
+### POST `/api/auth/biometric/login`
+
+Inicia sesión con la huella: emite un JWT nuevo a partir del secreto del dispositivo (ya desbloqueado por la huella en el cliente). **No requiere JWT** — es la contraparte biométrica de `POST /api/auth/login`. Devuelve la misma forma que el login normal.
+
+**Request:**
+```json
+{
+  "username": "operativo_ius",
+  "device_id": "uuid-del-dispositivo",
+  "secret": "<secreto del dispositivo, desbloqueado por la huella>"
+}
+```
+
+**Response 200:**
+```json
+{
+  "access_token": "eyJ...",
+  "token_type": "bearer",
+  "user": { "username": "operativo_ius", "role": "operativo", "tenant_id": "..." }
+}
+```
+
+**401** — credencial biométrica inválida o revocada: el cliente cae a login con contraseña.
+
+---
+
+### GET `/api/auth/biometric/devices`
+
+Lista los dispositivos con huella habilitada del usuario actual. **Requiere JWT.**
+
+**Response 200:**
+```json
+[
+  {
+    "device_id": "uuid-del-dispositivo",
+    "device_name": "Motorola G73 de Juan",
+    "platform": "android",
+    "created_at": "2026-08-07T10:00:00+00:00",
+    "last_used_at": "2026-08-07T11:00:00+00:00",
+    "current": false
+  }
+]
+```
+
+---
+
+### DELETE `/api/auth/biometric/devices/{device_id}`
+
+Revoca el login biométrico de un dispositivo del usuario actual (no borra la fila; marca `revoked=true`). **Requiere JWT.**
+
+**Response 200:**
+```json
+{ "success": true, "device_id": "uuid-del-dispositivo", "message": "Dispositivo revocado" }
+```
+
+**404** — dispositivo no encontrado o no pertenece al usuario.
+
+---
+
 ## Bots
 
 Todos los endpoints de bots requieren JWT. Los bots son filtrados por el `owner_id` del usuario autenticado.

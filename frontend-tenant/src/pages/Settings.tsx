@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BrandingSection } from '../components/settings/BrandingSection';
+import { BiometricSection } from '../components/settings/BiometricSection';
 import { LayoutDashboard } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { PageHeader } from '../components/common/PageHeader';
@@ -112,7 +113,7 @@ export const Settings = () => {
 
         {error && <Alert variant="error" className="mb-6">{error}</Alert>}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start mb-6">
           <Card shadow="none" className={user?.role === 'admin' ? '' : 'md:col-span-2'}>
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Mi cuenta</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -148,9 +149,9 @@ export const Settings = () => {
           </Card>
 
           {user?.role === 'admin' && <BrandingSection />}
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start mb-6">
+          <BiometricSection />
+
           <Card shadow="none">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Mi link de chat</h2>
             {loadingMyChannel ? (
@@ -158,7 +159,7 @@ export const Settings = () => {
             ) : !myChannel ? (
               <p className="text-sm text-gray-700">No hay un bot configurado todavía.</p>
             ) : (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+              <div className="flex flex-col items-start gap-6">
                 <img
                   src={publicService.getQrCodeUrl(myChannel.channel_id, publicUrl)}
                   alt="QR de tu chat"

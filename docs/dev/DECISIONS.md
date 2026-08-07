@@ -671,3 +671,62 @@ hace la aprobación manual: marca `approved`/`active` (el plan del usuario es
   lo propaga); solo el flujo web (finalize) y el formulario registran el plan.
 - Migraciones Alembic `20260805_0000_add_tenant_plan_request.py` (descartada) y
   `20260805_0100_move_plan_request_to_users.py` (mueve el plan de tenant a user).
+
+## ADR-014: Login con huella dactilar (credencial persistente de dispositivo)
+
+**Estado:** Aceptado
+**Fecha:** 2026-08-07
+
+### Contexto
+
+El staff de la app nativa Android (Capacitor, `frontend-tenant`) pedía poder
+iniciar sesión con la huella. El login actual es JWT único de 24h sin refresh,
+guardado en SecureStorage. Dos caminos:
+
+1. **Desbloqueo de sesión (sin backend):** la huella solo desencripta el JWT
+   ya guardado. Limitación dura: al ser un JWT de 24h sin refresh, deja de
+   funcionar cuando expira — el usuario termina tipeando el password igual.
+2. **Credencial persistente de dispositivo (recomendada):** la huella valida
+   un secreto de larga duración, no el password. Funciona aunque el JWT haya
+   expirado, y permite gestionar/revocar dispositivos.
+
+Además, en una WebView de Capacitor la capa web **no puede** acceder al
+`BiometricPrompt` ni al Keystore de Android; `navigator.credentials` (WebAuthn)
+no es fiable. Toda biometría real debe pasar por un **plugin nativo**.
+
+### Decisión
+
+**Opción 2.** Semántica correcta: la huella **desbloquea una credencial de
+dispositivo** (secreto aleatorio de 256 bits) que vive cifrada en el Keystore
+de Android bajo una clave `setUserAuthenticationRequired(true)` +
+`setInvalidatedByBiometricEnrollment(true)`. El backend guarda solo su hash
+SHA-256 en la tabla `device_credentials` (nunca el secreto en claro).
+
+- **Enroll:** tras login con password (JWT), Settings genera el secreto, lo
+  cifra bajo la huella vía el plugin nativo `BiometricAuth`, y envía solo
+  `sha256(secret)` a `POST /api/auth/biometric/enroll`.
+- **Login con huella:** `BiometricPrompt` desencripta el secreto → el cliente
+  lo presenta en `POST /api/auth/biometric/login` (sin JWT) → se verifica el
+  hash y se emite un JWT nuevo (24h).
+- **Dispositivos:** `GET`/`DELETE /api/auth/biometric/devices` para listar y
+  revocar.
+
+Plugin nativo **custom** (`BiometricAuthPlugin.java`) en vez de
+`@aparajita/capacitor-biometric-auth`: Capacitor 8 es muy reciente
+(compatibilidad de plugins de comunidad incierta) y el repo ya tiene un
+`MainActivity` propio donde montar el `BiometricPrompt`. Se usa
+`androidx.biometric:biometric:1.1.0` con `BiometricManager.Authenticators.BIOMETRIC_STRONG`.
+
+### Consecuencias
+
+- La huella es un factor de **conveniencia** (desbloqueo de credencial de
+  dispositivo en el Keystore), no un 2FA. La seguridad de fondo sigue siendo
+  que el secreto solo se materializa tras validar la huella a nivel de SO.
+- Un **cambio de huellas** invalida la clave del Keystore
+  (`setInvalidatedByBiometricEnrollment`) → el login biométrico falla con
+  `NEED_REENROLL` y el usuario re-enrola desde Settings con su password.
+- Un **reboot** puede exigir desbloquear el teléfono con PIN/patrón antes de
+  la primera huella (política del Keystore) — el flujo cae a password.
+- En web/PWA la feature es progressive enhancement: `Capacitor.isNativePlatform()`
+  resuelve false y el botón de huella no se muestra.
+- Migración Alembic `20260807_0000_add_device_credentials.py`.

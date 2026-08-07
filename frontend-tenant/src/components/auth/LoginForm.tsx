@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useTenant } from '../../hooks/useTenant';
+import { biometricService } from '../../services/biometric.service';
 import type { AuthProvider } from '../../types/auth.types';
 
 const PRIMARY = '#25357a';
@@ -19,9 +20,41 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
 
   const [oauthLoading, setOauthLoading] = useState<AuthProvider | null>(null);
 
-  const { login, loginWithProvider } = useAuth();
+  // ¿Hay una credencial de huella enrolada en este dispositivo (solo nativo)?
+  const [biometricReady, setBiometricReady] = useState(false);
+  const [biometricLoading, setBiometricLoading] = useState(false);
+
+  const { login, loginWithProvider, loginWithBiometric } = useAuth();
   const { tenantId } = useTenant();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    let cancelled = false;
+    biometricService.isAvailable().then((s) => {
+      if (!cancelled) setBiometricReady(s.enrolled);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleBiometric = async () => {
+    setError('');
+    setBiometricLoading(true);
+    try {
+      await loginWithBiometric();
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (err: unknown) {
+      const e = err as { message?: string; response?: { data?: { detail?: string } } };
+      setError(e?.response?.data?.detail || e?.message || 'No se pudo iniciar sesión con la huella');
+    } finally {
+      setBiometricLoading(false);
+    }
+  };
 
   const handleProviderLogin = async (provider: AuthProvider) => {
     if (!tenantId) return;
@@ -95,6 +128,44 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
           {error}
         </div>
+      )}
+
+      {/* Acceso rápido con huella (solo si hay credencial enrolada en el dispositivo) */}
+      {biometricReady && (
+        <>
+          <button
+            type="button"
+            onClick={handleBiometric}
+            disabled={biometricLoading}
+            className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-gray-200 py-3.5 font-semibold text-gray-800 hover:bg-gray-50 transition-colors disabled:opacity-60"
+          >
+            <svg
+              className="w-5 h-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 11a2 2 0 0 1 2 2c0 .57-.24 1.09-.63 1.46" />
+              <path d="M12 19a2 2 0 0 1-2-2 7 7 0 0 1 2-5" />
+              <path d="M12 9a6 6 0 0 0-6 6" />
+              <path d="M18 15a6 6 0 0 0-2-4.5" />
+              <path d="M22 15a10 10 0 0 0-4-7.5" />
+              <path d="M2 15a10 10 0 0 1 4-7.5" />
+              <path d="M5.5 15a4.5 4.5 0 0 1 1.5-3.4" />
+              <path d="M15 15a5 5 0 0 1 2-4" />
+            </svg>
+            {biometricLoading ? 'Verificando…' : 'Entrá con tu huella'}
+          </button>
+
+          <div className="flex items-center gap-3 my-1">
+            <div className="h-px bg-gray-200 flex-1" />
+            <span className="text-xs text-gray-400 whitespace-nowrap">o</span>
+            <div className="h-px bg-gray-200 flex-1" />
+          </div>
+        </>
       )}
 
       {/* Usuario */}

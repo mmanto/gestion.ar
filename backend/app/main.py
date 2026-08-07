@@ -47,6 +47,7 @@ from app.routers.tenant_admin_router import router as tenant_admin_router
 from app.routers.tenant_router import router as tenant_router
 from app.routers.tenant_appointments_router import router as tenant_appointments_router
 from app.routers.upload_router import router as upload_router, UPLOADS_DIR
+from app.routers.biometric_router import router as biometric_router
 from app.telegram_handlers import (
     handle_telegram_command,
     handle_telegram_text_message,
@@ -95,6 +96,7 @@ app.include_router(tenant_admin_router)      # Administración general: tenants,
 app.include_router(tenant_router)            # Backoffice de tenant: bots (read-only), módulos, entrenamiento
 app.include_router(tenant_appointments_router)  # Backoffice de tenant: calendario de turnos (scoped por tenant, ver docstring)
 app.include_router(upload_router)            # Subida de archivos (avatares)
+app.include_router(biometric_router)         # Login biométrico con huella (dispositivos)
 
 # Sirve los archivos subidos (avatares) bajo /api/uploads/* — mismo prefijo
 # /api que ya proxean nginx (frontend/frontend-tenant) y Traefik en prod, así

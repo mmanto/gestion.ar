@@ -219,3 +219,37 @@ Ver `ENV.md` para la lista completa.
 | `APNS_TEAM_ID` | Team ID de Apple |
 | `APNS_TOPIC` | Bundle ID de la app (`ius.intellify.pro`) |
 | `APNS_USE_SANDBOX` | `true` para desarrollo |
+
+---
+
+## Login con huella dactilar (ADR-014)
+
+La app nativa permite al staff iniciar sesión con la huella. Es
+**progressive enhancement**: en el build web el botón no se muestra
+(`Capacitor.isNativePlatform()` resuelve falsa).
+
+### Cómo funciona
+
+1. **Enroll (Settings → "Acceso con huella"):** tras estar autenticado con
+   password, la app genera un secreto aleatorio y lo cifra en el **Keystore**
+   de Android bajo una clave `setUserAuthenticationRequired(true)` +
+   `setInvalidatedByBiometricEnrollment(true)` (solo se desbloquea con la
+   huella; un cambio de huellas invalida la credencial). Solo se envía al
+   backend `sha256(secret)` vía `POST /api/auth/biometric/enroll`.
+2. **Login con huella:** el `BiometricPrompt` nativo desencripta el secreto →
+   `POST /api/auth/biometric/login` lo presenta y el backend emite un JWT
+   nuevo si el hash coincide y el dispositivo no está revocado.
+3. **Gestión de dispositivos:** `GET`/`DELETE /api/auth/biometric/devices`.
+
+### Plugin nativo
+
+- `android/app/src/main/java/ius/intellify.pro/BiometricAuthPlugin.java` —
+  plugin Capacitor custom (`@CapacitorPlugin(name="BiometricAuth")`) que
+  envuelve `androidx.biometric.BiometricPrompt` + el Keystore. Métodos:
+  `isAvailable`, `enroll`, `authenticate`, `clear`.
+- Dependencia: `androidx.biometric:biometric:1.1.0` agregada a
+  `frontend-tenant/android/app/build.gradle`.
+- Puente TS: `frontend-tenant/src/services/biometric.service.ts`
+  (`registerPlugin<BiometricAuthPlugin>('BiometricAuth')`).
+- La credencial local (cifrada) vive en un `SharedPreferences` propio; el
+  secreto se elimina del Keystore con `clear()` al deshabilitar la huella.

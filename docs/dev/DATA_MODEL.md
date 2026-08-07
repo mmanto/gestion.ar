@@ -206,6 +206,33 @@ soporta tres transportes: VAPID (web/PWA), FCM (Android), APNs (iOS).
 `device_token` (en vez de `endpoint`+`keys`), más `user_id` para staff o `client_id` para clientes.
 Si `user_id` viene poblado, `client_id` debe ser null y viceversa.
 
+### `device_credentials`
+
+Credencial biométrica de dispositivos para el **login con huella** de la app
+nativa (ADR-014). El dispositivo genera un `secret` aleatorio de alta entropía
+que vive cifrado en el Keystore de Android (solo desbloqueable con la huella);
+el backend **solo guarda su hash SHA-256** — nunca el secreto en claro.
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `device_id` | `TEXT PK` | UUID persistente del dispositivo (generado en el cliente) |
+| `username` | `TEXT NOT NULL` → FK `users.username` `ON DELETE CASCADE` | Usuario dueño del dispositivo |
+| `secret_hash` | `TEXT NOT NULL` | `sha256 hex` del secreto del dispositivo (64 chars) |
+| `device_name` | `TEXT` (opt) | Nombre descriptivo (ej. "Motorola G73 de Juan") |
+| `platform` | `TEXT` (opt) | `android` / `ios` / `web` |
+| `created_at` | `TIMESTAMPTZ NOT NULL` | Fecha de alta |
+| `last_used_at` | `TIMESTAMPTZ` (opt) | Último login biométrico |
+| `revoked` | `BOOLEAN NOT NULL DEFAULT false` | Revocado (no se borra la fila) |
+
+Índices: `username`.
+
+**Registro/uso:** `POST /api/auth/biometric/enroll` (requiere JWT) crea/actualiza el hash con el
+`device_id` del cliente. `POST /api/auth/biometric/login` (sin JWT) verifica el `secret`
+presentado contra el hash y, si coincide y no está revocado, emite un JWT nuevo.
+`GET /api/auth/biometric/devices` lista y `DELETE /api/auth/biometric/devices/{device_id}` revoca.
+
+Migración: `20260807_0000_add_device_credentials.py`.
+
 ### `tenants`
 
 Contenedor multi-tenant (una cuenta de cliente / organización de nuestro

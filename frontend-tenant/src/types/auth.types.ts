@@ -60,6 +60,7 @@ export interface AuthState {
 export interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
   loginWithProvider: (provider: AuthProvider, tenantId: string, plan?: RegisterPlan) => Promise<void>;
+  loginWithBiometric: () => Promise<void>;
   register: (payload: RegisterPayload) => Promise<RegisterResponse>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;

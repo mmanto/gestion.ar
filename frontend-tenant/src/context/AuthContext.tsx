@@ -1,7 +1,10 @@
 import React, { createContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { AuthContextType, User, LoginCredentials, AuthProvider as SocialProvider, RegisterPayload, RegisterPlan, RegisterResponse } from '../types/auth.types';
+import type { AuthContextType, User, LoginCredentials, LoginResponse, AuthProvider as SocialProvider, RegisterPayload, RegisterPlan, RegisterResponse } from '../types/auth.types';
 import authService from '../services/auth.service';
+import api from '../services/api';
+import { tokenStorage } from '../services/tokenStorage';
+import { biometricService } from '../services/biometric.service';
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -62,6 +65,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Guardar token y usuario
       await authService.saveToken(response.access_token);
       await authService.saveUser(response.user);
+      await tokenStorage.setItem('lastUsername', response.user.username);
 
       // Actualizar estado
       setToken(response.access_token);
@@ -78,6 +82,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await authService.register(payload);
       await authService.saveToken(response.access_token);
       await authService.saveUser(response.user);
+      await tokenStorage.setItem('lastUsername', response.user.username);
       setToken(response.access_token);
       setUser(response.user);
       setIsAuthenticated(true);
@@ -94,11 +99,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // El finalize no devuelve el usuario completo; lo obtenemos de /auth/me.
       const verifiedUser = await authService.verifyToken();
       await authService.saveUser(verifiedUser);
+      await tokenStorage.setItem('lastUsername', verifiedUser.username);
       setToken(appToken);
       setUser(verifiedUser);
       setIsAuthenticated(true);
     } catch (error) {
       console.error('Login with provider error:', error);
+      throw error;
+    }
+  };
+
+  const loginWithBiometric = async () => {
+    try {
+      // El plugin solo devuelve el secret tras validar la huella en el Keystore.
+      const { secret, deviceId } = await biometricService.authenticate();
+      const lastUsername = await tokenStorage.getItem('lastUsername');
+      if (!lastUsername) {
+        throw new Error('No se pudo determinar el usuario. Iniciá sesión con tu contraseña');
+      }
+      const { data } = await api.post<LoginResponse>('/auth/biometric/login', {
+        username: lastUsername,
+        device_id: deviceId,
+        secret,
+      });
+      await authService.saveToken(data.access_token);
+      await authService.saveUser(data.user);
+      setToken(data.access_token);
+      setUser(data.user);
+      setIsAuthenticated(true);
+    } catch (error) {
+      console.error('Biometric login error:', error);
       throw error;
     }
   };
@@ -117,6 +147,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     login,
     loginWithProvider,
+    loginWithBiometric,
     register,
     logout,
     checkAuth,

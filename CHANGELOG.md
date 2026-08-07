@@ -7,6 +7,14 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **Login con huella dactilar (app nativa Android):** el staff puede iniciar
+  sesión con su huella en lugar de usuario+contraseña. En Settings se habilita
+  "Acceso con huella" (genera un secreto cifrado en el Keystore bajo la huella
+  y registra su hash en el backend); desde el login se entra con la huella sin
+  escribir credenciales. Se pueden gestionar/revocar dispositivos. Backend:
+  tabla `device_credentials` + endpoints `/api/auth/biometric/{enroll,login,devices}`
+  (ver ADR-014). Plugin nativo `BiometricAuth` con `androidx.biometric`.
+
 - **Plan y estado de suscripción en el menú del avatar:** el menú del usuario
   (frontend-tenant) muestra el plan al que está suscripto y su estado
   (Pendiente/Aprobado/Vigente). `/auth/me` ahora devuelve `requested_plan_id`,

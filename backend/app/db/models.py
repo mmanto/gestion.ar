@@ -360,6 +360,34 @@ class Message(Base):
 
 
 
+class DeviceCredential(Base):
+    """Credencial biométrica de un dispositivo (login con huella).
+
+    El dispositivo genera un `secret` aleatorio de alta entropía; acá solo se
+    guarda su hash SHA-256 (nunca el secreto en claro). El `secret` vive
+    cifrado en el Keystore de Android y solo se expone al autenticar con la
+    huella (plugin nativo BiometricAuth). Al hacer login biométrico, el
+    cliente presenta el `secret` y el backend lo verifica contra este hash.
+    `revoked` permite eliminar/revocar un dispositivo (ver GET/DELETE
+    /api/auth/biometric/devices) sin borrar físicamente el registro.
+    """
+
+    __tablename__ = "device_credentials"
+
+    device_id = Column(Text, primary_key=True)
+    username = Column(Text, ForeignKey("users.username", ondelete="CASCADE"), nullable=False)
+    secret_hash = Column(Text, nullable=False)
+    device_name = Column(Text, nullable=True)
+    platform = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    last_used_at = Column(DateTime(timezone=True), nullable=True)
+    revoked = Column(Boolean, nullable=False, default=False, server_default="false")
+
+    __table_args__ = (
+        Index("ix_device_credentials_username", "username"),
+    )
+
+
 class PushSubscription(Base):
     __tablename__ = "push_subscriptions"
 
