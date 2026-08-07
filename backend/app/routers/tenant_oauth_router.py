@@ -259,7 +259,13 @@ async def tenant_oauth_webhook(request: Request):
     """
     raw = await request.body()
     if _WEBHOOK_SECRET:
-        signature = request.headers.get("X-Nango-Signature", "")
+        # Nango firma con dos headers: `X-Nango-Signature` es un sha256 de la
+        # concatenación secret+body (legacy, vulnerable a length-extension) y
+        # `X-Nango-Hmac-Sha256` es un HMAC-SHA256 hex del body — este último es
+        # el que verifica el mismo algoritmo que calculamos acá. Comparar el
+        # HMAC contra `X-Nango-Signature` nunca coincide (401 siempre, webhook
+        # nunca procesado).
+        signature = request.headers.get("X-Nango-Hmac-Sha256", "")
         expected = hmac.new(_WEBHOOK_SECRET.encode(), raw, hashlib.sha256).hexdigest()
         if not hmac.compare_digest(signature, expected):
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Firma de webhook inválida")

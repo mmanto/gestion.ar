@@ -8,11 +8,19 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 
 ### Corregido
 - **Login OAuth nativo (Android):** el polling a
-  `/tenant/oauth/connect/login/status` moría con `AxiosError: Network Error` al
-  volver del Chrome Custom Tab — la primera request tras retomar la WebView se
-  aborta y, como el poll no manejaba errores de red, tiraba todo el login.
-  Ahora los errores de red transitorios se reintentan hasta el deadline en vez
-  de abortar el flujo.
+  `/tenant/oauth/connect/login/status` fallaba por dos motivos: (1) moría con
+  `AxiosError: Network Error` al volver del Chrome Custom Tab — la primera
+  request tras retomar la WebView se aborta y, al no manejar errores de red, se
+  tiraba todo el login; ahora esos errores se reintentan hasta el deadline. (2)
+  se marcaba "cancelado" en el primer poll "pending" tras el cierre del tab,
+  pero ese cierre también ocurre cuando el OAuth termina — el webhook de Nango
+  a veces tardaba un instante en marcar `done` y el login se cancelaba igual;
+  ahora se espera una ventana de gracia de 8 s antes de dar por cancelado. (3)
+  además, el `tenant_oauth_router` verificaba el webhook contra
+  `X-Nango-Signature`, que Nango genera como `sha256(secret+body)` (legacy) —
+  el backend calcula un HMAC, así que nunca coincidía y el webhook moría en 401
+  sin resolver el login. Ahora verifica `X-Nango-Hmac-Sha256` (HMAC-SHA256 hex),
+  el header que coincide con el algoritmo usado.
 
 ### Agregado
 - **Login con huella dactilar (app nativa Android):** el staff puede iniciar

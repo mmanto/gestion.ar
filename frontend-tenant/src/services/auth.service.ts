@@ -49,6 +49,11 @@ function openNangoConnect(sessionToken: string): Promise<{ connectionId: string;
 // /connect/login/status hasta ver el resultado.
 const LOGIN_POLL_INTERVAL_MS = 1500;
 const LOGIN_POLL_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutos
+// Al cerrarse el Chrome Custom Tab no se puede distinguir "el usuario canceló"
+// de "el OAuth terminó y el tab se cerró solo" — ambos disparan browserFinished.
+// Se mantiene el poll esta ventana tras el cierre para que el webhook de Nango
+// alcance a resolver el status a "done" antes de declarar el login cancelado.
+const LOGIN_CANCEL_GRACE_MS = 8000;
 
 interface LoginStatusResponse {
   status: 'pending' | 'done' | 'error';
@@ -58,6 +63,7 @@ interface LoginStatusResponse {
 
 async function pollLoginStatus(nonce: string, isCancelled: () => boolean): Promise<{ token: string }> {
   const deadline = Date.now() + LOGIN_POLL_TIMEOUT_MS;
+  let cancelRequestedAt = 0;
   while (Date.now() < deadline) {
     await new Promise((resolve) => setTimeout(resolve, LOGIN_POLL_INTERVAL_MS));
 
@@ -81,11 +87,18 @@ async function pollLoginStatus(nonce: string, isCancelled: () => boolean): Promi
     if (status.status === 'error') {
       throw new Error(status.message || 'No se pudo completar el login');
     }
-    // Sigue "pending": si el usuario ya cerró el Custom Tab, esta fue la
-    // última chance de encontrar el resultado (el webhook puede llegar justo
-    // cuando vuelve a la app) — si tampoco acá, se lo trata como cancelado.
+    // Sigue "pending" tras cerrarse el tab. No se cancela al instante: el
+    // cierre del tab también ocurre cuando el OAuth termina, y el webhook de
+    // Nango puede tardar un instante en marcar "done". Se espera la ventana de
+    // gracia y solo se cancela si pasado ese tiempo sigue sin resolverse.
     if (isCancelled()) {
-      throw new Error('cancelled');
+      if (cancelRequestedAt === 0) {
+        cancelRequestedAt = Date.now();
+      } else if (Date.now() - cancelRequestedAt >= LOGIN_CANCEL_GRACE_MS) {
+        throw new Error('cancelled');
+      }
+    } else {
+      cancelRequestedAt = 0;
     }
   }
   throw new Error('El login no se completó a tiempo. Intenta nuevamente');
