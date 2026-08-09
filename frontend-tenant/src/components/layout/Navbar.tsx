@@ -2,8 +2,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useTenant } from '../../hooks/useTenant';
-import { useSidebar } from '../../hooks/useSidebar';
-import { useSidebarVisible } from '../../hooks/useSidebarVisible';
 import { UserMenu } from './UserMenu';
 
 const LANDING_LINKS = [
@@ -23,8 +21,6 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({ backTo }) => {
   const { isAuthenticated } = useAuth();
   const { tenant } = useTenant();
-  const { mobileOpen, toggleMobileOpen } = useSidebar();
-  const sidebarVisible = useSidebarVisible();
   const navigate  = useNavigate();
 
   const [scrolled,       setScrolled]       = useState(false);
@@ -131,29 +127,20 @@ export const Navbar: React.FC<NavbarProps> = ({ backTo }) => {
               </div>
             )}
 
-            {/* Menú de usuario — autenticado */}
+            {/* Menú de usuario — autenticado. En mobile es el ÚNICO menú: la
+                navegación de la aplicación vive en el menú del avatar (ver
+                UserMenu) en vez del drawer lateral. Solo se muestra la flecha
+                de volver cuando la pantalla tiene un padre lógico. */}
             {isAuthenticated && (
               <>
                 {backTo ? (
-                  /* Flecha de volver — sustituye al hamburguesa en mobile cuando la pantalla tiene un padre lógico */
+                  /* Flecha de volver — pantallas con un padre lógico (ej. conversación -> lista) */
                   <button
                     onClick={() => navigate(backTo)}
                     className="md:hidden p-2 rounded-lg text-white hover:bg-white/10 transition-colors"
                     aria-label="Volver"
                   >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 12H5M12 19l-7-7 7-7" /></svg>
-                  </button>
-                ) : sidebarVisible ? (
-                  /* Botón hamburguesa — abre/cierra la sidebar en mobile */
-                  <button
-                    onClick={toggleMobileOpen}
-                    className="md:hidden p-2 rounded-lg text-white hover:bg-white/10 transition-colors"
-                    aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
-                  >
-                    {mobileOpen
-                      ? <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                      : <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-                    }
                   </button>
                 ) : null}
                 <UserMenu variant="dark" />

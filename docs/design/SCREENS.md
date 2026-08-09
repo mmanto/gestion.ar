@@ -39,6 +39,11 @@
 ## Convenciones del dashboard
 
 - Layout: sidebar de navegación + área de contenido principal
+- **Navegación mobile (< `md`): la sidebar no se muestra — el menú del avatar
+  (UserMenu) ES el menú de la aplicación** y lleva los links de navegación del
+  panel (solo desktop: sidebar flotante/colapsable). Ajustes ya no expone la
+  opción de ocultar la barra lateral (el campo `sidebar_visible` del branding
+  queda en el modelo para tenants existentes, sin control en la UI).
 - Framework: React + Vite + TypeScript
 - Estilos: Tailwind CSS
 - Estado servidor: React Query (TanStack Query)

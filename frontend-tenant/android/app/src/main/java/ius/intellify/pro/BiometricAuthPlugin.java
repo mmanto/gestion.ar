@@ -129,17 +129,26 @@ public class BiometricAuthPlugin extends Plugin {
     /** Chequea si hay biometría fuerte disponible y si ya hay credencial enrolada. */
     @PluginMethod
     public void isAvailable(PluginCall call) {
+        int strong = BiometricManager.BIOMETRIC_ERROR_UNSUPPORTED;
         boolean available = false;
         try {
             BiometricManager bm = BiometricManager.from(ctx());
-            int canAuth = bm.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG);
-            available = canAuth == BiometricManager.BIOMETRIC_SUCCESS;
+            strong = bm.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG);
+            available = strong == BiometricManager.BIOMETRIC_SUCCESS;
+            android.util.Log.i("BiometricAuth", "isAvailable: canAuthenticate(BIOMETRIC_STRONG)=" + strong);
         } catch (Exception e) {
+            android.util.Log.e("BiometricAuth", "isAvailable error", e);
             available = false;
         }
         JSObject ret = new JSObject();
         ret.put("available", available);
         ret.put("enrolled", hasKey() && prefs().getString(PREFS_SECRET_CT, null) != null);
+        if (!available) {
+            // Solo diagnóstico: expone el código de BiometricManager.canAuthenticate
+            // para saber por qué no hay biometría fuerte (1 hw no disp, 11 sin
+            // enrollar, 12 sin hardware, 13 no soportado).
+            ret.put("reason", strong);
+        }
         call.resolve(ret);
     }
 

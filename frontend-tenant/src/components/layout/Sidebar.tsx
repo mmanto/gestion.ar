@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useSidebar } from '../../hooks/useSidebar';
 import { useTenant } from '../../hooks/useTenant';
@@ -7,19 +7,13 @@ import { getNavLinks } from '../../config/navLinks';
 import { resolveAssetUrl } from '../../utils/assetUrl';
 
 export const Sidebar: React.FC = () => {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { tenant } = useTenant();
-  const { collapsed, toggleCollapsed, mobileOpen, setMobileOpen } = useSidebar();
+  const { collapsed, toggleCollapsed } = useSidebar();
   const logoH = resolveAssetUrl(tenant?.branding.logo_url_horizontal || tenant?.branding.logo_url);
   const logoV = resolveAssetUrl(tenant?.branding.logo_url_vertical || tenant?.branding.logo_url);
   const tenantName = tenant?.name || 'Backoffice';
   const location = useLocation();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    setMobileOpen(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname]);
 
   if (!isAuthenticated) return null;
 
@@ -30,28 +24,15 @@ export const Sidebar: React.FC = () => {
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + '/');
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
   return (
-    <>
-      {/* Overlay — mobile */}
-      {mobileOpen && (
-        <div
-          className="md:hidden fixed inset-0 bg-black/40 z-40"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside
-        className={`fixed top-0 left-0 h-screen w-64 z-50 flex flex-col transition-all duration-300 md:translate-x-0 ${
-          collapsed ? 'md:w-16' : 'md:w-64'
-        } ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
-        style={{ backgroundColor: '#2A3B4D' }}
-      >
+    /* Sidebar — solo desktop. En mobile la navegación vive en el menú del
+       avatar (UserMenu), no hay drawer de aplicación (ver Navbar). */
+    <aside
+      className={`hidden md:flex fixed top-0 left-0 h-screen w-64 z-50 flex-col transition-all duration-300 ${
+        collapsed ? 'md:w-16' : 'md:w-64'
+      }`}
+      style={{ backgroundColor: '#2A3B4D' }}
+    >
         <div
           className={`flex items-center justify-center gap-2 h-16 flex-shrink-0 transition-all duration-300 px-5 ${
             collapsed ? 'md:px-2' : ''
@@ -107,19 +88,7 @@ export const Sidebar: React.FC = () => {
           )}
         </nav>
 
-        <div className="md:hidden border-t border-white/10 flex-shrink-0 px-3 py-2">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            Cerrar sesión
-          </button>
-        </div>
-
-        <div className="hidden md:block border-t border-white/10 flex-shrink-0 px-3 py-2">
+        <div className="border-t border-white/10 flex-shrink-0 px-3 py-2">
           <button
             onClick={toggleCollapsed}
             aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
@@ -140,6 +109,5 @@ export const Sidebar: React.FC = () => {
           </button>
         </div>
       </aside>
-    </>
   );
 };

@@ -121,9 +121,6 @@ export const BrandingSection = () => {
   const [tagline, setTagline] = useState<string>(
     tenant?.branding.tagline || '',
   );
-  const [sidebarVisible, setSidebarVisible] = useState<boolean>(
-    tenant?.branding.sidebar_visible ?? true,
-  );
   const [industry, setIndustry] = useState<TenantIndustry>(
     tenant?.branding.industry || 'legal',
   );
@@ -137,7 +134,6 @@ export const BrandingSection = () => {
   const [colorSaving, setColorSaving] = useState(false);
   const [taglineSaving, setTaglineSaving] = useState(false);
   const [themeSaving, setThemeSaving] = useState(false);
-  const [sidebarSaving, setSidebarSaving] = useState(false);
   const [industrySaving, setIndustrySaving] = useState(false);
   const [saved, setSaved] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -148,7 +144,6 @@ export const BrandingSection = () => {
       setLogoV(tenant.branding.logo_url_vertical || undefined);
       setPrimaryColor(tenant.branding.primary_color || '#25357a');
       setTagline(tenant.branding.tagline || '');
-      setSidebarVisible(tenant.branding.sidebar_visible ?? true);
       setIndustry(tenant.branding.industry || 'legal');
     }
   }, [tenant]);
@@ -226,23 +221,6 @@ export const BrandingSection = () => {
       flashSaved('Tema guardado');
     } finally {
       setThemeSaving(false);
-    }
-  };
-
-  const handleSidebarVisibleChange = async (value: boolean) => {
-    setSidebarVisible(value);
-    setSidebarSaving(true);
-    setError(null);
-    try {
-      await tenantBrandingService.updateBranding({ sidebar_visible: value });
-      await refetchTenant();
-      flashSaved('Preferencia guardada');
-    } catch (err) {
-      setSidebarVisible(!value); // revertir ante error
-      const detail = (err as { response?: { data?: { detail?: string } } }).response?.data?.detail;
-      setError(detail || 'No se pudo guardar la preferencia de la barra lateral.');
-    } finally {
-      setSidebarSaving(false);
     }
   };
 
@@ -401,26 +379,6 @@ export const BrandingSection = () => {
             ))}
           </div>
           {industrySaving && (
-            <span className="text-xs text-gray-700">Guardando...</span>
-          )}
-        </div>
-      </div>
-
-      {/* Barra lateral */}
-      <div className="mt-6">
-        <p className="text-xs font-medium text-gray-700 mb-2">Barra lateral</p>
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={sidebarVisible}
-              onChange={(e) => handleSidebarVisibleChange(e.target.checked)}
-              disabled={sidebarSaving}
-              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-            />
-            <span className="text-sm text-gray-900">Mostrar la barra lateral de navegación</span>
-          </label>
-          {sidebarSaving && (
             <span className="text-xs text-gray-700">Guardando...</span>
           )}
         </div>

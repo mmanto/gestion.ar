@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useTenant } from '../../hooks/useTenant';
 import { useAccentTheme } from '../../hooks/useAccentTheme';
+import { getNavLinks } from '../../config/navLinks';
 // import { publicService } from '../../services/public.service';
 
 interface UserMenuProps {
@@ -11,6 +13,7 @@ interface UserMenuProps {
 
 export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
   const { user, logout } = useAuth();
+  const { tenant } = useTenant();
   const { accent } = useAccentTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -19,6 +22,15 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // En mobile el menú del avatar ES el menú de la aplicación (la sidebar es
+  // solo desktop) — por eso lleva los links de navegación del tenant.
+  const navLinks = getNavLinks(tenant?.branding.industry).filter(
+    (item) => item.type === 'separator' || !item.roles || (user && item.roles.includes(user.role))
+  );
+
+  const isActive = (path: string) =>
+    location.pathname === path || location.pathname.startsWith(path + '/');
 
   // useEffect(() => {
   //   publicService.getLlmInfo().then((info) => setLlmModel(info.model)).catch(() => { });
@@ -89,7 +101,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
       </button>
 
       {menuOpen && (
-        <div className="absolute right-0 mt-2 w-72 bg-white rounded-[1.4rem] shadow-lg ring-1 ring-black/5 overflow-hidden z-50">
+        <div className="absolute right-0 mt-2 w-72 bg-white rounded-[1.4rem] shadow-lg ring-1 ring-black/5 overflow-y-auto max-h-[70vh] z-50">
 
           {/* Banner superior — color de acento del template activo */}
           <div className="relative px-4 pt-4 pb-5" style={{ backgroundColor: accent }}>
@@ -119,6 +131,35 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
                 {user.plan_name}
               </span>
             )}
+          </div>
+
+          {/* Navegación de la aplicación — solo mobile (md:hidden). En
+              desktop la sidebar es el menú de aplicación. */}
+          <div className="md:hidden border-t border-gray-100">
+            <p className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">Navegación</p>
+            <div className="pb-1">
+              {navLinks.map((item, idx) =>
+                item.type === 'separator' ? (
+                  <div key={`sep-${idx}`} className="my-2 mx-4 border-t border-gray-100" />
+                ) : (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setMenuOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                      isActive(item.to)
+                        ? 'text-blue-600 bg-blue-50 font-semibold'
+                        : 'text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      {item.icon}
+                    </svg>
+                    {item.label}
+                  </Link>
+                )
+              )}
+            </div>
           </div>
 
           <p className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">Mi cuenta</p>

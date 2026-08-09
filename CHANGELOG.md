@@ -6,6 +6,15 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 
 ## [Sin versión] - En desarrollo
 
+### Cambiado
+- **Navegación mobile del dashboard (app Android y web < `md`):** el menú de la
+  aplicación ya no se abre por hamburguesa/drawer lateral — la sidebar es solo
+  desktop y, en mobile, el **menú del avatar es el menú de la aplicación**
+  (lleva los links de navegación del panel). Se quitaron el drawer mobile del
+  template default y del template kero. En Ajustes también se eliminó la
+  opción "Mostrar la barra lateral de navegación" (el campo `sidebar_visible`
+  del branding queda en el modelo, sin control en la UI).
+
 ### Corregido
 - **Login OAuth nativo (Android) — el webhook de Nango ya no es un SPOF:**
   diagnosticado en prod (2026-08-09) — el pipeline backend completo funciona

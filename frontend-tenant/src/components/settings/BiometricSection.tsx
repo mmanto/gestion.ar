@@ -6,6 +6,15 @@ import { Alert } from '../common/Alert';
 import { useAuth } from '../../hooks/useAuth';
 import { biometricService, isNative, type DeviceInfo } from '../../services/biometric.service';
 
+// Códigos de BiometricManager.canAuthenticate — diagnóstico cuando la app
+// reporta "sin huella" pero el usuario sí tiene una (ver BiometricAuthPlugin).
+const REASON_LABELS: Record<number, string> = {
+  1: 'hardware de biometría no disponible temporalmente (1)',
+  11: 'sin biometría fuerte enrollada en el sistema (11)',
+  12: 'el dispositivo no tiene sensor de biometría fuerte (12)',
+  13: 'biometría no soportada por este dispositivo (13)',
+};
+
 /**
  * "Acceso con huella" — configuración del login biométrico (solo app nativa).
  *
@@ -22,6 +31,7 @@ export const BiometricSection = () => {
 
   const [available, setAvailable] = useState<boolean>(false);
   const [enrolled, setEnrolled] = useState<boolean>(false);
+  const [reason, setReason] = useState<number | undefined>(undefined);
   const [devices, setDevices] = useState<DeviceInfo[]>([]);
   const [busy, setBusy] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +40,7 @@ export const BiometricSection = () => {
     const s = await biometricService.isAvailable();
     setAvailable(s.available);
     setEnrolled(s.enrolled);
+    setReason(s.reason);
     if (s.enrolled) {
       biometricService.listDevices().then(setDevices).catch(() => setDevices([]));
     } else {
@@ -96,10 +107,17 @@ export const BiometricSection = () => {
       </div>
 
       {!available ? (
-        <p className="text-sm text-gray-700">
-          Tu dispositivo no tiene una huella configurada. Activá una en los ajustes del teléfono para
-          poder iniciar sesión con tu huella.
-        </p>
+        <div>
+          <p className="text-sm text-gray-700">
+            Tu dispositivo no tiene una huella configurada. Activá una en los ajustes del teléfono para
+            poder iniciar sesión con tu huella.
+          </p>
+          {reason !== undefined && (
+            <p className="mt-1 text-xs text-gray-400">
+              Diagnóstico: {REASON_LABELS[reason] ?? `código ${reason} de BiometricManager`}
+            </p>
+          )}
+        </div>
       ) : (
         <div className="space-y-4">
           {error && <Alert variant="error">{error}</Alert>}

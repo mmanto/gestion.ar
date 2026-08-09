@@ -11,7 +11,7 @@ import { tokenStorage } from './tokenStorage';
  * lo desencripta (y lo devuelve a JS) después de validar la huella.
  */
 interface BiometricAuthPlugin {
-  isAvailable(): Promise<{ available: boolean; enrolled: boolean }>;
+  isAvailable(): Promise<{ available: boolean; enrolled: boolean; reason?: number }>;
   authenticate(opts?: {
     promptTitle?: string;
     promptSubtitle?: string;
@@ -50,7 +50,7 @@ export const biometricService = {
   isNative,
 
   /** ¿Hay biometría fuerte disponible y una credencial ya enrolada? */
-  async isAvailable(): Promise<{ available: boolean; enrolled: boolean }> {
+  async isAvailable(): Promise<{ available: boolean; enrolled: boolean; reason?: number }> {
     if (!isNative) return { available: false, enrolled: false };
     try {
       return await BiometricAuth.isAvailable();
