@@ -607,12 +607,16 @@ válido 5 min) y `providerConfigKey`. Registra el login como `pending` en Redis.
 
 ### GET `/api/tenant/oauth/connect/login/status?nonce=<token>`
 
-Polling mobile. Devuelve `{"status": "pending"}` mientras el webhook no
-resuelve, o el resultado del login (`{"status": "done", "token": ...}` /
-`{"status": "error", "message": ...}`). **Lee sin consumir** (peek): el
-resultado queda disponible hasta el TTL (5 min) — un fetch-and-delete
-perdería el login si la request que lo consumía se aborta al retomar la
-WebView tras el Custom Tab.
+Polling mobile. Devuelve `{"status": "pending"}` mientras el login no
+resuelve, o el resultado (`{"status": "done", "token": ...}` /
+`{"status": "error", "message": ...}`). **Lee sin consumir** (peek) — el
+resultado queda disponible hasta el TTL (5 min); un fetch-and-delete perdería
+el login si la request que lo consumía se aborta al retomar la WebView tras el
+Custom Tab. Además, si sigue `pending`, el endpoint **resuelve el login
+activamente** (pull): busca en Nango la connection creada por el Custom Tab
+(`GET /connection?endUserId=<nonce_id>`) y completa el login sin esperar el
+webhook — el webhook (push) es solo el camino rápido, este fallback hace el
+flujo mobile independiente de su entrega.
 
 ### POST `/api/tenant/oauth/connect/login/finalize`
 

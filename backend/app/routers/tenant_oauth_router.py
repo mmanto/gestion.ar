@@ -325,18 +325,87 @@ async def tenant_oauth_webhook(request: Request):
     return {"ok": True}
 
 
+async def _find_connection_by_end_user(nonce_id: str) -> Optional[str]:
+    """Busca en Nango una connection creada para este end_user (login mobile).
+
+    El Custom Tab crea la connection con `endUser.id = nonce_id` apenas el
+    usuario termina el auth de Google. Esto permite resolver el login por
+    polling ("pull") sin depender del webhook de Nango (POST /webhook/nango),
+    que es un push externo que puede no llegar (p.ej. hairpin/DNS desde el
+    container de Nango en el VPS, ver docs/ops/RUNBOOK.md).
+    """
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        resp = await client.get(
+            f"{_config.nango_host.rstrip('/')}/connection",
+            params={"endUserId": nonce_id},
+            headers={
+                "Authorization": f"Bearer {_config.nango_secret_key}",
+                "Content-Type": "application/json",
+            },
+        )
+    if resp.status_code >= 300:
+        logger.warning(
+            "nango list connections (endUserId=%s) failed: %s %s",
+            nonce_id, resp.status_code, resp.text[:300],
+        )
+        raise NangoError(f"connection list returned {resp.status_code}")
+    connections = resp.json().get("connections") or []
+    if not connections:
+        return None
+    connection_id = connections[0].get("connection_id") or connections[0].get("connectionId")
+    return connection_id or None
+
+
+async def _try_resolve_pending_login(nonce_id: str) -> Optional[dict]:
+    """Resuelve activamente un login pendiente buscando la connection en Nango.
+
+    Fallback del webhook (push): si el webhook no llega, el polling de
+    /connect/login/status encuentra acá la connection recién creada por el
+    Custom Tab y completa el login igual. Si el webhook ya resolvió, peek_result
+    devuelve el resultado antes de llegar a este fallback.
+    """
+    pending = _login_store.get_pending(nonce_id)
+    if not pending:
+        return None
+    try:
+        connection_id = await _find_connection_by_end_user(nonce_id)
+    except NangoError:
+        return None
+    if not connection_id:
+        return None
+    try:
+        result = await _complete_tenant_login(pending["tenant_id"], pending["provider"], connection_id)
+    except _LoginError as e:
+        logger.warning("login (pull) falló para nonce=%s: %s", nonce_id, e)
+        _login_store.resolve_error(nonce_id, str(e))
+        return {"status": "error", "message": str(e)}
+    except Exception:
+        logger.exception("login (pull) error inesperado para nonce=%s", nonce_id)
+        return None
+    _login_store.resolve_success(nonce_id, result)
+    logger.info(
+        "login (pull) completado para nonce=%s tenant=%s provider=%s",
+        nonce_id, pending["tenant_id"], pending["provider"],
+    )
+    return {"status": "done", **result}
+
+
 @router.get("/connect/login/status")
 async def tenant_login_status(nonce: str):
     """Polling del frontend mobile mientras el usuario autoriza en Chrome Custom Tabs.
 
-    Lee sin consumir (peek): la primera request tras retomar la WebView se
-    aborta del lado del cliente, y con un fetch-and-delete esa request podía
-    haber consumido el resultado y quemar el login aunque el webhook lo hubiera
-    resuelto (ver OAuthLoginStore.peek_result). El resultado queda disponible
-    hasta el TTL del registro (5 min) y solo es legible con el nonce firmado.
+    Lee sin consumir (peek) y, si sigue pendiente, intenta resolver el login
+    activamente buscando la connection en Nango por endUser.id — el webhook
+    (push) es el camino rápido; este pull es el fallback que hace el flujo
+    mobile independiente de la entrega del webhook. El resultado queda
+    disponible hasta el TTL del registro (5 min) y solo es legible con el
+    nonce firmado.
     """
     nonce_id, _tenant_id = _verify_nonce(nonce)
     result = _login_store.peek_result(nonce_id)
     if result is None:
+        resolved = await _try_resolve_pending_login(nonce_id)
+        if resolved is not None:
+            return resolved
         return {"status": "pending"}
     return result

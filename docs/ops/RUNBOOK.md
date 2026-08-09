@@ -130,7 +130,29 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml logs --tail=200 
   retomar la WebView se aborta** — si esa request había consumido el
   resultado, el login quedaba `pending` para siempre. Ahora `/connect/login/status`
   lee sin consumir (peek) y el retry del poll vuelve a leer el resultado.
-  Requiere backend redeployado **y** APK reconstruido para tomarlo.
+- **No aparece NÚMERO de intento y el usuario confirma el dashboard OK** →
+  revisar la entrega del webhook desde el container de Nango. Verificado el
+  2026-08-09: el backend procesa webhooks firmados correctamente (200) y el
+  pipeline completo session→webhook→login funciona con una conexión REAL
+  (se completó el login de una conexión de Google existente). Las 45
+  conexiones de intentos fallidos existen en Nango (creadas por el Custom
+  Tab, `endUser.id = tsignup_…`) pero ningún login se completó — el webhook
+  no estaba llegando. Causa más probable: **hairpin NAT/DNS** (el container
+  de Nango no alcanza la IP pública del propio VPS). Desde el VPS:
+  ```bash
+  # ¿el container de Nango alcanza el webhook del backend?
+  docker compose -f /ruta/a/devbout-oauth/deploy/nango/docker-compose.yaml \
+    -f docker-compose.prod.yaml exec nango-server \
+    wget -qO- -S --spider https://api.intellify.pro/api/tenant/oauth/webhook/nango 2>&1 | head
+  # logs de Nango en la entrega:
+  docker compose -f … exec nango-server ls /app/nango/packages/server 2>/dev/null   # (o ver logs)
+  ```
+  **Desde el 2026-08-10 este problema ya no bloquea el login mobile**: el
+  status endpoint resuelve el login **activamente** (pull) buscando la
+  connection en Nango por `endUser.id` cuando está pendiente — el webhook es
+  solo el camino rápido (ver `docs/dev/API.md` → `GET /connect/login/status`).
+  El webhook se sigue debiendo arreglar por otros consumidores y para no
+  depender del poll.
 
 ### Chequeo rápido del servidor (sin tocar el teléfono)
 

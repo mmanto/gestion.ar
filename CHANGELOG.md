@@ -7,6 +7,21 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Corregido
+- **Login OAuth nativo (Android) — el webhook de Nango ya no es un SPOF:**
+  diagnosticado en prod (2026-08-09) — el pipeline backend completo funciona
+  con datos reales (webhook firmado 200, session→webhook→status entrega el
+  resultado, y se completó un login end-to-end con una conexión real de
+  Google), pero **la entrega del webhook de Nango al backend no llega**: las
+  45 conexiones de intentos fallidos existen en Nango (creadas por el Custom
+  Tab con `endUser.id = tsignup_…`) y ningún login se completó. Sospecha:
+  hairpin NAT/DNS del container de Nango en el VPS (ver RUNBOOK). Fix: el
+  status endpoint ahora **resuelve el login activamente por pull** — cuando
+  está pendiente, busca la connection en Nango por `endUser.id`
+  (`GET /connection?endUserId=`) y completa el login sin depender del
+  webhook; el webhook queda como camino rápido (resuelve antes si llega).
+  **Requiere redeploy del backend.** El frontend no cambia (el poll ya existe).
+
+### Corregido
 - **Login OAuth nativo (Android) — vuelta al login tras autorizar en Google:**
   el endpoint `/tenant/oauth/connect/login/status` hacía fetch-and-delete del
   resultado (single-use), y la primera request de la WebView tras retomar del
