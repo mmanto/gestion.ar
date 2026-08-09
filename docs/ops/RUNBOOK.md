@@ -88,6 +88,34 @@ cat /letsencrypt/acme.json | python3 -m json.tool | grep -A2 "notAfter"
 
 ---
 
+## El login con Google/Microsoft en la app mobile vuelve al login / "No se pudo confirmar el login"
+
+Síntoma: el usuario autoriza en Google, el tab se cierra y la app muestra un
+error y vuelve al login. El flujo mobile depende de que **Nango entregue el
+webhook de auth** al backend (`POST /api/tenant/oauth/webhook/nango`); sin él,
+`/tenant/oauth/connect/login/status` queda `pending` para siempre.
+
+Diagnóstico:
+
+```bash
+# ¿El backend recibe el webhook? (debe aparecer "recibi evento type=auth…")
+docker compose -f docker-compose.yml -f docker-compose.prod.yml logs --tail=200 backend | grep tenant_oauth_webhook
+```
+
+- Si **no aparece nada** → Nango no está mandando el webhook. Revisar en el
+  dashboard de Nango (Environment Settings del environment del backend) que
+  la **Webhook URL** sea
+  `https://api.intellify.pro/api/tenant/oauth/webhook/nango` y que el evento
+  **auth** esté activado. Con `primary_url` vacío Nango no envía ningún
+  webhook (ver `docs/dev/SETUP.md` → "Configurar el webhook de Nango").
+- Si aparece `no hay login pendiente para endUserId=…` → el webhook llega pero
+  el `end_user.id` no coincide con una sesión (nonce expirado o evento fuera
+  del flujo de login).
+- Si aparece `login completado para nonce=…` pero la app aún falla → el
+  problema es el polling/red del lado de la app, no el servidor.
+
+---
+
 ## Push Notifications no llegan
 
 1. Verificar que `VAPID_PRIVATE_KEY` y `VAPID_PUBLIC_KEY` estén configuradas en `.env.prod`

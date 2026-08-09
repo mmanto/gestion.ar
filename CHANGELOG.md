@@ -7,6 +7,22 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Corregido
+- **Login OAuth nativo (Android):** se diagnosticó la causa raíz del "cancelled"
+  persistente. El flujo mobile depende de que Nango entregue el webhook de auth
+  al backend (`POST /api/tenant/oauth/webhook/nango`) para resolver
+  `/tenant/oauth/connect/login/status`; si la **Webhook URL del environment no
+  está configurada** en el Nango self-hosted (`primary_url` vacío en
+  `_nango_external_webhooks`), Nango no envía **ningún** webhook y el login
+  queda `pending` para siempre → la app mostraba un fallo silencioso y volvía
+  al login. Cambios: (1) el backend ahora loguea cada webhook recibido y su
+  resolución/omisión (antes el `no hay login pendiente` / éxito eran mudos);
+  (2) la app ya no traduce este fallo a "cancelled" silencioso, sino a un
+  mensaje accionable; (3) se documentó la configuración del webhook en
+  `docs/dev/SETUP.md` y su diagnóstico en `docs/ops/RUNBOOK.md`. **Configuración
+  requerida en servidor:** activar la Webhook URL de Nango
+  (`https://api.intellify.pro/api/tenant/oauth/webhook/nango`) + evento auth.
+
+### Corregido
 - **Login OAuth nativo (Android):** el polling a
   `/tenant/oauth/connect/login/status` fallaba por dos motivos: (1) moría con
   `AxiosError: Network Error` al volver del Chrome Custom Tab — la primera

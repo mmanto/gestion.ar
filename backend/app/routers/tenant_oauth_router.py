@@ -273,29 +273,50 @@ async def tenant_oauth_webhook(request: Request):
         logger.warning("tenant_oauth_webhook: NANGO_WEBHOOK_SECRET no seteado — aceptando sin verificar firma")
 
     payload = await request.json()
-    if payload.get("type") != "auth" or payload.get("operation") != "creation":
+    event_type = payload.get("type")
+    operation = payload.get("operation")
+    logger.info(
+        "tenant_oauth_webhook: recibi evento type=%s operation=%s connectionId=%s endUser=%s",
+        event_type, operation, payload.get("connectionId"), payload.get("endUser"),
+    )
+
+    if event_type != "auth" or operation != "creation":
         return {"ok": True}
 
     nonce_id = (payload.get("endUser") or {}).get("endUserId", "")
     connection_id = payload.get("connectionId", "")
     if not nonce_id or not connection_id:
+        logger.warning(
+            "tenant_oauth_webhook: evento auth sin nonce_id o connection_id (endUser=%s connectionId=%s) — no se puede resolver",
+            payload.get("endUser"), connection_id,
+        )
         return {"ok": True}
 
     pending = _login_store.get_pending(nonce_id)
     if not pending:
         # Nonce ya resuelto/expirado, o un end_user que no vino de este login
         # (ej. el flujo de "email connect" autenticado usa otro end_user.id).
+        logger.warning(
+            "tenant_oauth_webhook: no hay login pendiente para endUserId=%s (connectionId=%s) — se ignora",
+            nonce_id, connection_id,
+        )
         return {"ok": True}
 
     if not payload.get("success"):
         message = (payload.get("error") or {}).get("description") or "No se pudo completar el login"
+        logger.info("tenant_oauth_webhook: login fallido para nonce=%s (%s)", nonce_id, message)
         _login_store.resolve_error(nonce_id, message)
         return {"ok": True}
 
     try:
         result = await _complete_tenant_login(pending["tenant_id"], pending["provider"], connection_id)
         _login_store.resolve_success(nonce_id, result)
+        logger.info(
+            "tenant_oauth_webhook: login completado para nonce=%s tenant=%s provider=%s",
+            nonce_id, pending["tenant_id"], pending["provider"],
+        )
     except _LoginError as e:
+        logger.warning("tenant_oauth_webhook: error completando login (nonce=%s): %s", nonce_id, e)
         _login_store.resolve_error(nonce_id, str(e))
     except Exception:
         logger.exception("tenant_oauth_webhook: error inesperado completando login (nonce=%s)", nonce_id)

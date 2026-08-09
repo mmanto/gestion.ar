@@ -95,7 +95,15 @@ async function pollLoginStatus(nonce: string, isCancelled: () => boolean): Promi
       if (cancelRequestedAt === 0) {
         cancelRequestedAt = Date.now();
       } else if (Date.now() - cancelRequestedAt >= LOGIN_CANCEL_GRACE_MS) {
-        throw new Error('cancelled');
+        // El tab se cerró (el OAuth pudo completarse) pero el servidor nunca
+        // marcó "done": casi siempre es que Nango no pudo entregar el webhook
+        // de auth al backend (falta configurar la "Webhook URL" del
+        // environment en el dashboard de Nango). No usar "cancelled" acá —
+        // el usuario validó, no canceló. Antes esto se mostraba como un
+        // fallo silencioso.
+        throw new Error(
+          'No se pudo confirmar el login después de autorizar. Si completaste la validación, esperá unos segundos y volvé a intentar.',
+        );
       }
     } else {
       cancelRequestedAt = 0;

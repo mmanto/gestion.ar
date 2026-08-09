@@ -89,6 +89,53 @@ Reutiliza el mismo `src/components/auth/RegisterForm.tsx` que la página
 
 ---
 
+## Configurar el webhook de Nango (login social en mobile)
+
+El login con Google/Microsoft **en la app mobile** (Android/iOS) no se entera
+del resultado por `window.postMessage` (el OAuth corre en Chrome Custom Tabs,
+un proceso separado). En su lugar, la app hace polling a
+`GET /api/tenant/oauth/connect/login/status` y el backend marca el login como
+completado **solo cuando Nango le entrega un webhook** de evento `auth` a
+`POST /api/tenant/oauth/webhook/nango`.
+
+**Si ese webhook no está configurado, el login siempre queda "pendiente" y la
+app termina mostrando un error** ("No se pudo confirmar el login después de
+autorizar…") **y vuelve al login**. Es la causa clásica de este fallo: el
+código está bien, pero falta la config del webhook en el Nango self-hosted.
+
+### Pasos (dashboard de Nango)
+
+1. Entrar al dashboard del Nango self-hosted (`https://api.nango.intellify.pro`)
+   → **Environment Settings** del environment que usa el backend (el mismo al
+   que apunta `NANGO_SECRET_KEY`).
+2. **Webhook URL**: `https://api.intellify.pro/api/tenant/oauth/webhook/nango`
+3. Activar el evento **auth** (on auth creation).
+4. Copiar la **Webhook Signing Key** de esa pantalla a `NANGO_WEBHOOK_SECRET`
+   en el `.env` del backend. Si queda vacía el endpoint acepta sin verificar
+   firma (funciona, pero no validás el origen del request).
+
+### Verificación
+
+Con el backend levantado, configurado el webhook y habiendo hecho un login,
+los logs del backend deben mostrar:
+
+```
+tenant_oauth_webhook: recibi evento type=auth operation=creation connectionId=… endUser=…
+tenant_oauth_webhook: login completado para nonce=tsignup_… tenant=… provider=google
+```
+
+Si en cambio aparece `no hay login pendiente para endUserId=…` o no aparece
+línea alguna, el webhook no está llegando (revisá la Webhook URL / el toggle
+del evento y que Nango pueda alcanzar `api.intellify.pro`).
+
+> Fallback por DB (diagnóstico): si no accedés al dashboard, la tabla
+> `_nango_external_webhooks` del Postgres de Nango debe tener `primary_url`
+> cargado y `on_auth_creation = true` para el environment del backend. Con
+> `primary_url` vacío Nango no envía **ningún** webhook de auth (es exactamente
+> el modo de falla reportado).
+
+---
+
 ## Configuración de canales de mensajería
 
 Para recibir mensajes de canales externos (WhatsApp, Telegram) en desarrollo local, el backend necesita ser accesible desde internet. Usá un túnel HTTP.
