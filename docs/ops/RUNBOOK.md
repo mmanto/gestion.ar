@@ -95,6 +95,12 @@ error y vuelve al login. El flujo mobile depende de que **Nango entregue el
 webhook de auth** al backend (`POST /api/tenant/oauth/webhook/nango`); sin él,
 `/tenant/oauth/connect/login/status` queda `pending` para siempre.
 
+El error `Item with given key does not exist` de `SecureStoragePlugin` en los
+logs de la app es **ruido normal, no la causa**: el interceptor de axios lee el
+token del Secure Storage en cada request y, sin sesión todavía, la key no
+existe. La causa real es siempre que el poll de `/connect/login/status` nunca
+vio `done`.
+
 Diagnóstico:
 
 ```bash
@@ -102,17 +108,40 @@ Diagnóstico:
 docker compose -f docker-compose.yml -f docker-compose.prod.yml logs --tail=200 backend | grep tenant_oauth_webhook
 ```
 
-- Si **no aparece nada** → Nango no está mandando el webhook. Revisar en el
-  dashboard de Nango (Environment Settings del environment del backend) que
-  la **Webhook URL** sea
-  `https://api.intellify.pro/api/tenant/oauth/webhook/nango` y que el evento
-  **auth** esté activado. Con `primary_url` vacío Nango no envía ningún
-  webhook (ver `docs/dev/SETUP.md` → "Configurar el webhook de Nango").
+- Si **no aparece nada** → Nango no está mandando el webhook, o llega y el
+  backend lo rechaza con 401 (firma). Revisar en el dashboard de Nango
+  (Environment Settings del environment del backend) que la **Webhook URL**
+  sea `https://api.intellify.pro/api/tenant/oauth/webhook/nango`, que el
+  evento **auth** esté activado y que la **Webhook Signing Key** copiada a
+  `NANGO_WEBHOOK_SECRET` sea exactamente la de esa pantalla. Con `primary_url`
+  vacío Nango no envía ningún webhook (ver `docs/dev/SETUP.md` →
+  "Configurar el webhook de Nango"). Un 401 previo al log "recibi evento"
+  significa firma incorrecta — el 2026-08-09 se verificó que el secret de
+  `.env.prod` valida correctamente un webhook firmado (200).
 - Si aparece `no hay login pendiente para endUserId=…` → el webhook llega pero
   el `end_user.id` no coincide con una sesión (nonce expirado o evento fuera
-  del flujo de login).
+  del flujo de login). Chequear también que `REDIS_URL` del backend sea
+  alcanzable: si Redis no conecta, `OAuthLoginStore` se desactiva en silencio
+  y el webhook nunca encuentra el pending (`save_pending` no-op).
 - Si aparece `login completado para nonce=…` pero la app aún falla → el
-  problema es el polling/red del lado de la app, no el servidor.
+  problema es el polling/red del lado de la app, no el servidor. Antes del
+  fix del 2026-08-09 esto podía pasar aunque todo estuviera bien: el status
+  endpoint hacía fetch-and-delete (single-use) y la **primera request tras
+  retomar la WebView se aborta** — si esa request había consumido el
+  resultado, el login quedaba `pending` para siempre. Ahora `/connect/login/status`
+  lee sin consumir (peek) y el retry del poll vuelve a leer el resultado.
+  Requiere backend redeployado **y** APK reconstruido para tomarlo.
+
+### Chequeo rápido del servidor (sin tocar el teléfono)
+
+```bash
+API=https://api.intellify.pro
+# 1. ¿El backend tiene el router nuevo? (400 = sí; 404 = redeploy pendiente)
+curl -s -o /dev/null -w '%{http_code}\n' "$API/api/tenant/oauth/connect/login/status?nonce=x"
+# 2. ¿El secret de NANGO_WEBHOOK_SECRET coincide con el dashboard? (
+#    firmar un webhook de prueba con el secret del .env: 200 = coincide, 401 = no)
+# 3. Loop completo: crear session -> webhook firmado -> status debe devolver el resultado
+```
 
 ---
 

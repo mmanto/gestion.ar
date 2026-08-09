@@ -11,8 +11,10 @@ window.opener hacia el WebView de la app). Para mobile, en cambio:
   2. El webhook de Nango (login_webhook) resuelve ese pending, hace el mismo
      trabajo que /finalize, y guarda el resultado final.
   3. El frontend hace polling a /connect/login/status con el nonce firmado
-     hasta ver el resultado — pop_result lo borra al leerlo (single-use, evita
-     que el token de sesión quede reusable via polling repetido).
+     hasta ver el resultado — peek_result lo deja disponible hasta el TTL (no
+     lo borra al leerlo: un pop dejaría el login 'pending' para siempre si la
+     request que lo consumió se aborta al retomar la WebView, ver
+     auth.service.ts).
 
 Requiere Redis compartido entre workers (backend corre con --workers 2 en
 prod, ver docker-compose.prod.yml) — un dict en memoria no alcanzaría porque
@@ -72,23 +74,27 @@ class OAuthLoginStore:
         payload = {"status": "error", "message": message}
         self._client.setex(self._key(nonce_id), _TTL_SECONDS, json.dumps(payload))
 
-    def pop_result(self, nonce_id: str) -> Optional[dict]:
-        """Fetch-and-delete — un resultado 'done' solo se entrega una vez."""
+    def peek_result(self, nonce_id: str) -> Optional[dict]:
+        """Devuelve el resultado terminal (done/error) sin borrarlo.
+
+        A diferencia de un fetch-and-delete (pop), un peek sobrevive a requests
+        que el servidor procesa pero cuyo response el cliente nunca recibe: al
+        volver del Chrome Custom Tab, la primera request de la WebView se aborta
+        (ver auth.service.ts) y, si esa request había consumido el resultado,
+        el polling quedaba 'pending' para siempre aunque el webhook hubiera
+        resuelto el login. Con peek, el retry del cliente vuelve a leer el
+        resultado intacto. La exposición queda acotada por el TTL del registro
+        y por el vencimiento del nonce firmado que autoriza leerlo.
+        """
         if not self._client:
             return None
-        key = self._key(nonce_id)
-        pipe = self._client.pipeline()
-        pipe.get(key)
-        pipe.delete(key)
-        raw, _ = pipe.execute()
+        raw = self._client.get(self._key(nonce_id))
         if not raw:
             return None
         data = json.loads(raw)
         if data.get("status") == "pending":
-            # No consumir el registro "pending" — solo queremos hacer pop de
-            # resultados terminales (done/error). Lo re-escribimos tal cual.
-            self._client.setex(key, _TTL_SECONDS, raw)
-            return data
+            # El registro pending es interno (tenant_id/provider) — no se expone.
+            return None
         return data
 
 

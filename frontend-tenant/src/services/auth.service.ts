@@ -77,7 +77,9 @@ async function pollLoginStatus(nonce: string, isCancelled: () => boolean): Promi
       // Error de red transitorio: el poll lanza Network Error cuando la
       // WebView retoma tras cerrarse el Chrome Custom Tab (la primera request
       // se aborta). No es una falla del login — se reintenta hasta el deadline
-      // en vez de tirar todo el flujo a la basura.
+      // en vez de tirar todo el flujo a la basura. El backend lee el status
+      // sin consumirlo (peek), así que un request abortado no quema el
+      // resultado del login.
       continue;
     }
 
@@ -121,14 +123,20 @@ async function loginWithProviderNative(connectLink: string, nonce: string): Prom
   // node_modules/@nangohq/frontend/dist/connectUI.js).
   const url = new URL(connectLink);
   url.searchParams.set('apiURL', NANGO_API_URL);
-  await Browser.open({ url: url.href });
 
+  // Registrar el listener ANTES de abrir el tab: si el Custom Tab se cierra al
+  // instante (ej. un redirect inmediato al scheme de la app al abrir), el
+  // evento browserFinished puede dispararse antes de que exista el listener y
+  // el login quedaría esperando los 3 minutos del timeout en vez de fallar
+  // rápido tras la ventana de gracia.
   let closedByUser = false;
   const listener = await Browser.addListener('browserFinished', () => {
     closedByUser = true;
   });
 
   try {
+    await Browser.open({ url: url.href });
+
     const result = await pollLoginStatus(nonce, () => closedByUser);
     return result;
   } finally {

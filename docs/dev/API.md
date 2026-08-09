@@ -591,6 +591,45 @@ Eliminar el logo del tenant (solo la referencia — no borra el archivo en disco
 
 ---
 
+## Tenant — OAuth (login social)
+
+Login con Google/Microsoft por tenant vía Nango. En web, el popup de Nango
+avisa el resultado por `window.postMessage`; en mobile (Chrome Custom Tabs, sin
+`window.opener`) el backend se entera por el webhook de Nango y la app hace
+polling. No requieren JWT (públicos, scoped al tenant).
+
+### POST `/api/tenant/oauth/connect/login/session`
+
+Crea una sesión de login OAuth para el tenant. Body: `{tenant_id, provider}`
+(`provider`: `google` | `microsoft`). Devuelve `sessionToken` (Connect UI web),
+`connectLink` (magic link para abrir en Custom Tabs), `nonce` (token firmado,
+válido 5 min) y `providerConfigKey`. Registra el login como `pending` en Redis.
+
+### GET `/api/tenant/oauth/connect/login/status?nonce=<token>`
+
+Polling mobile. Devuelve `{"status": "pending"}` mientras el webhook no
+resuelve, o el resultado del login (`{"status": "done", "token": ...}` /
+`{"status": "error", "message": ...}`). **Lee sin consumir** (peek): el
+resultado queda disponible hasta el TTL (5 min) — un fetch-and-delete
+perdería el login si la request que lo consumía se aborta al retomar la
+WebView tras el Custom Tab.
+
+### POST `/api/tenant/oauth/connect/login/finalize`
+
+Flujo web: completa el login con un `connectionId` ya autorizado. Body:
+`{connectionId, provider, nonce, plan?}` (`plan`: `mensual` | `anual`, para el
+autoregistro). Verifica que la connection pertenezca al nonce. Devuelve el
+resultado del login (token + usuario del proveedor).
+
+### POST `/api/tenant/oauth/webhook/nango`
+
+Webhook entrante de Nango (evento `auth`). Verifica firma
+(`X-Nango-Hmac-Sha256` contra `NANGO_WEBHOOK_SECRET`; 401 si no coincide, o
+acepta sin verificar si el secret está vacío). Resuelve el login `pending`
+del `endUser.endUserId` y guarda el resultado. Configurar en el dashboard de
+Nango: Webhook URL = `https://api.intellify.pro/api/tenant/oauth/webhook/nango`
++ evento auth (ver `docs/dev/SETUP.md`).
+
 ## Tenant — Usuarios
 
 Gestión de usuarios del propio tenant (requiere JWT con rol `admin` del

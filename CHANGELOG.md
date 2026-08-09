@@ -7,6 +7,24 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Corregido
+- **Login OAuth nativo (Android) — vuelta al login tras autorizar en Google:**
+  el endpoint `/tenant/oauth/connect/login/status` hacía fetch-and-delete del
+  resultado (single-use), y la primera request de la WebView tras retomar del
+  Chrome Custom Tab se aborta — si esa request había consumido el resultado,
+  el login quedaba `pending` para siempre aunque el webhook de Nango lo hubiera
+  resuelto. Ahora el status endpoint **lee sin consumir** (peek): el retry del
+  poll vuelve a leer el resultado intacto, y la exposición queda acotada por el
+  TTL (5 min) y el nonce firmado. Además, el listener de `browserFinished` se
+  registra **antes** de `Browser.open` para no perder el cierre del tab. Se
+  verificó en prod (2026-08-09): el secret de `NANGO_WEBHOOK_SECRET` valida
+  correctamente un webhook firmado (200) y el loop
+  session→webhook→status→resultado funciona; el error
+  `Item with given key does not exist` de SecureStorage en el log es ruido del
+  interceptor de axios, no la causa. **Requiere redeploy del backend y rebuild
+  del APK.** Falta confirmar en el dashboard de Nango que la Webhook URL y el
+  evento auth estén activados (única pieza no verificable desde el servidor).
+
+### Corregido
 - **Login OAuth nativo (Android):** se diagnosticó la causa raíz del "cancelled"
   persistente. El flujo mobile depende de que Nango entregue el webhook de auth
   al backend (`POST /api/tenant/oauth/webhook/nango`) para resolver

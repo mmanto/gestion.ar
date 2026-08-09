@@ -327,9 +327,16 @@ async def tenant_oauth_webhook(request: Request):
 
 @router.get("/connect/login/status")
 async def tenant_login_status(nonce: str):
-    """Polling del frontend mobile mientras el usuario autoriza en Chrome Custom Tabs."""
+    """Polling del frontend mobile mientras el usuario autoriza en Chrome Custom Tabs.
+
+    Lee sin consumir (peek): la primera request tras retomar la WebView se
+    aborta del lado del cliente, y con un fetch-and-delete esa request podía
+    haber consumido el resultado y quemar el login aunque el webhook lo hubiera
+    resuelto (ver OAuthLoginStore.peek_result). El resultado queda disponible
+    hasta el TTL del registro (5 min) y solo es legible con el nonce firmado.
+    """
     nonce_id, _tenant_id = _verify_nonce(nonce)
-    result = _login_store.pop_result(nonce_id)
+    result = _login_store.peek_result(nonce_id)
     if result is None:
         return {"status": "pending"}
     return result
