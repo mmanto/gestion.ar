@@ -38,6 +38,8 @@ export const BiometricSection = () => {
 
   const refresh = useCallback(async () => {
     const s = await biometricService.isAvailable();
+    // Diagnóstico temporal del flujo de huella: ver qué respondió el plugin.
+    console.log('[biometric] isAvailable ->', s);
     setAvailable(s.available);
     setEnrolled(s.enrolled);
     setReason(s.reason);
