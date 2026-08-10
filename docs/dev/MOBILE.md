@@ -249,7 +249,16 @@ La app nativa permite al staff iniciar sesión con la huella. Es
   `isAvailable`, `enroll`, `authenticate`, `clear`.
 - Dependencia: `androidx.biometric:biometric:1.1.0` agregada a
   `frontend-tenant/android/app/build.gradle`.
+- **Ojo con los threads:** Capacitor 8 ejecuta los métodos de plugin en un
+  `HandlerThread` propio ("CapacitorPlugins"), no en el main thread. Cualquier
+  método que toque UI/Fragments (p. ej. `BiometricPrompt.authenticate()`) debe
+  saltar al main thread (`activity.runOnUiThread`) — el FragmentManager lanza
+  `IllegalStateException: Must be called from main thread of fragment host` si
+  no. En este plugin lo hace `runWhenActivityReady()`.
 - Puente TS: `frontend-tenant/src/services/biometric.service.ts`
   (`registerPlugin<BiometricAuthPlugin>('BiometricAuth')`).
+- Los errores del plugin llegan a JS con `err.message` = código y
+  `err.code` = mensaje (mapeo de `native-bridge.js` de Capacitor);
+  `biometricService.authenticate()` normaliza esto a mensajes legibles.
 - La credencial local (cifrada) vive en un `SharedPreferences` propio; el
   secreto se elimina del Keystore con `clear()` al deshabilitar la huella.

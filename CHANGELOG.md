@@ -17,13 +17,15 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 
 ### Corregido
 - **App Android — el login con huella fallaba con "PROMPT_ERROR" en el primer
-  intento (el segundo funcionaba):** `BiometricPrompt.authenticate()` lanza una
-  excepción si la activity no está en estado `RESUMED` (p. ej. al volver de
-  background o en el arranque, la llamada del puente llega con la activity en
-  `STARTED` y el diálogo no se puede mostrar). Ahora el plugin espera a que la
-  activity esté `RESUMED` (lifecycle observer) antes de mostrar el prompt, tanto
-  en login como en el enrolamiento de la huella. Requiere rebuild + reinstall
-  del APK.
+  intento (el segundo funcionaba):** los métodos de plugin de Capacitor 8 se
+  ejecutan en un `HandlerThread` propio ("CapacitorPlugins"), y
+  `BiometricPrompt.authenticate()` exige el main thread (el FragmentManager de
+  androidx lanza `IllegalStateException: Must be called from main thread of
+  fragment host` al añadir el diálogo). Ahora el plugin ejecuta el prompt en el
+  main thread y recién cuando la activity está `RESUMED`, tanto en login como en
+  el enrolamiento. Además se normalizaron los errores del plugin en
+  `biometric.service.ts`: antes el UI mostraba el código crudo ("PROMPT_ERROR",
+  "NEED_REENROLL", números…). Requiere rebuild + reinstall del APK.
 
 ### Corregido
 - **App Android — los widgets de turnos (Module Federation) no cargaban en el

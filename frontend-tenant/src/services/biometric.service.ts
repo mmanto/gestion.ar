@@ -91,7 +91,36 @@ export const biometricService = {
 
   /** Pide la huella y devuelve el secreto desbloqueado (solo tras validar). */
   async authenticate(): Promise<{ secret: string; deviceId: string }> {
-    return BiometricAuth.authenticate();
+    try {
+      return await BiometricAuth.authenticate();
+    } catch (err) {
+      // El plugin rechaza con reject(code, message), pero Capacitor entrega a
+      // JS err.message = code y err.code = message (native-bridge.js copia el
+      // objeto error tal cual). Sin esta normalización el usuario vería el
+      // código crudo ("PROMPT_ERROR", "NEED_REENROLL", "13"…) en el UI.
+      const e = err as { message?: string; code?: string };
+      const code = e?.message;
+      if (e?.code) {
+        switch (code) {
+          case 'PROMPT_ERROR':
+            throw new Error('No se pudo mostrar la autenticación biométrica. Intentá de nuevo');
+          case 'NEED_REENROLL':
+            throw new Error('Cambiaron las huellas configuradas. Reconfigurá el acceso con tu contraseña');
+          case '7':
+            throw new Error('Demasiados intentos fallidos. Esperá unos segundos e intentá de nuevo');
+          case '9':
+            throw new Error('Demasiados intentos fallidos. Usá tu contraseña para entrar');
+          case 'DECRYPT_FAILED':
+            throw new Error('No se pudo recuperar la credencial local. Reconfigurá el acceso con tu contraseña');
+          default:
+            if (/^\d+$/.test(code ?? '')) {
+              throw new Error('Autenticación cancelada');
+            }
+            throw new Error(e.code);
+        }
+      }
+      throw err instanceof Error ? err : new Error(String(err));
+    }
   },
 
   /** Desactiva la huella: revoca en el backend (si se pasa deviceId) y limpia el Keystore local. */

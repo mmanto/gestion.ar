@@ -120,7 +120,7 @@
 </style>
 </head>
 <body>
-<a href="./index.html" class="back-link">← Volver a iUS</a>
+<a href="./index.html" id="back-link" class="back-link">← Volver a iUS</a>
 <div class="wrap">
 
   <!-- LEFT COLUMN -->
@@ -167,5 +167,20 @@
 
   </div>
 </div>
+<div style="max-width:900px;margin:32px auto 0;padding:16px 24px 40px;background:transparent;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;font-size:12px;color:#cbd5e1;text-align:center;">
+  <a href="./terminos-condiciones.html" style="color:inherit;text-decoration:underline;text-underline-offset:2px;">Términos y Condiciones de Uso del SaaS iUS</a>
+  <span style="color:rgba(255,255,255,0.35);">|</span>
+  <a href="./aviso-privacidad.html" style="color:inherit;text-decoration:underline;text-underline-offset:2px;">Aviso de Privacidad Integral del SaaS</a>
+</div>
+<script>
+  (function () {
+    var back = document.getElementById('back-link');
+    var ref = document.referrer;
+    if (!back || !ref) return;
+    try {
+      if (new URL(ref).origin === window.location.origin) back.href = ref;
+    } catch (e) {}
+  })();
+</script>
 </body>
 </html>

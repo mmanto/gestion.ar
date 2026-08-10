@@ -131,37 +131,66 @@ public class BiometricAuthPlugin extends Plugin {
     // ── Utility ──────────────────────────────────────────────────────────
 
     /**
-     * Ejecuta `action` recién cuando la activity esté en RESUMED.
+     * Ejecuta `action` en el main thread y recién cuando la activity esté
+     * en RESUMED. Cubre dos exigencias de BiometricPrompt/FragmentManager:
      *
-     * BiometricPrompt.authenticate() lanza IllegalStateException si se llama
-     * con la activity en STARTED (p.ej. la llamada del puente llega al volver
-     * de background o en el arranque): el FragmentManager no puede mostrar el
-     * diálogo. Ese throw era el "PROMPT_ERROR en el primer intento (el segundo
-     * funciona)" — al reintentar, la activity ya estaba RESUMED.
+     * 1. **Thread:** Capacitor 8 ejecuta los métodos de plugin en un
+     *    HandlerThread propio ("CapacitorPlugins"), y
+     *    `FragmentManager.ensureExecReady()` exige
+     *    `Looper.myLooper() == main` para añadir el BiometricFragment
+     *    ("Must be called from main thread of fragment host").
+     * 2. **Estado:** con la activity en STARTED el FragmentManager rechaza la
+     *    transacción ("Can not perform this action after onSaveInstanceState"
+     *    / "Cannot show biometric prompt when in background").
      */
-    private void runWhenResumed(FragmentActivity activity, PluginCall call, Runnable action) {
+    private void runWhenActivityReady(FragmentActivity activity, PluginCall call, Runnable action) {
+        @NonNull final boolean[] done = {false};
+        final Runnable fail = () -> {
+            if (done[0]) {
+                return;
+            }
+            done[0] = true;
+            call.reject("PROMPT_ERROR", "La actividad se cerró antes de mostrar la autenticación biométrica");
+        };
+        final Runnable execute = () -> {
+            if (done[0]) {
+                return;
+            }
+            if (activity.isFinishing() || activity.isDestroyed()) {
+                done[0] = true;
+                call.reject("NO_ACTIVITY", "La actividad ya no está disponible");
+            } else if (!activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+                // Volvió a pausar durante el salto de thread: re-esperar.
+                runWhenActivityReady(activity, call, action);
+            } else {
+                done[0] = true;
+                action.run();
+            }
+        };
         if (activity.isFinishing() || activity.isDestroyed()) {
             call.reject("NO_ACTIVITY", "La actividad ya no está disponible");
             return;
         }
-        if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
-            action.run();
-            return;
+        if (!activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+            activity.getLifecycle().addObserver(new LifecycleEventObserver() {
+                @Override
+                public void onStateChanged(@NonNull LifecycleOwner owner, @NonNull Lifecycle.Event event) {
+                    if (done[0]) {
+                        owner.getLifecycle().removeObserver(this);
+                        return;
+                    }
+                    if (event == Lifecycle.Event.ON_DESTROY) {
+                        owner.getLifecycle().removeObserver(this);
+                        fail.run();
+                    } else if (owner.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+                        owner.getLifecycle().removeObserver(this);
+                        execute.run(); // el observer siempre corre en el main thread
+                    }
+                }
+            });
+        } else {
+            activity.runOnUiThread(execute);
         }
-        activity.getLifecycle().addObserver(new LifecycleEventObserver() {
-            @Override
-            public void onStateChanged(@NonNull LifecycleOwner owner, @NonNull Lifecycle.Event event) {
-                if (event == Lifecycle.Event.ON_DESTROY) {
-                    owner.getLifecycle().removeObserver(this);
-                    call.reject("PROMPT_ERROR", "La actividad se cerró antes de mostrar la autenticación biométrica");
-                    return;
-                }
-                if (owner.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
-                    owner.getLifecycle().removeObserver(this);
-                    action.run();
-                }
-            }
-        });
     }
 
     // ── Métodos expuestos a JS ───────────────────────────────────────────
@@ -251,7 +280,7 @@ public class BiometricAuthPlugin extends Plugin {
                     }
                 });
 
-        runWhenResumed(activity, call, () -> {
+        runWhenActivityReady(activity, call, () -> {
             try {
                 SecretKey key = createKey();
                 Cipher cipher = Cipher.getInstance(TRANSFORMATION);
@@ -326,7 +355,7 @@ public class BiometricAuthPlugin extends Plugin {
                     }
                 });
 
-        runWhenResumed(activity, call, () -> {
+        runWhenActivityReady(activity, call, () -> {
             try {
                 BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
                         .setTitle(call.getString("promptTitle", "Iniciar sesión"))
