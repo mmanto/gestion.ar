@@ -16,6 +16,18 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   del branding queda en el modelo, sin control en la UI).
 
 ### Corregido
+- **App Android — los widgets de turnos (Module Federation) no cargaban en el
+  dispositivo:** el build de Capacitor (`vite build --mode capacitor`) no carga
+  `.env.dev`/`.env.prod`, y los scripts `stack-dev.sh`/`stack-prod.sh` no
+  inyectaban `VITE_APPOINTMENTS_REMOTE_URL`, así que el fallback de
+  `vite.config.ts` (`http://localhost:5180/remoteEntry.js`) quedaba horneado en
+  el APK — inalcanzable desde el celular (`Failed to fetch`). Ahora ambos
+  scripts derivan la URL del remote desde el host del backend (`:8180`, mismo
+  patrón que Nango) u la sobreescriben con `VITE_APPOINTMENTS_REMOTE_URL`, y el
+  fallback de config pasó a ser la URL de prod. Requiere rebuild + reinstall
+  del APK.
+
+### Corregido
 - **Login OAuth nativo (Android) — el webhook de Nango ya no es un SPOF:**
   diagnosticado en prod (2026-08-09) — el pipeline backend completo funciona
   con datos reales (webhook firmado 200, session→webhook→status entrega el

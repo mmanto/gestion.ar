@@ -438,6 +438,18 @@ cmd_build_android() {
   local nango_connect_url="http://${nango_host}:3009"
   local nango_api_url="http://${nango_host}:3003"
 
+  # Remote de appointments (Module Federation, ADR-009): el dev-server de
+  # frontend-widgets corre en la misma maquina que el backend (puerto 8180,
+  # ver .env.dev / docker-compose.tenants.dev.yml). Su URL en .env.dev es
+  # localhost:8180 — inalcanzable desde emulador/dispositivo, igual que
+  # ocurria con api_url. Reutilizamos el host resuelto de api_url
+  # (10.0.2.2 en emulador, IP LAN en device) para apuntar al dev-server.
+  # Se puede sobreescribir con VITE_APPOINTMENTS_REMOTE_URL (p.ej. un tunel).
+  local appointments_remote="${VITE_APPOINTMENTS_REMOTE_URL:-}"
+  if [[ -z "$appointments_remote" ]]; then
+    appointments_remote="http://${nango_host}:8180/remoteEntry.js"
+  fi
+
   # Validar requisitos
   local missing=()
   command -v node &>/dev/null || missing+=("node (npm)")
@@ -484,8 +496,8 @@ cmd_build_android() {
   local stats_two_cols="false"
   [[ "$slug" == "ius" ]] && stats_two_cols="true"
 
-  echo "  [1/3] VITE_API_URL=${api_url} VITE_NANGO_CONNECT_URL=${nango_connect_url} VITE_NANGO_API_URL=${nango_api_url} VITE_TENANT_ID=${tenant_id} VITE_TENANT_APPID=${app_id} npm run build:capacitor ..."
-  (cd "$project_dir" && VITE_API_URL="$api_url" VITE_NANGO_CONNECT_URL="$nango_connect_url" VITE_NANGO_API_URL="$nango_api_url" \
+  echo "  [1/3] VITE_API_URL=${api_url} VITE_APPOINTMENTS_REMOTE_URL=${appointments_remote} VITE_NANGO_CONNECT_URL=${nango_connect_url} VITE_NANGO_API_URL=${nango_api_url} VITE_TENANT_ID=${tenant_id} VITE_TENANT_APPID=${app_id} npm run build:capacitor ..."
+  (cd "$project_dir" && VITE_API_URL="$api_url" VITE_APPOINTMENTS_REMOTE_URL="$appointments_remote" VITE_NANGO_CONNECT_URL="$nango_connect_url" VITE_NANGO_API_URL="$nango_api_url" \
     VITE_TENANT_ID="$tenant_id" VITE_STATS_TWO_COLS_MOBILE="$stats_two_cols" \
     VITE_TENANT_APPID="$app_id" VITE_TENANT_APPNAME="$app_name" VITE_TENANT_BRANDCOLOR="$brand_color" \
     npm run build:capacitor) || {

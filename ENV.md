@@ -217,6 +217,7 @@ repo), por eso el nombre de marca tiene una clave por app.
 | `VITE_TENANT_APP_NAME` | ❌ | Nombre de marca de `frontend-tenant/` | `Backoffice` |
 | `VITE_NANGO_CONNECT_URL` | ❌* | URL de Nango Connect visible desde el browser | dev: `http://localhost:3009` · prod: `https://nango.tudominio.com` |
 | `VITE_NANGO_API_URL` | ❌* | URL de la API de Nango visible desde el browser | dev: `http://localhost:3003` · prod: `https://api.nango.tudominio.com` |
+| `VITE_APPOINTMENTS_REMOTE_URL` | ❌* | URL del remote de turnos (Module Federation, `devbout-appointments` — ver ADR-009). En dev web es el dev-server de `frontend-widgets`; en builds de Android (`scripts/stack-*.sh`) se inyecta una URL alcanzable desde el dispositivo (host del backend + `:8180`, o un túnel) | dev: `http://localhost:8180/remoteEntry.js` · prod: `https://appointments-widgets.intellify.pro/remoteEntry.js` |
 
 > *Sin valor, caen al default hardcodeado de `auth.service.ts`
 > (`localhost:3009`/`localhost:3003`), que no resuelve en producción. Son
@@ -224,6 +225,13 @@ repo), por eso el nombre de marca tiene una clave por app.
 > `frontend-tenant/Dockerfile`), no runtime — hay que pasarlos en
 > `docker-compose.prod.yml`/`docker-compose.tenants.prod.yml`
 > (`build.args`), no alcanza con setearlos en `.env.prod`.
+>
+> `VITE_APPOINTMENTS_REMOTE_URL` sin valor cae al fallback de `vite.config.ts`
+> (la URL de prod), para que un build que no carga `.env.dev`/`.env.prod`
+> (p.ej. `vite build --mode capacitor`) no hornee un `localhost` inalcanzable.
+> Para apuntar un APK a un remote de dev, `scripts/stack-*.sh` derivan la URL
+> desde el host del backend (`:8180`) u se puede sobreescribir exportando
+> `VITE_APPOINTMENTS_REMOTE_URL` antes de ejecutarlos.
 
 ---
 

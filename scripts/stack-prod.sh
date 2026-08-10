@@ -486,6 +486,26 @@ cmd_build_android() {
       ;;
   esac
 
+  # Remote de appointments (Module Federation, ADR-009). En prod se respeta
+  # VITE_APPOINTMENTS_REMOTE_URL de .env.prod (o cae a la URL de prod). En
+  # emulador/device el dev-server de frontend-widgets corre en el host del
+  # backend (puerto 8180) — se le reutiliza el host de api_url, igual que
+  # Nango. Sobreescribible con VITE_APPOINTMENTS_REMOTE_URL (p.ej. un tunel).
+  local appointments_remote="${VITE_APPOINTMENTS_REMOTE_URL:-}"
+  if [[ -z "$appointments_remote" ]]; then
+    case "$env" in
+      emulator)
+        appointments_remote="http://10.0.2.2:8180/remoteEntry.js"
+        ;;
+      device)
+        appointments_remote="http://$(echo "$api_url" | sed -E 's#^https?://([^:/]+).*#\1#'):8180/remoteEntry.js"
+        ;;
+      prod)
+        appointments_remote="https://appointments-widgets.intellify.pro/remoteEntry.js"
+        ;;
+    esac
+  fi
+
   local missing=()
   command -v node &>/dev/null || missing+=("node (npm)")
   command -v java &>/dev/null || missing+=("java (JDK 17+)")
@@ -530,8 +550,8 @@ cmd_build_android() {
   local stats_two_cols="false"
   [[ "$slug" == "ius" ]] && stats_two_cols="true"
 
-  echo "  [1/3] VITE_API_URL=${api_url} VITE_NANGO_CONNECT_URL=${nango_connect_url} VITE_NANGO_API_URL=${nango_api_url} VITE_TENANT_ID=${tenant_id} VITE_TENANT_APPID=${app_id} npm run build:capacitor ..."
-  (cd "$project_dir" && VITE_API_URL="$api_url" VITE_NANGO_CONNECT_URL="$nango_connect_url" VITE_NANGO_API_URL="$nango_api_url" \
+  echo "  [1/3] VITE_API_URL=${api_url} VITE_APPOINTMENTS_REMOTE_URL=${appointments_remote} VITE_NANGO_CONNECT_URL=${nango_connect_url} VITE_NANGO_API_URL=${nango_api_url} VITE_TENANT_ID=${tenant_id} VITE_TENANT_APPID=${app_id} npm run build:capacitor ..."
+  (cd "$project_dir" && VITE_API_URL="$api_url" VITE_APPOINTMENTS_REMOTE_URL="$appointments_remote" VITE_NANGO_CONNECT_URL="$nango_connect_url" VITE_NANGO_API_URL="$nango_api_url" \
     VITE_TENANT_ID="$tenant_id" VITE_STATS_TWO_COLS_MOBILE="$stats_two_cols" \
     VITE_TENANT_APPID="$app_id" VITE_TENANT_APPNAME="$app_name" VITE_TENANT_BRANDCOLOR="$brand_color" \
     npm run build:capacitor) || {

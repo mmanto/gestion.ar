@@ -5,11 +5,15 @@ import react from '@vitejs/plugin-react'
 import { federation } from '@module-federation/vite'
 
 // Remote de turnos servido por devbout-appointments (ver ADR-009 en
-// docs/dev/DECISIONS.md) — en dev apunta al vite dev-server de
-// frontend-widgets (puerto propio 5180), en prod al remoteEntry.js
-// deployado detrás de Traefik. Mismo patrón que VITE_API_URL: build ARG
-// baked en el bundle.
-const appointmentsRemoteUrl = process.env.VITE_APPOINTMENTS_REMOTE_URL || 'http://localhost:5180/remoteEntry.js'
+// docs/dev/DECISIONS.md). En dev web, .env.dev define
+// VITE_APPOINTMENTS_REMOTE_URL=http://localhost:8180/remoteEntry.js (dev-server
+// de frontend-widgets); los builds de Android (scripts/stack-*.sh) inyectan
+// una URL alcanzable desde el dispositivo (host del backend + :8180 o un
+// túnel). El fallback es la URL de prod para que un build sin env (p.ej.
+// `vite build --mode capacitor`, que no carga .env.dev/.env.prod) no hornee
+// un localhost inalcanzable dentro del APK. Mismo patrón que VITE_API_URL:
+// valor baked en el bundle.
+const appointmentsRemoteUrl = process.env.VITE_APPOINTMENTS_REMOTE_URL || 'https://appointments-widgets.intellify.pro/remoteEntry.js'
 
 // Target del proxy /api y /ws: "app:8000" es el nombre del servicio dentro de
 // la red de docker-compose (server dev). Si se corre `vite preview` fuera de
