@@ -293,6 +293,10 @@ public class BiometricAuthPlugin extends Plugin {
                     .build();
             prompt.authenticate(info, new BiometricPrompt.CryptoObject(decryptCipher));
         } catch (Exception e) {
+            // PROMPT_ERROR en el primer intento (segundo funciona): loguear la
+            // excepción real — el UI solo muestra el message ("PROMPT_ERROR"),
+            // la causa queda en el campo code de la rejection.
+            android.util.Log.e("BiometricAuth", "authenticate: prompt.authenticate() threw", e);
             call.reject("PROMPT_ERROR", "No se pudo mostrar la autenticación biométrica: " + e.getMessage());
         }
     }

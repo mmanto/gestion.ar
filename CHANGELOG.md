@@ -38,6 +38,15 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   explícito con `registerPlugin(BiometricAuthPlugin.class)` en
   `MainActivity.onCreate` antes de crear el bridge. Requiere rebuild +
   reinstall del APK.
+- **App Android — el login pasó a mostrar el front de ADMIN (sin huella ni
+  login social):** los `assets/` de `frontend-tenant/android/` estaban
+  commitados con un bundle stale del panel admin (`index.html` → `index-sS5bLEIw.js`),
+  así que un `assembleDebug` directo empaquetaba ese bundle (login sin "Entrá
+  con tu huella" y Google deshabilitado) y el service worker en
+  `https://localhost` servía además la caché vieja del admin. Fix: `npx cap
+  sync android` restauró el bundle del tenant (index.html → `index-xbj8IGzg.js`),
+  se limpió el service worker y se reinstaló. Nota: los `assets/` corregidos
+  deben quedar commitados para que no reaparezca.
 - **Login OAuth nativo (Android) — el webhook de Nango ya no es un SPOF:**
   diagnosticado en prod (2026-08-09) — el pipeline backend completo funciona
   con datos reales (webhook firmado 200, session→webhook→status entrega el
