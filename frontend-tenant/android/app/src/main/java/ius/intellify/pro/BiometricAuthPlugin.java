@@ -6,10 +6,14 @@ import android.security.keystore.KeyPermanentlyInvalidatedException;
 import android.security.keystore.KeyProperties;
 import android.util.Base64;
 
+import androidx.annotation.NonNull;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleEventObserver;
+import androidx.lifecycle.LifecycleOwner;
 
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -124,6 +128,42 @@ public class BiometricAuthPlugin extends Plugin {
         }
     }
 
+    // ── Utility ──────────────────────────────────────────────────────────
+
+    /**
+     * Ejecuta `action` recién cuando la activity esté en RESUMED.
+     *
+     * BiometricPrompt.authenticate() lanza IllegalStateException si se llama
+     * con la activity en STARTED (p.ej. la llamada del puente llega al volver
+     * de background o en el arranque): el FragmentManager no puede mostrar el
+     * diálogo. Ese throw era el "PROMPT_ERROR en el primer intento (el segundo
+     * funciona)" — al reintentar, la activity ya estaba RESUMED.
+     */
+    private void runWhenResumed(FragmentActivity activity, PluginCall call, Runnable action) {
+        if (activity.isFinishing() || activity.isDestroyed()) {
+            call.reject("NO_ACTIVITY", "La actividad ya no está disponible");
+            return;
+        }
+        if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+            action.run();
+            return;
+        }
+        activity.getLifecycle().addObserver(new LifecycleEventObserver() {
+            @Override
+            public void onStateChanged(@NonNull LifecycleOwner owner, @NonNull Lifecycle.Event event) {
+                if (event == Lifecycle.Event.ON_DESTROY) {
+                    owner.getLifecycle().removeObserver(this);
+                    call.reject("PROMPT_ERROR", "La actividad se cerró antes de mostrar la autenticación biométrica");
+                    return;
+                }
+                if (owner.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+                    owner.getLifecycle().removeObserver(this);
+                    action.run();
+                }
+            }
+        });
+    }
+
     // ── Métodos expuestos a JS ───────────────────────────────────────────
 
     /** Chequea si hay biometría fuerte disponible y si ya hay credencial enrolada. */
@@ -211,20 +251,22 @@ public class BiometricAuthPlugin extends Plugin {
                     }
                 });
 
-        try {
-            SecretKey key = createKey();
-            Cipher cipher = Cipher.getInstance(TRANSFORMATION);
-            cipher.init(Cipher.ENCRYPT_MODE, key);
-            BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
-                    .setTitle(call.getString("promptTitle", "Configurar huella"))
-                    .setSubtitle(call.getString("promptSubtitle", "Confirmá con tu huella para habilitar el acceso rápido"))
-                    .setNegativeButtonText(call.getString("negativeButtonText", "Cancelar"))
-                    .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
-                    .build();
-            prompt.authenticate(info, new BiometricPrompt.CryptoObject(cipher));
-        } catch (Exception e) {
-            call.reject("ENROLL_FAILED", "No se pudo inicializar la credencial: " + e.getMessage());
-        }
+        runWhenResumed(activity, call, () -> {
+            try {
+                SecretKey key = createKey();
+                Cipher cipher = Cipher.getInstance(TRANSFORMATION);
+                cipher.init(Cipher.ENCRYPT_MODE, key);
+                BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
+                        .setTitle(call.getString("promptTitle", "Configurar huella"))
+                        .setSubtitle(call.getString("promptSubtitle", "Confirmá con tu huella para habilitar el acceso rápido"))
+                        .setNegativeButtonText(call.getString("negativeButtonText", "Cancelar"))
+                        .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                        .build();
+                prompt.authenticate(info, new BiometricPrompt.CryptoObject(cipher));
+            } catch (Exception e) {
+                call.reject("ENROLL_FAILED", "No se pudo inicializar la credencial: " + e.getMessage());
+            }
+        });
     }
 
     /**
@@ -284,21 +326,23 @@ public class BiometricAuthPlugin extends Plugin {
                     }
                 });
 
-        try {
-            BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
-                    .setTitle(call.getString("promptTitle", "Iniciar sesión"))
-                    .setSubtitle(call.getString("promptSubtitle", "Usá tu huella para entrar"))
-                    .setNegativeButtonText(call.getString("negativeButtonText", "Cancelar"))
-                    .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
-                    .build();
-            prompt.authenticate(info, new BiometricPrompt.CryptoObject(decryptCipher));
-        } catch (Exception e) {
-            // PROMPT_ERROR en el primer intento (segundo funciona): loguear la
-            // excepción real — el UI solo muestra el message ("PROMPT_ERROR"),
-            // la causa queda en el campo code de la rejection.
-            android.util.Log.e("BiometricAuth", "authenticate: prompt.authenticate() threw", e);
-            call.reject("PROMPT_ERROR", "No se pudo mostrar la autenticación biométrica: " + e.getMessage());
-        }
+        runWhenResumed(activity, call, () -> {
+            try {
+                BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
+                        .setTitle(call.getString("promptTitle", "Iniciar sesión"))
+                        .setSubtitle(call.getString("promptSubtitle", "Usá tu huella para entrar"))
+                        .setNegativeButtonText(call.getString("negativeButtonText", "Cancelar"))
+                        .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                        .build();
+                prompt.authenticate(info, new BiometricPrompt.CryptoObject(decryptCipher));
+            } catch (Exception e) {
+                // Fallback defensivo: si aún así no se pudo mostrar el prompt,
+                // loguear la excepción real — el UI solo muestra el message,
+                // la causa queda en el campo code de la rejection.
+                android.util.Log.e("BiometricAuth", "authenticate: prompt.authenticate() threw", e);
+                call.reject("PROMPT_ERROR", "No se pudo mostrar la autenticación biométrica: " + e.getMessage());
+            }
+        });
     }
 
     /**

@@ -16,6 +16,16 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   del branding queda en el modelo, sin control en la UI).
 
 ### Corregido
+- **App Android — el login con huella fallaba con "PROMPT_ERROR" en el primer
+  intento (el segundo funcionaba):** `BiometricPrompt.authenticate()` lanza una
+  excepción si la activity no está en estado `RESUMED` (p. ej. al volver de
+  background o en el arranque, la llamada del puente llega con la activity en
+  `STARTED` y el diálogo no se puede mostrar). Ahora el plugin espera a que la
+  activity esté `RESUMED` (lifecycle observer) antes de mostrar el prompt, tanto
+  en login como en el enrolamiento de la huella. Requiere rebuild + reinstall
+  del APK.
+
+### Corregido
 - **App Android — los widgets de turnos (Module Federation) no cargaban en el
   dispositivo:** el build de Capacitor (`vite build --mode capacitor`) no carga
   `.env.dev`/`.env.prod`, y los scripts `stack-dev.sh`/`stack-prod.sh` no
