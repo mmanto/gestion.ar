@@ -28,6 +28,16 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   del APK.
 
 ### Corregido
+- **App Android — la sección "Acceso con huella" reportaba "sin huella
+  configurada" aunque el dispositivo sí tiene una:** el plugin nativo
+  `BiometricAuth` (que envuelve el `BiometricPrompt` + Keystore) no se
+  autoregistraba ante Capacitor en builds multidex — la clase quedaba en
+  `classes11.dex` y Capacitor descubre plugins de la app escaneando el dex
+  primario, así que `isAvailable()` tiraba "plugin not registered" en el
+  puente (atrapado en silencio: sin `reason` ni log nativo). Fix: registro
+  explícito con `registerPlugin(BiometricAuthPlugin.class)` en
+  `MainActivity.onCreate` antes de crear el bridge. Requiere rebuild +
+  reinstall del APK.
 - **Login OAuth nativo (Android) — el webhook de Nango ya no es un SPOF:**
   diagnosticado en prod (2026-08-09) — el pipeline backend completo funciona
   con datos reales (webhook firmado 200, session→webhook→status entrega el
