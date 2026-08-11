@@ -85,13 +85,27 @@ services:
       # --- Redirect temporal del dominio viejo (quitar cuando el cliente
       # termine de migrar bookmarks/enlaces externos a erma.com.ar) ---
       - "traefik.http.middlewares.erma-legacy-redirect.redirectregex.regex=^https://erma\\.intellify\\.pro/(.*)"
-      - "traefik.http.middlewares.erma-legacy-redirect.redirectregex.replacement=https://erma.com.ar/$${1}"
-      - "traefik.http.middlewares.erma-legacy-redirect.redirectregex.permanent=true"
-      - "traefik.http.routers.tenant-erma-legacy.rule=Host(`erma.intellify.pro`)"
-      - "traefik.http.routers.tenant-erma-legacy.entrypoints=websecure"
-      - "traefik.http.routers.tenant-erma-legacy.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.tenant-erma-legacy.middlewares=erma-legacy-redirect"
       - "traefik.http.routers.tenant-erma-legacy.service=tenant-erma"
+
+  # landing-erma comparte dominio con frontend-tenant-erma (erma.com.ar):
+  # este router matchea "/", cualquier página .html de la landing (PathRegexp),
+  # el bundle/estilos propios y el hero-video — cualquier otra ruta (/login,
+  # /dashboard, /assets/*, /api/*...) sigue cayendo en tenant-erma. Mismo
+  # criterio que landing-ius/laboralia/proptech.
+  landing-erma:
+    build:
+      context: ./sites/erma
+    restart: unless-stopped
+    networks:
+      - traefik_public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_public"
+      - 'traefik.http.routers.landing-erma.rule=Host(`erma.com.ar`) && (PathRegexp(`^/.*\.html$`) || Path(`/`) || Path(`/assets/bundle.js`) || Path(`/assets/style-DsA80jQ7.css`) || Path(`/hero-video.mp4`) || Path(`/img-about.jpg`) || Path(`/img-gallery-1.jpg`) || Path(`/img-gallery-2.jpg`) || Path(`/img-gallery-3.jpg`) || Path(`/img-gallery-4.jpg`) || Path(`/img-gallery-5.jpg`) || Path(`/img-hero.jpg`) || Path(`/img-news-1.jpg`) || Path(`/img-news-2.jpg`) || Path(`/img-team-1.jpg`) || Path(`/img-team-2.jpg`) || Path(`/img-team-3.jpg`) || Path(`/img-team-barbara.jpg`) || Path(`/img-team-camila.jpg`) || Path(`/img-team-delfina.jpg`) || Path(`/img-team-micaela.jpg`) || Path(`/img-team-valeria.jpg`))'
+      - "traefik.http.routers.landing-erma.entrypoints=websecure"
+      - "traefik.http.routers.landing-erma.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.landing-erma.priority=10"
+      - "traefik.http.services.landing-erma.loadbalancer.server.port=80"
 
   frontend-tenant-laboralia:
     build:

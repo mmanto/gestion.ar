@@ -133,7 +133,7 @@ traefik:
 
 ## Ruteo de landings en dominio compartido con tenant
 
-Cada landing (ius, laboralia, proptech, ver `docker-compose.tenants.prod.yml`)
+Cada landing (ius, laboralia, proptech, erma — ver `docker-compose.tenants.prod.yml`)
 comparte el dominio con el SPA de su tenant (`frontend-tenant-*`). El SPA es un
 app de una sola página cuyo nginx sirve `index.html` para casi cualquier ruta
 (`try_files $uri /index.html`), así que si una página estática de la landing
@@ -143,14 +143,20 @@ Por eso el router de la landing lleva prioridad explícita y matchea por path:
 
 - **cualquier página `.html`** de la landing vía `PathRegexp(^/.*\.html$)` — así
   se agregan páginas nuevas (ej. `contacto.html`) **sin tocar esta regla**;
-- la raíz `/` y los assets propios de la landing (svg/png/jpg/webp, lista fija
-  sin colisión con `/icons`, `/img`, `favicon.ico` del SPA).
+- la raíz `/` y los assets propios de la landing (svg/png/jpg/webp/js/css,
+  lista fija sin colisión con `/icons`, `/img`, `favicon.ico` del SPA).
 
 Cualquier otra ruta (`/login`, `/dashboard`, `/assets/*`, `/api/*`, `/ws/*`)
 sigue cayendo en el tenant. No listar cada `.html` a mano: si una página no se
 ve, primero verificar que el `.html` exista dentro del contenedor de la landing
 (`docker exec <landing> ls /usr/share/nginx/html`); si la ruta es correcta y el
 archivo existe, el `PathRegexp` ya la enruta al contenedor correcto.
+
+> **Caso erma (2026-08-11):** la landing de `sites/erma/` se publicó primero en
+> un VPS externo (Hostinger) y el DNS de `erma.com.ar` quedó apuntando ahí —
+> servía la landing para **toda** ruta, incluido `/login`, que nunca llegaba al
+> tenant. El contenedor `landing-erma` (mismo patrón que las demás) + apuntar
+> el DNS al VPS de prod resolve el ruteo: `/` → landing, `/login` → app.
 
 **Micro-frontend de registro (ADR-011):** la landing ius sirve
 `/register-embed.js` (bundle IIFE del formulario de registro real, ver

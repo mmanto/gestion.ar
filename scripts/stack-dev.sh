@@ -52,7 +52,7 @@ TENANTS=(erma ius)
 # ius-landing comparte dominio con el tenant "ius" (routing por Path en
 # Traefik, ver docker-compose.tenants.local.yml) — mismo host que TENANTS,
 # por eso no necesita entrada propia en check_hosts()/health_check().
-SITES=(ius-landing)
+SITES=(ius-landing erma-landing)
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -128,8 +128,8 @@ health_check() {
       || echo -e "${YELLOW}tenant-${tenant}: sin respuesta${NC}"
   done
 
-  # SITES no suma un check propio: ius-landing responde en el mismo host
-  # que el tenant "ius" (arriba), Traefik lo distingue por Path.
+  # SITES no suma un check propio: las landings responden en el mismo host
+  # que sus tenants (arriba), Traefik las distingue por Path.
 }
 
 menu() {

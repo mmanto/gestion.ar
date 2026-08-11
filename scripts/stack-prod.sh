@@ -42,7 +42,7 @@ TENANTS=(ius erma)
 # ius-landing comparte dominio con el tenant "ius" (routing por Path en
 # Traefik, ver docker-compose.tenants.prod.yml) — mismo host que TENANTS,
 # por eso no necesita entrada propia en health_check().
-SITES=(ius-landing)
+SITES=(ius-landing erma-landing)
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -89,7 +89,10 @@ health_check() {
     || echo -e "${RED}frontend:  sin respuesta${NC}"
 
   for tenant in "${TENANTS[@]}"; do
-    local tenant_url="https://${tenant}.intellify.pro"
+    # Dominio real por tenant: erma tiene dominio propio (erma.com.ar), el
+    # resto cae en subdominio de intellify.pro.
+    local -A TENANT_DOMAIN=(["erma"]="https://erma.com.ar" ["ius"]="https://ius.intellify.pro" ["laboralia"]="https://laboralia.intellify.pro" ["proptech"]="https://proptech.intellify.pro")
+    local tenant_url="${TENANT_DOMAIN[$tenant]}"
     curl -sf -o /dev/null -w "$tenant: %{http_code}\n" "$tenant_url/" \
       || echo -e "${YELLOW}$tenant: sin respuesta${NC}"
   done

@@ -6,6 +6,17 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 
 ## [Sin versión] - En desarrollo
 
+### Agregado
+- **Landing estática de ERMA en el stack** (`sites/erma/` → contenedor
+  `landing-erma`): comparte el dominio `erma.com.ar` con `frontend-tenant-erma`
+  igual que ius/laboralia/proptech — el router de Traefik matchea `/`, `.html`,
+  el bundle (`/assets/bundle.js`) e imágenes de la landing; cualquier otra ruta
+  (`/login`, `/dashboard`, `/api/*`…) cae en la app del tenant. Se agregó el
+  servicio a `docker-compose.tenants.prod.yml` y `.local.yml`, y `erma-landing`
+  a `SITES` en `stack-dev.sh`/`stack-prod.sh`. **Requiere deploy** (el DNS de
+  `erma.com.ar` debe apuntar al VPS para que el login del tenant responda en
+  `/login` — ver `docs/ops/INFRASTRUCTURE.md`).
+
 ### Cambiado
 - **Menú mobile (app Android y web < `md`):** por definición de producto, el
   menú del avatar ahora solo muestra **Escritorio, Ajustes y Salir** (se quitó

@@ -43,6 +43,16 @@ services:
       - VITE_HMR_CLIENT_PORT=80
     labels:
       - "traefik.http.services.tenant-erma.loadbalancer.server.port=5174"
+      # erma.com.test comparte dominio con landing-erma, que matchea Host + Path(/)
+      # con prioridad 10 (ver docker-compose.tenants.local.yml) — el websocket
+      # de HMR de Vite siempre conecta contra "/" en el mismo host:puerto de la
+      # página, así que sin este router aparte cae en la landing (nginx, sin
+      # upgrade) en vez del dev-server. Prioridad 20 (> landing) y solo matchea
+      # el upgrade de websocket, así no le quita tráfico normal a la landing.
+      - "traefik.http.routers.tenant-erma-hmr.rule=Host(`erma.com.test`) && Header(`Upgrade`, `websocket`)"
+      - "traefik.http.routers.tenant-erma-hmr.entrypoints=web"
+      - "traefik.http.routers.tenant-erma-hmr.priority=20"
+      - "traefik.http.routers.tenant-erma-hmr.service=tenant-erma"
 
   frontend-tenant-ius:
     build:
