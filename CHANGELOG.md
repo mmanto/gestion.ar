@@ -7,6 +7,15 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Cambiado
+- **Menú mobile (app Android y web < `md`):** por definición de producto, el
+  menú del avatar ahora solo muestra **Escritorio, Ajustes y Salir** (se quitó
+  la navegación lateral completa del menú mobile). En desktop la sidebar sigue
+  siendo el menú de aplicación completo. Se agrega además el ítem **Compartir**
+  (sección "Mi cuenta") que abre la pantalla `/compartir`: input de número de
+  WhatsApp + botón que envía un mensaje con los datos del staff (nombre,
+  correo) y su link de chat web propio (`/chat/c/{channel_id}`).
+
+### Cambiado
 - **Navegación mobile del dashboard (app Android y web < `md`):** el menú de la
   aplicación ya no se abre por hamburguesa/drawer lateral — la sidebar es solo
   desktop y, en mobile, el **menú del avatar es el menú de la aplicación**

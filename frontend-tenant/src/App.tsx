@@ -25,6 +25,7 @@ import { Reports } from './pages/Reports';
 import { Modules } from './pages/Modules';
 import { Users } from './pages/Users';
 import { Settings } from './pages/Settings';
+import { Share } from './pages/Share';
 
 /** Registra el push nativo del staff una vez autenticado. Vive adentro de
  * AuthProvider (necesita useAuth()) — no renderiza nada. */
@@ -139,6 +140,16 @@ function App() {
                   element={
                     <ProtectedRoute roles={['admin', 'operativo']}>
                       <Settings />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Compartir datos + link de chat por WhatsApp — admin y operativo */}
+                <Route
+                  path="/compartir"
+                  element={
+                    <ProtectedRoute roles={['admin', 'operativo']}>
+                      <Share />
                     </ProtectedRoute>
                   }
                 />
