@@ -167,6 +167,16 @@ lista de `Path(...)` del router `landing-ius` — si se suman más assets no-htm
 `expires -1` sobre ese bundle porque su nombre es fijo entre redeploys
 (cache heurística del navegador podría servir una versión vieja).
 
+**Chat embebido en la landing erma (`sites/erma/chat-widget.js`):** botón
+flotante + panel que carga el chat del tenant en un iframe
+(`/chat/c/{channel_id}`, mismo origen — el `X-Frame-Options: SAMEORIGIN` del
+nginx del tenant permite embebido solo desde el propio dominio). Vanilla JS a
+propósito (la landing es un build compilado sin fuente); el script se inyecta
+desde `index.html` y se sirve por la landing, así que también está listado
+**a mano** en la regla `Path(...)` del router `landing-erma` (prod y local) y
+tiene `expires -1` en el nginx de la landing. La URL del chat se deriva de
+`location.origin` (override con `window.__ERMA_CHAT__.url`).
+
 **Nango (login OAuth Google/Microsoft, ADR-012):** el backend crea las "connect
 sessions" apuntando a `NANGO_HOST` (ver `.env.prod`). Hoy apunta a la **URL
 pública** `https://api.nango.intellify.pro` para que el `sessionToken` valide en

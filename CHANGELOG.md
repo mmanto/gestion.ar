@@ -7,6 +7,13 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **Chat embebido en la landing de ERMA** (`sites/erma/chat-widget.js`): botón
+  flotante verde (marca de la landing) que abre un panel con el chat del tenant
+  en un iframe (`/chat/c/channel_3728c7f54d80`, mismo origen). Script vanilla
+  inyectado desde `index.html` (la landing es un build sin fuente); se sirve
+  por la landing con `expires -1` y está listado en la regla Path de
+  `landing-erma` (prod y local). Al cerrar el panel se descarga el iframe
+  (`about:blank`) para cortar WS/push en background.
 - **Landing estática de ERMA en el stack** (`sites/erma/` → contenedor
   `landing-erma`): comparte el dominio `erma.com.ar` con `frontend-tenant-erma`
   igual que ius/laboralia/proptech — el router de Traefik matchea `/`, `.html`,
