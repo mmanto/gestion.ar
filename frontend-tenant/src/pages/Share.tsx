@@ -58,7 +58,7 @@ export const Share = () => {
 
   const fullName = [user?.nombre, user?.apellido].filter(Boolean).join(' ') || user?.username || '';
 
-  const buildMessage = (): string =>
+  const messageLines = (): string[] =>
     [
       `Hola, soy ${fullName}`.trim(),
       user?.email ? `Mi correo: ${user.email}` : null,
@@ -66,7 +66,9 @@ export const Share = () => {
       chatLink,
     ]
       .filter(Boolean)
-      .join('\n');
+      .map(String);
+
+  const buildMessage = (): string => messageLines().join('\n');
 
   const phoneDigits = phone.replace(/\D/g, '');
 
@@ -143,7 +145,27 @@ export const Share = () => {
 
               <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
                 <p className="text-xs font-medium text-gray-700 mb-1.5">Vista previa del mensaje</p>
-                <p className="text-sm text-gray-800 whitespace-pre-line">{buildMessage()}</p>
+                <div className="text-sm text-gray-800">
+                  {messageLines().map((line, i) =>
+                    line === chatLink && chatLink ? (
+                      <a
+                        key={i}
+                        href={chatLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block mb-1 text-blue-600 underline break-all"
+                      >
+                        {chatLink}
+                      </a>
+                    ) : (
+                      <div key={i} className="mb-1">{line}</div>
+                    )
+                  )}
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  En WhatsApp el enlace llega como link clickeable — el cliente solo tiene que
+                  tocarlo para abrir tu chat.
+                </p>
               </div>
             </div>
           )}
