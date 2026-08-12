@@ -34,7 +34,20 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `erma.com.ar` debe apuntar al VPS para que el login del tenant responda en
   `/login` — ver `docs/ops/INFRASTRUCTURE.md`).
 
+### Agregado
+- **Pantalla de carga en la landing de ERMA** (`sites/erma/index.html`):
+  un overlay con spinner + marca cubre el sitio y se oculta recién cuando
+  `window.load` dispara (el bundle es `defer`, así que a ese punto el root ya
+  está renderizado), con un safety timeout de 12s por si algún recurso cuelga
+  el load. La landing solo se muestra estando completamente cargada.
+
 ### Cambiado
+- **Chat de ERMA arranca abierto + foco en el input:** en `chat-widget.js` el
+  panel ya no espera el click del FAB — se abre por defecto apenas carga la
+  landing (el FAB queda oculto y reaparece si se cierra con la X). Y el
+  `ChatInputBar` del SPA enfoca el textarea en cuanto el chat queda conectado
+  (mientras no conecta viene `disabled` y no recibe foco), para que el prompt
+  esté listo para escribir.
 - **Barra superior del chat web (`/chat/c/:channelId`) marcada con el branding
   del tenant:** el `ChatHeader` del SPA dejó de estar hardcodeado en índigo con
   logo de ius y ahora se pinta con el `primary_color` del tenant, muestra su

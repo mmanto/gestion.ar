@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 
 interface ChatInputBarProps {
@@ -9,6 +9,13 @@ interface ChatInputBarProps {
 export function ChatInputBar({ onSend, disabled = false }: ChatInputBarProps) {
   const [text, setText] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Enfocar el input apenas el chat queda listo para escribir: mientras no
+  // está conectado el textarea viene `disabled` y no recibe foco, así que
+  // se enfoca cuando pasa a enabled (el embed de ERMA abre el chat visible).
+  useEffect(() => {
+    if (!disabled) textareaRef.current?.focus();
+  }, [disabled]);
 
   const handleSend = () => {
     const trimmed = text.trim();

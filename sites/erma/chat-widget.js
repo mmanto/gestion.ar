@@ -6,7 +6,8 @@
  * El iframe apunta al mismo origen (location.origin) para que funcione igual
  * en prod (https://erma.com.ar) y en local (*.test) — el X-Frame-Options del
  * nginx del tenant es SAMEORIGIN, así que el chat solo puede embeberse desde
- * el propio dominio. Un botón flotante abre el panel; la X lo cierra.
+* propio dominio. El panel arranca abierto apenas carga la landing; si el
+ * usuario lo cierra, queda el botón flotante para reabrirlo.
  */
 (function () {
   'use strict';
@@ -70,18 +71,25 @@
   var frame = panel.querySelector('#erma-chat-frame');
   var closeBtn = panel.querySelector('#erma-chat-close');
 
-  fab.addEventListener('click', function () {
+  function openPanel() {
     panel.classList.add('open');
     fab.style.display = 'none';
     // Recargar el chat al abrir (el iframe vive siempre montado, así se
     // re-inicia la conversación y no queda una sesión vieja colgada).
     frame.src = chatUrl;
-  });
+  }
 
-  closeBtn.addEventListener('click', function () {
+  function closePanel() {
     // Quitar el src al cerrar: corta WS y push del chat en background.
     frame.src = 'about:blank';
     panel.classList.remove('open');
     fab.style.display = '';
-  });
+  }
+
+  fab.addEventListener('click', openPanel);
+  closeBtn.addEventListener('click', closePanel);
+
+  // El chat arranca abierto: apenas carga la landing se muestra el panel
+  // (el FAB queda oculto). El user puede cerrarlo con la X.
+  openPanel();
 })();

@@ -13,8 +13,39 @@
     <script src="./chat-widget.js" defer></script>
     <!-- Scroll nativo: neutraliza el smooth-scroll de Lenis del bundle (ver scroll-fix.js) -->
     <script src="./scroll-fix.js" defer></script>
+    <!-- Pantalla de carga del sitio: cubre la landing hasta que termina de
+         cargar (bundle + recursos). Ver #site-loader y script al final del body. -->
+    <style>
+      #site-loader{position:fixed;inset:0;z-index:10000;background:#fff;display:flex;align-items:center;justify-content:center;transition:opacity .45s ease;}
+      #site-loader.hidden{opacity:0;pointer-events:none;}
+      #site-loader .sl-inner{text-align:center;}
+      #site-loader .sl-spinner{width:44px;height:44px;margin:0 auto 16px;border:4px solid #4a6741;border-top-color:transparent;border-radius:50%;animation:erma-spin .9s linear infinite;}
+      #site-loader .sl-brand{color:#4a6741;font-family:Inter,system-ui,sans-serif;font-weight:600;font-size:14px;letter-spacing:.22em;text-transform:uppercase;}
+      @keyframes erma-spin{to{transform:rotate(360deg);}}
+    </style>
   </head>
   <body>
+    <div id="site-loader">
+      <div class="sl-inner">
+        <div class="sl-spinner"></div>
+        <div class="sl-brand">ERMA</div>
+      </div>
+    </div>
     <div id="root"></div>
+    <script>
+      // Muestra la landing recién cuando todo cargó (bundle + recursos). El
+      // bundle es `defer`, así que a `window.load` ya ejecutó y el root está
+      // renderizado. Safety timeout por si algún recurso cuelga el load.
+      (function () {
+        function hide() {
+          var l = document.getElementById('site-loader');
+          if (!l || l.classList.contains('hidden')) return;
+          l.classList.add('hidden');
+          setTimeout(function () { l.parentNode && l.parentNode.removeChild(l); }, 500);
+        }
+        window.addEventListener('load', hide);
+        setTimeout(hide, 12000);
+      })();
+    </script>
   </body>
 </html>
