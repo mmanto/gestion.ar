@@ -18,6 +18,17 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `/u/*`) se quedan en su página. El redirect de backoffice sigue intacto.
 
 ### Agregado
+
+- **Registro de turnos ERMA: garantía de datos del paciente** (`docs/turnos.json`,
+  `docs/erma_ius_config.json`): el flujo de reserva (`iniciar_reserva_turno`)
+  pide y valida los tres datos obligatorios — apellido y nombre completo, DNI
+  y WhatsApp — antes de mostrar el calendario; no se confirma ningún turno sin
+  ellos. Se corrigieron los keys de `turnos.json` (antes `name`/`phone`, que el
+  booking service no vuelca al Client del backoffice) a los well-known
+  (`nombre`/`dni`/`whatsapp`), y el system prompt de ERMA ahora instruye al
+  agente a no confirmar ni saltear esos datos, y cómo manejar a quien no los
+  quiera dar.
+
 - **Scroll nativo en la landing de ERMA** (`sites/erma/scroll-fix.js`): el
   bundle de la landing inicializa Lenis (smooth-scroll) con easing largo — el
   wheel casi no desplazaba la página (un giro de 400px movía ~55px; ticks

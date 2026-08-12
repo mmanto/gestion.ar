@@ -1,25 +1,28 @@
 {
+  "_nota": "Config de los datos del paciente que ERMA pide al hacer el registro de un turno. Se aplica como bot.metadata.appointments.default_info_fields (o service.metadata.info_fields) del servicio de turnos. El booking service (appointment_booking_service.py) pide cada campo en orden y valida por 'type'; no se avanza al calendario hasta completar los tres. Los keys deben ser los 'well-known' (nombre/apellido/dni/whatsapp) para que el dato se vuelque al Client del backoffice y se saltee si ya se conoce (skip_if_known).",
   "enabled": true,
   "skip_if_known": true,
-  "steps": [
+  "info_fields": [
     {
-      "field": "name",
-      "question": "¡Hola! Para poder ayudarte a reservar tu turno, primero necesito algunos datos. ¿Cuál es tu apellido y nombre completo?",
-      "field_type": "text",
+      "key": "nombre",
+      "label": "¡Hola! Para poder ayudarte a reservar tu turno, primero necesito algunos datos. ¿Cuál es tu apellido y nombre completo?",
+      "type": "text",
       "required": true,
       "validation_hint": "Por favor, ingresá tu apellido y nombre completo."
     },
     {
-      "field": "dni",
-      "question": "Gracias. ¿Cuál es tu número de DNI?",
-      "field_type": "text",
+      "key": "dni",
+      "label": "Gracias. ¿Cuál es tu número de DNI?",
+      "type": "numeric_id",
+      "min_length": 6,
+      "max_length": 10,
       "required": true,
-      "validation_hint": "Por favor, ingresá tu número de DNI (solo números, sin puntos)."
+      "validation_hint": "Por favor, ingresá tu número de DNI (solo números, sin puntos, entre 6 y 10 dígitos)."
     },
     {
-      "field": "phone",
-      "question": "Por último, ¿cuál es tu número de WhatsApp de contacto?",
-      "field_type": "phone",
+      "key": "whatsapp",
+      "label": "Por último, ¿cuál es tu número de WhatsApp de contacto?",
+      "type": "phone",
       "required": true,
       "validation_hint": "Por favor, ingresá un número de WhatsApp válido (ej: +54 9 11 1234-5678)."
     }
