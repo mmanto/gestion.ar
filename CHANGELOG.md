@@ -7,6 +7,16 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **Scroll nativo en la landing de ERMA** (`sites/erma/scroll-fix.js`): el
+  bundle de la landing inicializa Lenis (smooth-scroll) con easing largo — el
+  wheel casi no desplazaba la página (un giro de 400px movía ~55px; ticks
+  seguidos, 0px) y el HTML quedaba con `class="lenis lenis-smooth"`. Como la
+  instancia de Lenis no queda expuesta en `window` (no se puede `.stop()`),
+  este script la neutraliza desde afuera: quita la clase `lenis-smooth` del
+  `<html>` y bloquea en fase de captura el listener de `wheel` de Lenis **sin**
+  `preventDefault` → el navegador hace scroll nativo, fluido y 1:1 con la
+  rueda. Servido por la landing con `expires -1` y listado en la regla Path de
+  `landing-erma` (prod y local).
 - **Chat embebido en la landing de ERMA** (`sites/erma/chat-widget.js`): botón
   flotante verde (marca de la landing) que abre un panel con el chat del tenant
   en un iframe (`/chat/c/channel_3728c7f54d80`, mismo origen). Script vanilla
