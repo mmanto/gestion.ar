@@ -7,6 +7,17 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Corregido
+- **Registro por Google en la landing de iUS** (`sites/ius-landing/registro.html`):
+  el botón "Registrarme con Google" de la landing mostraba un `alert()` demo
+  hardcodeado ("Conecta este botón a tu proveedor de Google OAuth. (demo)") en
+  vez de hacer el OAuth real. Se restauró el wiring del micro-frontend de
+  registro (el bundle `register-embed.js`, que ya existía y el router servía):
+  el form estático se reemplazó por `#register-root` y ahora monta el
+  `RegisterForm` real, que dispara el flujo OAuth de Google (relacionado con el
+  Diagnóstico de Nango). También se agregó `/register-embed.js` a la regla del
+  router `landing-ius` local (en prod ya estaba). El SPA `/register` del tenant
+  ya funcionaba — este bug era solo de la landing estática.
+
 - **El chat público ya no pide iniciar sesión** (`frontend-tenant/src/services/api.ts`):
   el interceptor de axios redirigía a `/login` ante **cualquier** respuesta 401,
   sin distinguir ruta pública de protegida. Como el chat del cliente del mismo

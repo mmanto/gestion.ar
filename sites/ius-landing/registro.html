@@ -113,102 +113,7 @@
 
       <!-- RIGHT: signup card -->
       <div class="w-full max-w-md mx-auto lg:ml-auto lg:mr-0">
-        <div class="bg-white rounded-3xl shadow-2xl shadow-black/30 overflow-hidden">
-
-          <div class="bg-gradient-brand px-8 pt-7 pb-8 flex items-center gap-4">
-            <span class="w-14 h-14 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0">
-              <img src="./favicon.svg" alt="iUS" class="w-8 h-8" style="filter:brightness(0) invert(1)" />
-            </span>
-            <div>
-              <span class="inline-block text-[11px] font-bold tracking-wide text-white bg-white/20 rounded-full px-2.5 py-1 mb-1">iUS Escucha. Analiza. Decide.</span>
-              <p class="text-2xl font-extrabold text-white leading-none">Crea tu cuenta</p>
-            </div>
-          </div>
-
-          <div class="px-8 pt-7">
-            <div class="text-center mb-6">
-              <h2 class="text-xl font-extrabold text-gray-900 mb-1">Elige tu plan</h2>
-              <p class="text-gray-500 text-sm">Podrás confirmarlo en el siguiente paso.</p>
-            </div>
-
-            <div id="plan-tabs" class="grid grid-cols-2 gap-1 bg-gray-100 rounded-xl p-1 mb-6">
-              <button type="button" id="tab-mensual" class="plan-tab rounded-lg py-2.5 text-sm font-semibold">Plan Mensual</button>
-              <button type="button" id="tab-anual" class="plan-tab rounded-lg py-2.5 text-sm font-semibold">Plan Anual <span class="text-[10px] font-bold text-green-600">-2 meses</span></button>
-            </div>
-
-            <div id="plan-summary" class="flex items-center justify-between bg-brand-50 border border-brand-100 rounded-xl px-4 py-3 mb-7">
-              <div>
-                <div id="plan-summary-label" class="text-xs font-semibold text-brand-700 uppercase tracking-wide">Plan mensual</div>
-                <div id="plan-summary-price" class="text-lg font-extrabold text-gray-900">$690.00 MXN <span class="text-xs font-medium text-gray-500">/mes</span></div>
-              </div>
-              <span class="text-xs text-gray-500">Cancela cuando quieras</span>
-            </div>
-          </div>
-
-          <form class="px-8 pb-8" id="signup-form">
-            <button type="button" id="google-auth-btn" class="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl py-3.5 mb-6 font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
-              <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.52 12.27c0-.84-.07-1.64-.2-2.42H12v4.58h6.47a5.54 5.54 0 0 1-2.4 3.64v3h3.88c2.27-2.09 3.57-5.17 3.57-8.8z"/><path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.9l-3.88-3.02c-1.08.72-2.45 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.27v3.11A11.998 11.998 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.27 14.27A7.2 7.2 0 0 1 4.89 12c0-.79.14-1.56.38-2.27V6.62H1.27A12 12 0 0 0 0 12c0 1.94.46 3.77 1.27 5.38l4-3.11z"/><path fill="#EA4335" d="M12 4.77c1.77 0 3.35.61 4.6 1.8l3.44-3.44C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.69 1.27 6.62l4 3.11C6.22 6.88 8.87 4.77 12 4.77z"/></svg>
-              Registrarme con Google
-            </button>
-
-            <div class="flex items-center gap-3 mb-6">
-              <div class="h-px bg-gray-200 flex-1"></div>
-              <span class="text-xs text-gray-400 whitespace-nowrap">o regístrate con tu correo</span>
-              <div class="h-px bg-gray-200 flex-1"></div>
-            </div>
-
-            <label class="block mb-4">
-              <span class="block text-sm font-semibold text-gray-800 mb-1.5">Nombre Completo</span>
-              <div class="relative">
-                <svg class="w-5 h-5 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-                <input id="fullname-input" type="text" required placeholder="Ingresa tu nombre completo" class="w-full border border-gray-200 rounded-xl pl-11 pr-4 py-3 text-sm text-gray-800 placeholder-gray-400 transition-shadow" />
-              </div>
-            </label>
-
-            <label class="block mb-4">
-              <span class="block text-sm font-semibold text-gray-800 mb-1.5">Correo Electrónico</span>
-              <div class="relative">
-                <svg class="w-5 h-5 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
-                <input type="email" required placeholder="Ingresa tu correo electrónico" class="w-full border border-gray-200 rounded-xl pl-11 pr-4 py-3 text-sm text-gray-800 placeholder-gray-400 transition-shadow" />
-              </div>
-            </label>
-
-            <label class="block mb-5">
-              <span class="block text-sm font-semibold text-gray-800 mb-1.5">Contraseña</span>
-              <div class="relative">
-                <svg class="w-5 h-5 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-                <input id="password-input" type="password" required placeholder="Crea una contraseña segura" class="w-full border border-gray-200 rounded-xl pl-11 pr-11 py-3 text-sm text-gray-800 placeholder-gray-400 transition-shadow" />
-                <button type="button" id="toggle-password" aria-label="Mostrar contraseña" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                  <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
-                </button>
-              </div>
-            </label>
-
-            <label class="flex items-start gap-2.5 mb-3 cursor-pointer">
-              <input type="checkbox" required class="mt-0.5 w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
-              <span class="text-sm text-gray-600 leading-snug">
-                Acepto los <a href="./terminos-condiciones.html" target="_blank" rel="noopener noreferrer" class="text-brand-600 font-medium hover:underline">Términos y Condiciones de Uso del SaaS iUS</a>.
-              </span>
-            </label>
-
-            <label class="flex items-start gap-2.5 mb-6 cursor-pointer">
-              <input type="checkbox" required class="mt-0.5 w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
-              <span class="text-sm text-gray-600 leading-snug">
-                Acepto el <a href="./aviso-privacidad.html" target="_blank" rel="noopener noreferrer" class="text-brand-600 font-medium hover:underline">Aviso de Privacidad Integral del SaaS</a>.
-              </span>
-            </label>
-
-            <button type="submit" class="w-full flex items-center justify-center gap-2 bg-gradient-brand text-white font-semibold py-3.5 rounded-xl hover:opacity-90 transition-all hover:scale-[1.01] shadow-lg shadow-brand-200">
-              Registrarme y Proceder al Pago
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-            </button>
-
-            <p class="flex items-center justify-center gap-1.5 text-xs text-gray-400 mt-5">
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z"/><path d="m9 12 2 2 4-4"/></svg>
-              Tu información está protegida con cifrado de nivel bancario.
-            </p>
-          </form>
-        </div>
+        <div id="register-root"></div>
       </div>
 
     </div>
@@ -223,46 +128,26 @@
 </a>
 
 <script>
-  var PLANS = {
-    mensual: { label: 'Plan mensual', price: '$690.00 MXN', suffix: '/mes', note: 'Cancela cuando quieras' },
-    anual:   { label: 'Plan anual',   price: '$5,490.00 MXN', suffix: '/año', note: '¡Ahorra 2 meses!' }
+  // El bundle del micro-frontend (register-embed.js) incluye React + Capacitor
+  // + Nango, que esperan el global Node `process`. En navegador hay que
+  // definirlo acá antes de que cargue el bundle (patrón estándar al bundlear
+  // esas libs para web).
+  window.process = window.process || {
+    env: { NODE_ENV: 'production' },
+    nextTick: function (cb) { setTimeout(cb, 0); },
+    emit: function () { return false; },
   };
-  var selectedPlan = 'mensual';
 
-  function applyPlan(plan) {
-    selectedPlan = plan;
-    document.getElementById('tab-mensual').classList.toggle('active', plan === 'mensual');
-    document.getElementById('tab-anual').classList.toggle('active', plan === 'anual');
-    document.getElementById('plan-summary-label').textContent = PLANS[plan].label;
-    document.getElementById('plan-summary-price').innerHTML = PLANS[plan].price + ' <span class="text-xs font-medium text-gray-500">' + PLANS[plan].suffix + '</span>';
-    document.querySelector('#plan-summary span.text-xs.text-gray-500').textContent = PLANS[plan].note;
-  }
-
-  document.getElementById('tab-mensual').addEventListener('click', function () { applyPlan('mensual'); });
-  document.getElementById('tab-anual').addEventListener('click', function () { applyPlan('anual'); });
-
-  var params = new URLSearchParams(window.location.search);
-  applyPlan(params.get('plan') === 'anual' ? 'anual' : 'mensual');
-
-  document.getElementById('toggle-password').addEventListener('click', function () {
-    var input = document.getElementById('password-input');
-    var isHidden = input.type === 'password';
-    input.type = isHidden ? 'text' : 'password';
-    this.setAttribute('aria-label', isHidden ? 'Ocultar contraseña' : 'Mostrar contraseña');
-  });
-
-  document.getElementById('google-auth-btn').addEventListener('click', function () {
-    alert('Conecta este botón a tu proveedor de Google OAuth. (demo)');
-  });
-
-  document.getElementById('signup-form').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var nombre = document.getElementById('fullname-input').value.trim();
-    if (nombre) sessionStorage.setItem('ius_nombre', nombre);
-    sessionStorage.setItem('ius_plan', selectedPlan);
-    window.location.href = './procesar-pago.html?plan=' + selectedPlan;
-  });
+  // Config del micro-frontend de autoregistro embebido (ver
+  // frontend-tenant/src/embed/registerEmbed.tsx). TenantId de ius en prod
+  // (TENANT_ID_IUS en .env.prod); la marca se puede pisar acá sin recompilar.
+  window.__IUS_REGISTER__ = {
+    tenantId: 'tenant_17d505040583',
+    branding: { tenantName: 'iUS', primaryColor: '#25357a', logoUrl: './favicon.svg' },
+  };
 </script>
+<script src="./register-embed.js"></script>
+
 
 <footer class="ius-footer">
   <div class="ius-footer__inner">

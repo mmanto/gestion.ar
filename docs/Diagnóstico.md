@@ -33,3 +33,23 @@ docker exec gestionar_frontend_tenant_ius sh -c 'grep -ro "nango.intellify.pro\|
  El frontend ahora apunta a la instancia pública, así que el backend debe crear la sesión en la misma instancia. Tu log ya muestra que llega a api.nango.intellify.pro (correcto). En el repo, .env.dev tiene
  NANGO_HOST=http://nango-server:8080 (interno) — si alguno de tus entornos usa ese valor, el backend y el frontend quedarían en instancias distintas y el login seguiría fallando. Asegurate de que NANGO_HOST =
  https://api.nango.intellify.pro en el entorno que testeás (y el NANGO_SECRET_KEY correspondiente a esa instancia), igual que en .env.prod.
+
+ Resolución (2026-08-12): el mismatch se había vuelto a presentar — .env.dev
+ apuntaba de nuevo a la instancia interna (NANGO_HOST=http://nango-server:8080,
+ secret local) mientras los frontends-tenant ius/erma hornean las URLs públicas.
+ Resultado: la sesión se creaba local pero el Connect UI público la rechazaba
+ (401 en /connect/session) → la integración de Google no se resolvía y el botón
+ salía en modo demo ("Conecta este botón a tu proveedor de Google OAuth. (demo)").
+
+ .env.dev se volvió a alinear a la instancia pública:
+     NANGO_HOST=https://api.nango.intellify.pro
+     NANGO_SECRET_KEY=40a9dfe1-94bf-44c8-ae04-7f63a24d1800   (igual que .env.prod)
+ Tras reiniciar `app` y los nginx de frontend (la recreación del contenedor
+ cambió su IP y los nginx cachean el upstream `app` al arrancar → 502 temporal;
+ reiniciarlos re-resuelve), el flujo local quedó: login/session 200,
+ /connect/session 200, /integrations 200 → botón real "Connect", sin demo.
+
+ Prod verificado (2026-08-12, ius.intellify.pro): la integración `google-mail`
+ en la Nango pública resuelve el provider y renderiza el botón "Link Gmail
+ Account / Connect" — NO está en modo demo. La integración pública está OK; el
+ "(demo)" era exclusivamente el mismatch local.

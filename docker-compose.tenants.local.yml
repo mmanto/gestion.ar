@@ -124,7 +124,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_public"
-      - 'traefik.http.routers.landing-ius.rule=Host(`ius.mx.test`) && (PathRegexp(`^/.*\.html$`) || Path(`/`) || Path(`/favicon.svg`) || Path(`/favicon-32.png`) || Path(`/apple-touch-icon.png`) || Path(`/logo-horizontal.svg`) || Path(`/logo-horizontal-blanco.svg`) || Path(`/logo-vertical-blanco.svg`) || Path(`/despacho-hero.jpg`) || Path(`/estudio.jpg`) || Path(`/testimonios-bg.jpg`) || Path(`/eduardo-sandoval.webp`) || Path(`/og-image.png`))'
+      - 'traefik.http.routers.landing-ius.rule=Host(`ius.mx.test`) && (PathRegexp(`^/.*\.html$`) || Path(`/`) || Path(`/register-embed.js`) || Path(`/favicon.svg`) || Path(`/favicon-32.png`) || Path(`/apple-touch-icon.png`) || Path(`/logo-horizontal.svg`) || Path(`/logo-horizontal-blanco.svg`) || Path(`/logo-vertical-blanco.svg`) || Path(`/despacho-hero.jpg`) || Path(`/estudio.jpg`) || Path(`/testimonios-bg.jpg`) || Path(`/eduardo-sandoval.webp`) || Path(`/og-image.png`))'
       - "traefik.http.routers.landing-ius.entrypoints=web"
       - "traefik.http.routers.landing-ius.priority=10"
       - "traefik.http.services.landing-ius.loadbalancer.server.port=80"
