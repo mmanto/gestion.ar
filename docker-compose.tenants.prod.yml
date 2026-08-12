@@ -81,6 +81,7 @@ services:
       - "traefik.http.routers.tenant-erma.rule=Host(`erma.com.ar`)"
       - "traefik.http.routers.tenant-erma.entrypoints=websecure"
       - "traefik.http.routers.tenant-erma.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.tenant-erma.priority=1"
       - "traefik.http.services.tenant-erma.loadbalancer.server.port=80"
       # --- Redirect temporal del dominio viejo (quitar cuando el cliente
       # termine de migrar bookmarks/enlaces externos a erma.com.ar) ---
