@@ -31,11 +31,26 @@ api.interceptors.response.use(
     return response;
   },
   async (error: AxiosError) => {
-    // Si recibimos 401, limpiar token y redirigir a login
+    // Si recibimos 401, limpiar token. Solo redirigir a login en rutas
+    // protegidas del backoffice: en rutas públicas (chat del cliente, landing
+    // de usuario, login/registro) un 401 no debe saltar al login — ocurre, por
+    // ejemplo, cuando queda un token vencido del backoffice en el mismo origen
+    // y el embed del chat de la landing lo comparte (AuthProvider.checkAuth).
     if (error.response?.status === 401) {
       await tokenStorage.removeItem('token');
       await tokenStorage.removeItem('user');
-      window.location.href = '/login';
+
+      const path = window.location.pathname;
+      const isPublicRoute =
+        path === '/' ||
+        path === '/login' ||
+        path === '/register' ||
+        path === '/registro' ||
+        path.startsWith('/chat/') ||
+        path.startsWith('/u/');
+      if (!isPublicRoute) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

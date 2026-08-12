@@ -6,6 +6,17 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 
 ## [Sin versión] - En desarrollo
 
+### Corregido
+- **El chat público ya no pide iniciar sesión** (`frontend-tenant/src/services/api.ts`):
+  el interceptor de axios redirigía a `/login` ante **cualquier** respuesta 401,
+  sin distinguir ruta pública de protegida. Como el chat del cliente del mismo
+  origen comparte `localStorage` con el backoffice, si quedaba un token vencido
+  del staff, `AuthProvider.checkAuth()` recibía 401 al validarlo y el embed del
+  chat de la landing saltaba al login. Ahora la limpieza del token ocurre siem-
+  pre, pero el redirect a `/login` solo se dispara en rutas protegidas del
+  backoffice; las públicas (`/`, `/login`, `/register`, `/registro`, `/chat/*`,
+  `/u/*`) se quedan en su página. El redirect de backoffice sigue intacto.
+
 ### Agregado
 - **Scroll nativo en la landing de ERMA** (`sites/erma/scroll-fix.js`): el
   bundle de la landing inicializa Lenis (smooth-scroll) con easing largo — el
