@@ -14,7 +14,7 @@ interface ChatInterfaceProps {
 export function ChatInterface({ botId, channelId }: ChatInterfaceProps) {
   const id = channelId ?? botId ?? '';
   const mode = channelId ? 'channel' : 'bot';
-  const { messages, isConnected, isTyping, error, botName, sendMessage } =
+  const { messages, isConnected, isTyping, error, sendMessage } =
     useWebSocketChat(id, mode);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -25,7 +25,7 @@ export function ChatInterface({ botId, channelId }: ChatInterfaceProps) {
 
   return (
     <div className="flex flex-col h-screen max-w-2xl mx-auto w-full bg-white shadow-xl">
-      <ChatHeader botName={botName} isConnected={isConnected} />
+      <ChatHeader isConnected={isConnected} />
 
       {/* Error banner */}
       {error && (

@@ -35,6 +35,16 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `/login` — ver `docs/ops/INFRASTRUCTURE.md`).
 
 ### Cambiado
+- **Barra superior del chat web (`/chat/c/:channelId`) marcada con el branding
+  del tenant:** el `ChatHeader` del SPA dejó de estar hardcodeado en índigo con
+  logo de ius y ahora se pinta con el `primary_color` del tenant, muestra su
+  logo (`logo_url_vertical`/`logo_url`) y su nombre vía `useTenant()` —
+  cada tenant define su color/logo desde Ajustes > Marca y se refleja en su
+  chat. En la landing de ERMA, se quitó la cabecera verde duplicada que
+  agregaba `chat-widget.js` (que además llevaba la X de cierre reubicada como
+  overlay sobre la barra del chat): ahora queda una sola barra, la del chat,
+  ya marcada con el color e imagen del negocio. **Requiere rebuild + redeploy**
+  de `frontend-tenant` y `landing-erma`.
 - **Menú mobile (app Android y web < `md`):** por definición de producto, el
   menú del avatar ahora solo muestra **Escritorio, Ajustes y Salir** (se quitó
   la navegación lateral completa del menú mobile). En desktop la sidebar sigue

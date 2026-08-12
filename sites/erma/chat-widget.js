@@ -30,16 +30,14 @@
       '#erma-chat-fab{position:fixed;bottom:24px;right:24px;z-index:9990;width:60px;height:60px;border-radius:9999px;background:' + PRIMARY + ';color:#fff;border:none;box-shadow:0 8px 24px rgba(0,0,0,.28);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s ease;}',
       '#erma-chat-fab:hover{transform:scale(1.06);}',
       '#erma-chat-fab svg{width:28px;height:28px;fill:currentColor;}',
-      '#erma-chat-panel{position:fixed;bottom:24px;right:24px;z-index:9991;width:380px;max-width:calc(100vw - 32px);height:min(620px,calc(100vh - 96px));background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.3);display:none;flex-direction:column;font-family:Inter,system-ui,-apple-system,sans-serif;}',
-      '#erma-chat-panel.open{display:flex;}',
-      '#erma-chat-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 16px;background:' + PRIMARY + ';color:#fff;flex-shrink:0;}',
-      '#erma-chat-head-title{display:flex;align-items:center;gap:10px;min-width:0;}',
-      '#erma-chat-head-dot{width:9px;height:9px;border-radius:9999px;background:#7ee787;flex-shrink:0;}',
-      '#erma-chat-head-text{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
-      '#erma-chat-head-sub{font-size:11px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
-      '#erma-chat-close{background:none;border:none;color:#fff;cursor:pointer;font-size:20px;line-height:1;padding:4px;flex-shrink:0;opacity:.9;}',
-      '#erma-chat-close:hover{opacity:1;}',
-      '#erma-chat-frame{flex:1;border:none;width:100%;min-height:0;background:#fff;}',
+      // El panel ya no lleva cabecera propia: la barra del chat la marca el
+      // propio ChatHeader del SPA (color + logo del tenant). La X de cierre
+      // va como overlay en la esquina superior derecha.
+      '#erma-chat-panel{position:fixed;bottom:24px;right:24px;z-index:9991;width:380px;max-width:calc(100vw - 32px);height:min(620px,calc(100vh - 96px));background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.3);display:none;font-family:Inter,system-ui,-apple-system,sans-serif;}',
+      '#erma-chat-panel.open{display:block;}',
+      '#erma-chat-close{position:absolute;top:10px;right:10px;z-index:9;width:30px;height:30px;border-radius:9999px;background:rgba(0,0,0,.28);border:none;color:#fff;cursor:pointer;font-size:17px;line-height:1;display:flex;align-items:center;justify-content:center;opacity:.92;}',
+      '#erma-chat-close:hover{opacity:1;background:rgba(0,0,0,.42);}',
+      '#erma-chat-frame{border:none;width:100%;height:100%;background:#fff;}',
       '@media (max-width:480px){#erma-chat-panel{bottom:0;right:0;width:100%;max-width:100%;height:100%;max-height:none;border-radius:0;}#erma-chat-fab{bottom:16px;right:16px;}}'
     ].join('\n');
     document.head.appendChild(css);
@@ -61,18 +59,12 @@
 
   var panel = document.createElement('div');
   panel.id = 'erma-chat-panel';
+  // Sin cabecera: la barra del chat la marca el propio ChatHeader del SPA
+  // (color + logo del tenant, ver frontend-tenant ChatHeader.tsx). La X
+  // cierra el panel como overlay sobre esa barra.
   panel.innerHTML =
-    '<div id="erma-chat-head">' +
-    '  <div id="erma-chat-head-title">' +
-    '    <span id="erma-chat-head-dot"></span>' +
-    '    <div>' +
-    '      <div id="erma-chat-head-text">Chat con ERMA</div>' +
-    '      <div id="erma-chat-head-sub">Terapia Ocupacional</div>' +
-    '    </div>' +
-    '  </div>' +
-    '  <button id="erma-chat-close" type="button" aria-label="Cerrar chat">&times;</button>' +
-    '</div>' +
-    '<iframe id="erma-chat-frame" src="' + chatUrl + '" title="Chat ERMA" loading="lazy" allow="microphone"></iframe>';
+    '<iframe id="erma-chat-frame" src="' + chatUrl + '" title="Chat ERMA" loading="lazy" allow="microphone"></iframe>' +
+    '<button id="erma-chat-close" type="button" aria-label="Cerrar chat">&times;</button>';
   document.body.appendChild(panel);
 
   var frame = panel.querySelector('#erma-chat-frame');
