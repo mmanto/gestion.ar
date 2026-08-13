@@ -3,6 +3,10 @@ export interface PublicBotInfo {
   name: string;
   description?: string;
   business_type: string;
+  /** Si True, el chat del cliente arranca en blanco en cada carga de página
+   * (identidad de sesión nueva → el flujo vuelve a pedir los datos del
+   * paciente/ciudadano). Ver BotConfig.blank_chat_on_load. */
+  blank_chat_on_load?: boolean;
 }
 
 export interface PublicChannelInfo {

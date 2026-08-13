@@ -9,13 +9,17 @@ import { ChatWidget } from './ChatWidget';
 interface ChatInterfaceProps {
   botId?: string;
   channelId?: string;
+  /** Si True, el chat arranca en blanco en cada carga de página (identidad de
+   * sesión nueva → el flujo vuelve a pedir los datos del paciente/ciudadano).
+   * Ver BotConfig.blank_chat_on_load. */
+  blankOnLoad?: boolean;
 }
 
-export function ChatInterface({ botId, channelId }: ChatInterfaceProps) {
+export function ChatInterface({ botId, channelId, blankOnLoad = false }: ChatInterfaceProps) {
   const id = channelId ?? botId ?? '';
   const mode = channelId ? 'channel' : 'bot';
   const { messages, isConnected, isTyping, error, sendMessage } =
-    useWebSocketChat(id, mode);
+    useWebSocketChat(id, mode, blankOnLoad);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll al último mensaje

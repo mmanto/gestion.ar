@@ -12,6 +12,13 @@ interface UseWebSocketChatReturn {
 
 const DEVICE_ID_KEY = 'gestionar_device_id';
 
+// Identidad de sesión "en blanco": cuando el bot está configurado con
+// blank_chat_on_load, se genera UNA vez por carga de página (variable de
+// módulo) y se reutiliza en reconexiones dentro de la misma página; al
+// recargar la página JS vuelve a arrancar y se genera otra → el backend crea
+// un cliente/conversación nuevo y el flujo vuelve a pedir los datos.
+let blankSessionDeviceId: string | null = null;
+
 function generateUUID(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
@@ -32,9 +39,23 @@ function getOrCreateDeviceId(): string {
   return deviceId;
 }
 
-function buildWsUrl(id: string, mode: 'bot' | 'channel'): string {
+/** Id de sesión del chat. Con blankOnLoad = identidad nueva por carga de
+ * página (conversación en blanco); si no, el device_id persistido del
+ * dispositivo (comportamiento histórico: clientes que vuelven conservan su
+ * conversación y el flujo salta pasos ya completados). */
+function getChatSessionDeviceId(blankOnLoad: boolean): string {
+  if (blankOnLoad) {
+    if (!blankSessionDeviceId) {
+      blankSessionDeviceId = generateUUID();
+    }
+    return blankSessionDeviceId;
+  }
+  return getOrCreateDeviceId();
+}
+
+function buildWsUrl(id: string, mode: 'bot' | 'channel', blankOnLoad: boolean): string {
   const path = mode === 'channel' ? `/ws/chat/channel/${id}` : `/ws/chat/${id}`;
-  const deviceId = getOrCreateDeviceId();
+  const deviceId = getChatSessionDeviceId(blankOnLoad);
   const apiUrl = import.meta.env.VITE_API_URL || '';
   if (apiUrl.startsWith('http')) {
     // Desarrollo: http://localhost:8000 → ws://localhost:8000
@@ -45,7 +66,11 @@ function buildWsUrl(id: string, mode: 'bot' | 'channel'): string {
   return `${protocol}//${window.location.host}${path}?device_id=${deviceId}`;
 }
 
-export function useWebSocketChat(id: string, mode: 'bot' | 'channel' = 'bot'): UseWebSocketChatReturn {
+export function useWebSocketChat(
+  id: string,
+  mode: 'bot' | 'channel' = 'bot',
+  blankOnLoad: boolean = false
+): UseWebSocketChatReturn {
   const wsRef = useRef<WebSocket | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -53,7 +78,7 @@ export function useWebSocketChat(id: string, mode: 'bot' | 'channel' = 'bot'): U
   const [error, setError] = useState<string | null>(null);
   const [botName, setBotName] = useState('');
 
-  const wsUrl = useMemo(() => buildWsUrl(id, mode), [id, mode]);
+  const wsUrl = useMemo(() => buildWsUrl(id, mode, blankOnLoad), [id, mode, blankOnLoad]);
 
   const connect = useCallback(() => {
     const existing = wsRef.current;

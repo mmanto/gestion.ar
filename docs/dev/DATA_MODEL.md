@@ -79,6 +79,7 @@ Un bot es la entidad central: agrupa la configuración del LLM, sus canales y su
 | `rate_limit_messages` | int | 10 | Mensajes por ventana |
 | `rate_limit_window` | int | 60 | Ventana en segundos |
 | `flow` | FlowConfig (opt) | null | Flujo conversacional progresivo (LeadTrackers) |
+| `blank_chat_on_load` | bool | false | Si `true`, cada carga de página del chat del cliente usa una identidad de sesión NUEVA (no reutiliza el `device_id` persistido): la conversación arranca en blanco y el flujo vuelve a pedir los datos del paciente/ciudadano. Pensado para bots de alta de pacientes/ciudadanos (ERMA, pachoteayuda). |
 
 #### FlowConfig / FlowStep
 

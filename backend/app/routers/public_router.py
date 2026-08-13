@@ -100,6 +100,11 @@ async def get_public_channel_info(channel_id: str):
             "name": bot.name,
             "description": bot.description,
             "business_type": bot.business_type,
+            # Si True, el chat del cliente arranca en blanco en cada carga de
+            # página (el frontend usa una identidad de sesión nueva y el flujo
+            # vuelve a pedir los datos del paciente/ciudadano). Ver
+            # BotConfig.blank_chat_on_load.
+            "blank_chat_on_load": bool(getattr(bot.config, "blank_chat_on_load", False)),
         }
     }
 

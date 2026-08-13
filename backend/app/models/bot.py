@@ -111,6 +111,19 @@ class BotConfig(BaseModel):
             "responsabilidad de administración general."
         )
     )
+    blank_chat_on_load: bool = Field(
+        default=False,
+        description=(
+            "Si True, cada vez que se abre el chat del cliente (carga de "
+            "página) se usa una identidad de sesión NUEVA: no se reutiliza el "
+            "device_id persistido, así la conversación arranca en blanco y el "
+            "flujo de captura vuelve a pedir los datos del paciente/ciudadano "
+            "desde cero. Pensado para bots de alta de pacientes/ciudadanos "
+            "(ej. ERMA, pachoteayuda) donde cada visita corresponde a una "
+            "persona nueva a registrar. False (default) conserva la sesión del "
+            "dispositivo y el historial como hasta ahora."
+        )
+    )
 
 
 class BotChannelConfig(BaseModel):

@@ -6,6 +6,18 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 
 ## [Sin versión] - En desarrollo
 
+### Agregado
+- **Chat en blanco por carga de página para alta de pacientes/ciudadanos**
+  (`BotConfig.blank_chat_on_load`): los bots configurados con `true` (ERMA, y
+  pachoteayuda cuando exista) arrancan cada visita del chat con identidad de
+  sesión nueva — no se reutiliza el `device_id` persistido, la conversación
+  empieza en blanco y el flujo vuelve a pedir nombre/DNI/WhatsApp, quedando
+  un alta nueva de paciente/ciudadano en el backoffice. El flag se expone en
+  `GET /api/public/channels/{id}` (`bot.blank_chat_on_load`) y el frontend
+  (`ChatPage`/`useWebSocketChat`) lo aplica generando una identidad nueva por
+  carga de página (estable entre reconexiones). Sin el flag, el chat conserva
+  la sesión del dispositivo y el historial como hasta ahora.
+
 ### Corregido
 - **Registro por Google en la landing de iUS** (`sites/ius-landing/registro.html`):
   el botón "Registrarme con Google" de la landing mostraba un `alert()` demo
