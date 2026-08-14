@@ -17,7 +17,8 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   de día redondeadas con hover suave, día seleccionado relleno en salvia,
   badge de conteo de turnos, cabecera de mes y detalle del día con barra de
   acento verde. **Requiere rebuild + redeploy de `frontend-tenant`** y aplicar
-  `industry=salud` en los tenants ERMA (prod y local).
+  `industry=salud` en los tenants ERMA (`docker compose exec app python
+  scripts/apply_erma_branding.py`).
 
 ### Corregido
 - **Tenant local de ERMA apuntaba a un tenant inexistente:** en
