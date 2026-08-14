@@ -6,6 +6,26 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 
 ## [Sin versión] - En desarrollo
 
+### Cambiado
+- **Escritorio de ERMA: del semáforo de leads al calendario de turnos.** El
+  tenant ERMA quedó configurado con `branding.industry = 'salud'`, con lo que
+  el Dashboard oculta los cards del semáforo (Viable/Potencial/Exploración) y
+  muestra en su lugar el calendario de turnos del consultorio
+  (`AppointmentsCalendar`), manteniendo la grilla de pacientes debajo; el menú
+  pasa a "Pacientes"/"Historia Clínica". Se rediseñó el calendario con una
+  paleta verde salvia/musgo armónica con la marca de ERMA (`#4a6741`): celdas
+  de día redondeadas con hover suave, día seleccionado relleno en salvia,
+  badge de conteo de turnos, cabecera de mes y detalle del día con barra de
+  acento verde. **Requiere rebuild + redeploy de `frontend-tenant`** y aplicar
+  `industry=salud` en los tenants ERMA (prod y local).
+
+### Corregido
+- **Tenant local de ERMA apuntaba a un tenant inexistente:** en
+  `docker-compose.tenants.local.yml` y en el dev-server de
+  `docker-compose.tenants.dev.yml`, `TENANT_ID=tenant_bf351fa15c7d` no existía
+  en la base local — el SPA no resolvía el tenant. Se corrigió a
+  `tenant_4d47f2900969` (ERMA local, `erma.com.test`).
+
 ### Agregado
 - **Chat en blanco por carga de página para alta de pacientes/ciudadanos**
   (`BotConfig.blank_chat_on_load`): los bots configurados con `true` (ERMA, y

@@ -33,6 +33,7 @@ services:
       - ./:/app
       - frontend_tenant_node_modules_erma:/app/frontend-tenant/node_modules
     environment:
+      - TENANT_ID=tenant_4d47f2900969
       - VITE_APPOINTMENTS_REMOTE_URL=http://localhost:8180/remoteEntry.js
       - VITE_NANGO_CONNECT_URL=https://nango.intellify.pro
       - VITE_NANGO_API_URL=https://api.nango.intellify.pro

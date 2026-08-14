@@ -46,7 +46,7 @@ services:
         VITE_NANGO_API_URL: https://api.nango.intellify.pro
     container_name: gestionar_frontend_tenant_erma
     environment:
-      - TENANT_ID=tenant_bf351fa15c7d
+      - TENANT_ID=tenant_4d47f2900969
       - TENANT_SLUG=erma
     depends_on:
       app:

@@ -40,12 +40,16 @@ const STATUS_LABELS: Record<AppointmentStatus, string> = {
   no_show: 'No asistió',
 };
 
+// Paleta del Escritorio de salud — verde salvia/musgo de la marca del centro
+// (ERMA #4a6741) con sus tonos soft/mist (#eef2eb / #f4f7f2). Son literales
+// en las clases de Tailwind de abajo porque el JIT necesita los hex a mano.
+
 const STATUS_COLORS: Record<AppointmentStatus, string> = {
-  pending: 'bg-amber-100 text-amber-800',
-  confirmed: 'bg-green-100 text-green-800',
-  completed: 'bg-gray-100 text-gray-700',
-  cancelled: 'bg-red-100 text-red-700',
-  no_show: 'bg-red-100 text-red-700',
+  pending: 'bg-amber-50 text-amber-800 ring-1 ring-amber-200',
+  confirmed: 'bg-[#e8efe4] text-[#4a6741] ring-1 ring-[#cfdcc6]',
+  completed: 'bg-slate-100 text-slate-600 ring-1 ring-slate-200',
+  cancelled: 'bg-red-50 text-red-700 ring-1 ring-red-200',
+  no_show: 'bg-red-50 text-red-700 ring-1 ring-red-200',
 };
 
 const dayKey = (isoOrDate: string | Date) =>
@@ -161,18 +165,18 @@ export const AppointmentsCalendar = () => {
           <button
             type="button"
             onClick={() => setMonthCursor((m) => subMonths(m, 1))}
-            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-700"
+            className="p-1.5 rounded-lg hover:bg-[#eef2eb] text-[#4a6741] hover:text-[#334a2c]"
             aria-label="Mes anterior"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide w-40 text-center capitalize">
+          <h3 className="text-base font-bold text-[#334a2c] w-44 text-center capitalize">
             {format(monthCursor, 'MMMM yyyy', { locale: es })}
           </h3>
           <button
             type="button"
             onClick={() => setMonthCursor((m) => addMonths(m, 1))}
-            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-700"
+            className="p-1.5 rounded-lg hover:bg-[#eef2eb] text-[#4a6741] hover:text-[#334a2c]"
             aria-label="Mes siguiente"
           >
             <ChevronRight className="w-4 h-4" />
@@ -193,7 +197,7 @@ export const AppointmentsCalendar = () => {
         <>
           <div className="grid grid-cols-7 gap-1 mb-1">
             {WEEKDAY_LABELS.map((d) => (
-              <div key={d} className="text-center text-[11px] font-medium text-gray-500 py-1">
+              <div key={d} className="text-center text-[11px] font-semibold uppercase tracking-wide text-[#8a9483] py-1">
                 {d}
               </div>
             ))}
@@ -209,15 +213,25 @@ export const AppointmentsCalendar = () => {
                   key={key}
                   type="button"
                   onClick={() => setSelectedDay(day)}
-                  className={`aspect-square rounded-lg border text-left p-1.5 flex flex-col transition-colors ${
-                    selected ? 'border-primary bg-primary-50' : 'border-gray-200 hover:bg-gray-50'
-                  } ${!inMonth ? 'opacity-40' : ''}`}
+                  className={`aspect-square rounded-xl border text-left p-1.5 flex flex-col transition-all ${
+                    selected
+                      ? 'border-[#4a6741] bg-[#4a6741] shadow-sm'
+                      : 'border-gray-200 hover:border-[#c4d2ba] hover:bg-[#f4f7f2]'
+                  } ${!inMonth ? 'opacity-35' : ''}`}
                 >
-                  <span className={`text-xs ${isToday(day) ? 'font-bold text-primary' : 'text-gray-800'}`}>
+                  <span
+                    className={`text-xs leading-none ${
+                      selected ? 'text-white' : isToday(day) ? 'font-bold text-[#4a6741]' : 'text-gray-800'
+                    }`}
+                  >
                     {format(day, 'd')}
                   </span>
                   {dayAppointments.length > 0 && (
-                    <span className="mt-auto self-start inline-flex items-center gap-1 text-[10px] font-medium text-white bg-primary rounded-full px-1.5 py-0.5">
+                    <span
+                      className={`mt-auto self-end inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-semibold rounded-full ${
+                        selected ? 'bg-white text-[#4a6741]' : 'bg-[#4a6741] text-white'
+                      }`}
+                    >
                       {dayAppointments.length}
                     </span>
                   )}
@@ -228,8 +242,8 @@ export const AppointmentsCalendar = () => {
         </>
       )}
 
-      <div className="mt-6 border-t border-gray-200 pt-4">
-        <h4 className="text-sm font-semibold text-gray-900 mb-3 capitalize">
+      <div className="mt-6 border-t border-[#e6ebe2] pt-5">
+        <h4 className="text-sm font-bold text-gray-900 mb-3 capitalize border-l-4 border-[#4a6741] pl-3">
           Turnos del {format(selectedDay, "d 'de' MMMM", { locale: es })}
         </h4>
 
@@ -242,15 +256,15 @@ export const AppointmentsCalendar = () => {
             {selectedAppointments.map((appt) => (
               <li
                 key={appt.id}
-                className="flex items-center justify-between gap-3 border border-gray-200 rounded-lg p-3 flex-wrap"
+                className="flex items-center justify-between gap-3 border border-gray-200 rounded-xl p-3.5 flex-wrap transition-colors hover:border-[#c4d2ba] hover:bg-[#fafcf9]"
               >
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-semibold text-gray-900">
                     {format(parseISO(appt.start_at), 'HH:mm')}–{format(parseISO(appt.end_at), 'HH:mm')}
-                    {' · '}
+                    <span className="mx-2 text-gray-300">·</span>
                     {resourceById[appt.resource_id]?.name || 'Recurso'}
                   </p>
-                  <p className="text-xs text-gray-600 truncate">
+                  <p className="text-xs text-gray-500 truncate mt-0.5">
                     {appt.metadata.customer_name || appt.customer_ref}
                     {appt.metadata.customer_phone ? ` · ${appt.metadata.customer_phone}` : ''}
                   </p>
