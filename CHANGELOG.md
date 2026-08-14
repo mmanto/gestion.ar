@@ -16,7 +16,10 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   paleta verde salvia/musgo armónica con la marca de ERMA (`#4a6741`): celdas
   de día redondeadas con hover suave, día seleccionado relleno en salvia,
   badge de conteo de turnos, cabecera de mes y detalle del día con barra de
-  acento verde. **Requiere rebuild + redeploy de `frontend-tenant`** y aplicar
+  acento verde. En una segunda pasada el calendario quedó compacto (celdas
+  bajas tipo Google) y el mes + los turnos del día seleccionado se muestran
+  en la misma fila, dos columnas: izquierda el calendario, derecha el listado.
+  **Requiere rebuild + redeploy de `frontend-tenant`** y aplicar
   `industry=salud` en los tenants ERMA (`docker compose exec app python
   scripts/apply_erma_branding.py`).
 

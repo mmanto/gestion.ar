@@ -194,118 +194,120 @@ export const AppointmentsCalendar = () => {
           <Spinner />
         </div>
       ) : (
-        <>
-          <div className="grid grid-cols-7 gap-1 mb-1">
-            {WEEKDAY_LABELS.map((d) => (
-              <div key={d} className="text-center text-[11px] font-semibold uppercase tracking-wide text-[#8a9483] py-1">
-                {d}
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7 gap-1">
-            {days.map((day) => {
-              const key = dayKey(day);
-              const dayAppointments = appointmentsByDay[key] || [];
-              const inMonth = isSameMonth(day, monthCursor);
-              const selected = isSameDay(day, selectedDay);
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setSelectedDay(day)}
-                  className={`aspect-square rounded-xl border text-left p-1.5 flex flex-col transition-all ${
-                    selected
-                      ? 'border-[#4a6741] bg-[#4a6741] shadow-sm'
-                      : 'border-gray-200 hover:border-[#c4d2ba] hover:bg-[#f4f7f2]'
-                  } ${!inMonth ? 'opacity-35' : ''}`}
-                >
-                  <span
-                    className={`text-xs leading-none ${
-                      selected ? 'text-white' : isToday(day) ? 'font-bold text-[#4a6741]' : 'text-gray-800'
-                    }`}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+          {/* Izquierda: calendario mensual compacto (estilo Google) */}
+          <div className="min-w-0">
+            <div className="grid grid-cols-7 gap-0.5 mb-1">
+              {WEEKDAY_LABELS.map((d) => (
+                <div key={d} className="text-center text-[10px] font-semibold uppercase tracking-wide text-[#8a9483] py-1">
+                  {d}
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-0.5">
+              {days.map((day) => {
+                const key = dayKey(day);
+                const dayAppointments = appointmentsByDay[key] || [];
+                const inMonth = isSameMonth(day, monthCursor);
+                const selected = isSameDay(day, selectedDay);
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setSelectedDay(day)}
+                    className={`relative h-11 rounded-xl text-left transition-colors ${
+                      selected ? 'bg-[#4a6741] text-white shadow-sm' : 'hover:bg-[#f4f7f2]'
+                    } ${!inMonth ? 'opacity-30' : ''}`}
                   >
-                    {format(day, 'd')}
-                  </span>
-                  {dayAppointments.length > 0 && (
                     <span
-                      className={`mt-auto self-end inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-semibold rounded-full ${
-                        selected ? 'bg-white text-[#4a6741]' : 'bg-[#4a6741] text-white'
+                      className={`absolute top-1 left-1.5 text-[11px] leading-none ${
+                        selected ? 'text-white' : isToday(day) ? 'font-bold text-[#4a6741]' : 'text-gray-800'
                       }`}
                     >
-                      {dayAppointments.length}
+                      {format(day, 'd')}
                     </span>
-                  )}
-                </button>
-              );
-            })}
+                    {dayAppointments.length > 0 && (
+                      <span
+                        className={`absolute bottom-1 right-1 inline-flex items-center justify-center min-w-[15px] h-[15px] px-0.5 text-[9px] font-semibold rounded-full ${
+                          selected ? 'bg-white text-[#4a6741]' : 'bg-[#4a6741] text-white'
+                        }`}
+                      >
+                        {dayAppointments.length}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </>
+
+          {/* Derecha: turnos del día seleccionado */}
+          <div className="min-w-0 border-t border-[#e6ebe2] pt-5 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8">
+            <h4 className="text-sm font-bold text-gray-900 mb-3 capitalize border-l-4 border-[#4a6741] pl-3">
+              Turnos del {format(selectedDay, "d 'de' MMMM", { locale: es })}
+            </h4>
+
+            {actionError && <Alert variant="error" className="mb-3">{actionError}</Alert>}
+
+            {selectedAppointments.length === 0 ? (
+              <p className="text-sm text-gray-500">No hay turnos asignados este día.</p>
+            ) : (
+              <ul className="space-y-2">
+                {selectedAppointments.map((appt) => (
+                  <li
+                    key={appt.id}
+                    className="flex items-center justify-between gap-3 border border-gray-200 rounded-xl p-3 flex-wrap transition-colors hover:border-[#c4d2ba] hover:bg-[#fafcf9]"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900">
+                        {format(parseISO(appt.start_at), 'HH:mm')}–{format(parseISO(appt.end_at), 'HH:mm')}
+                        <span className="mx-2 text-gray-300">·</span>
+                        {resourceById[appt.resource_id]?.name || 'Recurso'}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate mt-0.5">
+                        {appt.metadata.customer_name || appt.customer_ref}
+                        {appt.metadata.customer_phone ? ` · ${appt.metadata.customer_phone}` : ''}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[appt.status]}`}>
+                        {STATUS_LABELS[appt.status]}
+                      </span>
+                      {appt.status === 'pending' && (
+                        <button
+                          type="button"
+                          onClick={() => handleConfirm(appt)}
+                          className="text-xs text-green-700 hover:underline"
+                        >
+                          Confirmar
+                        </button>
+                      )}
+                      {(appt.status === 'pending' || appt.status === 'confirmed') && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => setRescheduling(appt)}
+                            className="text-xs text-gray-700 hover:underline"
+                          >
+                            Reprogramar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleCancel(appt)}
+                            className="text-xs text-red-600 hover:underline"
+                          >
+                            Cancelar
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
       )}
-
-      <div className="mt-6 border-t border-[#e6ebe2] pt-5">
-        <h4 className="text-sm font-bold text-gray-900 mb-3 capitalize border-l-4 border-[#4a6741] pl-3">
-          Turnos del {format(selectedDay, "d 'de' MMMM", { locale: es })}
-        </h4>
-
-        {actionError && <Alert variant="error" className="mb-3">{actionError}</Alert>}
-
-        {selectedAppointments.length === 0 ? (
-          <p className="text-sm text-gray-500">No hay turnos asignados este día.</p>
-        ) : (
-          <ul className="space-y-2">
-            {selectedAppointments.map((appt) => (
-              <li
-                key={appt.id}
-                className="flex items-center justify-between gap-3 border border-gray-200 rounded-xl p-3.5 flex-wrap transition-colors hover:border-[#c4d2ba] hover:bg-[#fafcf9]"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-gray-900">
-                    {format(parseISO(appt.start_at), 'HH:mm')}–{format(parseISO(appt.end_at), 'HH:mm')}
-                    <span className="mx-2 text-gray-300">·</span>
-                    {resourceById[appt.resource_id]?.name || 'Recurso'}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate mt-0.5">
-                    {appt.metadata.customer_name || appt.customer_ref}
-                    {appt.metadata.customer_phone ? ` · ${appt.metadata.customer_phone}` : ''}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[appt.status]}`}>
-                    {STATUS_LABELS[appt.status]}
-                  </span>
-                  {appt.status === 'pending' && (
-                    <button
-                      type="button"
-                      onClick={() => handleConfirm(appt)}
-                      className="text-xs text-green-700 hover:underline"
-                    >
-                      Confirmar
-                    </button>
-                  )}
-                  {(appt.status === 'pending' || appt.status === 'confirmed') && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setRescheduling(appt)}
-                        className="text-xs text-gray-700 hover:underline"
-                      >
-                        Reprogramar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleCancel(appt)}
-                        className="text-xs text-red-600 hover:underline"
-                      >
-                        Cancelar
-                      </button>
-                    </>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
 
       {formOpen && (
         <AppointmentFormModal
