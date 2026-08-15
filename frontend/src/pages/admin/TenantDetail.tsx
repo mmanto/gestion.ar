@@ -50,6 +50,10 @@ export const TenantDetail = () => {
   const [brandingColor, setBrandingColor] = useState('#25357a');
   const [brandingTagline, setBrandingTagline] = useState('');
   const [savingBranding, setSavingBranding] = useState(false);
+  const [generalName, setGeneralName] = useState('');
+  const [generalDomain, setGeneralDomain] = useState('');
+  const [savingGeneral, setSavingGeneral] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     if (!tenantId) return;
@@ -63,6 +67,8 @@ export const TenantDetail = () => {
         tenantAdminService.listPlans(),
       ]);
       setTenant(tenantData);
+      setGeneralName(tenantData.name);
+      setGeneralDomain(tenantData.domain || '');
       setBrandingLogoH(tenantData.branding?.logo_url_horizontal || tenantData.branding?.logo_url || undefined);
       setBrandingLogoV(tenantData.branding?.logo_url_vertical || undefined);
       setBrandingColor(tenantData.branding?.primary_color || '#25357a');
@@ -112,6 +118,38 @@ export const TenantDetail = () => {
       setBrandingTagline(updated.branding?.tagline || '');
     } finally {
       setSavingBranding(false);
+    }
+  };
+
+  const handleSaveGeneral = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tenantId) return;
+    setSavingGeneral(true);
+    try {
+      const updated = await tenantAdminService.updateTenant(tenantId, {
+        name: generalName.trim(),
+        domain: generalDomain.trim() || undefined,
+      });
+      setTenant(updated);
+      setGeneralName(updated.name);
+      setGeneralDomain(updated.domain || '');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error guardando el tenant');
+    } finally {
+      setSavingGeneral(false);
+    }
+  };
+
+  const handleDeleteTenant = async () => {
+    if (!tenantId) return;
+    if (!confirm(`¿Eliminar el tenant "${tenant?.name || tenantId}"? Esta acción no se puede deshacer.`)) return;
+    setDeleting(true);
+    try {
+      await tenantAdminService.deleteTenant(tenantId);
+      window.location.href = '/admin/tenants';
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo eliminar el tenant');
+      setDeleting(false);
     }
   };
 
@@ -233,6 +271,43 @@ export const TenantDetail = () => {
         />
 
         {error && <Alert variant="error" className="mb-6">Error: {error}</Alert>}
+
+        {/* Datos generales */}
+        <Card shadow="none" className="mb-8">
+          <h3 className="text-base font-semibold text-gray-900 mb-3">Datos generales</h3>
+          <form onSubmit={handleSaveGeneral} className="space-y-4">
+            <div>
+              <label htmlFor="tenant-name" className="block text-xs font-medium text-gray-700 mb-1">Nombre</label>
+              <input
+                id="tenant-name"
+                type="text"
+                value={generalName}
+                onChange={(e) => setGeneralName(e.target.value)}
+                minLength={2}
+                maxLength={100}
+                required
+                className="w-full max-w-sm px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label htmlFor="tenant-domain" className="block text-xs font-medium text-gray-700 mb-1">Dominio propio</label>
+              <input
+                id="tenant-domain"
+                type="text"
+                value={generalDomain}
+                onChange={(e) => setGeneralDomain(e.target.value)}
+                placeholder="ej. pachoteayuda.ar"
+                className="w-full max-w-sm px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+              <p className="text-xs text-gray-500 mt-0.5">
+                Dominio propio del tenant (ej. pachoteayuda.ar) — no un subdominio de intellify.pro.
+              </p>
+            </div>
+            <Button variant="primary" size="sm" type="submit" loading={savingGeneral}>
+              {savingGeneral ? 'Guardando...' : 'Guardar datos'}
+            </Button>
+          </form>
+        </Card>
 
         {/* Estado del tenant */}
         <Card shadow="none" className="mb-8">
@@ -474,6 +549,18 @@ export const TenantDetail = () => {
             </Card>
           )}
         </div>
+
+        {/* Zona de peligro */}
+        <Card shadow="none" className="mt-8 border border-red-200">
+          <h3 className="text-base font-semibold text-red-800 mb-1">Zona de peligro</h3>
+          <p className="text-sm text-gray-600 mb-3">
+            Elimina permanentemente el tenant. Requiere que no tenga bots, usuarios, canales, clientes
+            ni conversaciones asociados.
+          </p>
+          <Button variant="danger" onClick={handleDeleteTenant} loading={deleting}>
+            {deleting ? 'Eliminando...' : 'Eliminar tenant'}
+          </Button>
+        </Card>
       </div>
 
       {showUserModal && (

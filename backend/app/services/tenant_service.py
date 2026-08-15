@@ -7,9 +7,18 @@ import uuid
 from typing import Dict, Optional
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 
 from app.db.database import AsyncSessionLocal
-from app.db.models import Tenant as TenantModel
+from app.db.models import (
+    Bot as BotModel,
+    Channel as ChannelModel,
+    Client as ClientModel,
+    Conversation as ConversationModel,
+    PushSubscription as PushSubscriptionModel,
+    Tenant as TenantModel,
+    User as UserModel,
+)
 from app.models.tenant import Tenant, TenantCreate, TenantStatus, TenantUpdate
 
 
@@ -86,6 +95,39 @@ class TenantService:
             await session.commit()
             await session.refresh(row)
             return _to_tenant(row)
+
+    async def delete_tenant(self, tenant_id: str) -> bool:
+        """Elimina un tenant. Falla (devuelve False) si tiene datos asociados
+        que dependen de él (bots, usuarios, canales, clientes o
+        conversaciones) — esos deben eliminarse primero, igual que
+        delete_plan/delete_user: nunca borrar en cascada datos de negocio."""
+        dependents = {
+            "bots": BotModel,
+            "channels": ChannelModel,
+            "clients": ClientModel,
+            "conversations": ConversationModel,
+            "push_subscriptions": PushSubscriptionModel,
+            "users": UserModel,
+        }
+        async with AsyncSessionLocal() as session:
+            row = await session.get(TenantModel, tenant_id)
+            if not row:
+                return False
+
+            for label, model in dependents.items():
+                count = (await session.execute(
+                    select(func.count()).select_from(model).where(model.tenant_id == tenant_id)
+                )).scalar_one()
+                if count > 0:
+                    return False
+
+            try:
+                await session.delete(row)
+                await session.commit()
+            except IntegrityError:
+                await session.rollback()
+                return False
+            return True
 
 
 _tenant_service: Optional[TenantService] = None

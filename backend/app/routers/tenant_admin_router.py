@@ -134,6 +134,19 @@ async def update_tenant(tenant_id: str, data: TenantUpdate):
     return {"success": True, "tenant": tenant.model_dump()}
 
 
+@router.delete("/tenants/{tenant_id}", response_model=dict)
+async def delete_tenant(tenant_id: str):
+    deleted = await get_tenant_service().delete_tenant(tenant_id)
+    if not deleted:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "No se pudo eliminar: el tenant no existe o tiene datos asociados "
+            "(bots, usuarios, canales, clientes, conversaciones) que deben "
+            "eliminarse primero",
+        )
+    return {"success": True, "message": "Tenant eliminado"}
+
+
 @router.patch("/users/{username}/plan-request", response_model=dict)
 async def approve_user_plan_request(username: str, data: UserPlanApproval):
     """Aprueba (manual) el plan que el usuario pidió al darse de alta.

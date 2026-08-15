@@ -65,6 +65,10 @@ const tenantAdminService = {
     return response.data.tenant;
   },
 
+  async deleteTenant(tenantId: string): Promise<void> {
+    await api.delete(`/admin/tenants/${tenantId}`);
+  },
+
   /**
    * Aprueba (manual, super_admin) el plan que un usuario pidió al darse de
    * alta por autoregistro/gmail: subscription_status pasa a approved|active

@@ -88,6 +88,35 @@ services:
       - "traefik.http.middlewares.erma-legacy-redirect.redirectregex.regex=^https://erma\\.intellify\\.pro/(.*)"
       - "traefik.http.routers.tenant-erma-legacy.service=tenant-erma"
 
+  frontend-tenant-pachoteayuda:
+    build:
+      context: ./frontend-tenant
+      dockerfile: Dockerfile
+      args:
+        VITE_TARGET: staff
+        VITE_APPOINTMENTS_REMOTE_URL: ${VITE_APPOINTMENTS_REMOTE_URL:-https://appointments-widgets.intellify.pro/remoteEntry.js}
+        VITE_NANGO_CONNECT_URL: https://nango.intellify.pro
+        VITE_NANGO_API_URL: https://api.nango.intellify.pro
+    container_name: gestionar_frontend_tenant_pachoteayuda
+    environment:
+      - TENANT_ID=${TENANT_ID_PACHOTESAYUDA}
+      - TENANT_SLUG=pachoteayuda
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - default
+      - traefik_public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_public"
+      - "traefik.http.routers.tenant-pachoteayuda.rule=Host(`pachoteayuda.ar`)"
+      - "traefik.http.routers.tenant-pachoteayuda.entrypoints=websecure"
+      - "traefik.http.routers.tenant-pachoteayuda.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.tenant-pachoteayuda.priority=1"
+      - "traefik.http.services.tenant-pachoteayuda.loadbalancer.server.port=80"
+
   # landing-erma comparte dominio con frontend-tenant-erma (erma.com.ar):
   # este router matchea "/", cualquier página .html de la landing (PathRegexp),
   # el bundle/estilos propios y el hero-video — cualquier otra ruta (/login,

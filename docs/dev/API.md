@@ -542,6 +542,40 @@ Si el staff está offline, se envía push notification (FCM/APNs/VAPID).
 ---
 
 
+## Administración general — Tenants
+
+CRUD de tenants para el `super_admin` (panel admin). Requieren JWT con rol
+`super_admin`.
+
+### POST `/api/admin/tenants`
+
+Crear un tenant. Body:
+```json
+{ "name": "pachoteayuda", "domain": "pachoteayuda.ar", "plan_id": "plan_000000000000" }
+```
+`status` (opcional, default `active`) y `branding` (opcional).
+
+### GET `/api/admin/tenants?page=1&limit=20`
+
+Lista paginada de tenants.
+
+### GET `/api/admin/tenants/{tenant_id}`
+
+Detalle de un tenant.
+
+### PATCH `/api/admin/tenants/{tenant_id}`
+
+Editar un tenant. Todos los campos opcionales: `name`, `domain`, `status`
+(`active`|`suspended`|`trial`), `branding`, `plan_id`.
+
+### DELETE `/api/admin/tenants/{tenant_id}`
+
+Eliminar un tenant. **409** si el tenant no existe o tiene datos asociados
+(bots, usuarios, canales, clientes, conversaciones) que deben eliminarse
+primero — nunca borra en cascada datos de negocio.
+
+---
+
 ## Tenant — Branding
 
 Endpoints para que el admin del tenant gestione su marca (logo, color, tagline).

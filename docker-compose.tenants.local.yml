@@ -110,6 +110,34 @@ services:
       - "traefik.http.routers.tenant-ius.priority=1"
       - "traefik.http.services.tenant-ius.loadbalancer.server.port=80"
 
+  frontend-tenant-pachoteayuda:
+    build:
+      context: ./frontend-tenant
+      dockerfile: Dockerfile
+      args:
+        VITE_TARGET: staff
+        VITE_APPOINTMENTS_REMOTE_URL: http://localhost:8180/remoteEntry.js
+        VITE_NANGO_CONNECT_URL: https://nango.intellify.pro
+        VITE_NANGO_API_URL: https://api.nango.intellify.pro
+    container_name: gestionar_frontend_tenant_pachoteayuda
+    environment:
+      - TENANT_ID=${TENANT_ID_PACHOTESAYUDA:-tenant_7099f777c4d8}
+      - TENANT_SLUG=pachoteayuda
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - default
+      - traefik_public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_public"
+      - "traefik.http.routers.tenant-pachoteayuda.rule=Host(`pachoteayuda.ar`)"
+      - "traefik.http.routers.tenant-pachoteayuda.entrypoints=web"
+      - "traefik.http.routers.tenant-pachoteayuda.priority=1"
+      - "traefik.http.services.tenant-pachoteayuda.loadbalancer.server.port=80"
+
   # landing-ius comparte dominio con frontend-tenant-ius (ius.mx.test) igual
   # que en prod: este router matchea "/", cualquier página .html de la landing
   # (PathRegexp) y sus assets; todo lo demas cae en tenant-ius. Ver el comentario

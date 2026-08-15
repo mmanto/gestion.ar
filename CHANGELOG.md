@@ -31,6 +31,23 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `tenant_4d47f2900969` (ERMA local, `erma.com.test`).
 
 ### Agregado
+- **Edición y eliminación de tenants en el panel admin.** La página de
+  detalle del tenant (`/admin/tenants/:tenantId`) ahora permite editar el
+  **nombre y dominio propio** (además de estado, plan y marca) y eliminar el
+  tenant desde una zona de peligro. En backend, `DELETE
+  /api/admin/tenants/{tenant_id}` rechaza (409) si el tenant tiene bots,
+  usuarios, canales, clientes o conversaciones — nunca borra en cascada datos
+  de negocio (mismo criterio que `delete_plan`/`delete_user`).
+- **Nuevo tenant `pachoteayuda` con dominio propio `pachoteayuda.ar`.** Alta
+  del tenant (id `tenant_7099f777c4d8`, status `active`, Plan Básico) y su
+  usuario admin (`pachoteayuda_admin`) vía
+  `backend/scripts/create_pachoteayuda_tenant.py`; service block
+  `frontend-tenant-pachoteayuda` en `docker-compose.tenants.local.yml`,
+  `.dev.yml` y `.tenants.prod.yml` (Traefik `Host(\`pachoteayuda.ar\`)`) y la
+  variable `TENANT_ID_PACHOTESAYUDA` en `.env.example`/`.env.prod`/`ENV.md`.
+  **Requiere**: en prod, apuntar el DNS A/CNAME de `pachoteayuda.ar` a este
+  servidor y `up -d --build frontend-tenant-pachoteayuda` con el stack de
+  tenants (ver `docs/ops/DEPLOYMENT.md`).
 - **Chat en blanco por carga de página para alta de pacientes/ciudadanos**
   (`BotConfig.blank_chat_on_load`): los bots configurados con `true` (ERMA, y
   pachoteayuda cuando exista) arrancan cada visita del chat con identidad de

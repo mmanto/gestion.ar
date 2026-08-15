@@ -242,6 +242,7 @@ repo), por eso el nombre de marca tiene una clave por app.
 | `REGISTRY_IMAGE` | ✅ | Registry + namespace de las imágenes | `registry.gitlab.com/NAMESPACE/PROJECT` |
 | `IMAGE_TAG` | ❌ | Tag a deployar (default `latest`) | `v1.2.3` |
 | `TENANT_ID_IUS` | ❌ | Tenant ID por cada tenant con dominio propio (`docker-compose.tenants.prod.yml`) | `tenant_78f507331c18` |
+| `TENANT_ID_PACHOTESAYUDA` | ❌ | Tenant ID del tenant pachoteayuda (dominio propio `pachoteayuda.ar`) | `tenant_7099f777c4d8` |
 
 ---
 
