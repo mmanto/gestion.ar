@@ -16,7 +16,9 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   Municipalidad de Bolívar. Se mantiene el **chat embebido del tenant**
   (`/chat-widget.js`, botón flotante + panel con el iframe del canal
   `channel_96ad03bc1a1d`, disparado también por `data-open-chat`), con el
-  color del FAB ajustado a la nueva paleta (`#130a21`). Meta title/description/
+  del FAB ajustado a la nueva paleta (`#130a21`). El chat **se abre
+  automáticamente al cargar la página** (configurable: `__IPA_CHAT__ =
+  { openOnLoad: false }` arranca cerrado). Meta title/description/
   OG actualizados a la marca nueva, canonical a `https://pachoteayuda.intellify.pro/`.
   **Requiere rebuild + redeploy de `landing-ipachoteayuda`.**
 - **Escritorio de ERMA: del semáforo de leads al calendario de turnos.** El

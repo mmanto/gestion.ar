@@ -6,9 +6,11 @@
  * El iframe apunta al mismo origen (location.origin) para que funcione igual
  * en prod (https://pachoteayuda.intellify.pro) y en local (*.test) — el
  * X-Frame-Options del nginx del tenant es SAMEORIGIN, así que el chat solo
- * puede embeberse desde propio dominio. El panel arranca cerrado; se abre
- * con el botón flotante o desde los CTAs (data-open-chat, que llaman
- * __IPA_OPEN_CHAT__). Expone window.__IPA_OPEN_CHAT__() para reabrir.
+ * puede embeberse desde propio dominio. El panel arranca ABIERTO (se abre
+ * ni bien carga la página); se cierra con la X y se reabre con el botón
+ * flotante o desde los CTAs (data-open-chat, que llaman __IPA_OPEN_CHAT__).
+ * Para arrancar cerrado: window.__IPA_CHAT__ = { openOnLoad: false }.
+ * Expone window.__IPA_OPEN_CHAT__() para reabrir.
  */
 (function () {
   'use strict';
@@ -91,4 +93,12 @@
 
   // Exponer para que los CTAs de la landing (data-open-chat) reabran el panel.
   window.__IPA_OPEN_CHAT__ = openPanel;
+
+  // El chat arranca abierto: se abre ni bien se carga la página (el script
+  // va con `defer`, así que el DOM ya está parseado acá). Para arrancar
+  // cerrado, setear `window.__IPA_CHAT__ = { openOnLoad: false }` antes de
+  // este script.
+  if (CONFIG.openOnLoad !== false) {
+    openPanel();
+  }
 })();
