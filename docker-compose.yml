@@ -114,21 +114,20 @@ services:
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
       - --entrypoints.web.http.redirections.entrypoint.permanent=true
       - --certificatesresolvers.letsencrypt.acme.email=admin@kairosgroup.ar
-      - --certificatesresolvers.letsencrypt.acme.storage=/acme.json
+      # /acme/acme.json (archivo) dentro del volumen: si el volume se monta
+      # sobre un path que no existe (p.ej. /acme.json), Docker crea el punto
+      # de montaje como directorio → Traefik lo rechaza ("permissions 755 ...
+      # are too open") y el resolver letsencrypt queda skipped. Montar el
+      # volume en un DIR (aquí /acme) y almacenar el store como archivo
+      # dentro resuelve el problema.
+      - --certificatesresolvers.letsencrypt.acme.storage=/acme/acme.json
       - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
       - --log.level=INFO
       - --accesslog=true
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      # NOTA acme.json: usar volumen nombrado, NO `./acme.json:/acme.json`.
-      # Un bind-mount sobre un path que no existe hace que Docker cree un
-      # DIRECTORIO vacío → Traefik no puede abrir el store → el resolver
-      # letsencrypt queda skipped ("... skipped from the resolvers list") →
-      # todos los routers reportan "nonexistent certificate resolver" → los
-      # hosts nuevos nunca emiten cert (y los que ya tenían cert tampoco se
-      # sirven si el store es ilegible). El volumen nombrado persiste los
-      # certs entre recreates del container sin depender de un archivo del host.
-      - traefik_acme_data:/acme.json
+      # volumen nombrado en un DIRECTORIO (ver nota de storage arriba)
+      - traefik_acme_data:/acme
     networks:
       - traefik_public
 

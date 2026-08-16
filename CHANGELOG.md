@@ -41,11 +41,14 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   sin pasar por el redirect. (2) En paralelo, el store ACME se montaba con
   `./acme.json:/acme.json`: como ese archivo no existe en el repo, Docker
   creó un **directorio** en su lugar → el resolver `letsencrypt` quedaba
-  skiped ("permissions 755 ... are too open") → TODOS los routers con
-  `certresolver=letsencrypt` reportaban "nonexistent certificate resolver" y
-  **ningún** host emitía ni servía cert. Se reemplazó el bind-mount por el
-  **volumen nombrado `traefik_acme_data`** (persiste certs entre recreates,
-  sin depender del host ni de permisos). **Requiere** en el server:
+  skiped ("permissions 755 ... are too open", el volume se montaba en
+  `:/acme.json` — path inexistente → Docker crea ahí un **directorio**) →
+  TODOS los routers con `certresolver=letsencrypt` reportaban "nonexistent
+  certificate resolver" y **ningún** host emitía ni servía cert. Se reemplazó
+  por montar el **volumen nombrado `traefik_acme_data` en un directorio**
+  (`traefik_acme_data:/acme`) con el store como archivo dentro
+  (`--certificatesresolvers.letsencrypt.acme.storage=/acme/acme.json`).
+  **Requiere** en el server:
   `git pull && docker compose --profile traefik up -d --force-recreate traefik`
   (los certs previos se re-emiten solos al primer tráfico; ver
   `docs/ops/RUNBOOK.md`).

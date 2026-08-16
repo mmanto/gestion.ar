@@ -116,43 +116,38 @@ Fix: el certresolver debe usar **TLS-ALPN-01** (ya aplicado en
 TLS-ALPN negocia el challenge a nivel del handshake TLS en `:443` (ALPN
 `acme-tls/1`) sin pasar por el redirect HTTP.
 
-> **Otra causa del mismo síntoma (cuando el fix de arriba NO alcanza):**
 > `The ACME resolver is skipped from the resolvers list error="unable to get
 > ACME account: permissions 755 for /acme.json are too open, please use 600"`.
-> Traefik exige permisos **600** en `/acme.json`. Si el archivo montado quedó
-> en 755, o — peor — el path del bind-mount **no existía** y Docker creó un
-> **directorio** en su lugar (p.ej. `./acme.json:/acme.json` sin que el archivo
-> esté en el repo: `ls -la` muestra `drwxr-xr-x` en vez de `-rw-------`), el
-> resolver `letsencrypt` **no se registra**: todos los routers con
-> `certresolver=letsencrypt` reportan "nonexistent certificate resolver" y
-> **ningún** host emite ni sirve cert (ni los que ya lo tenían — se caen
-> TODOS, no solo los nuevos).
+> Traefik exige permisos **600** en el archivo del store. Dos escenarios lo
+> generan: (a) el archivo montado quedó en 755; o (b) el punto de montaje del
+> volume **apunta a un archivo inexistente** (`...:/acme.json`) y Docker crea
+> ahí un **directorio** (`ls -la` → `drwxr-xr-x` en vez de `-rw-------`). En
+> ambos casos el resolver `letsencrypt` **no se registra**: todos los routers
+> con `certresolver=letsencrypt` reportan "nonexistent certificate resolver" y
+> **ningún** host emite ni sirve cert (se caen TODOS, no solo los nuevos).
 >
 > **Fix (solución definitiva aplicada en el repo, `docker-compose.yml`):**
-> el traefik embebido usa un **volumen nombrado** `traefik_acme_data:/acme.json`
-> en vez de bind-mount a `./acme.json`. El volumen Docker persiste el store
-> entre recreates del container, no depende de un archivo del repo ni de
-> permisos del host, y evita el directorio espurio. Aplicar en el server
-> (solo `git pull` + recrear — sin tocar archivos):
+> montar el volumen en un **directorio** (`traefik_acme_data:/acme`) y definir
+> el store como **archivo dentro** (`--certificatesresolvers.letsencrypt.acme.storage=/acme/acme.json`).
+> Así el store se crea como archivo regular (600, owner root del container),
+> persiste entre recreates, y no depende de permisos del host ni de rutas del
+> repo. Aplicar en el server:
 >
 > ```bash
-> cd /opt/gestion.ar && git pull          # trae docker-compose.yml con el volumen nombrado
+> cd /opt/gestion.ar && git pull          # trae docker-compose.yml corregido
 > docker compose --profile traefik up -d --force-recreate traefik
-> # limpiar el dir espurio que creó el mount viejo (opcional, ya no se usa):
-> sudo rm -rf /opt/gestion.ar/acme.json
 > # verificar: resolver cargado, sin "skipped"/"nonexistent":
 > docker logs gestionar_traefik 2>&1 | grep -iE "skipped|nonexistent" | tail -3   # sin salida = OK
-> # los hosts existentes re-emiten su cert al primer tráfico (TLS-ALPN);
-> # comprobar que responden (el primer curl tarda unos segundos):
+> # los hosts re-emiten su cert al primer tráfico (TLS-ALPN, unos segundos):
 > curl -s -o /dev/null -w '%{http_code}\n' https://ius.intellify.pro/
 > curl -s -o /dev/null -w '%{http_code}\n' https://pachoteayuda.intellify.pro/
 > ```
 >
-> Nota: al migrar del bind-mount viejo al volumen, el volumen arranca **vacío**:
-> los certs previos se re-emiten automáticamente vía TLS-ALPN con el primer
-> tráfico HTTPS de cada host. Si querés conservarlos, copiá el `acme.json`
-> existente al volumen antes del primer arranque, o usá un bind-mount a un
-> archivo real con permisos 600 (p.ej. el del standalone `/opt/traefik/acme.json`).
+> Nota: si antes montaste el volume como `:/acme.json` (dejando adentro un
+> dir o nada), podés limpiar y arrancar con store nuevo:
+> `docker compose --profile traefik down && docker volume rm gestionar_traefik_acme_data && docker compose --profile traefik up -d`
+> (los certs previos se re-emiten solos vía TLS-ALPN al primer tráfico de cada
+> host).
 
 Aplicar en el server:
 
