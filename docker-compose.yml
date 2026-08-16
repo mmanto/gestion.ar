@@ -120,7 +120,15 @@ services:
       - --accesslog=true
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./acme.json:/acme.json
+      # NOTA acme.json: usar volumen nombrado, NO `./acme.json:/acme.json`.
+      # Un bind-mount sobre un path que no existe hace que Docker cree un
+      # DIRECTORIO vacío → Traefik no puede abrir el store → el resolver
+      # letsencrypt queda skipped ("... skipped from the resolvers list") →
+      # todos los routers reportan "nonexistent certificate resolver" → los
+      # hosts nuevos nunca emiten cert (y los que ya tenían cert tampoco se
+      # sirven si el store es ilegible). El volumen nombrado persiste los
+      # certs entre recreates del container sin depender de un archivo del host.
+      - traefik_acme_data:/acme.json
     networks:
       - traefik_public
 
@@ -128,6 +136,7 @@ volumes:
   chroma_data:
   postgres_data:
   uploads_data:
+  traefik_acme_data:
 
 
 networks:

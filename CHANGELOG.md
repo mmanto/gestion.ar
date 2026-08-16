@@ -29,16 +29,25 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `docker-compose.tenants.dev.yml`, `TENANT_ID=tenant_bf351fa15c7d` no existía
   en la base local — el SPA no resolvía el tenant. Se corrigió a
   `tenant_4d47f2900969` (ERMA local, `erma.com.test`).
-- **Hosts nuevos de `*.intellify.pro` no obtenían certificado:** el
-  certresolver `letsencrypt` del Traefik standalone usaba HTTP-01
-  (`entrypoints.web`), que con el redirect global HTTP→HTTPS hacía que el
-  challenge de Let's Encrypt siguiera a `https://` (sin cert aún) y muriera con
-  `tls: internal error` — impedía la primera emisión de cualquier tenant/dominio
-  nuevo (p.ej. `pachoteayuda.intellify.pro`: "no puede otorgar una conexión
-  segura"). Se cambió a **TLS-ALPN-01** (`acme.tlschallenge=true`) en
-  `infra/traefik/docker-compose.yml`, que negocia el challenge a nivel TLS en
-  `:443` sin pasar por el redirect. **Requiere** en el server:
-  `cd /opt/traefik && docker compose up -d --force-recreate traefik` (ver
+- **Hosts nuevos de `*.intellify.pro` no obtenían certificado — y cuando se
+  tocó el Traefik, se cayeron TODOS los hosts:** dos causas encadenadas.
+  (1) El certresolver del Traefik embebido (`docker-compose.yml`, container
+  `gestionar_traefik`) usaba HTTP-01 en `entrypoints.web`: con el redirect
+  global HTTP→HTTPS, el challenge de Let's Encrypt seguía a `https://` (sin
+  cert aún) y moría con `tls: internal error`, impidiendo la primera emisión
+  de cualquier host nuevo (p.ej. `pachoteayuda.intellify.pro`: "no puede
+  otorgar una conexión segura"). Se cambió a **TLS-ALPN-01**
+  (`acme.tlschallenge=true`), que negocia el challenge a nivel TLS en `:443`
+  sin pasar por el redirect. (2) En paralelo, el store ACME se montaba con
+  `./acme.json:/acme.json`: como ese archivo no existe en el repo, Docker
+  creó un **directorio** en su lugar → el resolver `letsencrypt` quedaba
+  skiped ("permissions 755 ... are too open") → TODOS los routers con
+  `certresolver=letsencrypt` reportaban "nonexistent certificate resolver" y
+  **ningún** host emitía ni servía cert. Se reemplazó el bind-mount por el
+  **volumen nombrado `traefik_acme_data`** (persiste certs entre recreates,
+  sin depender del host ni de permisos). **Requiere** en el server:
+  `git pull && docker compose --profile traefik up -d --force-recreate traefik`
+  (los certs previos se re-emiten solos al primer tráfico; ver
   `docs/ops/RUNBOOK.md`).
 
 ### Agregado

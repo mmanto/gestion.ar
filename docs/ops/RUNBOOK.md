@@ -116,6 +116,44 @@ Fix: el certresolver debe usar **TLS-ALPN-01** (ya aplicado en
 TLS-ALPN negocia el challenge a nivel del handshake TLS en `:443` (ALPN
 `acme-tls/1`) sin pasar por el redirect HTTP.
 
+> **Otra causa del mismo síntoma (cuando el fix de arriba NO alcanza):**
+> `The ACME resolver is skipped from the resolvers list error="unable to get
+> ACME account: permissions 755 for /acme.json are too open, please use 600"`.
+> Traefik exige permisos **600** en `/acme.json`. Si el archivo montado quedó
+> en 755, o — peor — el path del bind-mount **no existía** y Docker creó un
+> **directorio** en su lugar (p.ej. `./acme.json:/acme.json` sin que el archivo
+> esté en el repo: `ls -la` muestra `drwxr-xr-x` en vez de `-rw-------`), el
+> resolver `letsencrypt` **no se registra**: todos los routers con
+> `certresolver=letsencrypt` reportan "nonexistent certificate resolver" y
+> **ningún** host emite ni sirve cert (ni los que ya lo tenían — se caen
+> TODOS, no solo los nuevos).
+>
+> **Fix (solución definitiva aplicada en el repo, `docker-compose.yml`):**
+> el traefik embebido usa un **volumen nombrado** `traefik_acme_data:/acme.json`
+> en vez de bind-mount a `./acme.json`. El volumen Docker persiste el store
+> entre recreates del container, no depende de un archivo del repo ni de
+> permisos del host, y evita el directorio espurio. Aplicar en el server
+> (solo `git pull` + recrear — sin tocar archivos):
+>
+> ```bash
+> cd /opt/gestion.ar && git pull          # trae docker-compose.yml con el volumen nombrado
+> docker compose --profile traefik up -d --force-recreate traefik
+> # limpiar el dir espurio que creó el mount viejo (opcional, ya no se usa):
+> sudo rm -rf /opt/gestion.ar/acme.json
+> # verificar: resolver cargado, sin "skipped"/"nonexistent":
+> docker logs gestionar_traefik 2>&1 | grep -iE "skipped|nonexistent" | tail -3   # sin salida = OK
+> # los hosts existentes re-emiten su cert al primer tráfico (TLS-ALPN);
+> # comprobar que responden (el primer curl tarda unos segundos):
+> curl -s -o /dev/null -w '%{http_code}\n' https://ius.intellify.pro/
+> curl -s -o /dev/null -w '%{http_code}\n' https://pachoteayuda.intellify.pro/
+> ```
+>
+> Nota: al migrar del bind-mount viejo al volumen, el volumen arranca **vacío**:
+> los certs previos se re-emiten automáticamente vía TLS-ALPN con el primer
+> tráfico HTTPS de cada host. Si querés conservarlos, copiá el `acme.json`
+> existente al volumen antes del primer arranque, o usá un bind-mount a un
+> archivo real con permisos 600 (p.ej. el del standalone `/opt/traefik/acme.json`).
+
 Aplicar en el server:
 
 ```bash
