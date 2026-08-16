@@ -21,8 +21,8 @@
   var CONFIG = window.__IPA_CHAT__ || {};
   var chatUrl = CONFIG.url || location.origin + CHAT_PATH;
 
-  // Color de marca de la landing (ver index.html — palette "sun")
-  var PRIMARY = '#f18f2f';
+  // Color de marca de la landing (ver index.html — paleta violeta "purple")
+  var PRIMARY = '#130a21';
 
   var STYLE_ID = 'ipa-chat-widget-styles';
   if (!document.getElementById(STYLE_ID)) {

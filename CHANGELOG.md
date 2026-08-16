@@ -7,6 +7,18 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Cambiado
+- **Landing de pachoteayuda con el diseño dedicado de "César Pacho ·
+  Asistente Ciudadano de Bolívar".** `sites/ipachoteayuda-landing/index.html`
+  pasó del template genérico (Tailwind, paleta sun) al diseño propio del
+  cliente: paleta violeta (`#130a21`/`#441e7d`), tipografías Montserrat +
+  JetBrains Mono, header centrado con el logo, hero de dos columnas con foto
+  y CTA **"Empezar a chatear"**, y footer-banner con curva y logos de la
+  Municipalidad de Bolívar. Se mantiene el **chat embebido del tenant**
+  (`/chat-widget.js`, botón flotante + panel con el iframe del canal
+  `channel_1d2fc630d688`, disparado también por `data-open-chat`), con el
+  color del FAB ajustado a la nueva paleta (`#130a21`). Meta title/description/
+  OG actualizados a la marca nueva, canonical a `https://pachoteayuda.intellify.pro/`.
+  **Requiere rebuild + redeploy de `landing-ipachoteayuda`.**
 - **Escritorio de ERMA: del semáforo de leads al calendario de turnos.** El
   tenant ERMA quedó configurado con `branding.industry = 'salud'`, con lo que
   el Dashboard oculta los cards del semáforo (Viable/Potencial/Exploración) y
