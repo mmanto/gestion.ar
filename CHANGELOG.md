@@ -29,6 +29,17 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `docker-compose.tenants.dev.yml`, `TENANT_ID=tenant_bf351fa15c7d` no existía
   en la base local — el SPA no resolvía el tenant. Se corrigió a
   `tenant_4d47f2900969` (ERMA local, `erma.com.test`).
+- **Hosts nuevos de `*.intellify.pro` no obtenían certificado:** el
+  certresolver `letsencrypt` del Traefik standalone usaba HTTP-01
+  (`entrypoints.web`), que con el redirect global HTTP→HTTPS hacía que el
+  challenge de Let's Encrypt siguiera a `https://` (sin cert aún) y muriera con
+  `tls: internal error` — impedía la primera emisión de cualquier tenant/dominio
+  nuevo (p.ej. `pachoteayuda.intellify.pro`: "no puede otorgar una conexión
+  segura"). Se cambió a **TLS-ALPN-01** (`acme.tlschallenge=true`) en
+  `infra/traefik/docker-compose.yml`, que negocia el challenge a nivel TLS en
+  `:443` sin pasar por el redirect. **Requiere** en el server:
+  `cd /opt/traefik && docker compose up -d --force-recreate traefik` (ver
+  `docs/ops/RUNBOOK.md`).
 
 ### Agregado
 - **Nuevo tenant `ipachoteayuda` con dominio propio de subdominio

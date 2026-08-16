@@ -86,6 +86,46 @@ docker compose logs traefik
 cat /letsencrypt/acme.json | python3 -m json.tool | grep -A2 "notAfter"
 ```
 
+## SSL / Host nuevo nunca obtiene certificado ("tls: internal error" en ACME)
+
+Síntoma: un tenant/dominio nuevo (`Host(...)` con `tls.certresolver=letsencrypt`)
+queda en bucle sin certificado; el browser muestra "no puede otorgar una
+conexión segura" y el log de Traefik muestra algo como:
+
+```
+acme: error: 400 :: urn:ietf:params:acme:error:tls ::
+Fetching https://<host>/.well-known/acme-challenge/<token>: remote error: tls: internal error
+```
+
+Causa: el certresolver usaba **HTTP-01** (`acme.httpchallenge.entrypoint=web`)
+y `entrypoints.web` tiene un **redirect global HTTP→HTTPS**. El challenge de
+LE llega por `http://`, Traefik responde 308 → `https://`, LE sigue el
+redirect y ahí aún no hay certificado para ese SNI → Traefik aborta el
+handshake con `internal error` → nunca se emite. Los hosts que ya tenían cert
+no se ven afectados (solo renuevan); rompe la **primera emisión** de cualquier
+host nuevo.
+
+Fix: el certresolver debe usar **TLS-ALPN-01** (ya aplicado en
+`infra/traefik/docker-compose.yml`):
+
+```yaml
+- "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+# (quitar el --...acme.httpchallenge.entrypoint=web)
+```
+
+TLS-ALPN negocia el challenge a nivel del handshake TLS en `:443` (ALPN
+`acme-tls/1`) sin pasar por el redirect HTTP.
+
+Aplicar en el server:
+
+```bash
+cd /opt/traefik
+docker compose up -d --force-recreate traefik
+# Verificar la emisión del host que fallaba:
+docker compose logs traefik | grep -i "<host>" 
+curl -s -o /dev/null -w '%{http_code}\n' https://<host>/   # esperar 200
+```
+
 ---
 
 ## El login con Google/Microsoft en la app mobile vuelve al login / "No se pudo confirmar el login"

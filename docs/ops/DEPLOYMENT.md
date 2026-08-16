@@ -188,8 +188,10 @@ rompe el routing de todos los proyectos del servidor, no solo de este.
 
 **Nuance de TLS**: el registro DNS wildcard `*.intellify.pro` es solo una
 comodidad para no tener que crear un registro DNS por cada tenant nuevo. El
-certresolver `letsencrypt` de este Traefik usa HTTP-01
-(`acme.httpchallenge.entrypoint=web`, ver `infra/traefik/docker-compose.yml`),
+certresolver `letsencrypt` de este Traefik usa TLS-ALPN-01
+(`acme.tlschallenge=true`, ver `infra/traefik/docker-compose.yml`; antes
+HTTP-01 en `entrypoints.web`, que con el redirect global HTTP→HTTPS no
+autorizaba hosts nuevos — ver `docs/ops/RUNBOOK.md`),
 no DNS-01, así que **no** emite certificados wildcard — cada `Host()` concreto
 sigue necesitando su propio service block acá y dispara su propia emisión de
 certificado la primera vez que recibe tráfico HTTP/HTTPS.

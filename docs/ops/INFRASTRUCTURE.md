@@ -126,7 +126,10 @@ traefik:
   command:
     - "--certificatesresolvers.letsencrypt.acme.email=admin@tudominio.com"
     - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
-    - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+    # TLS-ALPN-01. NO usar httpchallenge=web: el redirect global HTTP→HTTPS
+    # del entrypoint envía el HTTP-01 de hosts nuevos a https (sin cert aún)
+    # → LE falla con "tls: internal error" y nunca emite. Ver RUNBOOK.md.
+    - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
 ```
 
 ---

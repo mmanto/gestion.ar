@@ -40,7 +40,12 @@ services:
       # Let's Encrypt
       - --certificatesresolvers.letsencrypt.acme.email=admin@kairosgroup.ar
       - --certificatesresolvers.letsencrypt.acme.storage=/acme.json
-      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+      # TLS-ALPN-01 en vez de HTTP-01: con el redirect global HTTP→HTTPS en
+      # entrypoints.web, el HTTP-01 de hosts nuevos muere en el 308 (LE
+      # sigue el redirect a https, donde aún no hay cert → "tls: internal
+      # error", chicken-egg). TLS-ALPN negocia el challenge a nivel TLS en
+      # :443 (ALPN acme-tls/1) sin pasar por el redirect.
+      - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
 
       # Logs
       - --log.level=INFO
