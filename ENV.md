@@ -243,7 +243,7 @@ repo), por eso el nombre de marca tiene una clave por app.
 | `IMAGE_TAG` | ❌ | Tag a deployar (default `latest`) | `v1.2.3` |
 | `TENANT_ID_IUS` | ❌ | Tenant ID por cada tenant con dominio propio (`docker-compose.tenants.prod.yml`) | `tenant_78f507331c18` |
 | `TENANT_ID_PACHOTESAYUDA` | ❌ | Tenant ID del tenant pachoteayuda (dominio propio `pachoteayuda.ar`) | `tenant_7099f777c4d8` |
-| `TENANT_ID_IPACHOTESAYUDA` | ❌ | Tenant ID del tenant ipachoteayuda (dominio `pachoteayuda.intellify.pro`) | `tenant_9ef2a8bdd6b7` |
+| `TENANT_ID_IPACHOTESAYUDA` | ❌ | Tenant ID del tenant ipachoteayuda (dominio `pachoteayuda.intellify.pro`) | `tenant_2fc38a44e696` (verificado en prod 2026-08-16; el id `tenant_9ef2a8bdd6b7` documentado antes no existe en la DB) |
 
 ---
 

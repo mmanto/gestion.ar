@@ -13,7 +13,7 @@
 (function () {
   'use strict';
 
-  var CHAT_PATH = '/chat/c/channel_1d2fc630d688';
+  var CHAT_PATH = '/chat/c/channel_96ad03bc1a1d';
   var DEFAULT_ORIGIN = 'https://pachoteayuda.intellify.pro';
 
   // Override para entornos distintos (ej. dev local contra el VPS):

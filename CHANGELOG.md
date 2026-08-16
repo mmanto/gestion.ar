@@ -15,7 +15,7 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   y CTA **"Empezar a chatear"**, y footer-banner con curva y logos de la
   Municipalidad de Bolívar. Se mantiene el **chat embebido del tenant**
   (`/chat-widget.js`, botón flotante + panel con el iframe del canal
-  `channel_1d2fc630d688`, disparado también por `data-open-chat`), con el
+  `channel_96ad03bc1a1d`, disparado también por `data-open-chat`), con el
   color del FAB ajustado a la nueva paleta (`#130a21`). Meta title/description/
   OG actualizados a la marca nueva, canonical a `https://pachoteayuda.intellify.pro/`.
   **Requiere rebuild + redeploy de `landing-ipachoteayuda`.**
@@ -70,9 +70,12 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `pachoteayuda.intellify.pro` y su landing.** Alta del tenant (id
   `tenant_9ef2a8bdd6b7`, status `active`, Plan Básico), su usuario admin
   (`ipachoteayuda_admin`), el bot `ipachoteayuda` (business_type `asistencia`)
-  y su canal web (`channel_1d2fc630d688`) vía
+  y su canal web vía
   `backend/scripts/create_ipachoteayuda_tenant.py` — el canal es el que
-  embeber la landing en `/chat/c/<channel_id>`. Landing estática en
+  embeber la landing en `/chat/c/<channel_id>`. (Nota: el canal activo en
+  prod — verificado el 2026-08-16 — es `channel_96ad03bc1a1d`, bot
+  `bot_7b69446dceb98` "Muni bolivar AG"; el id originalmente documentado
+  `channel_1d2fc630d688` no existía en la DB.) Landing estática en
   `sites/ipachoteayuda-landing/` (`index.html` + `chat-widget.js` +
   `nginx.conf` + `Dockerfile`, estilo laboralia/erma) con botón/chat flotante
   del tenant. Service blocks `frontend-tenant-ipachoteayuda` +
