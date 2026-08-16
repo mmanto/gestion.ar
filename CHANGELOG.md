@@ -31,6 +31,23 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `tenant_4d47f2900969` (ERMA local, `erma.com.test`).
 
 ### Agregado
+- **Nuevo tenant `ipachoteayuda` con dominio propio de subdominio
+  `pachoteayuda.intellify.pro` y su landing.** Alta del tenant (id
+  `tenant_9ef2a8bdd6b7`, status `active`, Plan Básico), su usuario admin
+  (`ipachoteayuda_admin`), el bot `ipachoteayuda` (business_type `asistencia`)
+  y su canal web (`channel_1d2fc630d688`) vía
+  `backend/scripts/create_ipachoteayuda_tenant.py` — el canal es el que
+  embeber la landing en `/chat/c/<channel_id>`. Landing estática en
+  `sites/ipachoteayuda-landing/` (`index.html` + `chat-widget.js` +
+  `nginx.conf` + `Dockerfile`, estilo laboralia/erma) con botón/chat flotante
+  del tenant. Service blocks `frontend-tenant-ipachoteayuda` +
+  `landing-ipachoteayuda` en `docker-compose.tenants.local.yml`, `.dev.yml` y
+  `.tenants.prod.yml` (Traefik `Host(\`pachoteayuda.intellify.pro\`)`, igual
+  que ius/laboralia/proptech — subdominio cubierto por el wildcard
+  `*.intellify.pro`) y la variable `TENANT_ID_IPACHOTESAYUDA` en
+  `.env.example`/`.env.prod`/`ENV.md`. **Requiere**: en prod,
+  `up -d --build frontend-tenant-ipachoteayuda landing-ipachoteayuda` con el
+  stack de tenants (ver `docs/ops/DEPLOYMENT.md`).
 - **Edición y eliminación de tenants en el panel admin.** La página de
   detalle del tenant (`/admin/tenants/:tenantId`) ahora permite editar el
   **nombre y dominio propio** (además de estado, plan y marca) y eliminar el

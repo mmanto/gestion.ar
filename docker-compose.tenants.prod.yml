@@ -117,6 +117,60 @@ services:
       - "traefik.http.routers.tenant-pachoteayuda.priority=1"
       - "traefik.http.services.tenant-pachoteayuda.loadbalancer.server.port=80"
 
+  # ipachoteayuda: dominio propio de subdominio pachoteayuda.intellify.pro
+  # (cubierto por el wildcard *.intellify.pro del DNS — cada Host() concreto
+  # dispara su propia emisión de certificado, ver DEPLOYMENT.md).
+  frontend-tenant-ipachoteayuda:
+    build:
+      context: ./frontend-tenant
+      dockerfile: Dockerfile
+      args:
+        VITE_TARGET: staff
+        VITE_APPOINTMENTS_REMOTE_URL: ${VITE_APPOINTMENTS_REMOTE_URL:-https://appointments-widgets.intellify.pro/remoteEntry.js}
+        VITE_NANGO_CONNECT_URL: https://nango.intellify.pro
+        VITE_NANGO_API_URL: https://api.nango.intellify.pro
+    container_name: gestionar_frontend_tenant_ipachoteayuda
+    environment:
+      - TENANT_ID=${TENANT_ID_IPACHOTESAYUDA}
+      - TENANT_SLUG=ipachoteayuda
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - default
+      - traefik_public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_public"
+      - "traefik.http.routers.tenant-ipachoteayuda.rule=Host(`pachoteayuda.intellify.pro`)"
+      - "traefik.http.routers.tenant-ipachoteayuda.entrypoints=websecure"
+      - "traefik.http.routers.tenant-ipachoteayuda.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.tenant-ipachoteayuda.priority=1"
+      - "traefik.http.services.tenant-ipachoteayuda.loadbalancer.server.port=80"
+
+  # landing-ipachoteayuda comparte dominio con frontend-tenant-ipachoteayuda
+  # (pachoteayuda.intellify.pro): este router matchea "/", cualquier página
+  # .html de la landing (PathRegexp) y el chat-widget — cualquier otra ruta
+  # (/login, /dashboard, /assets/*, /api/*...) cae en tenant-ipachoteayuda.
+  # Mismo criterio que landing-ius/laboralia/proptech.
+  landing-ipachoteayuda:
+    build:
+      context: ./sites/ipachoteayuda-landing
+    restart: unless-stopped
+    networks:
+      - traefik_public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_public"
+      - 'traefik.http.routers.landing-ipachoteayuda.rule=Host(`pachoteayuda.intellify.pro`) && (PathRegexp(`^/.*\.html$`) || Path(`/`) || Path(`/chat-widget.js`))'
+      - "traefik.http.routers.landing-ipachoteayuda.entrypoints=websecure"
+      - "traefik.http.routers.landing-ipachoteayuda.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.landing-ipachoteayuda.priority=10"
+      - "traefik.http.services.landing-ipachoteayuda.loadbalancer.server.port=80"
+
+  # landing-erma comparte dominio con frontend-tenant-erma (erma.com.ar):
+
   # landing-erma comparte dominio con frontend-tenant-erma (erma.com.ar):
   # este router matchea "/", cualquier página .html de la landing (PathRegexp),
   # el bundle/estilos propios y el hero-video — cualquier otra ruta (/login,

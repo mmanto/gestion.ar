@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ipachoteayuda | Asistencia que te responde al toque</title>
+<meta name="description" content="Un asistente siempre disponible que atiende consultas por chat, resuelve dudas y te acompaña en lo que necesites, sin esperas." />
+<meta name="robots" content="index, follow" />
+<link rel="canonical" href="https://pachoteayuda.intellify.pro/" />
+
+<!-- Favicon (inline, sin archivo) -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23f18f2f'/%3E%3Cpath d='M50 24c14 0 24 8 24 20 0 8-4 14-10 17l4 13-12-8a26 26 0 0 1-6 1c-14 0-24-8-24-20S36 24 50 24Z' fill='white'/%3E%3C/svg%3E" />
+
+<!-- Open Graph / WhatsApp -->
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://pachoteayuda.intellify.pro/" />
+<meta property="og:title" content="ipachoteayuda | Asistencia que te responde al toque" />
+<meta property="og:description" content="Un asistente siempre disponible: atiende tus consultas por chat, sin esperas y con respuestas claras." />
+<meta property="og:locale" content="es_AR" />
+<meta property="og:site_name" content="ipachoteayuda" />
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          ink: { 900:'#1c2333', 700:'#2c3650', 500:'#4b5678' },
+          sun: { 50:'#fff4e6', 100:'#ffe6c7', 300:'#ffc07a', 400:'#f9a03f', 500:'#f18f2f' },
+          egg: '#fbf6ee'
+        },
+        fontFamily: { display: ['"Fraunces"','Georgia','serif'], sans: ['"Inter"','system-ui','sans-serif'] }
+      }
+    }
+  }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  html{scroll-behavior:smooth;}
+  body{font-family:Inter,system-ui,sans-serif;}
+  .display{font-family:Fraunces,Georgia,serif;}
+  .chip{display:inline-flex;align-items:center;gap:.4rem;padding:.32rem .8rem;border-radius:9999px;font-size:.72rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;}
+  .wave{position:absolute;inset:0;opacity:.06;pointer-events:none;background-image:radial-gradient(circle at 1px 1px,#1c2333 1.5px,transparent 1.5px);background-size:26px 26px;}
+</style>
+</head>
+<body class="bg-egg text-ink-900 antialiased">
+
+<!-- NAV -->
+<header class="sticky top-0 z-50 bg-egg/90 backdrop-blur border-b border-ink-900/5">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+    <a href="#" class="flex items-center gap-2.5">
+      <span class="w-9 h-9 rounded-xl bg-sun-500 flex items-center justify-center shadow-sm">
+        <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a7 7 0 0 1 7 7c0 3.5-2 5.4-3.4 6.4l.9 3.1-2.2-2.2A7 7 0 0 1 5 10a7 7 0 0 1 7-7Z"/></svg>
+      </span>
+      <span class="display text-xl font-bold tracking-tight">ipa<b class="text-sun-500">choteayuda</b></span>
+    </a>
+    <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-ink-500">
+      <a href="#como" class="hover:text-ink-900 transition-colors">Cómo funciona</a>
+      <a href="#para-que" class="hover:text-ink-900 transition-colors">Para qué sirve</a>
+      <a href="#preguntas" class="hover:text-ink-900 transition-colors">Preguntas</a>
+    </nav>
+    <a href="/login" class="text-sm font-semibold text-ink-900 border border-ink-900/15 px-4 py-2 rounded-full hover:bg-ink-900 hover:text-white transition-colors">Mi cuenta</a>
+  </div>
+</header>
+
+<!-- HERO -->
+<section id="hero" class="relative overflow-hidden">
+  <div class="wave"></div>
+  <div class="relative max-w-6xl mx-auto px-5 sm:px-8 pt-16 pb-20 grid lg:grid-cols-2 gap-14 items-center">
+    <div>
+      <span class="chip bg-sun-100 text-sun-500 mb-6">Asistencia por chat · sin esperas</span>
+      <h1 class="display text-4xl sm:text-5xl font-bold leading-[1.05] tracking-tight mb-5">
+        Tus consultas,<br />respondidas <span class="text-sun-500">al toque.</span>
+      </h1>
+      <p class="text-lg text-ink-500 leading-relaxed mb-8 max-w-md">
+        Un asistente disponible todo el día que escucha, entiende y te responde. Nada de filas, nada de formularios eternos: escribís y listo.
+      </p>
+      <div class="flex flex-wrap gap-4 items-center">
+        <button data-open-chat class="inline-flex items-center gap-2 bg-ink-900 text-white font-semibold px-7 py-3.5 rounded-full hover:bg-ink-700 transition-colors shadow-lg shadow-ink-900/10">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-8 8H4l2-3a8 8 0 1 1 15-5Z"/></svg>
+          Empezar a chatear
+        </button>
+        <a href="#como" class="inline-flex items-center gap-2 text-ink-700 font-semibold hover:text-ink-900 transition-colors">
+          Ver cómo funciona
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14m-6-6 6 6 6-6"/></svg>
+        </a>
+      </div>
+      <div class="flex items-center gap-6 mt-10 text-sm text-ink-500">
+        <span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-green-500"></span> Respuesta inmediata</span>
+        <span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-green-500"></span> Sin requisitos</span>
+      </div>
+    </div>
+
+    <!-- Mockup de chat -->
+    <div class="relative">
+      <div class="absolute -top-6 -right-4 w-24 h-24 bg-sun-300/40 rounded-full blur-2xl"></div>
+      <div class="relative bg-white rounded-[1.6rem] shadow-2xl shadow-ink-900/10 border border-ink-900/5 overflow-hidden">
+        <div class="bg-ink-900 px-5 py-4 flex items-center gap-3">
+          <span class="w-9 h-9 rounded-lg bg-sun-500 flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a7 7 0 0 1 7 7c0 3.5-2 5.4-3.4 6.4l.9 3.1-2.2-2.2A7 7 0 0 1 5 10a7 7 0 0 1 7-7Z"/></svg>
+          </span>
+          <div>
+            <div class="text-white font-semibold text-sm">Asistente ipachoteayuda</div>
+            <div class="text-white/70 text-xs flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-green-400"></span> en línea</div>
+          </div>
+        </div>
+        <div class="p-5 space-y-3 bg-ink-900/3">
+          <div class="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm max-w-[85%] text-sm text-ink-700">
+            Hola 👋 ¿Qué consulta tenés hoy?
+          </div>
+          <div class="bg-sun-500 text-white rounded-2xl rounded-tr-sm px-4 py-3 shadow-sm max-w-[85%] ml-auto text-sm">
+            Quería saber el horario para tramitar el certificado.
+          </div>
+          <div class="bg-white rounded-2xl rounded-tr-sm px-4 py-3 shadow-sm max-w-[85%] text-sm text-ink-700">
+            Es de 8 a 16 hs, de lunes a viernes. ¿Te sirve esa info? Puedo darte también el listado de requisitos.
+          </div>
+          <div class="flex justify-end"><span class="text-[11px] text-ink-500/60">10:42 · respondido en 3 s</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CÓMO FUNCIONA -->
+<section id="como" class="py-20 bg-white">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8">
+    <div class="text-center mb-14">
+      <span class="chip bg-sun-100 text-sun-500 mb-4">Cómo funciona</span>
+      <h2 class="display text-3xl sm:text-4xl font-bold tracking-tight mb-4">Tres pasos, cero fricción</h2>
+      <p class="text-ink-500 max-w-xl mx-auto">Desde el primer mensaje hasta tu respuesta, todo pasa en un mismo chat.</p>
+    </div>
+    <div class="grid sm:grid-cols-3 gap-6">
+      <div class="rounded-3xl border border-ink-900/5 bg-egg p-8">
+        <div class="display w-12 h-12 rounded-2xl bg-sun-500 text-white flex items-center justify-center text-xl font-bold mb-5">1</div>
+        <div class="font-semibold text-lg mb-2">Escribís tu consulta</div>
+        <p class="text-ink-500 text-sm leading-relaxed">Abrís el chat y contás lo que necesitás, con tus palabras. No hay formularios previos.</p>
+      </div>
+      <div class="rounded-3xl border border-ink-900/5 bg-egg p-8">
+        <div class="display w-12 h-12 rounded-2xl bg-sun-500 text-white flex items-center justify-center text-xl font-bold mb-5">2</div>
+        <div class="font-semibold text-lg mb-2">El asistente entiende</div>
+        <p class="text-ink-500 text-sm leading-relaxed">Interpreta tu pedido al instante y prepara una respuesta clara, sin tecnicismos.</p>
+      </div>
+      <div class="rounded-3xl border border-ink-900/5 bg-egg p-8">
+        <div class="display w-12 h-12 rounded-2xl bg-sun-500 text-white flex items-center justify-center text-xl font-bold mb-5">3</div>
+        <div class="font-semibold text-lg mb-2">Te responde al toque</div>
+        <p class="text-ink-500 text-sm leading-relaxed">Obtenés tu respuesta en segundos y, si hace falta, seguís la conversación hasta resolverlo.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PARA QUÉ SIRVE -->
+<section id="para-que" class="py-20 bg-ink-900 text-white">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8">
+    <div class="text-center mb-14">
+      <span class="chip bg-white/10 text-sun-300 mb-4">Para qué sirve</span>
+      <h2 class="display text-3xl sm:text-4xl font-bold tracking-tight mb-4">Consultas que se resuelven solas</h2>
+      <p class="text-white/70 max-w-xl mx-auto">Del dato puntual al acompañamiento completo, el asistente cubre lo cotidiano.</p>
+    </div>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="rounded-2xl bg-white/5 border border-white/10 p-6">
+        <svg class="w-6 h-6 text-sun-300 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <div class="font-semibold mb-1">Horarios y requisitos</div>
+        <p class="text-white/60 text-sm">Datos concretos, actualizados y sin necesidad de llamar.</p>
+      </div>
+      <div class="rounded-2xl bg-white/5 border border-white/10 p-6">
+        <svg class="w-6 h-6 text-sun-300 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5a1 1 0 0 0 1 1h5"/><path d="M6 3h8l6 6v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="m9 15 2 2 4-4"/></svg>
+        <div class="font-semibold mb-1">Trámites y pasos</div>
+        <p class="text-white/60 text-sm">Te guía paso a paso para avanzar sin trabarte.</p>
+      </div>
+      <div class="rounded-2xl bg-white/5 border border-white/10 p-6">
+        <svg class="w-6 h-6 text-sun-300 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l2 2"/><circle cx="12" cy="12" r="9"/></svg>
+        <div class="font-semibold mb-1">Atención las 24 h</div>
+        <p class="text-white/60 text-sm">Responde a cualquier hora, incluso feriados y fines de semana.</p>
+      </div>
+      <div class="rounded-2xl bg-white/5 border border-white/10 p-6">
+        <svg class="w-6 h-6 text-sun-300 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14l-3-3"/></svg>
+        <div class="font-semibold mb-1">Seguimiento del caso</div>
+        <p class="text-white/60 text-sm">Retomás tu conversación donde la dejaste, sin repetir nada.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PREGUNTAS -->
+<section id="preguntas" class="py-20 bg-white">
+  <div class="max-w-3xl mx-auto px-5 sm:px-8">
+    <div class="text-center mb-12">
+      <span class="chip bg-sun-100 text-sun-500 mb-4">Preguntas frecuentes</span>
+      <h2 class="display text-3xl sm:text-4xl font-bold tracking-tight mb-4">Lo que todos preguntan</h2>
+    </div>
+    <div class="space-y-4">
+      <details class="group p-6 rounded-2xl bg-egg border border-ink-900/5 open:shadow-md transition-all">
+        <summary class="flex items-center justify-between cursor-pointer list-none font-semibold">
+          <span>¿El chat es gratuito?</span>
+          <span class="text-sun-500 transition-transform duration-300 group-open:rotate-45 text-xl leading-none">+</span>
+        </summary>
+        <p class="text-ink-500 mt-4 leading-relaxed text-sm">Sí, podés hacer todas tus consultas por el chat. Si alcanzás el límite de tu plan, el propio asistente te avisa cómo continuar.</p>
+      </details>
+      <details class="group p-6 rounded-2xl bg-egg border border-ink-900/5 open:shadow-md transition-all">
+        <summary class="flex items-center justify-between cursor-pointer list-none font-semibold">
+          <span>¿Necesito crear una cuenta para chatear?</span>
+          <span class="text-sun-500 transition-transform duration-300 group-open:rotate-45 text-xl leading-none">+</span>
+        </summary>
+        <p class="text-ink-500 mt-4 leading-relaxed text-sm">No. Podés empezar a consultar de inmediato. Solo si querés guardar tu historial o acceder a funciones extra, te registrás con tu cuenta.</p>
+      </details>
+      <details class="group p-6 rounded-2xl bg-egg border border-ink-900/5 open:shadow-md transition-all">
+        <summary class="flex items-center justify-between cursor-pointer list-none font-semibold">
+          <span>¿Qué pasa si el asistente no sabe responderme?</span>
+          <span class="text-sun-500 transition-transform duration-300 group-open:rotate-45 text-xl leading-none">+</span>
+        </summary>
+        <p class="text-ink-500 mt-4 leading-relaxed text-sm">Te lo dice con honestidad y te indica el próximo paso para resolverlo, sin dejarte colgado a mitad de camino.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- CTA FINAL -->
+<section class="py-20 bg-sun-50 relative overflow-hidden">
+  <div class="wave"></div>
+  <div class="relative max-w-3xl mx-auto px-5 sm:px-8 text-center">
+    <span class="chip bg-white text-sun-500 mb-6">Probá ahora</span>
+    <h2 class="display text-3xl sm:text-4xl font-bold tracking-tight mb-4 text-ink-900">Una consulta, una respuesta,<br />en segundos.</h2>
+    <p class="text-ink-500 mb-8 max-w-md mx-auto">Escribinos lo que necesites. El asistente ya está esperando tu primer mensaje.</p>
+    <button data-open-chat class="inline-flex items-center gap-2 bg-ink-900 text-white font-semibold px-8 py-4 rounded-full hover:bg-ink-700 transition-colors shadow-lg shadow-ink-900/10">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-8 8H4l2-3a8 8 0 1 1 15-5Z"/></svg>
+      Abrir el chat
+    </button>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="bg-ink-900 text-white/60 py-12">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-5">
+    <span class="flex items-center gap-2.5 text-white">
+      <span class="w-8 h-8 rounded-lg bg-sun-500 flex items-center justify-center">
+        <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a7 7 0 0 1 7 7c0 3.5-2 5.4-3.4 6.4l.9 3.1-2.2-2.2A7 7 0 0 1 5 10a7 7 0 0 1 7-7Z"/></svg>
+      </span>
+      <span class="display font-bold tracking-tight">ipa<b class="text-sun-500">choteayuda</b></span>
+    </span>
+    <span class="text-sm">© 2026 ipachoteayuda · Asistencia por chat. Todos los derechos reservados.</span>
+  </div>
+</footer>
+
+<!-- Chat embed: botón flotante + iframe con el chat del tenant -->
+<script src="/chat-widget.js" defer></script>
+<script>
+  // Cualquier botón con data-open-chat abre el panel del chat
+  document.querySelectorAll('[data-open-chat]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (window.__IPA_OPEN_CHAT__) window.__IPA_OPEN_CHAT__();
+    });
+  });
+</script>
+
+</body>
+</html>
