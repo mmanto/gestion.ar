@@ -444,7 +444,7 @@ cmd_build_android() {
   app_id="$(android_tenant_var "$slug" APPID)"
   app_name="$(android_tenant_var "$slug" APPNAME)"
   brand_color="$(android_tenant_var "$slug" BRANDCOLOR)"
-  public_url="$(android_tenant_var "$slug" PUBLICURL)"
+  public_url="$(android_tenant_var "$slug" PUBLIC_URL)"
   if [[ -z "$app_id" || -z "$app_name" || -z "$brand_color" ]]; then
     echo -e "${RED}ERROR: faltan TENANT_APPID_${slug^^} / TENANT_APPNAME_${slug^^} / TENANT_BRANDCOLOR_${slug^^} en ${ENV_FILE}.${NC}"
     return 1
