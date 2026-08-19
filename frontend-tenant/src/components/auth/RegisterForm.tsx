@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import type { AuthProvider, RegisterPayload, RegisterPlan } from '../../types/auth.types';
+import { Spinner } from '../common/Spinner';
 
 /**
  * Tarjeta de autoregistro "Crea tu cuenta" (plan + Google + formulario),
@@ -51,8 +52,12 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ tenantId, branding, 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<AuthProvider | null>(null);
+  // Guard anti-reintento del OAuth con Google (misma razón que en LoginForm).
+  const oauthInFlight = useRef(false);
 
   const handleGoogle = async () => {
+    if (!tenantId || oauthInFlight.current) return;
+    oauthInFlight.current = true;
     setError('');
     setOauthLoading('google');
     try {
@@ -62,6 +67,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ tenantId, branding, 
       const message = err instanceof Error && err.message !== 'cancelled' ? err.message : 'No se pudo completar el registro con Google.';
       setError(message);
     } finally {
+      oauthInFlight.current = false;
       setOauthLoading(null);
     }
   };
@@ -134,6 +140,19 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ tenantId, branding, 
         </div>
       </div>
 
+      {oauthLoading ? (
+        <div className="flex flex-col items-center justify-center gap-4 px-8 py-14">
+          <Spinner size="lg" />
+          <div className="text-center">
+            <p className="text-sm font-semibold text-gray-900">Autenticando con Google…</p>
+            <p className="text-xs text-gray-500 leading-relaxed mt-2 max-w-xs">
+              Esperá un momento, no cierres la aplicación. Si se abrió la
+              ventana de Google, completá el acceso y cerrá la ventana para volver.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <>
       <div className="px-8 pt-7">
         <div className="text-center mb-6">
           <h2 className="text-xl font-extrabold text-gray-900 mb-1">Elige tu plan</h2>
@@ -275,6 +294,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ tenantId, branding, 
           Tu información está protegida con cifrado de nivel bancario.
         </p>
       </form>
+        </>
+      )}
     </div>
   );
 };

@@ -7,6 +7,16 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Cambiado
+- **Login/registro con Google: pantalla intermedia de carga en vez de
+  quedarse en el formulario.** Tras autenticar en el Chrome Custom Tab y
+  volver a la app, en conexiones lentas el usuario veía el login con el botón
+  "Conectando…" y podía re-tocar el botón, reiniciando el flujo. Ahora durante
+  el OAuth se reemplaza el formulario por una pantalla de carga (spinner +
+  "Autenticando con Google…") sin controles interactivos, y se agregó un guard
+  anti-reintento (`oauthInFlight`) para que un segundo clic nunca arranque un
+  flujo concurrente (los botones de Google ya quedaban deshabilitados;
+  la pantalla intermedia los elimina por completo). Aplica a `LoginForm` y
+  `RegisterForm`. **Requiere reinstall del APK.**
 - **La app nativa Android del tenant ius se llama "ius" (antes "ius Staff").**
   `TENANT_APPNAME_IUS` (`.env.prod`/`.env.example`), el default de
   `frontend-tenant/capacitor.config.ts` y el `app_name`/`title_activity_main`

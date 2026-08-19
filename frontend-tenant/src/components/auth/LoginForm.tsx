@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useTenant } from '../../hooks/useTenant';
 import { biometricService } from '../../services/biometric.service';
+import { Spinner } from '../common/Spinner';
 import type { AuthProvider } from '../../types/auth.types';
 
 const PRIMARY = '#25357a';
@@ -19,6 +20,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
 
   const [oauthLoading, setOauthLoading] = useState<AuthProvider | null>(null);
+
+  // Guard anti-reintento del OAuth: evita lanzar un segundo flujo si el clic
+  // vuelve a llegar (o el estado se reseteó) mientras el login con Google
+  // todavía está resolviendo — en conexiones lentas el usuario toca de nuevo
+  // el botón y el proceso se reiniciaba.
+  const oauthInFlight = useRef(false);
 
   // ¿Hay una credencial de huella enrolada en este dispositivo (solo nativo)?
   const [biometricReady, setBiometricReady] = useState(false);
@@ -57,7 +64,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   };
 
   const handleProviderLogin = async (provider: AuthProvider) => {
-    if (!tenantId) return;
+    if (!tenantId || oauthInFlight.current) return;
+    oauthInFlight.current = true;
     setError('');
     setOauthLoading(provider);
     try {
@@ -73,6 +81,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         const name = provider === 'google' ? 'Google' : 'Microsoft';
         setError(e?.response?.data?.detail || e?.message || `No se pudo iniciar sesión con ${name}. Intenta nuevamente`);
       }
+    } finally {
+      oauthInFlight.current = false;
       setOauthLoading(null);
     }
   };
@@ -121,7 +131,22 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
 
   const labelClass = 'block text-sm font-semibold text-gray-800 mb-1.5';
 
-  return (
+  return oauthLoading ? (
+    // Pantalla intermedia de carga del OAuth: en vez de mostrar el login con
+    // el botón en "Cargando…" (donde el usuario podría re-tocar y reiniciar el
+    // flujo, sobre todo con conexión lenta), se reemplaza el formulario por un
+    // estado de carga claro y sin controles interactivos.
+    <div className="flex flex-col items-center justify-center gap-4 py-14">
+      <Spinner size="lg" />
+      <div className="text-center">
+        <p className="text-sm font-semibold text-gray-800">Autenticando con Google…</p>
+        <p className="text-xs text-gray-500 leading-relaxed mt-2 max-w-xs">
+          Esperá un momento, no cierres la aplicación. Si se abrió la
+          ventana de Google, completá el acceso y cerrá la ventana para volver.
+        </p>
+      </div>
+    </div>
+  ) : (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {/* Error */}
       {error && (
