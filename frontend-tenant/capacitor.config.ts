@@ -18,7 +18,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const isCleartextBuild = (process.env.VITE_API_URL || '').startsWith('http://');
 
 const appId = process.env.VITE_TENANT_APPID || 'ius.intellify.pro';
-const appName = process.env.VITE_TENANT_APPNAME || 'ius Staff';
+const appName = process.env.VITE_TENANT_APPNAME || 'ius';
 // Color de marca del tenant (splash + status bar) — default navy de ius
 // (ver frontend-tenant/public/img/logo_horizontal_ius.svg, fill #25357a).
 const brandColor = process.env.VITE_TENANT_BRANDCOLOR || '#25357a';

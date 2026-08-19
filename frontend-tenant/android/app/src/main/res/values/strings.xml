@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">ius Staff</string>
-    <string name="title_activity_main">ius Staff</string>
+    <string name="app_name">ius</string>
+    <string name="title_activity_main">ius</string>
     <string name="package_name">ius.intellify.pro</string>
     <string name="custom_url_scheme">ius.intellify.pro</string>
     <string name="default_notification_channel_id">ius_staff_messages</string>

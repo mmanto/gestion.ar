@@ -7,6 +7,12 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Cambiado
+- **La app nativa Android del tenant ius se llama "ius" (antes "ius Staff").**
+  `TENANT_APPNAME_IUS` (`.env.prod`/`.env.example`), el default de
+  `frontend-tenant/capacitor.config.ts` y el `app_name`/`title_activity_main`
+  del snapshot Android se alinearon al nombre corto — `build-android` lo
+  patchea automáticamente desde `TENANT_APPNAME_IUS`. **Requiere reinstall del
+  APK** (`frontend-tenant/dist-apk/gestionar-ius-debug.apk`).
 - **Landing de pachoteayuda con el diseño dedicado de "César Pacho ·
   Asistente Ciudadano de Bolívar".** `sites/ipachoteayuda-landing/index.html`
   pasó del template genérico (Tailwind, paleta sun) al diseño propio del
@@ -42,11 +48,16 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   dominio del API (`api.intellify.pro`) en vez del frontend del tenant
   (`ius.intellify.pro`).** En la app nativa (Capacitor) todas las llamadas
   van directo al backend (`VITE_API_URL`), así que `getPublicUrl()` derivaba
-  el dominio público del Host de la request — el del API. Ahora build-android
+  el dominio público del Host de la request — el del API. `build-android`
   hornea `VITE_TENANT_PUBLIC_URL` desde `TENANT_PUBLIC_URL_<SLUG>` (`.env.prod`,
   ius ya seteado a `https://ius.intellify.pro`) y el frontend lo usa como base
   del link de chat cuando está presente, cayendo a la derivación por Host solo
-  en web. **Requiere rebuild + reinstall del APK.**
+  en web. **Causa raíz del deploy previo:** `stack-prod.sh`/`stack-dev.sh`
+  leían la variable con el nombre mal (`PUBLICURL`, `TENANT_PUBLICURL_<SLUG>`)
+  en vez de `PUBLIC_URL` (`TENANT_PUBLIC_URL_<SLUG>`), así que horneaban una
+  URL vacía y el fix no surtía efecto. Corregido en ambos scripts y APK de ius
+  regenerado con la URL horneada. **Requiere reinstall del APK**
+  (`frontend-tenant/dist-apk/gestionar-ius-debug.apk`).
 - **Tenant local de ERMA apuntaba a un tenant inexistente:** en
   `docker-compose.tenants.local.yml` y en el dev-server de
   `docker-compose.tenants.dev.yml`, `TENANT_ID=tenant_bf351fa15c7d` no existía

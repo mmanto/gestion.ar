@@ -59,7 +59,7 @@ O, más simple, usando el comando del stack (valida requisitos, fija
 ./stack.prod build-android prod https://api.intellify.pro/api
 ```
 
-`appId: ius.intellify.pro`, `appName: 'ius Staff'`
+`appId: ius.intellify.pro`, `appName: 'ius'`
 (`frontend-tenant/capacitor.config.ts`).
 
 **Requisitos:** Android SDK (`ANDROID_HOME`/`ANDROID_SDK_ROOT`), JDK 17+.
