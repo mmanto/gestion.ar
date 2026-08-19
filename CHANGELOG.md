@@ -38,6 +38,15 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   scripts/apply_erma_branding.py`).
 
 ### Corregido
+- **"Compartir enlace" / "Mi link de chat" en el APK Android apuntaban al
+  dominio del API (`api.intellify.pro`) en vez del frontend del tenant
+  (`ius.intellify.pro`).** En la app nativa (Capacitor) todas las llamadas
+  van directo al backend (`VITE_API_URL`), así que `getPublicUrl()` derivaba
+  el dominio público del Host de la request — el del API. Ahora build-android
+  hornea `VITE_TENANT_PUBLIC_URL` desde `TENANT_PUBLIC_URL_<SLUG>` (`.env.prod`,
+  ius ya seteado a `https://ius.intellify.pro`) y el frontend lo usa como base
+  del link de chat cuando está presente, cayendo a la derivación por Host solo
+  en web. **Requiere rebuild + reinstall del APK.**
 - **Tenant local de ERMA apuntaba a un tenant inexistente:** en
   `docker-compose.tenants.local.yml` y en el dev-server de
   `docker-compose.tenants.dev.yml`, `TENANT_ID=tenant_bf351fa15c7d` no existía

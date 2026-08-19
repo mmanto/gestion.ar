@@ -407,11 +407,12 @@ cmd_build_android() {
     return 1
   fi
 
-  local app_id app_name brand_color tenant_id
+  local app_id app_name brand_color tenant_id public_url
   app_id="$(android_tenant_var "$slug" APPID)"
   app_name="$(android_tenant_var "$slug" APPNAME)"
   brand_color="$(android_tenant_var "$slug" BRANDCOLOR)"
   tenant_id="$(android_tenant_var "$slug" ID)"
+  public_url="$(android_tenant_var "$slug" PUBLICURL)"
   if [[ -z "$app_id" || -z "$app_name" || -z "$brand_color" ]]; then
     echo -e "${RED}ERROR: faltan TENANT_APPID_${slug^^} / TENANT_APPNAME_${slug^^} / TENANT_BRANDCOLOR_${slug^^} en ${ENV_FILE}.${NC}"
     return 1
@@ -500,7 +501,7 @@ cmd_build_android() {
   (cd "$project_dir" && VITE_API_URL="$api_url" VITE_APPOINTMENTS_REMOTE_URL="$appointments_remote" VITE_NANGO_CONNECT_URL="$nango_connect_url" VITE_NANGO_API_URL="$nango_api_url" \
     VITE_TENANT_ID="$tenant_id" VITE_STATS_TWO_COLS_MOBILE="$stats_two_cols" \
     VITE_TENANT_APPID="$app_id" VITE_TENANT_APPNAME="$app_name" VITE_TENANT_BRANDCOLOR="$brand_color" \
-    npm run build:capacitor) || {
+    VITE_TENANT_PUBLIC_URL="$public_url" npm run build:capacitor) || {
     echo -e "${RED}  ERROR: npm run build:capacitor fallo${NC}"
     return 1
   }

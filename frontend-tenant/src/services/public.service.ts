@@ -18,6 +18,19 @@ export const publicService = {
   },
 
   async getPublicUrl(): Promise<string> {
+    // En el APK nativo (Capacitor) todas las llamadas van directo al backend
+    // (VITE_API_URL, ej. https://api.intellify.pro), así que el Host de la
+    // request no es el dominio público del tenant (ej. ius.intellify.pro) y
+    // /public/app-url devolvería la base del API — rota el link de chat
+    // ("Compartir enlace", "Mi link de chat"). build-android (scripts/stack-*.sh)
+    // hornea VITE_TENANT_PUBLIC_URL desde TENANT_PUBLIC_URL_<SLUG> en
+    // .env.prod: si está presente se usa ese dominio y no se consulta al
+    // backend. En la web la var no existe y el Host de la request sigue
+    // siendo el del tenant (derivación actual, correcta).
+    const bakedPublicUrl = (import.meta.env.VITE_TENANT_PUBLIC_URL as string | undefined)?.trim();
+    if (bakedPublicUrl) {
+      return bakedPublicUrl.replace(/\/+$/, '');
+    }
     const res = await axios.get(`${BASE_URL}/public/app-url`);
     return res.data.url;
   },

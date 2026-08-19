@@ -244,6 +244,10 @@ repo), por eso el nombre de marca tiene una clave por app.
 | `TENANT_ID_IUS` | ❌ | Tenant ID por cada tenant con dominio propio (`docker-compose.tenants.prod.yml`) | `tenant_78f507331c18` |
 | `TENANT_ID_PACHOTESAYUDA` | ❌ | Tenant ID del tenant pachoteayuda (dominio propio `pachoteayuda.ar`) | `tenant_7099f777c4d8` |
 | `TENANT_ID_IPACHOTESAYUDA` | ❌ | Tenant ID del tenant ipachoteayuda (dominio `pachoteayuda.intellify.pro`) | `tenant_2fc38a44e696` (verificado en prod 2026-08-16; el id `tenant_9ef2a8bdd6b7` documentado antes no existe en la DB) |
+| `TENANT_APPID_<SLUG>` | ❌ | `applicationId` Android del APK del tenant (build-android en `scripts/stack-*.sh`) | `ius.intellify.pro` |
+| `TENANT_APPNAME_<SLUG>` | ❌ | Nombre visible del APK del tenant | `"ius Staff"` |
+| `TENANT_BRANDCOLOR_<SLUG>` | ❌ | Color de marca (splash + status bar) del APK del tenant | `#25357a` |
+| `TENANT_PUBLIC_URL_<SLUG>` | ❌* | Dominio público del frontend web del tenant, horneado en el APK como `VITE_TENANT_PUBLIC_URL`. En la app nativa las llamadas van directo al backend (`VITE_API_URL`, ej. `api.intellify.pro`), así que `getPublicUrl()` no puede derivar el dominio del tenant del Host de la request — sin esto el link de chat ("Compartir", "Mi link de chat") apunta al dominio del API en vez del frontend del tenant. *Sin valor, el APK queda con la derivación por Host (rota en nativo; web no lo usa) | `https://ius.intellify.pro` |
 
 ---
 
