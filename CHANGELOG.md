@@ -44,6 +44,20 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   scripts/apply_erma_branding.py`).
 
 ### Corregido
+- **El diálogo de permisos de notificaciones se pedía en el instante en que
+  terminaba el login con Google, cortando el flujo en algunos equipos.**
+  `useNativeStaffPush` lanzaba `PushNotifications.requestPermissions()` apenas
+  `isAuthenticated` pasaba a `true`, justo en la ventana de retorno del Chrome
+  Custom Tab del OAuth — en algunos móviles el diálogo del sistema quedaba
+  detrás / se perdía la respuesta y el usuario veía la app "colgada" sin entrar.
+  Ahora el pedido se difiere hasta que la Activity está en foco
+  (`@capacitor/app` `appStateChange`/`getState`) y tras un margen de
+  asentamiento del dashboard, y es no-bloqueante (try/catch), así el prompt
+  sale siempre en primer plano y nunca puede percibirse como un fallo del
+  login. Nota: en Android el permiso `POST_NOTIFICATIONS` no se puede conceder
+  automáticamente (API 33+, targetSdk 36) — la solución es el timing/foreground.
+  **Requiere reinstall del APK**
+  (`frontend-tenant/dist-apk/gestionar-ius-debug.apk`).
 - **"Compartir enlace" / "Mi link de chat" en el APK Android apuntaban al
   dominio del API (`api.intellify.pro`) en vez del frontend del tenant
   (`ius.intellify.pro`).** En la app nativa (Capacitor) todas las llamadas
