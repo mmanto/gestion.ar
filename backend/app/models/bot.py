@@ -124,6 +124,17 @@ class BotConfig(BaseModel):
             "dispositivo y el historial como hasta ahora."
         )
     )
+    push_notifications_enabled: bool = Field(
+        default=True,
+        description=(
+            "Si False, el chat del cliente NO ofrece activar las notificaciones "
+            "push: el botón 'Recibir notificaciones' no se muestra ni se pide el "
+            "permiso del navegador. Pensado para bots donde el push no tiene "
+            "sentido (ej. pachoteayuda, chat embebido en landing). True (default) "
+            "conserva el comportamiento actual: el botón se muestra cuando el "
+            "navegador soporta push."
+        )
+    )
 
 
 class BotChannelConfig(BaseModel):

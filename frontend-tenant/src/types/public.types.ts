@@ -7,6 +7,10 @@ export interface PublicBotInfo {
    * (identidad de sesión nueva → el flujo vuelve a pedir los datos del
    * paciente/ciudadano). Ver BotConfig.blank_chat_on_load. */
   blank_chat_on_load?: boolean;
+  /** Si False, el chat del cliente no ofrece activar notificaciones push (no
+   * se muestra el botón "Recibir notificaciones"). Ver
+   * BotConfig.push_notifications_enabled. */
+  push_notifications_enabled?: boolean;
 }
 
 export interface PublicChannelInfo {

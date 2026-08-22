@@ -105,6 +105,10 @@ async def get_public_channel_info(channel_id: str):
             # vuelve a pedir los datos del paciente/ciudadano). Ver
             # BotConfig.blank_chat_on_load.
             "blank_chat_on_load": bool(getattr(bot.config, "blank_chat_on_load", False)),
+            # Si False, el chat del cliente no ofrece activar notificaciones
+            # push (el frontend no muestra el botón). Ver
+            # BotConfig.push_notifications_enabled.
+            "push_notifications_enabled": bool(getattr(bot.config, "push_notifications_enabled", True)),
         }
     }
 

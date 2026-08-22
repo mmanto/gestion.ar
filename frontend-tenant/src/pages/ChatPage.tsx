@@ -18,19 +18,29 @@ export function ChatPage() {
   // comportamiento histórico (sesión persistida).
   const [blankOnLoad, setBlankOnLoad] = useState<boolean | null>(null);
 
+  // Bots con `push_notifications_enabled = false` (ver BotConfig): el chat no
+  // ofrece activar notificaciones push. Default: habilitadas (comportamiento
+  // histórico). Si no se puede resolver, se conserva el comportamiento actual.
+  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean | null>(null);
+
   useEffect(() => {
     let cancelled = false;
     if (!channelId) {
       setBlankOnLoad(false);
+      setNotificationsEnabled(null);
       return;
     }
     publicService
       .getChannelInfo(channelId)
       .then((info) => {
-        if (!cancelled) setBlankOnLoad(!!info.bot?.blank_chat_on_load);
+        if (cancelled) return;
+        setBlankOnLoad(!!info.bot?.blank_chat_on_load);
+        setNotificationsEnabled(info.bot?.push_notifications_enabled !== false);
       })
       .catch(() => {
-        if (!cancelled) setBlankOnLoad(false);
+        if (cancelled) return;
+        setBlankOnLoad(false);
+        setNotificationsEnabled(true);
       });
     return () => {
       cancelled = true;
@@ -55,8 +65,9 @@ export function ChatPage() {
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <ChatInterface botId={botId} channelId={channelId} blankOnLoad={blankOnLoad ?? false} />
 
-      {/* PWA: instalar y push notifications (solo para chat por canal) */}
-      {channelId && (
+      {/* PWA: instalar y push notifications (solo para chat por canal, y solo
+          si el bot habilita las notificaciones push) */}
+      {channelId && notificationsEnabled !== false && (
         <>
           <InstallButton />
           <PushNotificationButton channelId={channelId} botId={botId} />
