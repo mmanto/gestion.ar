@@ -24,7 +24,12 @@ export function ChatPage() {
       {channelId && (
         <>
           <InstallButton />
-          <PushNotificationButton channelId={channelId} botId={botId} />
+          {/* PushNotificationButton deshabilitado globalmente (2026-08-21).
+              Pedido original: quitarlo solo para el tenant pachoteayuda.
+              Solución elegida: deshabilitar globalmente (Opción B) hasta implementar
+              control por canal/tenant (ver docs/dev/DECISIONS.md ADR-015).
+              Para re-habilitarlo de forma granular, ver ADR-015. */}
+          {/* <PushNotificationButton channelId={channelId} botId={botId} /> */}
         </>
       )}
     </div>

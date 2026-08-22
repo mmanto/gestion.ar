@@ -730,3 +730,63 @@ Plugin nativo **custom** (`BiometricAuthPlugin.java`) en vez de
 - En web/PWA la feature es progressive enhancement: `Capacitor.isNativePlatform()`
   resuelve false y el botón de huella no se muestra.
 - Migración Alembic `20260807_0000_add_device_credentials.py`.
+
+---
+
+## ADR-015: Control granular del botón de push notifications por canal/tenant
+
+**Estado:** Pendiente de implementación
+**Fecha:** 2026-08-21
+
+### Contexto
+
+El botón "Recibir notificaciones" (`PushNotificationButton`) se mostraba en el
+chat de todos los canales PWA. El tenant `pachoteayuda` pidió que no aparezca
+en su chat. En vez de filtrar solo para ese tenant, se decidió deshabilitarlo
+globalmente hasta implementar un control correcto por canal.
+
+El componente vive en `frontend/src/components/chat/PushNotificationButton.tsx`
+y se montaba en `frontend/src/pages/ChatPage.tsx` condicionado a que existiera
+un `channelId`.
+
+### Solución temporal
+
+Se comentó el render de `<PushNotificationButton>` en `ChatPage.tsx` el
+2026-08-21 (commit de referencia a agregar). El import permanece sin usar pero
+sin borrar, para recordar que el componente existe y es funcional.
+
+### Opciones para la implementación definitiva
+
+1. **Filtro por `tenantName` (rápido, frágil):** `ChatInterface` ya expone
+   `tenantName` desde el hook `useWebSocketChat`, pero ese dato llega del
+   WebSocket después de conectar — hay que "subirlo" a `ChatPage` via prop o
+   contexto. Hardcodear el nombre del tenant en el código del frontend es
+   frágil (sensible a cambios de nombre, sin versionado en backend).
+
+2. **Flag `push_notifications_enabled` en el canal (recomendada):** agregar
+   el campo al modelo `Channel` (tabla `channels`, columna booleana con
+   default `true`) y exponerlo en el endpoint público del canal. `ChatPage`
+   lo consulta al montar y decide si mostrar el botón. Cambios necesarios:
+   - Backend: nueva columna en Alembic, expuesta en el serializer del canal
+     (endpoint `/api/channels/{channel_id}/public` o similar ya existente).
+   - Frontend: `ChatPage` lee el flag antes de renderizar `PushNotificationButton`.
+   - UI admin: checkbox en `ChannelEditForm.tsx` para que el tenant lo controle
+     desde el panel sin intervención de dev.
+
+3. **Control por tenant (plan/feature flag):** similar al sistema de módulos
+   (ADR-008), con un flag en `Tenant` o `Plan` que habilite/deshabilite push
+   notifications. Más robusto para escenarios multi-tenant pero más costoso
+   de implementar que la opción 2.
+
+### Decisión definitiva sugerida
+
+Opción 2. Es la más limpia: un flag explícito en el canal, configurable desde
+el panel admin sin tocar código, y consistente con el modelo de datos existente.
+
+### Para re-habilitar
+
+En `frontend/src/pages/ChatPage.tsx`, descomentar la línea:
+```tsx
+{/* <PushNotificationButton channelId={channelId} botId={botId} /> */}
+```
+y luego implementar el control granular según la opción elegida.
