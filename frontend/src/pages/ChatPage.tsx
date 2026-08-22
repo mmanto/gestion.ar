@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { ChatInterface } from '../components/chat/ChatInterface';
 import { InstallButton } from '../components/chat/InstallButton';
-import { PushNotificationButton } from '../components/chat/PushNotificationButton';
+// import { PushNotificationButton } from '../components/chat/PushNotificationButton'; // deshabilitado — ver ADR-015
 import { usePwaManifest } from '../hooks/usePwaManifest';
 
 export function ChatPage() {
