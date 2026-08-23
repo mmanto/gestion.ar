@@ -348,10 +348,11 @@ services:
       - "traefik.http.services.tenant-openpadel.loadbalancer.server.port=80"
 
   # landing-openpadel comparte dominio con frontend-tenant-openpadel
-  # (openpadel.pro): este router matchea "/" y cualquier página .html de la
-  # landing (PathRegexp) — cualquier otra ruta (/login, /dashboard, /assets/*,
-  # /api/*...) cae en frontend-tenant-openpadel. Mismo criterio que las demás
-  # landings del stack.
+  # (openpadel.pro): este router matchea "/", cualquier página .html de la
+  # landing (PathRegexp), el CSS del design system, el video hero y todos los
+  # assets bajo /uploads/ y /web/ — cualquier otra ruta (/login, /dashboard,
+  # /assets/*, /api/*...) cae en frontend-tenant-openpadel.
+  # Mismo criterio que landing-erma y demás landings del stack.
   landing-openpadel:
     build:
       context: ./sites/openpadel-landing
@@ -362,7 +363,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_public"
-      - 'traefik.http.routers.landing-openpadel.rule=Host(`openpadel.pro`) && (PathRegexp(`^/.*\.html$`) || Path(`/`))'
+      - 'traefik.http.routers.landing-openpadel.rule=Host(`openpadel.pro`) && (PathRegexp(`^/.*\.html$`) || Path(`/`) || Path(`/design-system.css`) || Path(`/padel.mp4`) || PathPrefix(`/uploads/`) || PathPrefix(`/web/`))'
       - "traefik.http.routers.landing-openpadel.entrypoints=websecure"
       - "traefik.http.routers.landing-openpadel.tls.certresolver=letsencrypt"
       - "traefik.http.routers.landing-openpadel.priority=10"
