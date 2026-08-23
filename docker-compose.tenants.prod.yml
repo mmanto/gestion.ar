@@ -310,6 +310,64 @@ services:
       - "traefik.http.services.landing-proptech.loadbalancer.server.port=80"
 
 
+  # ── OpenPadel ────────────────────────────────────────────────────────────────
+  # Dominio propio: openpadel.pro (el cliente apunta su DNS A/CNAME a este
+  # servidor). Traefik emite el certificado TLS-ALPN-01 la primera vez que
+  # recibe tráfico HTTPS en ese Host().
+  #
+  # La landing (landing-openpadel) matchea "/" y las páginas .html;
+  # cualquier otra ruta (/login, /dashboard, /assets/*, /api/*…) cae en
+  # frontend-tenant-openpadel (priority=1 < priority=10 de la landing).
+  frontend-tenant-openpadel:
+    build:
+      context: ./frontend-tenant
+      dockerfile: Dockerfile
+      args:
+        VITE_TARGET: staff
+        VITE_APPOINTMENTS_REMOTE_URL: ${VITE_APPOINTMENTS_REMOTE_URL:-https://appointments-widgets.intellify.pro/remoteEntry.js}
+        VITE_NANGO_CONNECT_URL: https://nango.intellify.pro
+        VITE_NANGO_API_URL: https://api.nango.intellify.pro
+    container_name: gestionar_frontend_tenant_openpadel
+    environment:
+      - TENANT_ID=${TENANT_ID_OPENPADEL}
+      - TENANT_SLUG=openpadel
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - default
+      - traefik_public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_public"
+      - "traefik.http.routers.tenant-openpadel.rule=Host(`openpadel.pro`)"
+      - "traefik.http.routers.tenant-openpadel.entrypoints=websecure"
+      - "traefik.http.routers.tenant-openpadel.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.tenant-openpadel.priority=1"
+      - "traefik.http.services.tenant-openpadel.loadbalancer.server.port=80"
+
+  # landing-openpadel comparte dominio con frontend-tenant-openpadel
+  # (openpadel.pro): este router matchea "/" y cualquier página .html de la
+  # landing (PathRegexp) — cualquier otra ruta (/login, /dashboard, /assets/*,
+  # /api/*...) cae en frontend-tenant-openpadel. Mismo criterio que las demás
+  # landings del stack.
+  landing-openpadel:
+    build:
+      context: ./sites/openpadel-landing
+    container_name: gestionar_landing_openpadel
+    restart: unless-stopped
+    networks:
+      - traefik_public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_public"
+      - 'traefik.http.routers.landing-openpadel.rule=Host(`openpadel.pro`) && (PathRegexp(`^/.*\.html$`) || Path(`/`))'
+      - "traefik.http.routers.landing-openpadel.entrypoints=websecure"
+      - "traefik.http.routers.landing-openpadel.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.landing-openpadel.priority=10"
+      - "traefik.http.services.landing-openpadel.loadbalancer.server.port=80"
+
 networks:
   default:
     name: gestionar_network

@@ -221,3 +221,34 @@ dominio en vez de un subdominio de `intellify.pro`. No requiere ningún cambio
 de código en `frontend-tenant/` ni en el backend — el proxy `/api/`+`/ws/` de
 nginx y la resolución del `TENANT_ID` en runtime funcionan igual sin importar
 la zona DNS del `Host()`.
+
+### Tenants con dominio propio activos
+
+| Slug | Dominio | Script de BD |
+|---|---|---|
+| erma | erma.com.ar | `backend/scripts/create_erma_tenant.py` |
+| pachoteayuda | pachoteayuda.ar | `backend/scripts/create_pachoteayuda_tenant.py` |
+| ipachoteayuda | pachoteayuda.intellify.pro | `backend/scripts/create_ipachoteayuda_tenant.py` |
+| openpadel | openpadel.pro | `backend/scripts/create_openpadel_tenant.py` |
+
+**openpadel.pro — deploy inicial:**
+
+```bash
+# Prerrequisito: el cliente apunta openpadel.pro (registro A) a la IP del servidor.
+
+# 1. Crear el tenant en la BD (desde el servidor):
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml \
+  exec app python scripts/create_openpadel_tenant.py
+#   → Copiar el TENANT_ID_OPENPADEL impreso al .env.prod
+
+# 2. Levantar los containers:
+docker compose --env-file .env.prod \
+  -f docker-compose.yml \
+  -f docker-compose.prod.yml \
+  -f docker-compose.tenants.prod.yml \
+  up -d --build frontend-tenant-openpadel landing-openpadel
+
+# 3. Verificar:
+curl -I https://openpadel.pro          # debe redirigir a HTTPS y devolver 200
+curl -I https://openpadel.pro/login    # debe llegar al SPA del tenant
+```

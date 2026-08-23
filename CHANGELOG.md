@@ -6,6 +6,18 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 
 ## [Sin versión] - En desarrollo
 
+### Agregado
+- **Nuevo tenant openpadel.pro.** Club de pádel con dominio propio.
+  Se crearon `sites/openpadel-landing/` (landing estática dark/verde con
+  diseño responsive), los service blocks `frontend-tenant-openpadel` y
+  `landing-openpadel` en `docker-compose.tenants.prod.yml` (Traefik TLS-ALPN-01,
+  `priority=10` para la landing y `priority=1` para el SPA), el script de alta
+  en BD `backend/scripts/create_openpadel_tenant.py` (Tenant + User admin +
+  Bot de tipo `turnos` + Canal web) y la variable `TENANT_ID_OPENPADEL` en
+  `.env.prod`. **Prerrequisito antes de levantar el stack:** ejecutar el
+  script de BD y completar `TENANT_ID_OPENPADEL` en `.env.prod`.
+  Ver `docs/ops/DEPLOYMENT.md` → _openpadel.pro — deploy inicial_.
+
 ### Cambiado
 - **Login/registro con Google: pantalla intermedia de carga en vez de
   quedarse en el formulario.** Tras autenticar en el Chrome Custom Tab y
