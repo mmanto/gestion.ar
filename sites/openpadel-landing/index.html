@@ -976,13 +976,33 @@
     </div>
   </div>
 
+  <!-- Animations: aplica la clase del data-anim cuando el elemento entra en viewport -->
+  <!-- <script>
+    (function () {
+      var obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            var el = e.target;
+            var cls = el.dataset.anim;
+            if (cls) el.classList.add(cls);
+            obs.unobserve(el);
+          }
+        });
+      }, { threshold: 0.1 });
+
+      document.querySelectorAll('.animate-box[data-anim]').forEach(function (el) {
+        obs.observe(el);
+      });
+    })();
+  </script> -->
+
   <!-- Video Modal -->
-  <div class="video-modal-overlay" id="video-modal">
+  <!-- <div class="video-modal-overlay" id="video-modal">
     <span class="video-modal-close" id="video-modal-close"><i class="fa-solid fa-xmark"></i></span>
     <div class="video-modal-inner">
       <iframe id="video-frame" allowfullscreen src=""></iframe>
     </div>
-  </div>
+  </div> -->
 
 </body>
 
