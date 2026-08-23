@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Academia Deportiva</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/@fontsource/inter@4.5.10/index.min.css" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+  <script>
+   tailwind.config = {
+     theme: {
+       extend: {
+         fontFamily: { sans: ['Inter', 'sans-serif'] },
+         colors: {
+           padel: {
+             green: '#a3e635',
+             dark: '#1e293b',
+             blue: '#0ea5e9',
+             accent: '#facc15'
+           }
+         }
+       }
+     }
+   }
+  </script>
+  <style>
+   html { scroll-behavior: smooth; }
+   .card-hover { transition: transform 0.2s, box-shadow 0.2s; }
+   .card-hover:hover { transform: translateY(-4px); box-shadow: 0 10px 25px -5px rgba(0,0,0,.12); }
+  </style>
+ </head>
+ <body class="font-sans text-slate-800 bg-slate-50">
+
+  <!-- Navigation -->
+  <nav class="fixed w-full z-50 bg-white/90 backdrop-blur-md border-b border-slate-200">
+   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-center h-20">
+     <div class="flex-shrink-0 flex items-center gap-3">
+      <a href="index.html" class="flex items-center gap-2 text-slate-500 hover:text-padel-blue text-sm font-medium transition">
+       <i class="fa-solid fa-arrow-left"></i> Volver
+      </a>
+      <span class="text-slate-300">|</span>
+      <span class="font-bold text-xl text-padel-dark" id="nav-club-name">Academia</span>
+     </div>
+     <div class="hidden md:flex gap-6">
+      <a href="#programas" class="text-slate-600 hover:text-padel-blue font-medium transition">Programas</a>
+      <a href="#instructores" class="text-slate-600 hover:text-padel-blue font-medium transition">Instructores</a>
+      <a href="#contacto" class="text-slate-600 hover:text-padel-blue font-medium transition">Inscripción</a>
+     </div>
+     <div class="md:hidden">
+      <button class="text-slate-600 focus:outline-none" id="mobile-menu-btn">
+       <i class="fa-solid fa-bars text-2xl"></i>
+      </button>
+     </div>
+    </div>
+   </div>
+   <div class="hidden md:hidden bg-white border-t border-slate-100" id="mobile-menu">
+    <a class="block py-3 px-4 text-slate-600 hover:bg-slate-50" href="#programas">Programas</a>
+    <a class="block py-3 px-4 text-slate-600 hover:bg-slate-50" href="#instructores">Instructores</a>
+    <a class="block py-3 px-4 text-slate-600 hover:bg-slate-50" href="#contacto">Inscripción</a>
+   </div>
+  </nav>
+
+  <!-- Hero -->
+  <header class="pt-20 bg-gradient-to-br from-padel-dark to-slate-700 text-white">
+   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+    <span class="inline-block py-1 px-3 rounded-full bg-padel-green/20 text-padel-green border border-padel-green/50 text-sm font-semibold mb-6">ESCUELA DEPORTIVA</span>
+    <h1 class="text-4xl md:text-6xl font-extrabold mb-6" id="hero-title">Academia Deportiva</h1>
+    <p class="text-xl text-slate-300 max-w-2xl mx-auto" id="hero-subtitle">Programas y clases para todos los niveles.</p>
+    <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+     <a href="#programas" class="px-8 py-3 bg-padel-green text-padel-dark font-bold rounded-full hover:bg-lime-300 transition">
+      Ver programas
+     </a>
+     <a href="#contacto" class="px-8 py-3 bg-white/10 border border-white/20 text-white font-bold rounded-full hover:bg-white/20 transition">
+      Inscribirme
+     </a>
+    </div>
+   </div>
+  </header>
+
+  <!-- Skeleton de carga -->
+  <div id="loading-state" class="py-20 text-center">
+   <i class="fa-solid fa-spinner fa-spin text-4xl text-padel-green"></i>
+   <p class="mt-4 text-slate-500">Cargando contenido...</p>
+  </div>
+
+  <!-- Error state -->
+  <div id="error-state" class="py-20 text-center" style="display:none">
+   <i class="fa-solid fa-triangle-exclamation text-4xl text-slate-400"></i>
+   <p class="mt-4 text-slate-500">No se pudo cargar el contenido. <a href="index.html" class="text-padel-blue hover:underline">Volver al inicio</a></p>
+  </div>
+
+  <!-- Contenido principal (oculto hasta cargar) -->
+  <main id="main-content" style="display:none">
+
+   <!-- Programas -->
+   <section class="py-20 bg-white" id="programas">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+     <div class="text-center mb-16">
+      <h2 class="text-3xl md:text-4xl font-bold text-padel-dark mb-4">Nuestros Programas</h2>
+      <div class="w-20 h-1 bg-padel-green mx-auto rounded-full"></div>
+     </div>
+     <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-6" id="programas-grid">
+      <!-- JS rendered -->
+     </div>
+     <div id="programas-empty" class="text-center py-12 text-slate-400" style="display:none">
+      <i class="fa-solid fa-graduation-cap text-5xl mb-4"></i>
+      <p>Próximamente nuevos programas.</p>
+     </div>
+    </div>
+   </section>
+
+   <!-- Instructores -->
+   <section class="py-20 bg-slate-50" id="instructores">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+     <div class="text-center mb-16">
+      <h2 class="text-3xl md:text-4xl font-bold text-padel-dark mb-4">Nuestros Instructores</h2>
+      <div class="w-20 h-1 bg-padel-green mx-auto rounded-full"></div>
+     </div>
+     <div class="grid sm:grid-cols-2 md:grid-cols-4 gap-6" id="instructores-grid">
+      <!-- JS rendered -->
+     </div>
+     <div id="instructores-empty" class="text-center py-12 text-slate-400" style="display:none">
+      <i class="fa-solid fa-user-tie text-5xl mb-4"></i>
+      <p>Próximamente nuestro equipo de instructores.</p>
+     </div>
+    </div>
+   </section>
+
+   <!-- Contacto / Inscripción -->
+   <section class="py-20 bg-padel-dark text-white" id="contacto">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+     <h2 class="text-3xl md:text-4xl font-bold mb-6">¿Listo para empezar?</h2>
+     <p class="text-slate-300 text-lg mb-10">Contactanos para inscribirte en alguno de nuestros programas. Estamos para ayudarte a encontrar el nivel ideal.</p>
+     <div class="flex flex-col sm:flex-row gap-4 justify-center">
+      <a id="contacto-whatsapp" href="#" class="px-8 py-4 bg-padel-green text-padel-dark font-bold rounded-full hover:bg-lime-300 transition" style="display:none">
+       <i class="fa-brands fa-whatsapp mr-2"></i> Escribinos por WhatsApp
+      </a>
+      <a id="contacto-email" href="#" class="px-8 py-4 bg-white/10 border border-white/20 text-white font-bold rounded-full hover:bg-white/20 transition" style="display:none">
+       <i class="fa-solid fa-envelope mr-2"></i> Envianos un email
+      </a>
+     </div>
+     <p class="mt-8 text-slate-500 text-sm" id="contacto-fallback">Contactate con nosotros para más información.</p>
+    </div>
+   </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-slate-900 text-white py-8 border-t border-slate-700">
+   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <p class="text-slate-400 text-sm" id="footer-club-name">&copy; Academia Deportiva</p>
+   </div>
+  </footer>
+
+  <script>
+   // Mobile menu
+   document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+     document.getElementById('mobile-menu').classList.toggle('hidden');
+   });
+   document.querySelectorAll('#mobile-menu a').forEach(a => {
+     a.addEventListener('click', () => document.getElementById('mobile-menu').classList.add('hidden'));
+   });
+
+   // ── Carga dinámica del módulo escuela ────────────────────────────────────
+   (async function initAcademia() {
+     const params = new URLSearchParams(window.location.search);
+     const slug = params.get('slug') || window.location.hostname.split('.')[0];
+     const API_URL = window.SPORTFLOW_API_URL || 'http://localhost:8080';
+
+     // Si no hay slug válido, no hay módulo
+     if (!slug || slug === 'localhost' || slug === '127') {
+       showError();
+       return;
+     }
+
+     let tenant;
+     try {
+       const res = await fetch(`${API_URL}/api/public/tenants/resolve?slug=${encodeURIComponent(slug)}`);
+       if (!res.ok) { showError(); return; }
+       tenant = await res.json();
+     } catch { showError(); return; }
+
+     // Verificar que el módulo escuela está activo
+     if (!(tenant.active_modules || []).includes('escuela')) {
+       window.location.replace('index.html');
+       return;
+     }
+
+     // Aplicar nombre del club y page_config
+     const pc = tenant.page_config || {};
+     const clubName = tenant.name || 'Academia';
+     document.getElementById('nav-club-name').textContent = clubName;
+     document.getElementById('footer-club-name').textContent = `© ${clubName}`;
+     document.title = (pc.escuela_title || 'Academia') + ' — ' + clubName;
+     if (pc.escuela_title) {
+       document.getElementById('hero-title').textContent = pc.escuela_title;
+     }
+     if (pc.escuela_subtitle) {
+       document.getElementById('hero-subtitle').textContent = pc.escuela_subtitle;
+     }
+
+     // Cargar programas e instructores en paralelo
+     const [programas, instructores] = await Promise.all([
+       fetchJSON(`${API_URL}/api/m/escuela/public/programas`, slug),
+       fetchJSON(`${API_URL}/api/m/escuela/public/instructores`, slug),
+     ]);
+
+     renderProgramas(programas || []);
+     renderInstructores(instructores || []);
+     setupContacto(tenant);
+
+     document.getElementById('loading-state').style.display = 'none';
+     document.getElementById('main-content').style.display = 'block';
+   })();
+
+   async function fetchJSON(url, slug) {
+     try {
+       const res = await fetch(url, { headers: { 'X-Tenant-ID': slug } });
+       if (!res.ok) return null;
+       return await res.json();
+     } catch { return null; }
+   }
+
+   function showError() {
+     document.getElementById('loading-state').style.display = 'none';
+     document.getElementById('error-state').style.display = 'block';
+   }
+
+   const nivelLabel = {
+     principiante: 'Principiante',
+     intermedio: 'Intermedio',
+     avanzado: 'Avanzado',
+     todos: 'Todos los niveles'
+   };
+
+   function renderProgramas(programas) {
+     const grid = document.getElementById('programas-grid');
+     if (!programas.length) {
+       document.getElementById('programas-empty').style.display = 'block';
+       return;
+     }
+     grid.innerHTML = programas.map(p => `
+       <div class="bg-white rounded-xl border border-slate-100 overflow-hidden card-hover">
+         ${p.imagen_url
+           ? `<img src="${p.imagen_url}" class="w-full h-48 object-cover" alt="${p.nombre}"/>`
+           : `<div class="w-full h-48 bg-padel-green/20 flex items-center justify-center"><i class="fa-solid fa-graduation-cap text-5xl text-padel-green"></i></div>`
+         }
+         <div class="p-5">
+           <span class="text-xs uppercase tracking-wide text-padel-green font-semibold">${nivelLabel[p.nivel] || p.nivel}</span>
+           <h3 class="font-bold text-padel-dark text-lg mt-1">${p.nombre}</h3>
+           ${p.descripcion ? `<p class="text-slate-500 text-sm mt-2">${p.descripcion}</p>` : ''}
+           <div class="mt-4 flex flex-wrap gap-2 text-xs text-slate-500">
+             ${p.deporte ? `<span class="bg-slate-100 rounded-full px-2 py-1"><i class="fa-solid fa-futbol mr-1"></i>${p.deporte}</span>` : ''}
+             ${p.duracion_semanas ? `<span class="bg-slate-100 rounded-full px-2 py-1"><i class="fa-regular fa-calendar mr-1"></i>${p.duracion_semanas} semanas</span>` : ''}
+             ${p.cupo_maximo ? `<span class="bg-slate-100 rounded-full px-2 py-1"><i class="fa-solid fa-users mr-1"></i>Cupo: ${p.cupo_maximo}</span>` : ''}
+           </div>
+           ${p.precio != null
+             ? `<div class="mt-4 flex items-center justify-between"><span class="font-bold text-padel-blue text-xl">$${p.precio.toLocaleString()}</span><a href="#contacto" class="text-sm font-medium text-padel-dark hover:text-padel-blue transition">Inscribirme →</a></div>`
+             : `<div class="mt-4 text-right"><a href="#contacto" class="text-sm font-medium text-padel-dark hover:text-padel-blue transition">Consultar →</a></div>`
+           }
+         </div>
+       </div>
+     `).join('');
+   }
+
+   function renderInstructores(instructores) {
+     const grid = document.getElementById('instructores-grid');
+     if (!instructores.length) {
+       document.getElementById('instructores-empty').style.display = 'block';
+       return;
+     }
+     grid.innerHTML = instructores.map(i => `
+       <div class="bg-white rounded-xl border border-slate-100 overflow-hidden text-center card-hover">
+         ${i.foto_url
+           ? `<img src="${i.foto_url}" class="w-full h-48 object-cover object-top" alt="${i.nombre}"/>`
+           : `<div class="w-full h-48 bg-padel-dark/10 flex items-center justify-center"><i class="fa-solid fa-user-tie text-5xl text-padel-dark/30"></i></div>`
+         }
+         <div class="p-4">
+           <h3 class="font-bold text-padel-dark">${i.nombre}</h3>
+           ${i.especialidad ? `<p class="text-padel-green text-sm font-medium mt-1">${i.especialidad}</p>` : ''}
+           ${i.bio ? `<p class="text-slate-500 text-sm mt-2">${i.bio}</p>` : ''}
+         </div>
+       </div>
+     `).join('');
+   }
+
+   function setupContacto(tenant) {
+     const adminEmail = tenant.admin_email;
+     const whatsapp = (tenant.page_config || {}).escuela_whatsapp;
+     const fallback = document.getElementById('contacto-fallback');
+
+     if (whatsapp) {
+       const wa = document.getElementById('contacto-whatsapp');
+       wa.href = `https://wa.me/${whatsapp.replace(/\D/g, '')}`;
+       wa.style.display = '';
+       fallback.style.display = 'none';
+     }
+     if (adminEmail) {
+       const em = document.getElementById('contacto-email');
+       em.href = `mailto:${adminEmail}?subject=Consulta%20Academia`;
+       em.style.display = '';
+       fallback.style.display = 'none';
+     }
+   }
+  </script>
+ </body>
+</html>

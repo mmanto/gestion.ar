@@ -1,0 +1,907 @@
+/* ================================ */
+/* Responsive */
+/* ================================ */
+
+/* 01. Table Responsive */
+@media screen and (max-width: 1025px) {
+    h1{
+        font-size: 70px;
+    }
+    h2{
+        font-size: 48px;
+    }
+    h3{
+        font-size: 28px;
+    }
+    h4{
+        font-size: 21px;
+    }
+    h5{
+        font-size: 18px;
+    }
+    button, a{
+        font-size: 15px;
+    }
+    .section-wrapper{
+        padding: 20px 20px 20px 20px;
+    }
+    .heading-section-container,
+    .heading-section-container.pricing-heading{
+        max-width: 100%;
+    }
+    .banner-home-top{
+        flex-direction: column;
+        gap: 0;
+    }
+    .banner-home-title{
+        width: 53%;
+    }
+    .banner-home-network{
+        width: 100%;
+        margin-top: -120px;
+    }
+    .banner-home-social{
+        width: 44%;
+        flex-direction: row;
+        align-self: flex-end;
+    }
+    .card-banner-reviewer{
+        width: 31%;
+    }
+    .banner-home-bottom{
+        gap: 20px;
+    }
+    .banner-home-community-container{
+        width: 34%;
+    }
+    .nav-btn{
+        display: block;
+    }
+    .navbar-container{
+        padding: 40px 40px 0px 40px;
+    }
+    .navbar .logo-container{
+        width: 30%;
+    }
+    .navbar .nav-link-container{
+        display: none;
+    }
+    .navbar-cta-container{
+        display: none;
+    }
+    .card.banner-home-community{
+        flex-direction: column;
+    }
+    .home-community-img{
+        width: 100%;
+    }
+    .banner-avatar{
+        width: 45px;
+        min-height: 45px;
+    }
+    .home-community-img img{
+        height: 102px !important;
+    }
+    .home-community-highlight{
+        font-size: 36px;
+    }
+    .home-community-content{
+        width: 100%;
+    }
+    .banner-home-cta-container{
+        width: 62%;
+    }
+    .banner-avatar-btn{
+        width: 45px;
+    }
+    .about-wrapper{
+        flex-direction: column-reverse;
+        gap: 50px 50px;
+    }
+    .about-image-container{
+        width: 100%;
+    }
+    .about-content-description{
+        width: 100%;
+    }
+    .about-description-container{
+        width: 100%;
+    }
+    .about-highlight-text{
+        font-size: 36px;
+    }
+    .about-img img{
+        height: 500px;
+    }
+    .chooseus-title-container{
+        width: 100%;
+    }
+    .chooseus-img img{
+        height: 275px;
+    }
+    .chooseus-card-container{
+        width: 100%;
+    }
+    .booking-process-heading h2{
+        max-width: 100%;
+    }
+    .booking-content-wrapper{
+        flex-direction: column-reverse;
+        gap: 50px 50px;
+    }
+    .booking-content-container{
+        width: 100%;
+    }
+    .booking-highlight-container{
+        flex-direction: column-reverse;
+        width: 100%;
+    }
+    .booking-tag-container{
+        width: 62%;
+        justify-content: flex-start;
+        align-self: flex-start;
+    }
+    .booking-form-wrapper{
+        flex-direction: column;
+        gap: 50px 50px;
+    }
+    .card-booking-form{
+        width: 100%;
+    }
+    .booking-form-detail{
+        width: 100%;
+    }
+    .academy-title-container{
+        flex-direction: column;
+        gap: 20px 20px;
+    }
+    .academy-heading-container{
+        width: 100%;
+        padding: 0px;
+    }
+    .academy-title-image{
+        width: 45%;
+        align-self: center;
+        order: 3;
+    }
+    .academy-title-cta{
+        width: 100%;
+        order: 2;
+        padding: 0px;
+    }
+    .academy-video-wrapper{
+        padding-top: 400px;
+    }
+    .academy-stat{
+        font-size: 48px;
+    }
+    .benefit-item{
+        font-size: 21px;
+    }
+    .tournament-grid{
+        grid-template-columns: 1fr;
+    }
+    .card-tournament.main-event{
+        min-height: 600px;
+    }
+    .card-tournament.main-event .tournament-tag-container{
+        width: 48%;
+    }
+    .tournament-event-list{
+        flex-direction: column-reverse;
+    }
+    .tournament-cta-title{
+        padding: 20px 10px 20px 20px;
+    }
+    .community-grid{
+        grid-template-columns: 1fr;
+    }
+    .community-images{
+        width: 100%;
+        height: 430px !important;
+    }
+    .card-membership-cta.cta-content{
+        gap: 20px 20px;
+        padding: 30px 30px 30px 30px;
+    }
+    .membership-cta-description{
+        font-size: 18px;
+    }
+    .card-testimonial{
+        width: 65%;
+        padding: 20px 20px 20px 20px;
+    }
+    .testimonial-side .testimonial-avatar--lg {
+        width: 70%;
+        height: 70%;
+    }
+    
+    .testimonial-side .testimonial-avatar--md {
+        width: 60%;
+        height: 60%;
+    }
+    .testimonial-side .testimonial-avatar--sm {
+        width: 45%;
+        height: 45%;
+    }
+    .testimonial-quote{
+        font-size: 18px;
+    }
+    .testimonial-name{
+        font-size: 18px;
+    }
+    .breadcrumb-icon,
+    .breadcrumb-item{
+        font-size: 18px;
+    }
+    .card-contact-cta{
+        padding: 50px 50px 50px 50px;
+    }
+    .contact-cta-content{
+        width: 62%;
+    }
+    .contact-cta-image .image-wrapper{
+        margin: 0px -141px 0px 0px;
+    }
+    .benefit-img{
+        height: 275px !important;
+    }
+    .team-content-wrapper{
+        flex-direction: column-reverse;
+        gap: 50px 50px;
+    }
+    .team-title-wrapper{
+        position: relative;
+        width: 100%;
+        top: 0px;
+    }
+    .team-card-container{
+        width: 100%;
+    }
+    .accordion .accordion-button{
+        font-size: 18px;
+    }
+    .heading-notfound{
+        font-size: 150px;
+    }
+    .card-blog-category{
+        padding: 30px 30px 30px 30px;
+    }
+    .card-blog-recent{
+        padding: 30px 30px 30px 30px;
+    }
+    .card-blog-tag{
+        padding: 30px 30px 30px 30px;
+    }
+    .post-content-wrapper{
+        flex-direction: column;
+    }
+    .post-main-content{
+        width: 100%;
+    }
+    .post-sidebar-wrapper{
+        width: 100%;
+    }
+    .recent-post-body{
+        max-width: 100%;
+    }
+    .blog-title{
+        font-size: 28px;
+    }
+    .recent-post-image img{
+        border-radius: 10px 10px 10px 10px;
+    }
+    .card-contact-cta.cta-small-banner .cta-image{
+        width: 30%;
+    }
+    .card-contact-cta.cta-small-banner .cta-image .cta-image-container{
+        margin: 0px -66px -136px 0px;
+    }
+    .card-contact-form{
+        padding: 30px 30px 30px 30px;
+    }
+    .footer-copyright-container{
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .footer-logo-container img{
+        width: 60%;
+    }
+}
+
+/* 02. Mobile Responsive */
+
+@media screen and (max-width: 767px) {
+    h1{
+        font-size: 50px;
+    }
+    h2{
+        font-size: 36px;
+    }
+    h3{
+        font-size: 22px;
+    }
+    h4{
+        font-size: 18px;
+    }
+    h5{
+        font-size: 16;
+    }
+    h6{
+        font-size: 14px;
+    }
+    p{
+        font-size: 16px;
+    }
+    button, a{
+        font-size: 14px;
+    }
+    .section-wrapper{
+        padding: 10px 10px 10px 10px;
+    }
+    .col:nth-child(even) .card-about-misson {
+        margin-bottom: 0px;
+    }
+    .banner-home-title{
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+    }
+    .banner-home-network{
+        flex-direction: column;
+        margin: 0;
+    }
+    .card-banner-reviewer{
+        width: 100%;
+        order: 1;
+    }
+    .card-booking-cta{
+        width: 100%;
+    }
+    .reviewer-card-description{
+        font-size: 14px;
+    }
+    .banner-home-social{
+        justify-content: center;
+        width: 100%;
+        order: 2;
+    }
+    .banner-home-social .social-link-banner{
+        font-size: 14px;
+    }
+    .banner-home-bottom{
+        flex-direction: column-reverse;
+    }
+    .banner-home-community-container{
+        width: 100%;
+    }
+    .banner-home-cta-container{
+        width: 100%;
+        text-align: center;
+    }
+    .banner-home-cta{
+        align-items: center;
+    }
+    .navbar-container{
+        padding: 20px 20px 0px 20px;
+    }
+    .navbar .logo-container{
+        width: 50%;
+    }
+    .sub-heading-title{
+        font-size: 14px;
+    }
+    .about-description-container{
+        padding: 20px 0px 0px 0px;
+        border: none;
+        border-top: 2px solid var(--accent-color-2);
+    }
+    .about-highlight-text{
+        font-size: 28px;
+    }
+    .about-highlight-box{
+        width: 55%;
+        text-align: center;
+        margin: 0 auto;
+    }
+    .booking-process-heading{
+        text-align: center;
+    }
+    .booking-benefit-container{
+        width: 100%;
+    }
+    .booking-tag-container{
+        width: 100%;
+        justify-content: center;
+    }
+    .academy-heading-container,
+    .academy-title-cta{
+        text-align: center;
+    }
+    .academy-title-image{
+        width: 100%;
+    }
+    .academy-video-wrapper{
+        padding-top: 250px;
+    }
+    .academy-stat{
+        font-size: 36px;
+    }
+    .academy-stat-description{
+        text-align: center;
+        font-size: 14px;
+    }
+    .benefit-item{
+        font-size: 18px;
+    }
+    .other-tournament-container{
+        grid-template-columns: 1fr;
+    }
+    .card-tournament.tournament-cta{
+        grid-template-columns: 1fr;
+    }
+    .tournament-cta-title{
+        padding: 10px 10px 10px 10px;
+        text-align: center;
+    }
+    .card-tournament.main-event .tournament-tag-container{
+        width: 100%;
+    }
+    .tournament-tag-container{
+        width: 100%;
+    }
+    .testimonial-content-container{
+        flex-direction: column;
+    }
+    .testimonial-side{
+        width: 100%;
+        flex-direction: row;
+    }
+    .card-membership-cta.cta-content{
+        padding: 20px 20px 20px 20px;
+    }
+    .card-testimonial{
+        width: 100%;
+    }
+    .testimonial-side .testimonial-avatar--lg {
+        width: 20%;
+        height: 20%;
+    }
+    .testimonial-side .testimonial-avatar--md {
+        width: 20%;
+        height: 20%;
+    }
+    .testimonial-side .testimonial-avatar--sm {
+        width: 25%;
+        height: 25%;
+    }
+    .testimonial-side{
+        width: 100%;
+        min-height: 130px;
+        gap: 50px 50px;
+    }
+    .testimonial-quote{
+        font-size: 16px;
+    }
+    .testimonial-name{
+        font-size: 16px;
+    }
+    .testimonial-designation{
+        font-size: 14px;
+    }
+    .breadcrumb-icon,
+    .breadcrumb-item{
+        font-size: 16px;
+    }
+    .membership-cta-description{
+        font-size: 16px;
+    }
+    .cta-tag-container{
+        width: 100%;
+    }
+    .blog-image img{
+        min-height: 400px;
+    }
+    .team-title-container{
+        text-align: center;
+        justify-content: center;
+        align-items: center;
+    }
+    .card-contact-cta{
+        flex-direction: column;
+        padding: 20px 20px 300px 20px;
+        overflow: hidden;
+    }
+    .contact-cta-content{
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+        align-items: center;
+    }
+    .contact-cta-image{
+        width: 100%;
+        justify-content: center;
+    }
+    .contact-cta-image .image-container{
+        margin: 0px 0px -65px 0px;
+    }
+    .pricing-benefit-list li{
+        font-size: 14px;
+    }
+    .card-benefit{
+        flex-direction: column;
+        align-items: center;
+    }
+    .accordion .accordion-button{
+        font-size: 16px;
+    }
+    .heading-notfound{
+        font-size: 100px;
+    }
+    .blog-title{
+        font-size: 22px;
+    }
+    .chevron-circle-list a{
+        font-size: 16px;
+    }
+    .chevron-circle-list li::before{
+        font-size: 16px;
+    }
+    .chevron-list li::before{
+        font-size: 14px;
+    }
+    .chevron-list a{
+        font-size: 14px;
+    }
+    .card-blog-category{
+        padding: 20px 20px 20px 20px;
+    }
+    .card-blog-recent{
+        padding: 20px 20px 20px 20px;
+    }
+    .card-blog-tag{
+        padding: 20px 20px 20px 20px;
+    }
+    .recent-post-title{
+        font-size: 16px;
+    }
+    .card-contact-cta.cta-small-banner .cta-image{
+        width: 46%;
+    }
+    .card-contact-cta.cta-small-banner .cta-image .cta-image-container{
+        margin: 0px -71px -35px 0px;
+    }
+    .card-contact-form{
+        padding: 30px 20px 30px 20px;
+    }
+    .footer-logo-container{
+        justify-content: center;
+        align-items: center;
+    }
+    .footer-logo-container img{
+        width: 70%;
+        display: block;
+    }
+    .footer-legalink-container .divider{
+        height: 14px;
+    }
+    .legalink{
+        font-size: 14px;
+    }
+}
+
+/* 03. Table Spacing Responsive */
+
+@media screen and (min-width: 1025px){
+    /* Flex spacing (gap) */
+    .gspace-xl-0 { 
+        gap: 0px 0px; 
+    }
+    .gspace-xl-1 { 
+        gap: 10px 10px; 
+    }
+    .gspace-xl-2 { 
+        gap: 20px 20px; 
+    }
+    .gspace-xl-3 { 
+        gap: 30px 30px; 
+    }
+    .gspace-xl-4 { 
+        gap: 40px 40px; 
+    }
+    .gspace-xl-5 { 
+        gap: 50px 50px; 
+    }
+    .gspace-xl-100{
+        gap: 100px 100px;
+    }
+
+    /* Grid spacing (column-gap) */
+
+    .gspace-x-xl-0 { 
+        column-gap: 0px;
+    }
+    .gspace-x-xl-1 { 
+        column-gap: 10px; 
+    }
+    .gspace-x-xl-2 {
+         column-gap: 20px; 
+    }
+    .gspace-x-xl-3 { 
+        column-gap: 30px; 
+    }
+    .gspace-x-xl-4 { 
+        column-gap: 40px; 
+    }
+    .gspace-x-xl-5 { 
+        column-gap: 50px; 
+    }
+    .gspace-x-xl-100{
+        column-gap: 100px;
+    }
+
+    /* Grid spacing (row-gap) */
+
+    .gspace-y-xl-0 { 
+        row-gap: 0px; 
+    }
+    .gspace-y-xl-1 { 
+        row-gap: 10px; 
+    }
+    .gspace-y-xl-2 { 
+        row-gap: 20px; 
+    }
+    .gspace-y-xl-3 { 
+        row-gap: 30px; 
+    }
+    .gspace-y-xl-4 { 
+        row-gap: 40px; 
+    }
+    .gspace-y-xl-5 { 
+        row-gap: 50px; 
+    }
+    .gspace-y-xl-100 {
+        row-gap: 100px;
+    }
+
+    /* Grid spacing (row-gap & column-gap) */
+
+    .grid-spacer-xl-0 { 
+        --bs-gutter-x: 0px; 
+        --bs-gutter-y: 0px; 
+    }
+    .grid-spacer-xl-1 { 
+        --bs-gutter-x: 10px; 
+        --bs-gutter-y: 10px; 
+    }
+    .grid-spacer-xl-2 { 
+        --bs-gutter-x: 20px; 
+        --bs-gutter-y: 20px; 
+    }
+    .grid-spacer-xl-3 { 
+        --bs-gutter-x: 30px; 
+        --bs-gutter-y: 30px; 
+    }
+    .grid-spacer-xl-4 { 
+        --bs-gutter-x: 40px; 
+        --bs-gutter-y: 40px; 
+    }
+    .grid-spacer-xl-5 { 
+        --bs-gutter-x: 50px; 
+        --bs-gutter-y: 50px; 
+    }
+    .grid-spacer-xl-100 { 
+        --bs-gutter-x: 100px; 
+        --bs-gutter-y: 100px; 
+    }
+
+    /* Grid spacing (column-gap) */
+
+    .grid-spacer-x-xl-0 { 
+        --bs-gutter-x: 0px; 
+    }
+    .grid-spacer-x-xl-1 { 
+        --bs-gutter-x: 10px; 
+    }
+    .grid-spacer-x-xl-1 { 
+        --bs-gutter-x: 10px; 
+    }
+    .grid-spacer-x-xl-2 { 
+        --bs-gutter-x: 20px;
+    }
+    .grid-spacer-x-xl-3 { 
+        --bs-gutter-x: 30px; 
+    }
+    .grid-spacer-x-xl-4 { 
+        --bs-gutter-x: 40px; 
+    }
+    .grid-spacer-x-xl-5 { 
+        --bs-gutter-x: 50px; 
+    }
+    .grid-spacer-x-xl-100 { 
+        --bs-gutter-x: 100px; 
+    }
+
+    /* Grid spacing (row-gap) */
+
+    .grid-spacer-y-xl-0 { 
+        --bs-gutter-y: 0px; 
+    }
+    .grid-spacer-y-xl-1 { 
+        --bs-gutter-y: 10px; 
+    }
+    .grid-spacer-y-xl-1 { 
+        --bs-gutter-y: 10px; 
+    }
+    .grid-spacer-y-xl-2 { 
+        --bs-gutter-y: 20px; 
+    }
+    .grid-spacer-y-xl-3 { 
+        --bs-gutter-y: 30px; 
+    }
+    .grid-spacer-y-xl-4 { 
+        --bs-gutter-y: 40px; 
+    }
+    .grid-spacer-y-xl-5 { 
+        --bs-gutter-y: 50px; 
+    }
+    .grid-spacer-y-xl-100 { 
+        --bs-gutter-y: 100px; 
+    }
+}
+
+/* 04. Mobile Spacing Responsive */
+
+@media screen and (min-width: 767px){
+
+    /* Flex spacing (gap) */
+
+    .gspace-md-0 { 
+        gap: 0px 0px; 
+    }
+    .gspace-md-1 { 
+        gap: 10px 10px; 
+    }
+    .gspace-md-2 { 
+        gap: 20px 20px; 
+    }
+    .gspace-md-3 { 
+        gap: 30px 30px; 
+    }
+    .gspace-md-4 { 
+        gap: 40px 40px; 
+    }
+    .gspace-md-5 { 
+        gap: 50px 50px; 
+    }
+    .gspace-md-100 { 
+        gap: 100px 100px; 
+    }
+
+    /* Grid spacing (column-gap) */
+
+    .gspace-x-md-0 { 
+        column-gap: 0px; 
+    }
+    .gspace-x-md-0 { 
+        column-gap: 0px; 
+    }
+    .gspace-x-md-1 { 
+        column-gap: 10px; 
+    }
+    .gspace-x-md-2 { 
+        column-gap: 20px; 
+    }
+    .gspace-x-md-3 { 
+        column-gap: 30px; 
+    }
+    .gspace-x-md-4 { 
+        column-gap: 40px; 
+    }
+    .gspace-x-md-5 { 
+        column-gap: 50px; 
+    }
+    .gspace-x-md-100 { 
+        column-gap: 100px; 
+    }
+
+    /* Grid spacing (row-gap) */
+
+    .gspace-y-md-0 { 
+        row-gap: 0px; 
+    }
+    .gspace-y-md-1 { 
+        row-gap: 10px; 
+    }
+    .gspace-y-md-2 { 
+        row-gap: 20px; 
+    }
+    .gspace-y-md-3 { 
+        row-gap: 30px; 
+    }
+    .gspace-y-md-4 { 
+        row-gap: 40px; 
+    }
+    .gspace-y-md-5 { 
+        row-gap: 50px; 
+    }
+    .gspace-y-md-100 { 
+        row-gap: 100px; 
+    }
+
+    /* Grid spacing (row-gap & column-gap) */
+
+    .grid-spacer-md-1 { 
+        --bs-gutter-x: 10px; 
+        --bs-gutter-y: 10px; 
+    }
+    .grid-spacer-md-2 { 
+        --bs-gutter-x: 20px; 
+        --bs-gutter-y: 20px; 
+    }
+    .grid-spacer-md-3 { 
+        --bs-gutter-x: 30px; 
+        --bs-gutter-y: 30px; 
+    }
+    .grid-spacer-md-4 { 
+        --bs-gutter-x: 40px; 
+        --bs-gutter-y: 40px; 
+    }
+    .grid-spacer-md-5 { 
+        --bs-gutter-x: 50px; 
+        --bs-gutter-y: 50px; 
+    }
+    .grid-spacer-md-100 { 
+        --bs-gutter-x: 100px; 
+        --bs-gutter-y: 100px; 
+    }
+
+    /* Grid spacing (column-gap) */
+
+    .grid-spacer-x-md-0 { 
+        --bs-gutter-x: 0px; 
+    }
+    .grid-spacer-x-md-1 { 
+        --bs-gutter-x: 10px; 
+    }
+    .grid-spacer-x-md-2 { 
+        --bs-gutter-x: 20px; 
+    }
+    .grid-spacer-x-md-3 { 
+        --bs-gutter-x: 30px; 
+    }
+    .grid-spacer-x-md-4 { 
+        --bs-gutter-x: 40px; 
+    }
+    .grid-spacer-x-md-5 { 
+        --bs-gutter-x: 50px; 
+    }
+    .grid-spacer-x-md-100 { 
+        --bs-gutter-x: 100px; 
+    }
+
+    /* Grid spacing (row-gap) */
+
+    .grid-spacer-y-md-0 { 
+        --bs-gutter-y: 0px; 
+    }
+    .grid-spacer-y-md-1 { 
+        --bs-gutter-y: 10px; 
+    }
+    .grid-spacer-y-md-2 { 
+        --bs-gutter-y: 20px; 
+    }
+    .grid-spacer-y-md-3 { 
+        --bs-gutter-y: 30px; 
+    }
+    .grid-spacer-y-md-4 { 
+        --bs-gutter-y: 40px; 
+    }
+    .grid-spacer-y-md-5 { 
+        --bs-gutter-y: 50px; 
+    }
+    .grid-spacer-y-md-100 { 
+        --bs-gutter-y: 100px; 
+    }
+}

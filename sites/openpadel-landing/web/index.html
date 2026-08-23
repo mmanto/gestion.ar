@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="es">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>
+   Club Padel Pro - Tu mejor partido
+  </title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com">
+  </script>
+  <!-- Fontsource Inter -->
+  <link href="https://cdn.jsdelivr.net/npm/@fontsource/inter@4.5.10/index.min.css" rel="stylesheet"/>
+  <!-- FontAwesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+  <script>
+   tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        padel: {
+                            green: '#a3e635', // Lime 400
+                            dark: '#1e293b', // Slate 800
+                            blue: '#0ea5e9', // Sky 500
+                            accent: '#facc15' // Yellow 400
+                        }
+                    }
+                }
+            }
+        }
+  </script>
+  <style>
+   html { scroll-behavior: smooth; }
+        .hero-overlay {
+            background: linear-gradient(to right, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.4));
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+  </style>
+  <style>
+   *, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:Inter, sans-serif;font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0, 0, 0, 0);white-space:nowrap;border-width:0}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.inset-0{inset:0px}.-bottom-10{bottom:-2.5rem}.-left-10{left:-2.5rem}.-right-10{right:-2.5rem}.-top-10{top:-2.5rem}.bottom-0{bottom:0px}.left-0{left:0px}.left-1\/2{left:50%}.right-0{right:0px}.top-0{top:0px}.z-0{z-index:0}.z-10{z-index:10}.z-50{z-index:50}.order-1{order:1}.order-2{order:2}.order-3{order:3}.col-span-1{grid-column:span 1 / span 1}.mx-auto{margin-left:auto;margin-right:auto}.mb-1{margin-bottom:0.25rem}.mb-10{margin-bottom:2.5rem}.mb-12{margin-bottom:3rem}.mb-16{margin-bottom:4rem}.mb-2{margin-bottom:0.5rem}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mb-8{margin-bottom:2rem}.mr-1{margin-right:0.25rem}.mt-4{margin-top:1rem}.block{display:block}.inline-block{display:inline-block}.flex{display:flex}.grid{display:grid}.hidden{display:none}.h-1{height:0.25rem}.h-20{height:5rem}.h-24{height:6rem}.h-32{height:8rem}.h-40{height:10rem}.h-48{height:12rem}.h-8{height:2rem}.h-full{height:100%}.h-screen{height:100vh}.w-20{width:5rem}.w-24{width:6rem}.w-32{width:8rem}.w-40{width:10rem}.w-8{width:2rem}.w-full{width:100%}.max-w-2xl{max-width:42rem}.max-w-4xl{max-width:56rem}.max-w-5xl{max-width:64rem}.max-w-7xl{max-width:80rem}.max-w-sm{max-width:24rem}.flex-shrink-0{flex-shrink:0}.-translate-x-1\/2{--tw-translate-x:-50%;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.transform{transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}@keyframes bounce{0%, 100%{transform:translateY(-25%);animation-timing-function:cubic-bezier(0.8,0,1,1)}50%{transform:none;animation-timing-function:cubic-bezier(0,0,0.2,1)}}.animate-bounce{animation:bounce 1s infinite}.cursor-pointer{cursor:pointer}.grid-cols-1{grid-template-columns:repeat(1, minmax(0, 1fr))}.grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.flex-col{flex-direction:column}.items-start{align-items:flex-start}.items-end{align-items:flex-end}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-12{gap:3rem}.gap-2{gap:0.5rem}.gap-3{gap:0.75rem}.gap-4{gap:1rem}.gap-6{gap:1.5rem}.gap-8{gap:2rem}.space-x-8 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(2rem * var(--tw-space-x-reverse));margin-left:calc(2rem * calc(1 - var(--tw-space-x-reverse)))}.space-y-2 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.5rem * var(--tw-space-y-reverse))}.space-y-3 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.75rem * var(--tw-space-y-reverse))}.space-y-6 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1.5rem * var(--tw-space-y-reverse))}.overflow-hidden{overflow:hidden}.rounded{border-radius:0.25rem}.rounded-2xl{border-radius:1rem}.rounded-3xl{border-radius:1.5rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:0.5rem}.rounded-xl{border-radius:0.75rem}.rounded-t-lg{border-top-left-radius:0.5rem;border-top-right-radius:0.5rem}.rounded-bl-full{border-bottom-left-radius:9999px}.border{border-width:1px}.border-4{border-width:4px}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.border-orange-700{--tw-border-opacity:1;border-color:rgb(194 65 12 / var(--tw-border-opacity, 1))}.border-padel-accent{--tw-border-opacity:1;border-color:rgb(250 204 21 / var(--tw-border-opacity, 1))}.border-padel-dark{--tw-border-opacity:1;border-color:rgb(30 41 59 / var(--tw-border-opacity, 1))}.border-padel-green\/50{border-color:rgb(163 230 53 / 0.5)}.border-slate-100{--tw-border-opacity:1;border-color:rgb(241 245 249 / var(--tw-border-opacity, 1))}.border-slate-200{--tw-border-opacity:1;border-color:rgb(226 232 240 / var(--tw-border-opacity, 1))}.border-slate-300{--tw-border-opacity:1;border-color:rgb(203 213 225 / var(--tw-border-opacity, 1))}.border-slate-400{--tw-border-opacity:1;border-color:rgb(148 163 184 / var(--tw-border-opacity, 1))}.border-slate-600{--tw-border-opacity:1;border-color:rgb(71 85 105 / var(--tw-border-opacity, 1))}.border-slate-700{--tw-border-opacity:1;border-color:rgb(51 65 85 / var(--tw-border-opacity, 1))}.border-white\/20{border-color:rgb(255 255 255 / 0.2)}.bg-black\/10{background-color:rgb(0 0 0 / 0.1)}.bg-blue-100{--tw-bg-opacity:1;background-color:rgb(219 234 254 / var(--tw-bg-opacity, 1))}.bg-blue-50{--tw-bg-opacity:1;background-color:rgb(239 246 255 / var(--tw-bg-opacity, 1))}.bg-green-50{--tw-bg-opacity:1;background-color:rgb(240 253 244 / var(--tw-bg-opacity, 1))}.bg-orange-100{--tw-bg-opacity:1;background-color:rgb(255 237 213 / var(--tw-bg-opacity, 1))}.bg-orange-900\/50{background-color:rgb(124 45 18 / 0.5)}.bg-padel-accent{--tw-bg-opacity:1;background-color:rgb(250 204 21 / var(--tw-bg-opacity, 1))}.bg-padel-blue{--tw-bg-opacity:1;background-color:rgb(14 165 233 / var(--tw-bg-opacity, 1))}.bg-padel-dark{--tw-bg-opacity:1;background-color:rgb(30 41 59 / var(--tw-bg-opacity, 1))}.bg-padel-green{--tw-bg-opacity:1;background-color:rgb(163 230 53 / var(--tw-bg-opacity, 1))}.bg-padel-green\/20{background-color:rgb(163 230 53 / 0.2)}.bg-purple-100{--tw-bg-opacity:1;background-color:rgb(243 232 255 / var(--tw-bg-opacity, 1))}.bg-red-100{--tw-bg-opacity:1;background-color:rgb(254 226 226 / var(--tw-bg-opacity, 1))}.bg-slate-100{--tw-bg-opacity:1;background-color:rgb(241 245 249 / var(--tw-bg-opacity, 1))}.bg-slate-50{--tw-bg-opacity:1;background-color:rgb(248 250 252 / var(--tw-bg-opacity, 1))}.bg-slate-700{--tw-bg-opacity:1;background-color:rgb(51 65 85 / var(--tw-bg-opacity, 1))}.bg-slate-900{--tw-bg-opacity:1;background-color:rgb(15 23 42 / var(--tw-bg-opacity, 1))}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.bg-white\/10{background-color:rgb(255 255 255 / 0.1)}.bg-white\/90{background-color:rgb(255 255 255 / 0.9)}.bg-yellow-50{--tw-bg-opacity:1;background-color:rgb(254 252 232 / var(--tw-bg-opacity, 1))}.bg-gradient-to-b{background-image:linear-gradient(to bottom, var(--tw-gradient-stops))}.bg-gradient-to-r{background-image:linear-gradient(to right, var(--tw-gradient-stops))}.bg-gradient-to-t{background-image:linear-gradient(to top, var(--tw-gradient-stops))}.from-black\/80{--tw-gradient-from:rgb(0 0 0 / 0.8) var(--tw-gradient-from-position);--tw-gradient-to:rgb(0 0 0 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.from-padel-green{--tw-gradient-from:#a3e635 var(--tw-gradient-from-position);--tw-gradient-to:rgb(163 230 53 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.from-yellow-600{--tw-gradient-from:#ca8a04 var(--tw-gradient-from-position);--tw-gradient-to:rgb(202 138 4 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.to-padel-blue{--tw-gradient-to:#0ea5e9 var(--tw-gradient-to-position)}.to-transparent{--tw-gradient-to:transparent var(--tw-gradient-to-position)}.to-yellow-800{--tw-gradient-to:#854d0e var(--tw-gradient-to-position)}.bg-clip-text{-webkit-background-clip:text;background-clip:text}.object-cover{object-fit:cover}.p-3{padding:0.75rem}.p-4{padding:1rem}.p-6{padding:1.5rem}.p-8{padding:2rem}.px-2{padding-left:0.5rem;padding-right:0.5rem}.px-3{padding-left:0.75rem;padding-right:0.75rem}.px-4{padding-left:1rem;padding-right:1rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}.px-8{padding-left:2rem;padding-right:2rem}.py-1{padding-top:0.25rem;padding-bottom:0.25rem}.py-12{padding-top:3rem;padding-bottom:3rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-20{padding-top:5rem;padding-bottom:5rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.py-4{padding-top:1rem;padding-bottom:1rem}.pt-8{padding-top:2rem}.text-center{text-align:center}.font-sans{font-family:Inter, sans-serif}.text-2xl{font-size:1.5rem;line-height:2rem}.text-3xl{font-size:1.875rem;line-height:2.25rem}.text-4xl{font-size:2.25rem;line-height:2.5rem}.text-5xl{font-size:3rem;line-height:1}.text-6xl{font-size:3.75rem;line-height:1}.text-8xl{font-size:6rem;line-height:1}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-black{font-weight:900}.font-bold{font-weight:700}.font-extrabold{font-weight:800}.font-medium{font-weight:500}.font-semibold{font-weight:600}.uppercase{text-transform:uppercase}.leading-tight{line-height:1.25}.tracking-tight{letter-spacing:-0.025em}.text-blue-500{--tw-text-opacity:1;color:rgb(59 130 246 / var(--tw-text-opacity, 1))}.text-blue-600{--tw-text-opacity:1;color:rgb(37 99 235 / var(--tw-text-opacity, 1))}.text-orange-500{--tw-text-opacity:1;color:rgb(249 115 22 / var(--tw-text-opacity, 1))}.text-orange-900\/30{color:rgb(124 45 18 / 0.3)}.text-padel-accent{--tw-text-opacity:1;color:rgb(250 204 21 / var(--tw-text-opacity, 1))}.text-padel-blue{--tw-text-opacity:1;color:rgb(14 165 233 / var(--tw-text-opacity, 1))}.text-padel-dark{--tw-text-opacity:1;color:rgb(30 41 59 / var(--tw-text-opacity, 1))}.text-padel-green{--tw-text-opacity:1;color:rgb(163 230 53 / var(--tw-text-opacity, 1))}.text-purple-500{--tw-text-opacity:1;color:rgb(168 85 247 / var(--tw-text-opacity, 1))}.text-red-600{--tw-text-opacity:1;color:rgb(220 38 38 / var(--tw-text-opacity, 1))}.text-slate-300{--tw-text-opacity:1;color:rgb(203 213 225 / var(--tw-text-opacity, 1))}.text-slate-400{--tw-text-opacity:1;color:rgb(148 163 184 / var(--tw-text-opacity, 1))}.text-slate-500{--tw-text-opacity:1;color:rgb(100 116 139 / var(--tw-text-opacity, 1))}.text-slate-600{--tw-text-opacity:1;color:rgb(71 85 105 / var(--tw-text-opacity, 1))}.text-slate-700{--tw-text-opacity:1;color:rgb(51 65 85 / var(--tw-text-opacity, 1))}.text-slate-800{--tw-text-opacity:1;color:rgb(30 41 59 / var(--tw-text-opacity, 1))}.text-transparent{color:transparent}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.text-yellow-600{--tw-text-opacity:1;color:rgb(202 138 4 / var(--tw-text-opacity, 1))}.text-yellow-900\/30{color:rgb(113 63 18 / 0.3)}.opacity-20{opacity:0.2}.opacity-30{opacity:0.3}.opacity-50{opacity:0.5}.opacity-80{opacity:0.8}.mix-blend-overlay{mix-blend-mode:overlay}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-\[0_0_20px_rgba\(250\2c 204\2c 21\2c 0\.5\)\]{--tw-shadow:0 0 20px rgba(250,204,21,0.5);--tw-shadow-colored:0 0 20px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-lg{--tw-shadow:0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-sm{--tw-shadow:0 1px 2px 0 rgb(0 0 0 / 0.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-xl{--tw-shadow:0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color), 0 8px 10px -6px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-lime-500\/30{--tw-shadow-color:rgb(132 204 22 / 0.3);--tw-shadow:var(--tw-shadow-colored)}.outline-none{outline:2px solid transparent;outline-offset:2px}.blur-2xl{--tw-blur:blur(40px);filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.backdrop-blur-md{--tw-backdrop-blur:blur(12px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-sm{--tw-backdrop-blur:blur(4px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition{transition-property:color, background-color, border-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.duration-300{transition-duration:300ms}.duration-500{transition-duration:500ms}.hover\:scale-105:hover{--tw-scale-x:1.05;--tw-scale-y:1.05;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.hover\:bg-lime-300:hover{--tw-bg-opacity:1;background-color:rgb(190 242 100 / var(--tw-bg-opacity, 1))}.hover\:bg-padel-blue:hover{--tw-bg-opacity:1;background-color:rgb(14 165 233 / var(--tw-bg-opacity, 1))}.hover\:bg-padel-dark:hover{--tw-bg-opacity:1;background-color:rgb(30 41 59 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-50:hover{--tw-bg-opacity:1;background-color:rgb(248 250 252 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-700:hover{--tw-bg-opacity:1;background-color:rgb(51 65 85 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-800:hover{--tw-bg-opacity:1;background-color:rgb(30 41 59 / var(--tw-bg-opacity, 1))}.hover\:bg-white\/20:hover{background-color:rgb(255 255 255 / 0.2)}.hover\:text-padel-blue:hover{--tw-text-opacity:1;color:rgb(14 165 233 / var(--tw-text-opacity, 1))}.hover\:text-padel-dark:hover{--tw-text-opacity:1;color:rgb(30 41 59 / var(--tw-text-opacity, 1))}.hover\:text-white:hover{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.hover\:underline:hover{-webkit-text-decoration-line:underline;text-decoration-line:underline}.hover\:shadow-xl:hover{--tw-shadow:0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color), 0 8px 10px -6px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.focus\:border-transparent:focus{border-color:transparent}.focus\:outline-none:focus{outline:2px solid transparent;outline-offset:2px}.focus\:ring-2:focus{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)}.focus\:ring-padel-blue:focus{--tw-ring-opacity:1;--tw-ring-color:rgb(14 165 233 / var(--tw-ring-opacity, 1))}.group:hover .group-hover\:scale-110{--tw-scale-x:1.1;--tw-scale-y:1.1;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.group:hover .group-hover\:bg-transparent{background-color:transparent}.peer:checked ~ .peer-checked\:border-padel-blue{--tw-border-opacity:1;border-color:rgb(14 165 233 / var(--tw-border-opacity, 1))}.peer:checked ~ .peer-checked\:bg-padel-blue{--tw-bg-opacity:1;background-color:rgb(14 165 233 / var(--tw-bg-opacity, 1))}.peer:checked ~ .peer-checked\:text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}@media (min-width: 640px){.sm\:grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.sm\:flex-row{flex-direction:row}.sm\:px-6{padding-left:1.5rem;padding-right:1.5rem}}@media (min-width: 768px){.md\:order-1{order:1}.md\:order-2{order:2}.md\:order-3{order:3}.md\:col-span-2{grid-column:span 2 / span 2}.md\:col-span-3{grid-column:span 3 / span 3}.md\:block{display:block}.md\:flex{display:flex}.md\:hidden{display:none}.md\:w-1\/3{width:33.333333%}.md\:-translate-y-10{--tw-translate-y:-2.5rem;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.md\:grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.md\:grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.md\:grid-cols-4{grid-template-columns:repeat(4, minmax(0, 1fr))}.md\:grid-cols-5{grid-template-columns:repeat(5, minmax(0, 1fr))}.md\:flex-row{flex-direction:row}.md\:gap-10{gap:2.5rem}.md\:text-4xl{font-size:2.25rem;line-height:2.5rem}.md\:text-7xl{font-size:4.5rem;line-height:1}}@media (min-width: 1024px){.lg\:grid-cols-4{grid-template-columns:repeat(4, minmax(0, 1fr))}.lg\:px-8{padding-left:2rem;padding-right:2rem}}
+  </style>
+ </head>
+ <body class="font-sans text-slate-800 bg-slate-50">
+  <!-- Navigation -->
+  <nav class="fixed w-full z-50 bg-white/90 backdrop-blur-md border-b border-slate-200">
+   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-center h-20">
+     <div class="flex-shrink-0 flex items-center gap-2">
+      <i class="fa-solid fa-table-tennis-paddle-ball text-padel-green text-3xl">
+      </i>
+      <span class="font-bold text-2xl text-padel-dark tracking-tight">
+       PADEL
+       <span class="text-padel-blue">
+        PRO
+       </span>
+      </span>
+     </div>
+     <div class="hidden md:flex space-x-8">
+      <a class="text-slate-600 hover:text-padel-blue font-medium transition" href="index.html">
+       Canchas
+      </a>
+      <a class="text-slate-600 hover:text-padel-blue font-medium transition" href="index.html">
+       Reservas
+      </a>
+      <a class="text-slate-600 hover:text-padel-blue font-medium transition" href="index.html">
+       Torneos
+      </a>
+      <a class="text-slate-600 hover:text-padel-blue font-medium transition" href="index.html">
+       Podio
+      </a>
+      <a class="text-slate-600 hover:text-padel-blue font-medium transition" href="index.html">
+       Tienda
+      </a>
+      <a class="text-slate-600 hover:text-padel-blue font-medium transition" href="academia.html" id="nav-academia-desktop" style="display:none">
+       Academia
+      </a>
+     </div>
+     <div class="md:hidden">
+      <button class="text-slate-600 hover:text-padel-dark focus:outline-none" id="mobile-menu-btn">
+       <i class="fa-solid fa-bars text-2xl">
+       </i>
+      </button>
+     </div>
+    </div>
+   </div>
+   <!-- Mobile Menu -->
+   <div class="hidden md:hidden bg-white border-t border-slate-100" id="mobile-menu">
+    <a class="block py-3 px-4 text-slate-600 hover:bg-slate-50" href="index.html">
+     Canchas
+    </a>
+    <a class="block py-3 px-4 text-slate-600 hover:bg-slate-50" href="index.html">
+     Reservas
+    </a>
+    <a class="block py-3 px-4 text-slate-600 hover:bg-slate-50" href="index.html">
+     Torneos
+    </a>
+    <a class="block py-3 px-4 text-slate-600 hover:bg-slate-50" href="index.html">
+     Podio
+    </a>
+    <a class="block py-3 px-4 text-slate-600 hover:bg-slate-50" href="index.html">
+     Tienda
+    </a>
+    <a class="block py-3 px-4 text-slate-600 hover:bg-slate-50" href="academia.html" id="nav-academia-mobile" style="display:none">
+     Academia
+    </a>
+   </div>
+  </nav>
+  <!-- Hero Section -->
+  <header class="relative h-screen flex items-center justify-center overflow-hidden">
+   <div class="absolute inset-0 z-0">
+    <img alt="Padel Action" class="w-full h-full object-cover" src="https://image.qwenlm.ai/public_source/00291671-d55e-4312-971c-a5de34523f33/1ae1a7e22-cb21-4a96-afbb-7e9dcc146791.png"/>
+    <div class="absolute inset-0 hero-overlay">
+    </div>
+   </div>
+   <div class="relative z-10 text-center px-4 max-w-4xl mx-auto">
+    <span class="inline-block py-1 px-3 rounded-full bg-padel-green/20 text-padel-green border border-padel-green/50 text-sm font-semibold mb-6 backdrop-blur-sm">
+     EL MEJOR CLUB DE LA CIUDAD
+    </span>
+    <h1 class="text-5xl md:text-7xl font-extrabold text-white mb-6 leading-tight">
+     Vive la pasión del
+     <br/>
+     <span class="text-transparent bg-clip-text bg-gradient-to-r from-padel-green to-padel-blue">
+      Pádel Profesional
+     </span>
+    </h1>
+    <p class="text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
+     Canchas de última generación, torneos exclusivos y una comunidad vibrante. Reserva tu pista ahora.
+    </p>
+    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+     <a class="px-8 py-4 bg-padel-green text-padel-dark font-bold rounded-full hover:bg-lime-300 transition transform hover:scale-105 shadow-lg shadow-lime-500/30" href="index.html">
+      Reservar Cancha
+     </a>
+     <a class="px-8 py-4 bg-white/10 backdrop-blur-md border border-white/20 text-white font-bold rounded-full hover:bg-white/20 transition" href="index.html">
+      Ver Torneos
+     </a>
+    </div>
+   </div>
+  </header>
+  <!-- Canchas Section -->
+  <section class="py-20 bg-white" id="canchas">
+   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-16">
+     <h2 id="canchas-section-title" class="text-3xl md:text-4xl font-bold text-padel-dark mb-4">Nuestras Canchas</h2>
+     <div class="w-20 h-1 bg-padel-green mx-auto rounded-full"></div>
+     <p id="canchas-section-subtitle" class="mt-4 text-slate-600">Instalaciones de World Padel Tour estándar para tu máximo disfrute.</p>
+    </div>
+    <div id="canchas-grid" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+     <!-- cargado dinámicamente -->
+     <div class="col-span-4 text-center py-10 text-slate-400"><i class="fa-solid fa-spinner fa-spin text-3xl"></i></div>
+    </div>
+   </div>
+  </section>
+  <!-- Reservas Section -->
+  <section class="py-20 bg-slate-50" id="reservas">
+   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-12">
+     <h2 id="reservas-section-title" class="text-3xl md:text-4xl font-bold text-padel-dark mb-4">Reservá tu Cancha</h2>
+     <div class="w-20 h-1 bg-padel-green mx-auto rounded-full"></div>
+     <p class="mt-4 text-slate-600">Elegí fecha y horario. Confirmación inmediata.</p>
+    </div>
+    <!-- Selector de fecha -->
+    <div class="flex justify-center mb-8">
+     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-2 flex gap-1 overflow-x-auto" id="fecha-tabs"></div>
+    </div>
+    <!-- Grid de disponibilidad -->
+    <div id="disponibilidad-grid" class="space-y-4">
+     <div class="text-center py-10 text-slate-400"><i class="fa-solid fa-spinner fa-spin text-3xl"></i></div>
+    </div>
+   </div>
+  </section>
+  <!-- Torneos Section -->
+  <section class="py-20 bg-white" id="torneos">
+   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-end mb-12">
+     <div>
+      <h2 id="torneos-title" class="text-3xl md:text-4xl font-bold text-padel-dark mb-2">Próximos Torneos</h2>
+      <p id="torneos-subtitle" class="text-slate-600">Compite y demuestra tu nivel.</p>
+     </div>
+     <a class="hidden md:block text-padel-blue font-semibold hover:underline" href="torneos.html">Ver todos →</a>
+    </div>
+    <div id="torneos-grid" class="grid md:grid-cols-3 gap-8">
+     <div class="col-span-3 text-center py-10 text-slate-400">
+      <i class="fa-solid fa-spinner fa-spin text-3xl"></i>
+     </div>
+    </div>
+   </div>
+  </section>
+  <!-- Ranking Section -->
+  <section class="py-20 bg-slate-900 text-white relative overflow-hidden" id="ranking">
+   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+    <div class="text-center mb-16">
+     <h2 id="ranking-title" class="text-3xl md:text-4xl font-bold mb-4">Ranking</h2>
+     <div class="w-20 h-1 bg-padel-accent mx-auto rounded-full"></div>
+     <p id="ranking-subtitle" class="mt-4 text-slate-400">Los mejores jugadores de la temporada.</p>
+    </div>
+    <!-- Podio top 3 -->
+    <div id="ranking-podio" class="flex flex-col md:flex-row justify-center items-end gap-6 md:gap-10 mb-16 hidden"></div>
+    <!-- Sin datos -->
+    <div id="ranking-empty" class="text-center py-10 text-slate-400 hidden">
+     <i class="fa-solid fa-medal text-5xl mb-4 opacity-40"></i>
+     <p>Aún no hay resultados de torneos para calcular el ranking.</p>
+    </div>
+    <!-- Loading -->
+    <div id="ranking-loading" class="text-center py-10 text-slate-400">
+     <i class="fa-solid fa-spinner fa-spin text-3xl"></i>
+    </div>
+   </div>
+  </section>
+  <!-- Tienda Section -->
+  <section class="py-20 bg-slate-50" id="tienda">
+   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-16">
+     <h2 class="text-3xl md:text-4xl font-bold text-padel-dark mb-4">
+      Tienda Pro Shop
+     </h2>
+     <div class="w-20 h-1 bg-padel-green mx-auto rounded-full">
+     </div>
+     <p class="mt-4 text-slate-600">
+      Equípate con las mejores marcas.
+     </p>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+     <!-- Product 1 -->
+     <div class="bg-white rounded-xl shadow-sm hover:shadow-xl transition duration-300 overflow-hidden group">
+      <div class="h-48 bg-slate-100 relative overflow-hidden flex items-center justify-center">
+       <img alt="Shop Interior" class="w-full h-full object-cover opacity-80 group-hover:scale-110 transition duration-500" src="https://image.qwenlm.ai/public_source/00291671-d55e-4312-971c-a5de34523f33/18c79bf55-b1d7-46ee-b6dd-685ee4585e60.png"/>
+       <div class="absolute inset-0 bg-black/10 group-hover:bg-transparent transition">
+       </div>
+      </div>
+      <div class="p-4">
+       <div class="flex justify-between items-start mb-2">
+        <h3 class="font-bold text-padel-dark">
+         Raqueta Power X
+        </h3>
+        <span class="text-padel-blue font-bold">
+         $120
+        </span>
+       </div>
+       <p class="text-xs text-slate-500 mb-4">
+        Nivel Avanzado - Forma Diamante
+       </p>
+       <button class="w-full bg-slate-900 text-white py-2 rounded text-sm hover:bg-padel-blue transition">
+        Añadir al carrito
+       </button>
+      </div>
+     </div>
+     <!-- Product 2 -->
+     <div class="bg-white rounded-xl shadow-sm hover:shadow-xl transition duration-300 overflow-hidden group">
+      <div class="h-48 bg-slate-100 relative overflow-hidden flex items-center justify-center">
+       <!-- Placeholder for product image using generic pattern since specific product gen wasn't requested, reusing shop img cropped or colored -->
+       <div class="w-32 h-32 bg-blue-100 rounded-full flex items-center justify-center text-blue-500 text-4xl">
+        <i class="fa-solid fa-shirt">
+        </i>
+       </div>
+      </div>
+      <div class="p-4">
+       <div class="flex justify-between items-start mb-2">
+        <h3 class="font-bold text-padel-dark">
+         Camiseta DryFit
+        </h3>
+        <span class="text-padel-blue font-bold">
+         $35
+        </span>
+       </div>
+       <p class="text-xs text-slate-500 mb-4">
+        Transpirable - Varios colores
+       </p>
+       <button class="w-full bg-slate-900 text-white py-2 rounded text-sm hover:bg-padel-blue transition">
+        Añadir al carrito
+       </button>
+      </div>
+     </div>
+     <!-- Product 3 -->
+     <div class="bg-white rounded-xl shadow-sm hover:shadow-xl transition duration-300 overflow-hidden group">
+      <div class="h-48 bg-slate-100 relative overflow-hidden flex items-center justify-center">
+       <div class="w-32 h-32 bg-orange-100 rounded-full flex items-center justify-center text-orange-500 text-4xl">
+        <i class="fa-solid fa-circle-dot">
+        </i>
+       </div>
+      </div>
+      <div class="p-4">
+       <div class="flex justify-between items-start mb-2">
+        <h3 class="font-bold text-padel-dark">
+         Pack Pelotas (3)
+        </h3>
+        <span class="text-padel-blue font-bold">
+         $6
+        </span>
+       </div>
+       <p class="text-xs text-slate-500 mb-4">
+        Presión oficial - Duración extra
+       </p>
+       <button class="w-full bg-slate-900 text-white py-2 rounded text-sm hover:bg-padel-blue transition">
+        Añadir al carrito
+       </button>
+      </div>
+     </div>
+     <!-- Product 4 -->
+     <div class="bg-white rounded-xl shadow-sm hover:shadow-xl transition duration-300 overflow-hidden group">
+      <div class="h-48 bg-slate-100 relative overflow-hidden flex items-center justify-center">
+       <div class="w-32 h-32 bg-purple-100 rounded-full flex items-center justify-center text-purple-500 text-4xl">
+        <i class="fa-solid fa-shoe-prints">
+        </i>
+       </div>
+      </div>
+      <div class="p-4">
+       <div class="flex justify-between items-start mb-2">
+        <h3 class="font-bold text-padel-dark">
+         Zapatillas Court Pro
+        </h3>
+        <span class="text-padel-blue font-bold">
+         $85
+        </span>
+       </div>
+       <p class="text-xs text-slate-500 mb-4">
+        Suela Clay - Máximo agarre
+       </p>
+       <button class="w-full bg-slate-900 text-white py-2 rounded text-sm hover:bg-padel-blue transition">
+        Añadir al carrito
+       </button>
+      </div>
+     </div>
+    </div>
+   </div>
+  </section>
+  <!-- Escuela & Academia Section (dinámico — se muestra solo si el módulo está activo) -->
+  <section class="py-20 bg-white" id="escuela" style="display:none">
+   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-16">
+     <span class="inline-block py-1 px-3 rounded-full bg-padel-green/20 text-padel-green border border-padel-green/50 text-sm font-semibold mb-4">ESCUELA DEPORTIVA</span>
+     <h2 class="text-3xl md:text-4xl font-bold text-padel-dark mb-4" id="escuela-section-title">Academia Deportiva</h2>
+     <div class="w-20 h-1 bg-padel-green mx-auto rounded-full"></div>
+     <p class="mt-4 text-slate-500 max-w-2xl mx-auto" id="escuela-section-subtitle">Programas y clases para todos los niveles.</p>
+    </div>
+    <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-6" id="escuela-programas-grid">
+     <!-- Cards renderizadas por JS -->
+    </div>
+    <div class="text-center mt-10">
+     <a class="px-8 py-3 bg-padel-dark text-white font-bold rounded-full hover:bg-padel-blue transition" href="academia.html">
+      Ver todos los programas <i class="fa-solid fa-arrow-right ml-2"></i>
+     </a>
+    </div>
+   </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-padel-dark text-white py-12 border-t border-slate-700">
+   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid md:grid-cols-4 gap-8 mb-8">
+     <div class="col-span-1 md:col-span-2">
+      <div class="flex items-center gap-2 mb-4">
+       <i class="fa-solid fa-table-tennis-paddle-ball text-padel-green text-2xl">
+       </i>
+       <span class="font-bold text-xl tracking-tight">
+        PADEL
+        <span class="text-padel-blue">
+         PRO
+        </span>
+       </span>
+      </div>
+      <p class="text-slate-400 text-sm max-w-sm">
+       El club de pádel líder en la región. Instalaciones de primer nivel, comunidad apasionada y eventos exclusivos todo el año.
+      </p>
+     </div>
+     <div>
+      <h4 class="font-bold mb-4 text-padel-green">
+       Enlaces
+      </h4>
+      <ul class="space-y-2 text-sm text-slate-400">
+       <li>
+        <a class="hover:text-white transition" href="index.html">
+         Canchas
+        </a>
+       </li>
+       <li>
+        <a class="hover:text-white transition" href="index.html">
+         Reservas
+        </a>
+       </li>
+       <li>
+        <a class="hover:text-white transition" href="index.html">
+         Torneos
+        </a>
+       </li>
+       <li>
+        <a class="hover:text-white transition" href="index.html">
+         Tienda
+        </a>
+       </li>
+      </ul>
+     </div>
+     <div>
+      <h4 class="font-bold mb-4 text-padel-green">
+       Contacto
+      </h4>
+      <ul class="space-y-2 text-sm text-slate-400">
+       <li class="flex items-center gap-2">
+        <i class="fa-solid fa-location-dot">
+        </i>
+        Av. del Deporte 123
+       </li>
+       <li class="flex items-center gap-2">
+        <i class="fa-solid fa-phone">
+        </i>
+        +34 912 345 678
+       </li>
+       <li class="flex items-center gap-2">
+        <i class="fa-solid fa-envelope">
+        </i>
+        info@padelpro.com
+       </li>
+      </ul>
+      <div class="flex gap-4 mt-4">
+       <a class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center hover:bg-padel-blue transition" href="index.html">
+        <i class="fa-brands fa-instagram">
+        </i>
+       </a>
+       <a class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center hover:bg-padel-blue transition" href="index.html">
+        <i class="fa-brands fa-facebook-f">
+        </i>
+       </a>
+       <a class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center hover:bg-padel-blue transition" href="index.html">
+        <i class="fa-brands fa-whatsapp">
+        </i>
+       </a>
+      </div>
+     </div>
+    </div>
+    <div class="border-t border-slate-700 pt-8 text-center text-xs text-slate-500">
+     © 2023 Club Padel Pro. Todos los derechos reservados.
+    </div>
+   </div>
+  </footer>
+  <script>
+   // Mobile Menu Toggle
+        const btn = document.getElementById('mobile-menu-btn');
+        const menu = document.getElementById('mobile-menu');
+
+        btn.addEventListener('click', () => {
+            menu.classList.toggle('hidden');
+        });
+
+        // Booking Form Handler
+        const form = document.getElementById('booking-form');
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            // In a real app, this would send data to a server
+            const btn = form.querySelector('button[type="submit"]');
+            const originalText = btn.innerText;
+            
+            btn.innerText = 'Procesando...';
+            btn.disabled = true;
+            btn.classList.add('opacity-75');
+
+            setTimeout(() => {
+                alert('¡Reserva confirmada con éxito! Te hemos enviado un email con los detalles.');
+                form.reset();
+                btn.innerText = originalText;
+                btn.disabled = false;
+                btn.classList.remove('opacity-75');
+            }, 1500);
+        });
+
+        // Smooth Scroll for Anchor Links (Polyfill for older browsers if needed, but CSS scroll-behavior usually suffices)
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                menu.classList.add('hidden'); // Close mobile menu on click
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+  </script>
+  <script>
+    // ── Módulo Escuela & Academia ─────────────────────────────────────────────
+    (async function initEscuela() {
+      const API_URL = window.SPORTFLOW_API_URL || 'http://localhost:8080';
+      const hostname = window.location.hostname;
+      if (!hostname || hostname === 'localhost' || hostname.startsWith('127.')) return;
+
+      let tenant;
+      try {
+        const res = await fetch(`${API_URL}/api/public/tenants/resolve?domain=${encodeURIComponent(hostname)}`);
+        if (!res.ok) return;
+        tenant = await res.json();
+      } catch { return; }
+
+      const activeModules = tenant.active_modules || [];
+      const pc = tenant.page_config || {};
+      // El módulo debe estar activo Y el tenant admin debe haberlo asociado a esta sección
+      if (!activeModules.includes('escuela') || !pc.escuela_module) return;
+
+      // Mostrar sección y nav links
+      document.getElementById('escuela').style.display = 'block';
+      document.getElementById('nav-academia-desktop').style.display = '';
+      document.getElementById('nav-academia-mobile').style.display = '';
+
+      // Aplicar títulos de page_config
+      if (pc.escuela_title) document.getElementById('escuela-section-title').textContent = pc.escuela_title;
+      if (pc.escuela_subtitle) document.getElementById('escuela-section-subtitle').textContent = pc.escuela_subtitle;
+
+      // Cargar programas (preview: hasta 3)
+      try {
+        const pRes = await fetch(`${API_URL}/api/m/escuela/public/programas`, {
+          headers: { 'X-Tenant-ID': tenant.slug }
+        });
+        if (pRes.ok) {
+          const programas = await pRes.json();
+          renderEscuelaProgramas(programas.slice(0, 3));
+        }
+      } catch {}
+    })();
+
+    function renderEscuelaProgramas(programas) {
+      const grid = document.getElementById('escuela-programas-grid');
+      if (!programas || !programas.length) {
+        grid.innerHTML = '<p class="text-slate-400 col-span-full text-center py-8">Próximamente...</p>';
+        return;
+      }
+      const nivelLabel = { principiante: 'Principiante', intermedio: 'Intermedio', avanzado: 'Avanzado', todos: 'Todos los niveles' };
+      grid.innerHTML = programas.map(p => `
+        <div class="bg-white rounded-xl shadow-sm hover:shadow-xl transition border border-slate-100 overflow-hidden card-hover">
+          ${p.imagen_url ? `<img src="${p.imagen_url}" class="w-full h-40 object-cover" alt="${p.nombre}"/>` : `<div class="w-full h-40 bg-padel-green/20 flex items-center justify-center"><i class="fa-solid fa-graduation-cap text-4xl text-padel-green"></i></div>`}
+          <div class="p-5">
+            <span class="text-xs uppercase tracking-wide text-padel-green font-semibold">${nivelLabel[p.nivel] || p.nivel}</span>
+            <h3 class="font-bold text-padel-dark text-lg mt-1">${p.nombre}</h3>
+            ${p.descripcion ? `<p class="text-slate-500 text-sm mt-2 line-clamp-2">${p.descripcion}</p>` : ''}
+            ${p.precio != null ? `<p class="font-bold text-padel-blue mt-3">$${p.precio.toLocaleString()}</p>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+  </script>
+  <script>
+    // ── Módulos Canchas y Reservas ────────────────────────────────────────────
+    (async function initCanchasReservas() {
+      const API_URL = window.SPORTFLOW_API_URL || 'http://localhost:8080';
+      const hostname = window.location.hostname;
+      if (!hostname || hostname === 'localhost' || hostname.startsWith('127.')) return;
+
+      let tenant;
+      try {
+        const res = await fetch(`${API_URL}/api/public/tenants/resolve?domain=${encodeURIComponent(hostname)}`);
+        if (!res.ok) return;
+        tenant = await res.json();
+      } catch { return; }
+
+      const activeModules = tenant.active_modules || [];
+      const headers = { 'X-Tenant-ID': tenant.slug };
+
+      // ── Canchas ─────────────────────────────────────────────────────────────
+      if (activeModules.includes('canchas') || activeModules.includes('reservas')) {
+        try {
+          const res = await fetch(`${API_URL}/api/m/reservas/public/canchas`, { headers });
+          if (res.ok) {
+            const canchas = await res.json();
+            renderCanchasGrid(canchas);
+            // Guardar canchas para disponibilidad
+            window._canchas = canchas;
+          }
+        } catch {}
+      }
+
+      // ── Reservas / Disponibilidad ────────────────────────────────────────────
+      if (activeModules.includes('reservas')) {
+        initDisponibilidad(API_URL, headers);
+      }
+    })();
+
+    function renderCanchasGrid(canchas) {
+      const grid = document.getElementById('canchas-grid');
+      if (!canchas || !canchas.length) {
+        grid.innerHTML = '<p class="col-span-4 text-center text-slate-400 py-10">No hay canchas disponibles.</p>';
+        return;
+      }
+      const categoriaLabel = { premium: 'Premium', gold: 'Gold', standard: 'Standard' };
+      const categoriaColor = { premium: 'bg-yellow-400 text-yellow-900', gold: 'bg-amber-300 text-amber-900', standard: 'bg-slate-200 text-slate-700' };
+      grid.innerHTML = canchas.map(c => {
+        const img = c.imagen_url
+          ? `<img src="${c.imagen_url}" alt="${c.nombre}" class="w-full h-48 object-cover transition duration-500 group-hover:scale-105"/>`
+          : `<div class="w-full h-48 bg-padel-dark flex items-center justify-center"><i class="fa-solid fa-table-tennis-paddle-ball text-5xl text-padel-green"></i></div>`;
+        const stars = c.puntuacion_promedio
+          ? `<span class="text-padel-green font-bold text-sm">★ ${c.puntuacion_promedio.toFixed(1)}</span>`
+          : '';
+        return `
+          <div class="group bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition duration-300 border border-slate-100">
+            <div class="overflow-hidden relative">
+              ${img}
+              <span class="absolute top-3 left-3 text-xs font-bold px-2 py-1 rounded-full ${categoriaColor[c.categoria] || categoriaColor.standard}">
+                ${categoriaLabel[c.categoria] || c.categoria}
+              </span>
+            </div>
+            <div class="p-4">
+              <div class="flex justify-between items-start mb-1">
+                <h3 class="font-bold text-padel-dark text-sm leading-tight">${c.nombre}</h3>
+                ${stars}
+              </div>
+              ${c.descripcion ? `<p class="text-slate-500 text-xs mt-1 line-clamp-2">${c.descripcion}</p>` : ''}
+              <a href="#reservas" class="mt-3 block text-center text-xs font-bold border border-padel-dark text-padel-dark rounded-lg py-1.5 hover:bg-padel-dark hover:text-white transition">
+                Ver disponibilidad
+              </a>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function initDisponibilidad(API_URL, headers) {
+      const fechaTabs = document.getElementById('fecha-tabs');
+      const grid = document.getElementById('disponibilidad-grid');
+      const today = new Date();
+
+      // Generar 7 tabs de fecha
+      const fechas = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+        return d;
+      });
+
+      const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+      const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+      fechaTabs.innerHTML = fechas.map((d, i) => `
+        <button onclick="cargarDisponibilidad('${API_URL}', ${JSON.stringify(headers)}, '${d.toISOString().split('T')[0]}', this)"
+          class="fecha-tab flex-shrink-0 px-4 py-2 rounded-xl text-sm font-semibold transition ${i === 0 ? 'bg-padel-dark text-white' : 'text-slate-600 hover:bg-slate-100'}">
+          <span class="block text-xs opacity-70">${dias[d.getDay()]}</span>
+          <span>${d.getDate()} ${meses[d.getMonth()]}</span>
+        </button>`).join('');
+
+      // Cargar el primer día automáticamente
+      cargarDisponibilidad(API_URL, headers, fechas[0].toISOString().split('T')[0], fechaTabs.querySelector('.fecha-tab'));
+    }
+
+    async function cargarDisponibilidad(API_URL, headers, fecha, btnEl) {
+      // Marcar tab activo
+      document.querySelectorAll('.fecha-tab').forEach(b => b.classList.remove('bg-padel-dark', 'text-white'));
+      btnEl.classList.add('bg-padel-dark', 'text-white');
+
+      const grid = document.getElementById('disponibilidad-grid');
+      grid.innerHTML = '<div class="text-center py-10 text-slate-400"><i class="fa-solid fa-spinner fa-spin text-3xl"></i></div>';
+
+      const canchas = window._canchas || [];
+      if (!canchas.length) { grid.innerHTML = '<p class="text-center text-slate-400 py-10">No hay canchas disponibles.</p>'; return; }
+
+      try {
+        const results = await Promise.all(
+          canchas.map(c =>
+            fetch(`${API_URL}/api/m/reservas/public/disponibilidad/${c.id}?fecha=${fecha}`, { headers })
+              .then(r => r.ok ? r.json() : null)
+          )
+        );
+
+        grid.innerHTML = results.map((data, i) => {
+          const cancha = canchas[i];
+          if (!data || !data.slots || !data.slots.length) return '';
+          const slots = data.slots.map(s => `
+            <div class="flex flex-col items-center gap-1">
+              <span class="text-xs text-slate-500">${s.hora_inicio}</span>
+              ${s.disponible
+                ? `<button class="px-3 py-1.5 bg-padel-green text-padel-dark text-xs font-bold rounded-lg hover:bg-lime-300 transition">Libre</button>`
+                : `<span class="px-3 py-1.5 bg-slate-100 text-slate-400 text-xs font-semibold rounded-lg cursor-not-allowed">Ocupado</span>`}
+            </div>`).join('');
+
+          return `
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+              ${cancha.imagen_url
+                ? `<img src="${cancha.imagen_url}" class="w-full sm:w-32 h-20 object-cover rounded-xl flex-shrink-0" alt="${cancha.nombre}"/>`
+                : `<div class="w-full sm:w-32 h-20 bg-padel-dark rounded-xl flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-table-tennis-paddle-ball text-2xl text-padel-green"></i></div>`}
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-3">
+                  <h3 class="font-bold text-padel-dark">${cancha.nombre}</h3>
+                  ${cancha.puntuacion_promedio ? `<span class="text-padel-green text-sm font-bold">★ ${cancha.puntuacion_promedio.toFixed(1)}</span>` : ''}
+                </div>
+                <div class="flex flex-wrap gap-3">${slots}</div>
+              </div>
+            </div>`;
+        }).filter(Boolean).join('') || '<p class="text-center text-slate-400 py-10">No hay turnos cargados para esta fecha.</p>';
+      } catch {
+        grid.innerHTML = '<p class="text-center text-slate-400 py-10">Error al cargar disponibilidad.</p>';
+      }
+    }
+  </script>
+  <script>
+    // ── Módulos Torneos y Ranking ─────────────────────────────────────────────
+    (async function initTorneosRanking() {
+      const API_URL = window.SPORTFLOW_API_URL || 'http://localhost:8080';
+      const hostname = window.location.hostname;
+      if (!hostname || hostname === 'localhost' || hostname.startsWith('127.')) return;
+
+      let tenant;
+      try {
+        const res = await fetch(`${API_URL}/api/public/tenants/resolve?domain=${encodeURIComponent(hostname)}`);
+        if (!res.ok) return;
+        tenant = await res.json();
+      } catch { return; }
+
+      const activeModules = tenant.active_modules || [];
+      const pc = tenant.page_config || {};
+      const headers = { 'X-Tenant-ID': tenant.slug };
+
+      // ── Torneos ─────────────────────────────────────────────────────────────
+      if (activeModules.includes('torneos') && pc.torneos_module) {
+        if (pc.torneos_visible !== false) {
+          document.getElementById('torneos').style.display = 'block';
+          if (pc.torneos_title) document.getElementById('torneos-title').textContent = pc.torneos_title;
+          if (pc.torneos_subtitle) document.getElementById('torneos-subtitle').textContent = pc.torneos_subtitle;
+
+          try {
+            const res = await fetch(`${API_URL}/api/m/torneos/public/`, { headers });
+            const torneos = res.ok ? await res.json() : [];
+            renderTorneosGrid(torneos.slice(0, 3));
+          } catch {
+            document.getElementById('torneos-grid').innerHTML = '';
+          }
+        }
+      }
+
+      // ── Ranking ─────────────────────────────────────────────────────────────
+      if (activeModules.includes('ranking') && pc.podio_module) {
+        if (pc.podio_visible !== false) {
+          document.getElementById('ranking').style.display = 'block';
+          if (pc.podio_title) document.getElementById('ranking-title').textContent = pc.podio_title;
+          if (pc.podio_subtitle) document.getElementById('ranking-subtitle').textContent = pc.podio_subtitle;
+
+          const loading = document.getElementById('ranking-loading');
+          const podio = document.getElementById('ranking-podio');
+          const empty = document.getElementById('ranking-empty');
+
+          try {
+            const res = await fetch(`${API_URL}/api/m/ranking/public/?limit=3`, { headers });
+            loading.classList.add('hidden');
+            if (res.ok) {
+              const entries = await res.json();
+              if (entries.length) {
+                renderPodio(entries.slice(0, 3));
+                podio.classList.remove('hidden');
+              } else {
+                empty.classList.remove('hidden');
+              }
+            } else {
+              empty.classList.remove('hidden');
+            }
+          } catch {
+            loading.classList.add('hidden');
+            empty.classList.remove('hidden');
+          }
+        }
+      }
+    })();
+
+    function renderTorneosGrid(torneos) {
+      const grid = document.getElementById('torneos-grid');
+      if (!torneos || !torneos.length) {
+        grid.innerHTML = '<p class="col-span-3 text-center text-slate-400 py-10">No hay torneos disponibles próximamente.</p>';
+        return;
+      }
+      const categoriaColor = { 'Competitivo': 'bg-red-100 text-red-600', 'Social': 'bg-blue-100 text-blue-600', 'Mixto': 'bg-purple-100 text-purple-600' };
+      grid.innerHTML = torneos.map(t => {
+        const fecha = t.fecha_inicio ? (t.fecha_fin && t.fecha_fin !== t.fecha_inicio ? `${t.fecha_inicio} → ${t.fecha_fin}` : t.fecha_inicio) : '';
+        const cupos = t.cupos ? `${t.inscripciones_count}/${t.cupos}` : `${t.inscripciones_count} inscriptos`;
+        if (t.destacado) {
+          return `
+            <div class="bg-padel-dark text-white rounded-2xl p-6 card-hover transition duration-300 relative overflow-hidden">
+              <div class="absolute top-0 right-0 w-20 h-20 bg-padel-green rounded-bl-full opacity-20"></div>
+              <div class="flex justify-between items-start mb-4 relative z-10">
+                <span class="bg-padel-green text-padel-dark text-xs font-bold px-2 py-1 rounded uppercase">Destacado</span>
+                ${fecha ? `<span class="text-slate-300 text-sm"><i class="fa-regular fa-calendar mr-1"></i>${fecha}</span>` : ''}
+              </div>
+              <h3 class="text-xl font-bold mb-2 relative z-10">${t.titulo}</h3>
+              ${t.descripcion ? `<p class="text-slate-300 text-sm mb-4 relative z-10">${t.descripcion}</p>` : ''}
+              <div class="flex items-center gap-3 mb-6 text-sm text-slate-400 relative z-10">
+                ${t.premio ? `<span><i class="fa-solid fa-trophy text-padel-green mr-1"></i>${t.premio}</span>` : ''}
+                ${t.cupos ? `<span><i class="fa-solid fa-users mr-1"></i>${cupos}</span>` : ''}
+              </div>
+              <a href="torneos.html" class="block w-full text-center bg-padel-green text-padel-dark font-bold py-2 rounded-lg hover:bg-lime-300 transition relative z-10">
+                ${t.inscripcion_activa ? 'Inscribirse' : 'Ver detalle'}
+              </a>
+            </div>`;
+        }
+        const colorClass = categoriaColor[t.categoria] || 'bg-slate-100 text-slate-600';
+        return `
+          <div class="bg-white border border-slate-200 rounded-2xl p-6 card-hover transition duration-300">
+            <div class="flex justify-between items-start mb-4">
+              ${t.categoria ? `<span class="${colorClass} text-xs font-bold px-2 py-1 rounded uppercase">${t.categoria}</span>` : '<span></span>'}
+              ${fecha ? `<span class="text-slate-400 text-sm"><i class="fa-regular fa-calendar mr-1"></i>${fecha}</span>` : ''}
+            </div>
+            <h3 class="text-xl font-bold text-padel-dark mb-2">${t.titulo}</h3>
+            ${t.descripcion ? `<p class="text-slate-600 text-sm mb-4">${t.descripcion}</p>` : ''}
+            <div class="flex items-center gap-3 mb-6 text-sm text-slate-500">
+              ${t.premio ? `<span><i class="fa-solid fa-trophy mr-1"></i>${t.premio}</span>` : ''}
+              ${t.cupos ? `<span><i class="fa-solid fa-users mr-1"></i>${cupos}</span>` : ''}
+            </div>
+            <a href="torneos.html" class="block w-full text-center border border-padel-dark text-padel-dark font-bold py-2 rounded-lg hover:bg-padel-dark hover:text-white transition">
+              ${t.inscripcion_activa ? 'Inscribirse' : 'Ver detalle'}
+            </a>
+          </div>`;
+      }).join('');
+    }
+
+    function renderPodio(entries) {
+      const podioConfig = [
+        { order: 'order-2 md:order-1', size: 'w-24 h-24', border: 'border-slate-400', barH: 'h-32', barBg: 'bg-slate-700', numSize: 'text-6xl', numColor: 'text-slate-600', label: 'Subcampeón' },
+        { order: 'order-1 md:order-2', size: 'w-32 h-32', border: 'border-padel-accent', barH: 'h-48', barBg: 'bg-gradient-to-b from-yellow-600 to-yellow-800', numSize: 'text-8xl', numColor: 'text-yellow-900/30', label: 'Campeón', crown: true, translate: 'md:-translate-y-10' },
+        { order: 'order-3',            size: 'w-24 h-24', border: 'border-orange-700',  barH: 'h-24', barBg: 'bg-orange-900/50',                                  numSize: 'text-6xl', numColor: 'text-orange-900/30', label: 'Tercer lugar' },
+      ];
+      const podio = document.getElementById('ranking-podio');
+      podio.innerHTML = entries.map((e, i) => {
+        const cfg = podioConfig[i] || podioConfig[2];
+        const foto = e.foto_url
+          ? `<img src="${e.foto_url}" class="w-full h-full object-cover" alt="${e.jugador_nombre}"/>`
+          : `<div class="w-full h-full flex items-center justify-center bg-slate-600 text-2xl font-bold text-white">${e.jugador_nombre.charAt(0).toUpperCase()}</div>`;
+        return `
+          <div class="${cfg.order} ${cfg.translate || ''} flex flex-col items-center w-full md:w-1/3">
+            <div class="relative">
+              ${cfg.crown ? `<div class="absolute -top-10 left-1/2 -translate-x-1/2"><i class="fa-solid fa-crown text-padel-accent text-4xl animate-bounce"></i></div>` : ''}
+              <div class="${cfg.size} rounded-full bg-slate-700 border-4 ${cfg.border} mb-4 overflow-hidden ${cfg.crown ? 'shadow-[0_0_20px_rgba(250,204,21,0.5)]' : ''}">
+                ${foto}
+              </div>
+            </div>
+            <h3 class="text-xl font-bold ${cfg.crown ? 'text-2xl text-padel-accent' : ''}">${e.jugador_nombre}</h3>
+            <p class="text-slate-400 text-sm">${cfg.label}</p>
+            <p class="text-padel-accent font-bold text-sm mt-1">${e.puntos} pts · ${e.torneos_jugados} torneos</p>
+            <div class="mt-4 w-full ${cfg.barBg} ${cfg.barH} rounded-t-lg flex items-center justify-center">
+              <span class="${cfg.numSize} font-black ${cfg.numColor} opacity-50">${e.posicion}</span>
+            </div>
+          </div>`;
+      }).join('');
+    }
+  </script>
+ </body>
+</html>
