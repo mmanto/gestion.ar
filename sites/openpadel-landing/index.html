@@ -823,7 +823,7 @@
           </div>
 
           <!-- Links desktop -->
-          <div class="nav-link-container">
+          <!-- <div class="nav-link-container">
             <ul class="navbar-nav mx-auto" style="display:flex;flex-direction:row;margin:0;padding:0;list-style:none;">
               <li class="nav-item"><a class="nav-link" href="#sec-nosotros">Nosotros</a></li>
               <li class="nav-item"><a class="nav-link" href="#sec-academia">Clases</a></li>
@@ -831,7 +831,7 @@
               <li class="nav-item"><a class="nav-link" href="#torneos">Torneos</a></li>
               <li class="nav-item"><a class="nav-link" href="#podio">Ranking</a></li>
             </ul>
-          </div>
+          </div> -->
 
           <!-- Mobile hamburger -->
           <button id="mobile-menu-btn" class="nav-btn" type="button">
@@ -844,7 +844,7 @@
               <i class="fa-solid fa-bag-shopping" style="color:rgba(255,255,255,0.7);font-size:1.2rem;"></i>
               <span id="cart-count" style="display:none;position:absolute;top:-8px;right:-8px;background:var(--color-primary);color:#000;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;align-items:center;justify-content:center;">0</span>
             </button>
-            <a id="nav-btn-acceder" href="/jugador-login" class="btn btn-accent">
+            <a id="nav-btn-acceder" href="/login" class="btn btn-accent">
               <span class="btn-title">Acceder</span>
               <span class="icon-circle"><i class="fa-solid fa-arrow-right"></i></span>
             </a>
@@ -857,13 +857,13 @@
         </div>
 
         <!-- Mobile menu -->
-        <div id="mobile-menu" style="display:none;border-top:1px solid rgba(255,255,255,0.1);padding:12px 20px;border-radius:0 0 20px 20px;">
+        <!-- <div id="mobile-menu" style="display:none;border-top:1px solid rgba(255,255,255,0.1);padding:12px 20px;border-radius:0 0 20px 20px;">
           <a class="sp-mobile-link" href="#sec-nosotros">Nosotros</a>
           <a class="sp-mobile-link" href="#sec-academia">Clases</a>
           <a class="sp-mobile-link" href="#sec-reservas">Reservas</a>
           <a class="sp-mobile-link" href="#torneos">Torneos</a>
           <a class="sp-mobile-link" href="#podio">Ranking</a>
-        </div>
+        </div> -->
 
       </nav>
     </div>
@@ -2207,6 +2207,8 @@
   </footer>
   CONTENT-END-->
 
+  <!-- SPA: Cart Drawer, Checkout Modal y lógica de secciones desactivados -->
+  <template id="spa-unused-ui">
   <!-- CART DRAWER -->
   <div id="cart-drawer"
     class="fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-2xl z-50 transform translate-x-full transition-transform duration-300 flex flex-col">
@@ -2267,1432 +2269,115 @@
       </div>
     </div>
   </div>
+  </template>
 
   <script>
+    // ── SPA mode: solo navbar scroll, animaciones y video modal activos ──────
     const API_URL = ''
 
-      // -----------------------------------------------------------------------
-      // Navbar scroll state — transparente en top, fondo blanco al scrollear
-      // -----------------------------------------------------------------------
-      ; (function initNavbarScroll() {
-        const nav = document.querySelector('.navbar')
-        if (!nav) return
-
-        const update = () => {
-          const ratio = Math.min(window.scrollY / 80, 1)
-          if (ratio > 0.1) {
-            nav.style.background = `rgba(255,255,255,${0.92 * ratio})`
-            nav.style.backdropFilter = `blur(${10 * ratio}px)`
-            nav.style.webkitBackdropFilter = `blur(${10 * ratio}px)`
-            nav.style.boxShadow = `0 4px 24px rgba(0,0,0,${0.06 * ratio})`
-            nav.querySelectorAll('.nav-link').forEach(l => l.style.color = `rgba(26,26,46,${0.85 * ratio + 0.15})`)
-          } else {
-            nav.style.background = 'transparent'
-            nav.style.backdropFilter = 'none'
-            nav.style.webkitBackdropFilter = 'none'
-            nav.style.boxShadow = 'none'
-            nav.querySelectorAll('.nav-link').forEach(l => l.style.color = '#fff')
-          }
+    // Navbar scroll — transparente en top, fondo blanco al scrollear
+    ;(function initNavbarScroll() {
+      const nav = document.querySelector('.navbar')
+      if (!nav) return
+      const update = () => {
+        const ratio = Math.min(window.scrollY / 80, 1)
+        if (ratio > 0.1) {
+          nav.style.background = `rgba(255,255,255,${0.92 * ratio})`
+          nav.style.backdropFilter = `blur(${10 * ratio}px)`
+          nav.style.webkitBackdropFilter = `blur(${10 * ratio}px)`
+          nav.style.boxShadow = `0 4px 24px rgba(0,0,0,${0.06 * ratio})`
+          nav.querySelectorAll('.nav-link').forEach(l => l.style.color = `rgba(26,26,46,${0.85 * ratio + 0.15})`)
+        } else {
+          nav.style.background = 'transparent'
+          nav.style.backdropFilter = 'none'
+          nav.style.webkitBackdropFilter = 'none'
+          nav.style.boxShadow = 'none'
+          nav.querySelectorAll('.nav-link').forEach(l => l.style.color = '#fff')
         }
+      }
+      window.addEventListener('scroll', update, { passive: true })
+      update()
+    })()
 
-        window.addEventListener('scroll', update, { passive: true })
-        update()
-      })()
-
-      // -----------------------------------------------------------------------
-      // Entrance animations (IntersectionObserver)
-      // -----------------------------------------------------------------------
-      ; (function initAnimations() {
-        const obs = new IntersectionObserver(entries => {
-          entries.forEach(entry => {
-            if (!entry.isIntersecting) return
-            const el = entry.target
-            const animClass = el.dataset.anim
-            if (animClass) {
-              el.classList.add(animClass)
-              obs.unobserve(el)
-            }
-          })
-        }, { threshold: 0.12 })
-
-        document.querySelectorAll('.animate-box').forEach(el => obs.observe(el))
-      })()
-
-      // -----------------------------------------------------------------------
-      // Booking carousel
-      // -----------------------------------------------------------------------
-      ; (function initBookingCarousel() {
-        const slides = document.querySelectorAll('#booking-carousel .booking-slide')
-        const dots = document.querySelectorAll('#booking-dots button')
-        if (!slides.length) return
-        let current = 0
-        const go = idx => {
-          slides[current].classList.remove('active')
-          slides[current].style.opacity = '0'
-          dots[current].style.opacity = '0.4'
-          current = idx % slides.length
-          slides[current].classList.add('active')
-          slides[current].style.opacity = '1'
-          dots[current].style.opacity = '1'
-        }
-        dots.forEach(d => d.addEventListener('click', () => go(+d.dataset.slide)))
-        setInterval(() => go(current + 1), 3500)
-      })()
-
-      // -----------------------------------------------------------------------
-      // Video Modal
-      // -----------------------------------------------------------------------
-      ; (function initVideoModal() {
-        const modal = document.getElementById('video-modal')
-        const frame = document.getElementById('video-frame')
-        const close = document.getElementById('video-modal-close')
-
-        document.querySelectorAll('[data-video]').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const url = btn.dataset.video
-            frame.src = url + (url.includes('?') ? '&' : '?') + 'autoplay=1'
-            modal.classList.add('open')
-          })
+    // Entrance animations (IntersectionObserver)
+    ;(function initAnimations() {
+      const obs = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) return
+          const el = entry.target
+          const animClass = el.dataset.anim
+          if (animClass) { el.classList.add(animClass); obs.unobserve(el) }
         })
+      }, { threshold: 0.12 })
+      document.querySelectorAll('.animate-box').forEach(el => obs.observe(el))
+    })()
 
-        function closeModal() {
-          modal.classList.remove('open')
-          frame.src = ''
-        }
-        close.addEventListener('click', closeModal)
-        modal.addEventListener('click', e => { if (e.target === modal) closeModal() })
-      })()
-
-    // -----------------------------------------------------------------------
-    // Ecommerce state
-    // -----------------------------------------------------------------------
-    let currentTenantSlug = null
-    let currentTenantId = null
-    let cartDrawerOpen = false
-
-    function getGuestUserId() {
-      let id = localStorage.getItem('guest_user_id')
-      if (!id) {
-        id = 'guest-' + crypto.randomUUID()
-        localStorage.setItem('guest_user_id', id)
-      }
-      return id
-    }
-
-    function ecommerceFetch(path, options = {}) {
-      return fetch(API_URL + '/api/m/ecommerce' + path, {
-        ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Tenant-ID': currentTenantSlug,
-          ...(options.headers || {}),
-        },
-      })
-    }
-
-    function canchasFetch(path, options = {}) {
-      return fetch(API_URL + '/api/m/canchas' + path, {
-        ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Tenant-ID': currentTenantSlug,
-          ...(options.headers || {}),
-        },
-      })
-    }
-
-    // -----------------------------------------------------------------------
-    // Canchas section rendering
-    // -----------------------------------------------------------------------
-    const TIPO_ICONS = {
-      futbol_5: 'fa-futbol', futbol_7: 'fa-futbol', futbol_11: 'fa-futbol',
-      tenis: 'fa-baseball-bat-ball', padel: 'fa-table-tennis-paddle-ball',
-      basquet: 'fa-basketball', voley: 'fa-volleyball',
-    }
-    const TIPO_LABELS = {
-      futbol_5: 'Fútbol 5', futbol_7: 'Fútbol 7', futbol_11: 'Fútbol 11',
-      tenis: 'Tenis', padel: 'Pádel', basquet: 'Básquet', voley: 'Vóley',
-    }
-    const CAT_STYLES = {
-      standard: 'bg-slate-100 text-slate-600',
-      gold: 'bg-yellow-100 text-yellow-700',
-      premium: 'bg-purple-100 text-purple-700',
-    }
-
-    async function loadNoticiasSection() {
-      try {
-        const res = await fetch(API_URL + '/api/m/noticias/public/noticias', {
-          headers: { 'X-Tenant-ID': currentTenantSlug }
+    // Video Modal
+    ;(function initVideoModal() {
+      const modal = document.getElementById('video-modal')
+      const frame = document.getElementById('video-frame')
+      const close = document.getElementById('video-modal-close')
+      if (!modal) return
+      document.querySelectorAll('[data-video]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const url = btn.dataset.video
+          frame.src = url + (url.includes('?') ? '&' : '?') + 'autoplay=1'
+          modal.classList.add('open')
         })
-        if (!res.ok) return
-        const noticias = await res.json()
-        const grid = document.getElementById('sec-noticias-grid')
-        const empty = document.getElementById('sec-noticias-empty')
-        if (!noticias.length) return  // sin noticias: sección permanece oculta
-        showSection('sec-noticias')
-        grid.innerHTML = noticias.map(n => {
-          const fecha = n.fecha ? new Date(n.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' }) : ''
-          const href = n.enlace || '#'
-          return `
-          <div class="group rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
-            <a href="${href}">
-              <div class="relative h-52 overflow-hidden bg-slate-100">
-                ${n.imagen_url
-              ? `<img src="${n.imagen_url}" alt="${n.titulo}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.style.display='none'"/>`
-              : `<div class="w-full h-full flex items-center justify-center"><i class="fa-solid fa-newspaper text-4xl text-slate-300"></i></div>`
-            }
-                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                <div class="absolute bottom-0 left-0 right-0 p-4 flex flex-wrap gap-3">
-                  ${fecha ? `<span class="flex items-center gap-1.5 text-white/80 text-xs"><i class="fa-solid fa-calendar text-xs"></i>${fecha}</span>` : ''}
-                  ${n.categoria ? `<span class="flex items-center gap-1.5 text-white/80 text-xs"><i class="fa-solid fa-folder text-xs"></i>${n.categoria}</span>` : ''}
-                </div>
-              </div>
-              <div class="p-5">
-                <h4 class="font-heading font-bold text-padel-dark text-base leading-snug group-hover:text-padel-green transition-colors">${n.titulo}</h4>
-                ${n.contenido ? `<p class="text-sm text-slate-500 mt-2 line-clamp-2">${n.contenido}</p>` : ''}
-              </div>
-            </a>
-          </div>`
-        }).join('')
-      } catch { }
-    }
-
-    async function loadNosotrosSection() {
-      document.getElementById('sec-nosotros').style.display = 'block'
-      try {
-        const res = await fetch(API_URL + '/api/m/nosotros/public/miembros', {
-          headers: { 'X-Tenant-ID': currentTenantSlug }
-        })
-        if (!res.ok) return
-        const miembros = await res.json()
-        renderNosotrosMiembros(miembros)
-      } catch { }
-    }
-
-    function renderNosotrosMiembros(miembros) {
-      const grid = document.getElementById('sec-nosotros-miembros-grid')
-      if (!miembros.length) {
-        grid.style.display = 'none'
-        return
-      }
-      grid.innerHTML = miembros.map(m => `
-        <div class="text-center">
-          ${m.foto_url
-          ? `<img src="${m.foto_url}" class="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-4 border-slate-100" alt="${m.nombre}"/>`
-          : `<div class="w-24 h-24 rounded-full bg-slate-100 mx-auto mb-4 flex items-center justify-center"><i class="fa-solid fa-user text-3xl text-slate-300"></i></div>`
-        }
-          <h4 class="font-heading font-bold text-padel-dark">${m.nombre}</h4>
-          ${m.cargo ? `<p class="text-sm font-medium mt-0.5" style="color:var(--color-primary)">${m.cargo}</p>` : ''}
-          ${m.bio ? `<p class="text-xs text-slate-500 mt-2 leading-relaxed">${m.bio}</p>` : ''}
-        </div>
-      `).join('')
-    }
-
-    async function loadEscuelaSection() {
-      document.getElementById('sec-academia').style.display = 'block'
-      try {
-        const res = await fetch(API_URL + '/api/m/escuela/public/programas', {
-          headers: { 'X-Tenant-ID': currentTenantSlug }
-        })
-        if (!res.ok) return
-        const programas = await res.json()
-        renderEscuelaProgramas(programas.slice(0, 3))
-      } catch { }
-    }
-
-    function renderEscuelaProgramas(programas) {
-      const grid = document.getElementById('sec-escuela-programas-grid')
-      const nivelLabel = { principiante: 'Principiante', intermedio: 'Intermedio', avanzado: 'Avanzado', todos: 'Todos los niveles' }
-      if (!programas.length) {
-        grid.innerHTML = '<p class="col-span-full text-center text-white/40 py-8">Próximamente...</p>'
-        return
-      }
-      grid.innerHTML = programas.map(p => `
-        <div class="bg-white/10 rounded-2xl overflow-hidden hover:bg-white/15 transition">
-          ${p.imagen_url
-          ? `<img src="${p.imagen_url}" class="w-full h-40 object-cover" alt="${p.nombre}"/>`
-          : `<div class="w-full h-40 flex items-center justify-center text-padel-green/40 text-5xl"><i class="fa-solid fa-graduation-cap"></i></div>`
-        }
-          <div class="p-5">
-            <span class="text-xs uppercase tracking-wide font-semibold" style="color:var(--color-primary)">${nivelLabel[p.nivel] || p.nivel}</span>
-            <h3 class="font-heading font-bold text-white text-lg mt-1">${p.nombre}</h3>
-            ${p.descripcion ? `<p class="text-white/50 text-sm mt-2 line-clamp-2">${p.descripcion}</p>` : ''}
-            ${p.precio != null ? `<p class="font-bold mt-3" style="color:var(--color-primary)">$${p.precio.toLocaleString()}</p>` : ''}
-          </div>
-        </div>
-      `).join('')
-    }
-
-    async function loadPorQueNosotrosSection() {
-      document.getElementById('sec-nosdiferencia').style.display = 'block'
-      try {
-        const res = await fetch(API_URL + '/api/m/nosdiferencia/public/razones', {
-          headers: { 'X-Tenant-ID': currentTenantSlug }
-        })
-        if (!res.ok) return
-        const razones = await res.json()
-        renderRazones(razones.slice(0, 4))
-      } catch { }
-    }
-
-    function renderRazones(razones) {
-      const grid = document.getElementById('sec-nosdiferencia-razones-grid')
-      if (!razones.length) {
-        grid.innerHTML = '<p class="col-span-full text-center text-slate-400 py-8">Próximamente...</p>'
-        return
-      }
-      grid.innerHTML = razones.map((r, i) => {
-        const isAccent = r.estilo === 'acento'
-        const isOscuro = r.estilo === 'oscuro'
-        const isDelayed = i % 2 === 1
-        const cardClass = [
-          'card card-chooseus',
-          'animate__animated animate__fadeInRight',
-          isDelayed ? 'animated-delay-slow' : '',
-        ].filter(Boolean).join(' ')
-        const bgStyle = isOscuro
-          ? 'background:#272727;'
-          : isAccent
-            ? 'background:var(--color-primary);'
-            : ''
-        const h4Color = isOscuro ? 'color:#fff;' : isAccent ? 'color:#000;' : 'color:#272727;'
-        const descColor = isOscuro ? 'color:rgba(255,255,255,0.65);' : 'color:rgba(0,0,0,0.55);'
-        const arrowBorder = isOscuro
-          ? 'border:1.5px solid rgba(255,255,255,0.3);color:#fff;'
-          : isAccent
-            ? 'border:1.5px solid rgba(0,0,0,0.2);color:#000;'
-            : 'border:1.5px solid rgba(0,0,0,0.15);color:#272727;'
-        const linkHref = r.enlace_href || 'nosdiferencia.html'
-        return `
-          <div class="col">
-            <div class="${cardClass}" style="${bgStyle}">
-              ${r.icono_url
-            ? `<div class="chooseus-icon"><img src="${r.icono_url}" alt="" class="img-fluid"></div>`
-            : `<div class="chooseus-icon chooseus-icon-placeholder" style="${bgStyle ? 'background:rgba(255,255,255,0.15);color:' + (isOscuro ? '#fff' : '#000') + ';' : ''}"><i class="fa-solid fa-circle-check"></i></div>`
-          }
-              <h4 style="${h4Color}">${r.titulo}</h4>
-              ${r.descripcion ? `<p class="chooseus-desc" style="${descColor}">${r.descripcion}</p>` : ''}
-              <a href="${linkHref}" class="chooseus-btn"><span class="icon-circle" style="${arrowBorder}"><i class="fa-solid fa-arrow-right"></i></span></a>
-            </div>
-          </div>`
-      }).join('')
-    }
-
-    async function loadCanchasSection() {
-      const res = await canchasFetch('/public')
-      if (!res.ok) return
-      const canchas = await res.json()
-      renderCanchas(canchas)
-    }
-
-    function renderCanchas(canchas) {
-      const grid = document.getElementById('canchas-grid')
-      if (!canchas.length) {
-        grid.innerHTML = '<p class="col-span-full text-center text-slate-400 py-12">No hay canchas disponibles.</p>'
-        return
-      }
-      grid.innerHTML = canchas.map(c => {
-        const icon = TIPO_ICONS[c.tipo] || 'fa-circle-dot'
-        const tipoLabel = TIPO_LABELS[c.tipo] || c.tipo
-        const catStyle = CAT_STYLES[c.categoria] || CAT_STYLES.standard
-        const stars = c.puntuacion_promedio
-          ? Array.from({ length: 5 }, (_, i) =>
-            `<i class="fa-${i < Math.round(c.puntuacion_promedio) ? 'solid' : 'regular'} fa-star text-yellow-400 text-xs"></i>`
-          ).join('')
-          : ''
-        const img = c.imagen_url
-          ? `<img src="${c.imagen_url}" alt="${c.nombre}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500"/>`
-          : `<div class="w-full h-full flex items-center justify-center bg-slate-100 text-slate-300 text-6xl"><i class="fa-solid ${icon}"></i></div>`
-
-        return `
-          <div class="bg-white rounded-2xl shadow-sm hover:shadow-xl transition duration-300 overflow-hidden group flex flex-col border border-slate-100">
-            <div class="w-full relative overflow-hidden" style="height:320px;">
-              ${img}
-              <span class="absolute top-4 left-4 text-sm font-semibold px-3 py-1.5 rounded-full ${catStyle} capitalize">${c.categoria}</span>
-            </div>
-            <div class="p-8 flex flex-col flex-1">
-              <div class="flex items-center gap-2 mb-2">
-                <i class="fa-solid ${icon} text-padel-green"></i>
-                <span class="text-sm text-slate-500 font-medium uppercase tracking-wide">${tipoLabel}</span>
-              </div>
-              <h3 class="font-bold text-padel-dark text-2xl leading-tight mb-2">${c.nombre}</h3>
-              ${stars ? `<div class="flex gap-0.5 mb-3">${stars}</div>` : ''}
-              ${c.descripcion ? `<p class="text-base text-slate-500 flex-1">${c.descripcion}</p>` : '<div class="flex-1"></div>'}
-              <div class="mt-6 flex items-center justify-between text-sm text-slate-400 border-t border-slate-100 pt-4">
-                <span><i class="fa-solid fa-users mr-1"></i>Cap. ${c.capacidad}</span>
-                <a href="/jugador-login" class="text-padel-green font-semibold hover:underline text-base">Reservar →</a>
-              </div>
-            </div>
-          </div>`
-      }).join('')
-    }
-
-    // -----------------------------------------------------------------------
-    // Product section rendering
-    // -----------------------------------------------------------------------
-    async function loadEcommerceSection() {
-      const [catRes, prodRes] = await Promise.all([
-        ecommerceFetch('/categories'),
-        ecommerceFetch('/products'),
-      ])
-      if (!catRes.ok || !prodRes.ok) return
-
-      const { categories } = await catRes.json()
-      const { products } = await prodRes.json()
-
-      renderCategoryFilters(categories)
-      renderProducts(products, categories)
-
-      // Show cart icon
-      document.getElementById('cart-btn').classList.remove('hidden')
-      await refreshCartBadge()
-    }
-
-    function renderCategoryFilters(categories) {
-      const section = document.getElementById('tienda')
-      const existingFilter = document.getElementById('tienda-filters')
-      if (existingFilter) existingFilter.remove()
-      if (!categories.length) return
-
-      const wrap = document.createElement('div')
-      wrap.id = 'tienda-filters'
-      wrap.className = 'flex flex-wrap gap-2 justify-center mb-10'
-
-      const allBtn = document.createElement('button')
-      allBtn.className = 'px-4 py-1.5 rounded-full text-sm font-medium bg-padel-green text-black transition'
-      allBtn.textContent = 'Todos'
-      allBtn.dataset.active = 'true'
-      allBtn.onclick = () => filterProducts(null, allBtn)
-      wrap.appendChild(allBtn)
-
-      categories.forEach(cat => {
-        const btn = document.createElement('button')
-        btn.className = 'px-4 py-1.5 rounded-full text-sm font-medium border border-slate-300 text-slate-600 hover:bg-slate-100 transition'
-        btn.textContent = cat.name
-        btn.onclick = () => filterProducts(cat.id, btn)
-        wrap.appendChild(btn)
       })
+      function closeModal() { modal.classList.remove('open'); frame.src = '' }
+      close.addEventListener('click', closeModal)
+      modal.addEventListener('click', e => { if (e.target === modal) closeModal() })
+    })()
 
-      const container = section.querySelector('.max-w-7xl')
-      const grid = document.getElementById('tienda-grid')
-      container.insertBefore(wrap, grid)
-    }
-
-    async function filterProducts(categoryId, activeBtn) {
-      // Update button styles
-      document.querySelectorAll('#tienda-filters button').forEach(b => {
-        b.className = 'px-4 py-1.5 rounded-full text-sm font-medium border border-slate-300 text-slate-600 hover:bg-slate-100 transition'
-        b.dataset.active = 'false'
+    // Mobile menu toggle
+    const mobileBtn = document.getElementById('mobile-menu-btn')
+    const mobileMenu = document.getElementById('mobile-menu')
+    if (mobileBtn && mobileMenu) {
+      mobileBtn.addEventListener('click', () => {
+        mobileMenu.style.display = mobileMenu.style.display === 'none' ? 'block' : 'none'
       })
-      if (activeBtn) {
-        activeBtn.className = 'px-4 py-1.5 rounded-full text-sm font-medium bg-padel-green text-black transition'
-        activeBtn.dataset.active = 'true'
-      }
-
-      const path = categoryId ? `/products?category_id=${categoryId}` : '/products'
-      const res = await ecommerceFetch(path)
-      if (!res.ok) return
-      const { products } = await res.json()
-      const catRes = await ecommerceFetch('/categories')
-      const { categories } = catRes.ok ? await catRes.json() : { categories: [] }
-      renderProducts(products, categories)
+      mobileMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+        mobileMenu.style.display = 'none'
+      }))
     }
 
-    function renderProducts(products, categories) {
-      const grid = document.getElementById('tienda-grid')
-      if (!products.length) {
-        grid.innerHTML = '<p class="col-span-full text-center text-slate-400 py-12">No hay productos disponibles.</p>'
-        return
-      }
-
-      const catMap = Object.fromEntries((categories || []).map(c => [c.id, c.name]))
-
-      grid.innerHTML = products.map(p => {
-        const inStock = p.stock > 0
-        const catLabel = p.category_id && catMap[p.category_id] ? `<span class="text-xs text-padel-green font-medium">${catMap[p.category_id]}</span>` : ''
-        const imgContent = p.image_url
-          ? `<img src="${p.image_url}" alt="${p.name}" class="w-full h-full object-cover opacity-90 group-hover:scale-110 transition duration-500"/>`
-          : `<div class="w-24 h-24 bg-slate-200 rounded-full flex items-center justify-center text-slate-400 text-4xl"><i class="fa-solid fa-box-open"></i></div>`
-
-        return `
-          <div class="bg-white rounded-xl shadow-sm hover:shadow-xl transition duration-300 overflow-hidden group flex flex-col">
-            <div class="h-48 bg-slate-100 relative overflow-hidden flex items-center justify-center">
-              ${imgContent}
-              ${inStock
-            ? '<span class="absolute top-2 right-2 bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">En stock</span>'
-            : '<span class="absolute top-2 right-2 bg-red-100 text-red-600 text-xs font-bold px-2 py-0.5 rounded-full">Sin stock</span>'}
-            </div>
-            <div class="p-4 flex flex-col flex-1">
-              <div class="flex justify-between items-start mb-1">
-                <h3 class="font-bold text-padel-dark leading-tight">${p.name}</h3>
-                <span class="text-padel-dark font-bold whitespace-nowrap ml-2">${p.currency || ''} ${p.price.toFixed(2)}</span>
-              </div>
-              ${catLabel}
-              <p class="text-xs text-slate-500 mt-1 mb-4 flex-1">${p.description || ''}</p>
-              <button
-                onclick="addToCart('${p.id}')"
-                ${inStock ? '' : 'disabled'}
-                class="w-full bg-slate-900 text-white py-2 rounded text-sm hover:bg-padel-green hover:text-black transition disabled:opacity-40 disabled:cursor-not-allowed">
-                Añadir al carrito
-              </button>
-            </div>
-          </div>`
-      }).join('')
-    }
-
-    // -----------------------------------------------------------------------
-    // Cart logic
-    // -----------------------------------------------------------------------
-    async function refreshCartBadge() {
-      const userId = getGuestUserId()
-      const res = await ecommerceFetch(`/cart/${userId}`)
-      if (!res.ok) return
-      const cart = await res.json()
-      const count = cart.items.reduce((s, i) => s + i.quantity, 0)
-      const badge = document.getElementById('cart-count')
-      badge.textContent = count
-      if (count > 0) badge.classList.remove('hidden')
-      else badge.classList.add('hidden')
-    }
-
-    async function addToCart(productId) {
-      const userId = getGuestUserId()
-      const res = await ecommerceFetch(`/cart/${userId}/items`, {
-        method: 'POST',
-        body: JSON.stringify({ product_id: productId, quantity: 1 }),
-      })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        alert(err.detail || 'Error al añadir al carrito')
-        return
-      }
-      await refreshCartBadge()
-      if (cartDrawerOpen) await loadCart()
-    }
-
-    async function loadCart() {
-      const userId = getGuestUserId()
-      const res = await ecommerceFetch(`/cart/${userId}`)
-      if (!res.ok) return
-      const cart = await res.json()
-      renderCartDrawer(cart)
-    }
-
-    function renderCartDrawer(cart) {
-      const container = document.getElementById('cart-items')
-      const summary = document.getElementById('cart-summary')
-      const checkoutBtn = document.getElementById('checkout-btn')
-
-      if (!cart.items.length) {
-        container.innerHTML = '<p class="text-slate-400 text-sm text-center mt-10">El carrito está vacío.</p>'
-        summary.classList.add('hidden')
-        checkoutBtn.classList.add('hidden')
-        return
-      }
-
-      container.innerHTML = cart.items.map(item => `
-        <div class="flex items-center gap-3 border-b border-slate-100 pb-4">
-          <div class="flex-1">
-            <p class="font-semibold text-sm text-padel-dark">${item.name}</p>
-            <p class="text-xs text-slate-500">${item.quantity} × ${item.price.toFixed(2)}</p>
-          </div>
-          <span class="font-bold text-sm text-padel-dark">${item.subtotal.toFixed(2)}</span>
-          <button onclick="removeFromCart('${item.product_id}')" class="text-slate-400 hover:text-red-500 transition ml-1">
-            <i class="fa-solid fa-trash-can text-sm"></i>
-          </button>
-        </div>
-      `).join('')
-
-      document.getElementById('cart-subtotal').textContent = `${cart.currency || ''} ${cart.subtotal.toFixed(2)}`
-      document.getElementById('cart-tax').textContent = `${cart.currency || ''} ${cart.tax.toFixed(2)}`
-      document.getElementById('cart-total').textContent = `${cart.currency || ''} ${cart.total.toFixed(2)}`
-      summary.classList.remove('hidden')
-      checkoutBtn.classList.remove('hidden')
-    }
-
-    async function removeFromCart(productId) {
-      const userId = getGuestUserId()
-      await ecommerceFetch(`/cart/${userId}/items/${productId}`, { method: 'DELETE' })
-      await Promise.all([loadCart(), refreshCartBadge()])
-    }
-
-    function toggleCartDrawer() {
-      const drawer = document.getElementById('cart-drawer')
-      const backdrop = document.getElementById('cart-backdrop')
-      cartDrawerOpen = !cartDrawerOpen
-      if (cartDrawerOpen) {
-        drawer.classList.remove('translate-x-full')
-        backdrop.classList.remove('hidden')
-        loadCart()
-      } else {
-        drawer.classList.add('translate-x-full')
-        backdrop.classList.add('hidden')
-      }
-    }
-
-    // -----------------------------------------------------------------------
-    // Checkout
-    // -----------------------------------------------------------------------
-    function openCheckoutModal() {
-      document.getElementById('checkout-modal').classList.remove('hidden')
-      document.getElementById('checkout-error').classList.add('hidden')
-      document.getElementById('checkout-success').classList.add('hidden')
-    }
-
-    function closeCheckoutModal() {
-      document.getElementById('checkout-modal').classList.add('hidden')
-    }
-
-    async function confirmOrder() {
-      const address = document.getElementById('shipping-address').value.trim()
-      const notes = document.getElementById('order-notes').value.trim()
-      const errEl = document.getElementById('checkout-error')
-      const okEl = document.getElementById('checkout-success')
-      const btn = document.getElementById('confirm-order-btn')
-
-      errEl.classList.add('hidden')
-      okEl.classList.add('hidden')
-
-      const userId = getGuestUserId()
-      btn.disabled = true
-      btn.textContent = 'Procesando...'
-
-      const res = await ecommerceFetch('/orders', {
-        method: 'POST',
-        body: JSON.stringify({ user_id: userId, shipping_address: address, notes }),
-      })
-
-      btn.disabled = false
-      btn.textContent = 'Confirmar pedido'
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        errEl.textContent = err.detail || 'Error al crear el pedido'
-        errEl.classList.remove('hidden')
-        return
-      }
-
-      const order = await res.json()
-      okEl.textContent = `¡Pedido #${order.id.slice(0, 8)} creado con éxito! Total: ${order.currency} ${order.total.toFixed(2)}`
-      okEl.classList.remove('hidden')
-      document.getElementById('shipping-address').value = ''
-      document.getElementById('order-notes').value = ''
-      await refreshCartBadge()
-      // Reload cart drawer in background
-      setTimeout(() => loadCart(), 500)
-    }
-
-    // -----------------------------------------------------------------------
-    // Nav / section visibility helpers
-    // -----------------------------------------------------------------------
-    function showSection(id) {
-      const el = document.getElementById(id)
-      if (el) el.style.display = ''
-    }
-
-    // -----------------------------------------------------------------------
-    // Tenant resolution
-    // -----------------------------------------------------------------------
-    async function resolveTenant() {
+    // Resolve tenant — solo para nombre en nav/logo y color de marca
+    ;(async function resolveTenant() {
       const domain = window.location.hostname
-
       try {
-        const res = await fetch(
-          API_URL + '/api/public/tenants/resolve?domain=' + encodeURIComponent(domain)
-        )
-        if (!res.ok) {
-          document.getElementById('error-msg').textContent = 'Tenant no encontrado'
-          return
-        }
+        const res = await fetch(API_URL + '/api/public/tenants/resolve?domain=' + encodeURIComponent(domain))
+        if (!res.ok) return
         const tenant = await res.json()
-        currentTenantSlug = tenant.slug
-        currentTenantId = tenant.id
-        const name = tenant.name || 'Tu plataforma'
+        const name = tenant.name || 'OpenPadel'
         const pc = tenant.page_config || {}
 
-        const savedColor = tenant.slug ? localStorage.getItem('sp_primary_color_' + tenant.slug) : null
-        const primaryColor = pc.primary_color || savedColor || '#06855F'
+        // Color de marca
+        const primaryColor = pc.primary_color || '#06855F'
         document.documentElement.style.setProperty('--color-primary', primaryColor)
 
-        const heroTitle = pc.hero_title || name
-        // tenant-name tiene HTML con gradiente; si hay un hero_title personalizado
-        // se lo muestra en el span interno, si no se deja el texto estático.
-        const tenantNameEl = document.getElementById('tenant-name')
-        if (tenantNameEl && pc.hero_title) {
-          tenantNameEl.innerHTML = pc.hero_title
-        }
-        document.getElementById('nav-logo-name').textContent = name
-        document.getElementById('footer-name').textContent = name
-        document.getElementById('tenant-plan') && (document.getElementById('tenant-plan').textContent = tenant.plan || '')
-        document.title = heroTitle
+        // Nombre en nav y título de pestaña
+        const navLogo = document.getElementById('nav-logo-name')
+        if (navLogo) navLogo.textContent = name
+        document.title = name
 
+        // H1: solo actualizar si hay hero_title personalizado
+        if (pc.hero_title) {
+          const h1 = document.getElementById('tenant-name')
+          if (h1) h1.innerHTML = pc.hero_title
+        }
+
+        // Plan badge: ocultar si no hay plan
         if (!tenant.plan) {
           const planWrap = document.getElementById('tenant-plan-wrap')
           if (planWrap) planWrap.style.display = 'none'
         }
-
-        // Hero
-        if (pc.hero_subtitle) {
-          document.getElementById('tenant-sub').textContent = pc.hero_subtitle
-        }
-        if (pc.hero_image_url) {
-          window.setHeroSlide && window.setHeroSlide(pc.hero_image_url)
-        }
-
-        // Secciones — títulos y visibilidad solo cuando el módulo está activo
-        const applyText = (id, val, fallback) => {
-          const el = document.getElementById(id)
-          if (el) el.textContent = val || fallback
-        }
-
-        if (pc.nosotros_visible) {
-          applyText('sec-nosotros-title', pc.nosotros_title, 'Nuestro Club')
-          applyText('sec-nosotros-subtitle', pc.nosotros_subtitle, '')
-          applyText('sec-nosotros-descripcion', pc.nosotros_descripcion, '')
-          showSection('sec-nosotros')
-          loadNosotrosSection()
-          loadNoticiasSection()  // noticias se muestra solo si hay contenido
-        }
-        if (pc.nosdiferencia_visible) {
-          applyText('sec-nosdiferencia-title', pc.nosdiferencia_title, 'Por Qué los Jugadores Nos Eligen')
-          applyText('sec-nosdiferencia-subtitle', pc.nosdiferencia_subtitle, '')
-          if (pc.nosdiferencia_imagen_url) {
-            document.getElementById('sec-nosdiferencia-img').src = pc.nosdiferencia_imagen_url
-            document.getElementById('sec-nosdiferencia-img-block').style.display = 'block'
-          }
-          if (pc.nosdiferencia_members_count) applyText('sec-nosdiferencia-members-count', pc.nosdiferencia_members_count, '25+')
-          if (pc.nosdiferencia_members_label) applyText('sec-nosdiferencia-members-label', pc.nosdiferencia_members_label, 'Socios')
-          showSection('sec-nosdiferencia')
-          loadPorQueNosotrosSection()
-        }
-        if (pc.escuela_visible) {
-          applyText('sec-escuela-title', pc.escuela_title, 'Academia Deportiva')
-          applyText('sec-escuela-subtitle', pc.escuela_subtitle, 'Programas y clases para todos los niveles.')
-          loadEscuelaSection()
-        }
-        if (pc.canchas_visible) {
-          applyText('sec-canchas-title', pc.canchas_title, 'Nuestras Canchas')
-          applyText('sec-canchas-subtitle', pc.canchas_subtitle, 'Instalaciones de World Padel Tour estándar para tu máximo disfrute.')
-          showSection('canchas')
-          loadCanchasSection()
-        }
-        if (pc.torneos_visible) {
-          applyText('sec-torneos-title', pc.torneos_title, 'Próximos Torneos')
-          applyText('sec-torneos-subtitle', pc.torneos_subtitle, 'Compite y demuestra tu nivel.')
-          showSection('torneos')
-          loadTorneosSection(pc.torneos_module)
-        }
-        if (pc.podio_visible) {
-          applyText('sec-podio-title', pc.podio_title, 'Podio de Triunfadores')
-          applyText('sec-podio-subtitle', pc.podio_subtitle, 'Reconocemos a los mejores jugadores de la temporada.')
-          showSection('podio')
-        }
-        if (pc.ecommerce_visible) {
-          applyText('sec-tienda-title', pc.tienda_title, 'Tienda Pro Shop')
-          applyText('sec-tienda-subtitle', pc.tienda_subtitle, 'Equípate con las mejores marcas.')
-          showSection('tienda')
-          loadEcommerceSection()
-        }
-        if (pc.reservas_visible) {
-          applyText('sec-reservas-title', pc.reservas_title, 'Reservá tu Cancha')
-          applyText('sec-reservas-subtitle', pc.reservas_subtitle, '')
-          showSection('sec-reservas')
-          initReservaPublica()
-        }
-        if (pc.servicios_visible) {
-          applyText('sec-servicios-title', pc.servicios_title, 'Explorá Nuestros Servicios')
-          applyText('sec-servicios-subtitle', pc.servicios_subtitle, '')
-          showSection('sec-servicios')
-          loadServiciosSection()
-        }
-        if (pc.auspiciantes_visible) {
-          applyText('sec-auspiciantes-title', pc.auspiciantes_title, 'Nuestros Auspiciantes')
-          applyText('sec-auspiciantes-subtitle', pc.auspiciantes_subtitle, '')
-          showSection('sec-auspiciantes')
-          loadAuspiciantesSection()
-        }
-        if (pc.eventos_visible) {
-          applyText('sec-eventos-title', pc.eventos_title, 'Unite a Nuestros Emocionantes Eventos de Pádel')
-          applyText('sec-eventos-subtitle', pc.eventos_subtitle, '')
-          showSection('sec-eventos')
-          loadEventosSection()
-        }
-        if (pc.comunidad_visible) {
-          applyText('sec-comunidad-title', pc.comunidad_title, 'Crecé con una Comunidad Apasionada por el Pádel')
-          applyText('sec-comunidad-subtitle', pc.comunidad_subtitle, '')
-          if (pc.comunidad_imagen_url) {
-            const img = document.getElementById('sec-comunidad-imagen')
-            img.src = pc.comunidad_imagen_url
-            img.style.display = ''
-          }
-          if (pc.comunidad_cta_titulo)
-            document.getElementById('sec-comunidad-cta-titulo').textContent = pc.comunidad_cta_titulo
-          if (pc.comunidad_cta_link_texto)
-            document.getElementById('sec-comunidad-cta-link').childNodes[0].textContent = pc.comunidad_cta_link_texto + ' '
-          if (pc.comunidad_cta_link_href)
-            document.getElementById('sec-comunidad-cta-link').href = pc.comunidad_cta_link_href
-          showSection('sec-comunidad')
-          loadComunidadSection()
-        }
-
-        // Reordenar secciones de módulo según sections_order
-        const SECTION_ID_MAP = {
-          canchas: 'canchas', torneos: 'torneos', podio: 'podio', tienda: 'tienda',
-          nosotros: 'sec-nosotros', nosdiferencia: 'sec-nosdiferencia',
-          noticias: 'sec-noticias',
-          escuela: 'sec-academia', reservas: 'sec-reservas', servicios: 'sec-servicios',
-          auspiciantes: 'sec-auspiciantes',
-          eventos: 'sec-eventos',
-          comunidad: 'sec-comunidad',
-        }
-        const FIXED_FIRST = ['nosotros', 'nosdiferencia', 'noticias']
-        const DEFAULT_ORDER = ['nosotros', 'nosdiferencia', 'noticias', 'reservas', 'escuela', 'canchas', 'podio', 'tienda', 'auspiciantes', 'servicios', 'torneos', 'eventos', 'comunidad']
-        const savedOrder = (pc.sections_order && pc.sections_order.length) ? pc.sections_order : DEFAULT_ORDER
-        // nosotros y nosdiferencia siempre primero, el resto según el orden guardado
-        const rest = savedOrder.filter(k => !FIXED_FIRST.includes(k))
-        const order = [...FIXED_FIRST, ...rest]
-        const wrapper = document.getElementById('sections-wrapper')
-        const allKeys = new Set(DEFAULT_ORDER)
-        order.forEach(key => { allKeys.delete(key) })
-          ;[...order, ...allKeys].forEach(key => {
-            const id = SECTION_ID_MAP[key]
-            if (id) {
-              const el = document.getElementById(id)
-              if (el) wrapper.appendChild(el)
-            }
-          })
-
-        // Navbar y footer: links dinámicos según page_config
-        // Orden fijo: Canchas → Torneos → Ranking → Reservas
-        const NAV_LINKS = [
-          { flag: 'canchas_visible', href: '#canchas', label: 'Canchas' },
-          { flag: 'torneos_visible', href: '#torneos', label: 'Torneos' },
-          { flag: 'podio_visible', href: '#podio', label: 'Ranking' },
-          { flag: 'reservas_visible', href: '#sec-reservas', label: 'Reservas' },
-        ]
-        const activeNavLinks = NAV_LINKS.filter(l => pc[l.flag])
-        const navDesktop = document.getElementById('nav-links-desktop')
-        const navMobile = document.getElementById('mobile-menu')
-        const footerLinks = document.getElementById('footer-quick-links')
-        const accederLi = footerLinks.querySelector('li:last-child')
-
-        activeNavLinks.forEach(l => {
-          const aD = document.createElement('a')
-          aD.className = 'text-white/70 hover:text-padel-green font-medium transition'
-          aD.href = l.href
-          aD.textContent = l.label
-          navDesktop.appendChild(aD)
-
-          const aM = document.createElement('a')
-          aM.className = 'block py-3 px-6 text-white/70 hover:text-padel-green font-medium'
-          aM.href = l.href
-          aM.textContent = l.label
-          navMobile.appendChild(aM)
-
-          const li = document.createElement('li')
-          li.innerHTML = `<a href="${l.href}" class="flex items-center gap-2 text-white/50 text-sm font-medium hover:text-white transition"><i class="fa-solid fa-chevron-right text-xs text-padel-green"></i>${l.label}</a>`
-          footerLinks.insertBefore(li, accederLi)
-        })
-      } catch (e) {
-        document.getElementById('error-msg').textContent = 'No se pudo conectar con el servidor'
-      }
-    }
-
-    // ── Reservas públicas ───────────────────────────────────────────────────
-    async function initReservaPublica() {
-      // Fecha default = hoy
-      const fechaInput = document.getElementById('pub-res-fecha')
-      fechaInput.value = new Date().toISOString().split('T')[0]
-
-      // Cargar canchas activas
-      const sel = document.getElementById('pub-res-cancha')
-      const slotsEl = document.getElementById('pub-res-slots')
-      try {
-        const res = await fetch(API_URL + '/api/m/canchas/public', {
-          headers: { 'X-Tenant-ID': currentTenantSlug }
-        })
-        if (!res.ok) {
-          sel.innerHTML = '<option value="">Sin canchas disponibles</option>'
-          slotsEl.innerHTML = '<p class="text-padel-text/60 text-sm col-span-full">No hay canchas configuradas.</p>'
-          return
-        }
-        const canchas = await res.json()
-        if (!canchas.length) {
-          sel.innerHTML = '<option value="">Sin canchas disponibles</option>'
-          slotsEl.innerHTML = '<p class="text-padel-text/60 text-sm col-span-full">No hay canchas configuradas.</p>'
-          return
-        }
-        sel.innerHTML = canchas.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('')
-        cargarDisponibilidadPublica()
-      } catch {
-        sel.innerHTML = '<option value="">Error al cargar</option>'
-        slotsEl.innerHTML = '<p class="text-padel-text/60 text-sm col-span-full">Error al conectar con el servidor.</p>'
-      }
-    }
-
-    async function cargarDisponibilidadPublica() {
-      const canchaId = document.getElementById('pub-res-cancha').value
-      const fecha = document.getElementById('pub-res-fecha').value
-      const slotsEl = document.getElementById('pub-res-slots')
-      if (!canchaId || !fecha) {
-        if (!canchaId) slotsEl.innerHTML = '<p class="text-padel-text/60 text-sm col-span-full">Seleccioná una cancha.</p>'
-        return
-      }
-      slotsEl.innerHTML = '<p class="text-padel-text/60 text-sm col-span-full">Cargando...</p>'
-      try {
-        const res = await fetch(
-          `${API_URL}/api/m/reservas/public/disponibilidad/${canchaId}?fecha=${fecha}`,
-          { headers: { 'X-Tenant-ID': currentTenantSlug } }
-        )
-        if (!res.ok) { slotsEl.innerHTML = '<p class="text-padel-text/60 text-sm col-span-full">Sin turnos para esta fecha.</p>'; return }
-        const data = await res.json()
-        if (!data.slots.length) {
-          slotsEl.innerHTML = '<p class="text-padel-text/60 text-sm col-span-full">No hay turnos configurados.</p>'
-          return
-        }
-        slotsEl.innerHTML = data.slots.map(s => {
-          const horaLabel = `${s.hora_inicio} – ${s.hora_fin}`
-          if (s.disponible) {
-            return `<button onclick="abrirWizardReserva('${s.turno_id}','${horaLabel}')"
-              class="flex flex-col items-center justify-center rounded-xl border border-padel-green/40 bg-padel-green/5
-                     px-3 py-4 text-center hover:bg-padel-green/10 hover:border-padel-green transition cursor-pointer w-full font-sans">
-              <span class="font-semibold text-padel-green text-sm">${s.hora_inicio}</span>
-              <span class="text-padel-text text-xs mt-0.5">${s.hora_fin}</span>
-              <span class="mt-2 text-xs font-medium text-padel-green">Disponible</span>
-            </button>`
-          }
-          return `<div class="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-gray-50 px-3 py-4 text-center opacity-50">
-            <span class="font-semibold text-gray-400 text-sm">${s.hora_inicio}</span>
-            <span class="text-gray-400 text-xs mt-0.5">${s.hora_fin}</span>
-            <span class="mt-2 text-xs text-gray-400">${s.estado === 'bloqueado' ? 'Bloqueado' : 'Ocupado'}</span>
-          </div>`
-        }).join('')
-      } catch {
-        slotsEl.innerHTML = '<p class="text-padel-text/60 text-sm col-span-full">Error al cargar disponibilidad.</p>'
-      }
-    }
-
-    async function cargarMisReservas() {
-      try {
-        const res = await fetch(`${API_URL}/api/m/reservas/`, {
-          credentials: 'include',
-          headers: { 'X-Tenant-ID': currentTenantSlug },
-        })
-        if (!res.ok) return  // no autenticado o módulo inactivo — sección permanece oculta
-
-        const reservas = await res.json()
-        const section = document.getElementById('pub-mis-turnos')
-        const listEl = document.getElementById('pub-mis-turnos-list')
-        section.style.display = 'block'
-
-        const activas = reservas.filter(r => r.estado !== 'cancelada')
-        if (!activas.length) {
-          listEl.innerHTML = '<p class="text-padel-text/60 text-sm">No tenés reservas activas.</p>'
-          return
-        }
-
-        const ESTADO_LABEL = { confirmada: 'Confirmada', pendiente: 'Pendiente', cancelada: 'Cancelada' }
-        const ESTADO_COLOR = { confirmada: 'text-padel-green', pendiente: 'text-yellow-500', cancelada: 'text-red-400' }
-
-        listEl.innerHTML = activas.map(r => {
-          const fecha = r.turno_fecha ? new Date(r.turno_fecha + 'T00:00').toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' }) : '—'
-          const horaI = r.turno_hora_inicio ? r.turno_hora_inicio.slice(0, 5) : ''
-          const horaF = r.turno_hora_fin ? r.turno_hora_fin.slice(0, 5) : ''
-          const cancha = r.cancha_nombre || '—'
-          const estado = ESTADO_LABEL[r.estado] || r.estado
-          const colorCls = ESTADO_COLOR[r.estado] || 'text-padel-text'
-          return `
-            <div class="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 gap-4">
-              <div class="flex flex-col gap-0.5 min-w-0">
-                <span class="font-semibold text-sm text-padel-dark capitalize">${fecha}</span>
-                <span class="text-xs text-padel-text">${horaI}${horaF ? ' – ' + horaF : ''} · ${cancha}</span>
-              </div>
-              <span class="text-xs font-semibold shrink-0 ${colorCls}">${estado}</span>
-            </div>`
-        }).join('')
-      } catch { /* sin conexión o no autenticado */ }
-    }
-
-    document.getElementById('footer-year').textContent = new Date().getFullYear()
-    resolveTenant()
-    checkJugadorSession()
-
-    async function loadServiciosSection() {
-      try {
-        const res = await fetch(API_URL + '/api/m/servicios/public/', {
-          headers: { 'X-Tenant-ID': currentTenantSlug }
-        })
-        if (!res.ok) return
-        const items = await res.json()
-        const grid = document.getElementById('sec-servicios-grid')
-        if (!grid || !items.length) return
-        const servicioHashToPage = {
-          '#academia': 'academia.html', '#canchas': 'canchas.html',
-          '#torneos': 'torneos.html', '#membresia': 'membresia.html',
-        }
-        grid.innerHTML = items.map(s => {
-          const link = s.link_href ? (servicioHashToPage[s.link_href] || s.link_href) : null
-          return `
-          <div class="relative rounded-2xl overflow-hidden group" style="height:380px;">
-            ${s.imagen_url
-              ? `<img src="${s.imagen_url}" alt="${s.titulo}" class="w-full h-full object-cover transition duration-500 group-hover:scale-105" onerror="this.style.display='none'"/>`
-              : `<div class="w-full h-full" style="background:#1a1a1a;"></div>`}
-            <div class="absolute inset-0" style="background:linear-gradient(to top, rgba(0,0,0,0.75) 40%, rgba(0,0,0,0.15) 100%);"></div>
-            ${s.icono_url ? `
-            <div class="absolute top-5 left-5 w-12 h-12 rounded-xl bg-padel-green flex items-center justify-center">
-              <img src="${s.icono_url}" alt="" class="w-7 h-7 object-contain" onerror="this.style.display='none'"/>
-            </div>` : ''}
-            <div class="absolute bottom-0 left-0 right-0 p-5 flex items-end justify-between">
-              <h4 class="font-heading font-bold text-white text-lg leading-snug">${s.titulo}</h4>
-              ${link ? `
-              <a href="${link}" class="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-padel-green text-black hover:bg-white transition">
-                <i class="fa-solid fa-arrow-right text-sm"></i>
-              </a>` : ''}
-            </div>
-          </div>`
-        }).join('')
-      } catch { }
-    }
-
-    let _auspSliderIdx = 0
-    let _auspSliderItems = []
-    let _auspSliderTimer = null
-
-    function _auspGoTo(idx) {
-      const slider = document.getElementById('sec-auspiciantes-slider')
-      const dotsEl = document.getElementById('sec-auspiciantes-dots')
-      const tagsEl = document.getElementById('sec-auspiciantes-tags')
-      if (!slider) return
-      _auspSliderIdx = (idx + _auspSliderItems.length) % _auspSliderItems.length
-      slider.style.transform = `translateX(-${_auspSliderIdx * 100}%)`
-      // dots
-      dotsEl.querySelectorAll('.ausp-dot').forEach((d, i) => d.classList.toggle('active', i === _auspSliderIdx))
-      // tags: resaltar el activo
-      tagsEl.querySelectorAll('.ausp-tag').forEach((t, i) => t.classList.toggle('active', i === _auspSliderIdx))
-    }
-
-    function _auspStartAuto() {
-      _auspSliderTimer = setInterval(() => _auspGoTo(_auspSliderIdx + 1), 3500)
-    }
-
-    function _auspResetAuto() {
-      clearInterval(_auspSliderTimer)
-      _auspStartAuto()
-    }
-
-    async function loadAuspiciantesSection() {
-      try {
-        const res = await fetch(API_URL + '/api/m/auspiciantes/public/', {
-          headers: { 'X-Tenant-ID': currentTenantSlug }
-        })
-        if (!res.ok) return
-        _auspSliderItems = await res.json()
-        if (!_auspSliderItems.length) return
-
-        const slider = document.getElementById('sec-auspiciantes-slider')
-        const tagsEl = document.getElementById('sec-auspiciantes-tags')
-        const dotsEl = document.getElementById('sec-auspiciantes-dots')
-        const countEl = document.getElementById('sec-auspiciantes-count')
-
-        // Contador
-        if (countEl) countEl.textContent = _auspSliderItems.length
-
-        // Tags
-        tagsEl.innerHTML = _auspSliderItems.map((a, i) =>
-          `<span class="ausp-tag${i === 0 ? ' active' : ''}" style="cursor:pointer" onclick="_auspGoTo(${i});_auspResetAuto()">${a.nombre}</span>`
-        ).join('')
-
-        // Slides
-        slider.innerHTML = _auspSliderItems.map(a => {
-          const logoHtml = a.logo_url
-            ? `<img class="ausp-slide-logo" src="${a.logo_url}" alt="${a.nombre}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
-            : ''
-          const nameHtml = `<span class="ausp-slide-name"${a.logo_url ? ' style="display:none"' : ''}>${a.nombre}</span>`
-          const linkHtml = a.website_url
-            ? `<a href="${a.website_url}" target="_blank" rel="noopener" class="ausp-slide-link"><i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.7rem"></i> Visitar sitio</a>`
-            : ''
-          return `<div class="ausp-slide">${logoHtml}${nameHtml}${linkHtml}</div>`
-        }).join('')
-
-        // Dots
-        dotsEl.innerHTML = _auspSliderItems.map((_, i) =>
-          `<div class="ausp-dot${i === 0 ? ' active' : ''}" onclick="_auspGoTo(${i});_auspResetAuto()"></div>`
-        ).join('')
-
-        // Nav buttons
-        const prevBtn = document.getElementById('ausp-prev')
-        const nextBtn = document.getElementById('ausp-next')
-        if (prevBtn) prevBtn.onclick = () => { _auspGoTo(_auspSliderIdx - 1); _auspResetAuto() }
-        if (nextBtn) nextBtn.onclick = () => { _auspGoTo(_auspSliderIdx + 1); _auspResetAuto() }
-
-        // Ocultar nav si solo hay 1
-        if (_auspSliderItems.length === 1) {
-          if (prevBtn) prevBtn.style.display = 'none'
-          if (nextBtn) nextBtn.style.display = 'none'
-          dotsEl.style.display = 'none'
-        }
-
-        _auspGoTo(0)
-        if (_auspSliderItems.length > 1) _auspStartAuto()
-      } catch { }
-    }
-
-    async function loadTorneosSection(moduleKey) {
-      const mainEl = document.getElementById('sec-torneos-main')
-      const othersEl = document.getElementById('sec-torneos-others')
-      const emptyEl = document.getElementById('sec-torneos-empty')
-
-      const key = moduleKey || 'torneos'
-      try {
-        const res = await fetch(API_URL + `/api/m/${key}/public/`, {
-          headers: { 'X-Tenant-ID': currentTenantSlug }
-        })
-        if (!res.ok) throw new Error()
-        const torneos = await res.json()
-        if (!torneos.length) { mainEl.innerHTML = ''; emptyEl.style.display = 'block'; return }
-
-        const [main, ...rest] = torneos
-
-        const makeTags = (t) => {
-          if (!t.categoria) return ''
-          const tags = t.categoria.split(',').map(x => x.trim()).filter(Boolean)
-          return tags.map((tag, i) => `<span class="trn-tag${i === 0 ? ' trn-tag-accent' : ''}">${tag}</span>`).join('')
-        }
-
-        const formatFechas = (t) => {
-          if (!t.fecha_inicio && !t.fecha_fin) return ''
-          if (t.fecha_inicio && t.fecha_fin && t.fecha_inicio !== t.fecha_fin)
-            return `${t.fecha_inicio} → ${t.fecha_fin}`
-          return t.fecha_inicio || t.fecha_fin
-        }
-
-        // Card principal
-        const tags = makeTags(main)
-        const fecha = formatFechas(main)
-        mainEl.innerHTML = `
-          <div class="trn-main-card">
-            ${tags ? `<div class="trn-tags">${tags}</div>` : ''}
-            <div class="trn-main-body">
-              <h4>${main.titulo}</h4>
-              ${main.descripcion ? `<p>${main.descripcion}</p>` : ''}
-              <div class="trn-meta">
-                ${fecha ? `<div class="trn-meta-row"><i class="fa-solid fa-calendar"></i><span>${fecha}</span></div>` : ''}
-                ${main.premio ? `<div class="trn-meta-row"><i class="fa-solid fa-trophy"></i><span>${main.premio}</span></div>` : ''}
-              </div>
-            </div>
-            <div class="trn-main-footer">
-              <a href="torneos.html" class="trn-btn"><i class="fa-solid fa-arrow-right"></i></a>
-            </div>
-          </div>`
-
-        // Imagen del primer torneo en el CTA
-        if (main.imagen_url) {
-          const imgWrap = document.getElementById('sec-torneos-cta-img-wrap')
-          const img = document.getElementById('sec-torneos-cta-img')
-          if (imgWrap && img) { img.src = main.imagen_url; imgWrap.style.display = 'block' }
-        }
-
-        // Cards secundarias (máx 2)
-        othersEl.innerHTML = rest.slice(0, 2).map(t => {
-          const tTags = makeTags(t)
-          const tFecha = formatFechas(t)
-          return `
-            <div class="trn-sm-card animate__animated animate__fadeInRight">
-              ${tTags ? `<div class="trn-tags">${tTags}</div>` : ''}
-              <div class="trn-sm-card-header">
-                <h4>${t.titulo}</h4>
-                <a href="torneos.html" class="trn-sm-btn"><i class="fa-solid fa-arrow-right" style="font-size:0.8rem"></i></a>
-              </div>
-              ${tFecha ? `<div class="trn-meta-row" style="font-size:0.8rem;color:#666"><i class="fa-solid fa-calendar" style="color:var(--color-primary)"></i><span>${tFecha}</span></div>` : ''}
-            </div>`
-        }).join('')
-
-      } catch {
-        mainEl.innerHTML = ''
-        emptyEl.style.display = 'block'
-      }
-    }
-
-    async function loadEventosSection() {
-      try {
-        const res = await fetch(API_URL + '/api/m/eventos/public/', {
-          headers: { 'X-Tenant-ID': currentTenantSlug }
-        })
-        if (!res.ok) return
-        const items = await res.json()
-        const grid = document.getElementById('sec-eventos-grid')
-        if (!grid || !items.length) return
-
-        const destacado = items.find(e => e.destacado) || items[0]
-        const resto = items.filter(e => e !== destacado)
-
-        let html = ''
-
-        // Card principal (destacado)
-        html += `
-          <div class="rounded-2xl p-8 flex flex-col justify-between gap-8" style="background:#272727;min-height:420px;">
-            <div class="flex flex-wrap gap-2">
-              ${destacado.categoria ? `<span class="px-3 py-1 rounded-full bg-padel-green text-padel-dark text-xs font-semibold">${destacado.categoria}</span>` : ''}
-              ${destacado.fecha ? `<span class="px-3 py-1 rounded-full border border-white/20 text-white/80 text-xs font-medium">${destacado.fecha}</span>` : ''}
-            </div>
-            <div class="flex flex-col gap-4">
-              <h3 class="font-heading font-bold text-white text-3xl">${destacado.titulo}</h3>
-              ${destacado.descripcion ? `<p class="text-white/60 text-sm leading-relaxed">${destacado.descripcion}</p>` : ''}
-              <div class="flex items-end justify-between gap-4">
-                <div class="flex flex-col gap-2">
-                  ${destacado.fecha ? `<div class="flex items-center gap-2"><i class="fa-solid fa-calendar text-padel-green text-sm"></i><span class="text-white/80 text-sm">${destacado.fecha}</span></div>` : ''}
-                  ${destacado.premio ? `<div class="flex items-center gap-2"><i class="fa-solid fa-trophy text-padel-green text-sm"></i><span class="text-white/80 text-sm font-semibold">${destacado.premio}</span></div>` : ''}
-                </div>
-                ${destacado.link_href ? `
-                <a href="${destacado.link_href}" class="shrink-0 inline-flex items-center justify-center w-12 h-12 rounded-full bg-padel-green text-black hover:bg-white transition">
-                  <i class="fa-solid fa-arrow-right"></i>
-                </a>` : ''}
-              </div>
-            </div>
-          </div>`
-
-        // Columna derecha con el resto
-        if (resto.length) {
-          const subCards = resto.map(e => {
-            if (e.imagen_url) {
-              return `
-                <div class="rounded-2xl overflow-hidden flex flex-col" style="background:#272727;">
-                  <div class="relative h-28 overflow-hidden">
-                    <img src="${e.imagen_url}" alt="${e.titulo}" class="w-full h-full object-cover" onerror="this.onerror=null;this.style.display='none'"/>
-                  </div>
-                  <div class="p-5 flex items-center justify-between gap-2">
-                    <div>
-                      <h4 class="font-heading font-bold text-white text-lg leading-snug">${e.titulo}</h4>
-                      ${e.fecha ? `<p class="text-white/50 text-xs mt-1">${e.fecha}</p>` : ''}
-                    </div>
-                    ${e.link_href ? `<a href="${e.link_href}" class="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-padel-green text-black hover:bg-white transition"><i class="fa-solid fa-arrow-right text-sm"></i></a>` : ''}
-                  </div>
-                </div>`
-            } else {
-              return `
-                <div class="rounded-2xl p-6 flex flex-col gap-4" style="background:#F5F5F5;">
-                  <div class="flex flex-wrap gap-2">
-                    ${e.categoria ? `<span class="px-3 py-1 rounded-full border border-slate-300 text-padel-text text-xs font-medium">${e.categoria}</span>` : ''}
-                  </div>
-                  <div class="flex items-center justify-between gap-2">
-                    <div>
-                      <h4 class="font-heading font-bold text-padel-dark text-lg leading-snug">${e.titulo}</h4>
-                      ${e.fecha ? `<p class="text-padel-text/60 text-xs mt-1">${e.fecha}</p>` : ''}
-                    </div>
-                    ${e.link_href ? `<a href="${e.link_href}" class="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-padel-dark text-white hover:bg-padel-green hover:text-black transition"><i class="fa-solid fa-arrow-right text-sm"></i></a>` : ''}
-                  </div>
-                </div>`
-            }
-          }).join('')
-
-          html += `
-            <div class="flex flex-col gap-6">
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">${subCards}</div>
-            </div>`
-        }
-
-        grid.innerHTML = html
-      } catch { }
-    }
-
-    async function loadComunidadSection() {
-      try {
-        const res = await fetch(API_URL + '/api/m/comunidad/public/', {
-          headers: { 'X-Tenant-ID': currentTenantSlug }
-        })
-        if (!res.ok) return
-        const items = await res.json()
-        const container = document.getElementById('sec-comunidad-features')
-        if (!container) return
-        if (!items.length) { container.innerHTML = ''; return }
-        container.innerHTML = items.map(f => `
-          <div class="flex flex-row gap-6 items-start">
-            <div class="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-              ${f.icono_url
-            ? `<img src="${f.icono_url}" alt="" class="w-8 h-8 object-contain" onerror="this.style.display='none'"/>`
-            : `<i class="fa-solid fa-star text-padel-green text-xl"></i>`}
-            </div>
-            <div class="flex flex-col gap-1">
-              <h4 class="font-heading font-bold text-white text-lg">${f.titulo}</h4>
-              ${f.descripcion ? `<p class="text-white/60 text-sm leading-relaxed">${f.descripcion}</p>` : ''}
-            </div>
-          </div>`).join('')
-      } catch { }
-    }
-
-    async function checkJugadorSession() {
-      try {
-        const res = await fetch(API_URL + '/api/jugador/me', { credentials: 'include' })
-        if (!res.ok) return
-        const jugador = await res.json()
-        const nombre = [jugador.nombre, jugador.apellido].filter(Boolean).join(' ') || 'Mi cuenta'
-
-        // Determinar home según rol en el club actual
-        let homeUrl = '/mi-jugador'
-        if (currentTenantId) {
-          const miClub = (jugador.clubs || []).find(c => c.tenant_id === currentTenantId)
-          if (miClub?.rol === 'profesor') homeUrl = '/mi-docente'
-        }
-
-        document.getElementById('nav-jugador-nombre').textContent = nombre
-        document.getElementById('nav-btn-micuenta').href = homeUrl
-        document.getElementById('nav-btn-acceder').style.display = 'none'
-        document.getElementById('nav-btn-micuenta').style.display = ''
-      } catch { /* no autenticado, dejar el botón Acceder */ }
-    }
-
-    // Mobile menu toggle
-    const btn = document.getElementById('mobile-menu-btn')
-    const menu = document.getElementById('mobile-menu')
-    btn.addEventListener('click', () => {
-      menu.style.display = menu.style.display === 'none' ? 'block' : 'none'
-    })
-    menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => { menu.style.display = 'none' }))
-
-    // ── Wizard de Reserva Pública ──────────────────────────────────────────
-
-    let _wizardTurnoId = null
-    let _wizardHoraLabel = null
-
-    function abrirWizardReserva(turnoId, horaLabel) {
-      _wizardTurnoId = turnoId
-      _wizardHoraLabel = horaLabel
-      document.getElementById('wiz-hora-label').textContent = horaLabel
-      _showStep('wiz-step-dni')
-      document.getElementById('wiz-dni').value = ''
-      document.getElementById('wiz-error').textContent = ''
-      document.getElementById('modal-wiz').classList.remove('hidden')
-      document.getElementById('wiz-dni').focus()
-    }
-
-    function cerrarWizard() {
-      document.getElementById('modal-wiz').classList.add('hidden')
-      _wizardTurnoId = null
-    }
-
-    function _showStep(id) {
-      ['wiz-step-dni', 'wiz-step-login', 'wiz-step-registro'].forEach(s => {
-        document.getElementById(s).classList.add('hidden')
-      })
-      document.getElementById(id).classList.remove('hidden')
-      document.getElementById('wiz-error').textContent = ''
-    }
-
-    async function wizardVerificarDni() {
-      const dni = document.getElementById('wiz-dni').value.trim()
-      const errorEl = document.getElementById('wiz-error')
-      if (!dni) { errorEl.textContent = 'Ingresá tu DNI'; return }
-      const btn = document.getElementById('btn-wiz-dni')
-      btn.disabled = true; btn.textContent = 'Verificando...'
-      try {
-        const res = await fetch(`${API_URL}/api/jugador/check-dni?dni=${encodeURIComponent(dni)}`)
-        const data = await res.json()
-        if (data.exists) {
-          document.getElementById('wiz-login-dni-val').textContent = dni
-          document.getElementById('wiz-password').value = ''
-          _showStep('wiz-step-login')
-        } else {
-          document.getElementById('wiz-reg-dni').value = dni
-          document.getElementById('wiz-reg-nombre').value = ''
-          document.getElementById('wiz-reg-apellido').value = ''
-          document.getElementById('wiz-reg-whatsapp').value = ''
-          document.getElementById('wiz-reg-password').value = ''
-          _showStep('wiz-step-registro')
-        }
-      } catch { errorEl.textContent = 'Error al verificar. Intentá de nuevo.' }
-      finally { btn.disabled = false; btn.textContent = 'Continuar' }
-    }
-
-    async function wizardLoginYReservar() {
-      const dni = document.getElementById('wiz-login-dni-val').textContent
-      const password = document.getElementById('wiz-password').value
-      const errorEl = document.getElementById('wiz-error')
-      if (!password) { errorEl.textContent = 'Ingresá tu contraseña'; return }
-      const btn = document.getElementById('btn-wiz-login')
-      btn.disabled = true; btn.textContent = 'Reservando...'
-      try {
-        const loginRes = await fetch(`${API_URL}/api/jugador/login-dni`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dni, password, slug_club: currentTenantSlug }),
-        })
-        if (!loginRes.ok) {
-          const d = await loginRes.json()
-          errorEl.textContent = d.detail || 'Contraseña incorrecta'; return
-        }
-        await _crearReservaWizard()
-      } catch { errorEl.textContent = 'Error de conexión. Intentá de nuevo.' }
-      finally { btn.disabled = false; btn.textContent = 'Reservar' }
-    }
-
-    async function wizardRegistrarYReservar() {
-      const nombre = document.getElementById('wiz-reg-nombre').value.trim()
-      const apellido = document.getElementById('wiz-reg-apellido').value.trim()
-      const dni = document.getElementById('wiz-reg-dni').value.trim()
-      const whatsapp = document.getElementById('wiz-reg-whatsapp').value.trim()
-      const password = document.getElementById('wiz-reg-password').value
-      const errorEl = document.getElementById('wiz-error')
-      if (!nombre || !apellido || !whatsapp || !password) {
-        errorEl.textContent = 'Completá todos los campos'; return
-      }
-      const btn = document.getElementById('btn-wiz-reg')
-      btn.disabled = true; btn.textContent = 'Registrando...'
-      try {
-        const regRes = await fetch(`${API_URL}/api/jugador/registro-rapido`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nombre, apellido, dni, telefono: whatsapp, password, slug_club: currentTenantSlug }),
-        })
-        if (!regRes.ok) {
-          const d = await regRes.json()
-          errorEl.textContent = d.detail || 'Error al registrarse'; return
-        }
-        await _crearReservaWizard()
-      } catch { errorEl.textContent = 'Error de conexión. Intentá de nuevo.' }
-      finally { btn.disabled = false; btn.textContent = 'Registrarme y Reservar' }
-    }
-
-    async function _crearReservaWizard() {
-      const errorEl = document.getElementById('wiz-error')
-      const res = await fetch(`${API_URL}/api/m/reservas/`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json', 'X-Tenant-ID': currentTenantSlug },
-        body: JSON.stringify({ turno_id: _wizardTurnoId }),
-      })
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}))
-        errorEl.textContent = d.detail || 'No se pudo crear la reserva'
-        return
-      }
-      cerrarWizard()
-      showToast('¡Reserva confirmada! Te esperamos 🎾', 'success')
-      cargarDisponibilidadPublica()
-      cargarMisReservas()
-    }
-
-    function showToast(msg, type) {
-      const toast = document.getElementById('pub-toast')
-      toast.textContent = msg
-      toast.className = `fixed top-6 left-1/2 -translate-x-1/2 z-[200] px-6 py-3 rounded-2xl font-medium text-sm shadow-lg transition-all duration-300 ${type === 'success' ? 'bg-padel-green text-black' : 'bg-red-500 text-white'
-        }`
-      toast.style.opacity = '1'
-      setTimeout(() => { toast.style.opacity = '0' }, 3500)
-    }
-
-    // Enter key para avanzar pasos del wizard
-    document.addEventListener('keydown', e => {
-      if (e.key !== 'Enter') return
-      const modal = document.getElementById('modal-wiz')
-      if (modal.classList.contains('hidden')) return
-      if (!document.getElementById('wiz-step-dni').classList.contains('hidden')) wizardVerificarDni()
-      else if (!document.getElementById('wiz-step-login').classList.contains('hidden')) wizardLoginYReservar()
-      else if (!document.getElementById('wiz-step-registro').classList.contains('hidden')) wizardRegistrarYReservar()
-    })
+      } catch { /* sin conexión — se muestra el contenido estático */ }
+    })()
   </script>
 
+  <!-- SPA: Modal Wizard de Reserva y Toast desactivados -->
+  <template id="spa-unused-wizard">
   <!-- ── Modal Wizard Reserva ──────────────────────────────────────────────── -->
   <div id="modal-wiz" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4"
     style="background:rgba(0,0,0,0.55);backdrop-filter:blur(4px)">
@@ -3788,6 +2473,8 @@
   <div id="pub-toast"
     class="fixed top-6 left-1/2 -translate-x-1/2 z-[200] px-6 py-3 rounded-2xl font-medium text-sm shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none">
   </div>
+
+</body>  </template>
 
 </body>
 
