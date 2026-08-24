@@ -11,11 +11,14 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   Botón flotante verde (marca de la landing) que abre un panel con el chat del
   tenant en un iframe (`/chat/c/channel_9c867a601ecf`, mismo origen) — mismo
   patrón que la landing de ERMA. Script vanilla `chat-widget.js` inyectado
-  desde `index.html`, servido por la landing con `expires -1` y listado en la
-  regla Path de `landing-openpadel` en `docker-compose.tenants.prod.yml`. El
-  panel arranca abierto apenas carga la página (configurable con
-  `__OPENPADEL_CHAT__ = { openOnLoad: false }`); al cerrar se descarga el
-  iframe y queda el FAB para reabrirlo.
+  desde `index.html`, servido por la landing con - **Chat de openpadel sin botón de notificaciones.** Nuevo script
+  `backend/scripts/disable_openpadel_push_notifications.py` que pone
+  `config.push_notifications_enabled = False` en el bot del canal de la landing
+  (`channel_9c867a601ecf`), de modo que el chat deja de mostrar "Recibir
+  notificaciones" (y el prompt de instalación PWA — ambos agrupados por ese
+  flag en `ChatPage`). Ejecutar en el backend: `docker compose exec app python
+  scripts/disable_openpadel_push_notifications.py`. Se aplica en vivo vía
+  `/api/public/channels/{id}` (sin redeploy del frontend).
 
 ### Cambiado
 - **Login/registro con Google: pantalla intermedia de carga en vez de
