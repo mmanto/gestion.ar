@@ -7,16 +7,15 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
-- **Nuevo tenant openpadel.pro.** Club de pádel con dominio propio.
-  Se crearon `sites/openpadel-landing/` (landing estática dark/verde con
-  diseño responsive), los service blocks `frontend-tenant-openpadel` y
-  `landing-openpadel` en `docker-compose.tenants.prod.yml` (Traefik TLS-ALPN-01,
-  `priority=10` para la landing y `priority=1` para el SPA), el script de alta
-  en BD `backend/scripts/create_openpadel_tenant.py` (Tenant + User admin +
-  Bot de tipo `turnos` + Canal web) y la variable `TENANT_ID_OPENPADEL` en
-  `.env.prod`. **Prerrequisito antes de levantar el stack:** ejecutar el
-  script de BD y completar `TENANT_ID_OPENPADEL` en `.env.prod`.
-  Ver `docs/ops/DEPLOYMENT.md` → _openpadel.pro — deploy inicial_.
+- **Chatbot en la landing de openpadel.pro** (`sites/openpadel-landing/`).
+  Botón flotante verde (marca de la landing) que abre un panel con el chat del
+  tenant en un iframe (`/chat/c/channel_9c867a601ecf`, mismo origen) — mismo
+  patrón que la landing de ERMA. Script vanilla `chat-widget.js` inyectado
+  desde `index.html`, servido por la landing con `expires -1` y listado en la
+  regla Path de `landing-openpadel` en `docker-compose.tenants.prod.yml`. El
+  panel arranca abierto apenas carga la página (configurable con
+  `__OPENPADEL_CHAT__ = { openOnLoad: false }`); al cerrar se descarga el
+  iframe y queda el FAB para reabrirlo.
 
 ### Cambiado
 - **Login/registro con Google: pantalla intermedia de carga en vez de

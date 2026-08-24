@@ -1,47 +1,45 @@
-/* Chat embed para la landing ipachoteayuda — botón flotante + panel con el
- * chat del tenant en un iframe. Vanilla JS a propósito: la landing es
- * estática (sites/ipachoteayuda-landing/), así que este script se inyecta
- * desde index.html sin tocar la app.
+/* Chat embed para la landing OpenPadel — botón flotante + panel con el chat
+ * del tenant en un iframe. Vanilla JS a propósito: la landing es estática
+ * (sites/openpadel-landing/), así que este script se inyecta desde index.html
+ * sin tocar la app.
  *
  * El iframe apunta al mismo origen (location.origin) para que funcione igual
- * en prod (https://pachoteayuda.intellify.pro) y en local (*.test) — el
- * X-Frame-Options del nginx del tenant es SAMEORIGIN, así que el chat solo
- * puede embeberse desde propio dominio. El panel arranca ABIERTO (se abre
- * ni bien carga la página); se cierra con la X y se reabre con el botón
- * flotante o desde los CTAs (data-open-chat, que llaman __IPA_OPEN_CHAT__).
- * Para arrancar cerrado: window.__IPA_CHAT__ = { openOnLoad: false }.
- * Expone window.__IPA_OPEN_CHAT__() para reabrir.
+ * en prod (https://openpadel.pro) y en local (*.test) — el X-Frame-Options del
+ * nginx del tenant es SAMEORIGIN, así que el chat solo puede embeberse desde
+ * propio dominio. El panel arranca abierto apenas carga la landing; si el
+ * usuario lo cierra, queda el botón flotante para reabrirlo.
  */
 (function () {
   'use strict';
 
   var CHAT_PATH = '/chat/c/channel_9c867a601ecf';
-  var DEFAULT_ORIGIN = 'https://openpadel.intellify.pro';
+  var DEFAULT_ORIGIN = 'https://openpadel.pro';
 
   // Override para entornos distintos (ej. dev local contra el VPS):
-  //   <script>window.__IPA_CHAT__ = { url: 'https://.../chat/c/...' }</script>
-  var CONFIG = window.__IPA_CHAT__ || {};
+  //   <script>window.__OPENPADEL_CHAT__ = { url: 'https://openpadel.pro/chat/c/...', openOnLoad: false }</script>
+  var CONFIG = window.__OPENPADEL_CHAT__ || {};
   var chatUrl = CONFIG.url || location.origin + CHAT_PATH;
 
-  // Color de marca de la landing (ver index.html — paleta violeta "purple")
-  var PRIMARY = '#130a21';
+  // Color de marca de la landing (design-system.css — padel green)
+  var PRIMARY = '#06855F';
 
-  var STYLE_ID = 'ipa-chat-widget-styles';
+  var STYLE_ID = 'openpadel-chat-widget-styles';
   if (!document.getElementById(STYLE_ID)) {
     var css = document.createElement('style');
     css.id = STYLE_ID;
     css.textContent = [
-      '#ipa-chat-fab{position:fixed;bottom:24px;right:24px;z-index:9990;width:60px;height:60px;border-radius:9999px;background:' + PRIMARY + ';color:#fff;border:none;box-shadow:0 8px 24px rgba(0,0,0,.3);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s ease;}',
-      '#ipa-chat-fab:hover{transform:scale(1.06);}',
-      '#ipa-chat-fab svg{width:28px;height:28px;fill:currentColor;}',
-      // La barra del chat la marca el propio ChatHeader del SPA (color + logo
-      // del tenant). La X de cierre va como overlay en la esquina superior.
-      '#ipa-chat-panel{position:fixed;bottom:24px;right:24px;z-index:9991;width:380px;max-width:calc(100vw - 32px);height:min(620px,calc(100vh - 96px));background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.3);display:none;font-family:Inter,system-ui,-apple-system,sans-serif;}',
-      '#ipa-chat-panel.open{display:block;}',
-      '#ipa-chat-close{position:absolute;top:10px;right:10px;z-index:9;width:30px;height:30px;border-radius:9999px;background:rgba(0,0,0,.28);border:none;color:#fff;cursor:pointer;font-size:17px;line-height:1;display:flex;align-items:center;justify-content:center;opacity:.92;}',
-      '#ipa-chat-close:hover{opacity:1;background:rgba(0,0,0,.42);}',
-      '#ipa-chat-frame{border:none;width:100%;height:100%;background:#fff;}',
-      '@media (max-width:480px){#ipa-chat-panel{bottom:0;right:0;width:100%;max-width:100%;height:100%;max-height:none;border-radius:0;}#ipa-chat-fab{bottom:16px;right:16px;}}'
+      '#openpadel-chat-fab{position:fixed;bottom:24px;right:24px;z-index:9990;width:60px;height:60px;border-radius:9999px;background:' + PRIMARY + ';color:#fff;border:none;box-shadow:0 8px 24px rgba(0,0,0,.28);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s ease;}',
+      '#openpadel-chat-fab:hover{transform:scale(1.06);}',
+      '#openpadel-chat-fab svg{width:28px;height:28px;fill:currentColor;}',
+      // El panel ya no lleva cabecera propia: la barra del chat la marca el
+      // propio ChatHeader del SPA (color + logo del tenant). La X de cierre
+      // va como overlay en la esquina superior derecha.
+      '#openpadel-chat-panel{position:fixed;bottom:24px;right:24px;z-index:9991;width:380px;max-width:calc(100vw - 32px);height:min(620px,calc(100vh - 96px));background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.3);display:none;font-family:Inter,system-ui,-apple-system,sans-serif;}',
+      '#openpadel-chat-panel.open{display:block;}',
+      '#openpadel-chat-close{position:absolute;top:10px;right:10px;z-index:9;width:30px;height:30px;border-radius:9999px;background:rgba(0,0,0,.28);border:none;color:#fff;cursor:pointer;font-size:17px;line-height:1;display:flex;align-items:center;justify-content:center;opacity:.92;}',
+      '#openpadel-chat-close:hover{opacity:1;background:rgba(0,0,0,.42);}',
+      '#openpadel-chat-frame{border:none;width:100%;height:100%;background:#fff;}',
+      '@media (max-width:480px){#openpadel-chat-panel{bottom:0;right:0;width:100%;max-width:100%;height:100%;max-height:none;border-radius:0;}#openpadel-chat-fab{bottom:16px;right:16px;}}'
     ].join('\n');
     document.head.appendChild(css);
   }
@@ -54,24 +52,24 @@
   }
 
   var fab = document.createElement('button');
-  fab.id = 'ipa-chat-fab';
+  fab.id = 'openpadel-chat-fab';
   fab.type = 'button';
   fab.setAttribute('aria-label', 'Abrir chat');
   fab.appendChild(iconSvg());
   document.body.appendChild(fab);
 
   var panel = document.createElement('div');
-  panel.id = 'ipa-chat-panel';
+  panel.id = 'openpadel-chat-panel';
   // Sin cabecera: la barra del chat la marca el propio ChatHeader del SPA
   // (color + logo del tenant, ver frontend-tenant ChatHeader.tsx). La X
   // cierra el panel como overlay sobre esa barra.
   panel.innerHTML =
-    '<iframe id="ipa-chat-frame" src="' + chatUrl + '" title="Chat ipachoteayuda" loading="lazy" allow="microphone"></iframe>' +
-    '<button id="ipa-chat-close" type="button" aria-label="Cerrar chat">&times;</button>';
+    '<iframe id="openpadel-chat-frame" src="' + chatUrl + '" title="Chat OpenPadel" loading="lazy" allow="microphone"></iframe>' +
+    '<button id="openpadel-chat-close" type="button" aria-label="Cerrar chat">&times;</button>';
   document.body.appendChild(panel);
 
-  var frame = panel.querySelector('#ipa-chat-frame');
-  var closeBtn = panel.querySelector('#ipa-chat-close');
+  var frame = panel.querySelector('#openpadel-chat-frame');
+  var closeBtn = panel.querySelector('#openpadel-chat-close');
 
   function openPanel() {
     panel.classList.add('open');
@@ -91,13 +89,9 @@
   fab.addEventListener('click', openPanel);
   closeBtn.addEventListener('click', closePanel);
 
-  // Exponer para que los CTAs de la landing (data-open-chat) reabran el panel.
-  window.__IPA_OPEN_CHAT__ = openPanel;
-
-  // El chat arranca abierto: se abre ni bien se carga la página (el script
-  // va con `defer`, así que el DOM ya está parseado acá). Para arrancar
-  // cerrado, setear `window.__IPA_CHAT__ = { openOnLoad: false }` antes de
-  // este script.
+  // El chat arranca abierto: apenas carga la landing se muestra el panel
+  // (el FAB queda oculto). El user puede cerrarlo con la X.
+  // Para arrancar cerrado: window.__OPENPADEL_CHAT__ = { openOnLoad: false }.
   if (CONFIG.openOnLoad !== false) {
     openPanel();
   }

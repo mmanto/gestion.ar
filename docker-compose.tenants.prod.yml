@@ -363,7 +363,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_public"
-      - 'traefik.http.routers.landing-openpadel.rule=Host(`openpadel.pro`) && (PathRegexp(`^/.*\.html$`) || Path(`/`) || Path(`/design-system.css`) || Path(`/padel.mp4`) || PathPrefix(`/uploads/`) || PathPrefix(`/web/`))'
+      - 'traefik.http.routers.landing-openpadel.rule=Host(`openpadel.pro`) && (PathRegexp(`^/.*\.html$`) || Path(`/`) || Path(`/design-system.css`) || Path(`/chat-widget.js`) || Path(`/padel.mp4`) || PathPrefix(`/uploads/`) || PathPrefix(`/web/`))'
       - "traefik.http.routers.landing-openpadel.entrypoints=websecure"
       - "traefik.http.routers.landing-openpadel.tls.certresolver=letsencrypt"
       - "traefik.http.routers.landing-openpadel.priority=10"

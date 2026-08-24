@@ -209,10 +209,14 @@ un overlay (`#erma-chat-close`, absoluto, esquina superior derecha) sobre esa
 barra; el FAB conserva el color de marca de la landing. El input del chat
 (`ChatInputBar`) se enfoca en cuanto conecta, para que el prompt quede listo.
 
-La landing además muestra una **pantalla de carga** (`#site-loader` en
-`index.html`, inline — no es un archivo propio) que oculta el sitio hasta que
-`window.load` dispara (el bundle es `defer`; a ese punto el root ya está
-renderizado), con un safety timeout de 12s.
+**Chat embebido en la landing openpadel (`sites/openpadel-landing/chat-widget.js`):**
+mismo patrón que el de erma — botón flotante + panel que abre el chat del
+tenant en un iframe (`/chat/c/channel_9c867a601ecf`, mismo origen). Se inyecta
+desde `index.html`, se sirve por la landing con `expires -1` (nginx de la
+landing) y está listado a mano en la regla `Path(...)` del router
+`landing-openpadel` (prod; el stack local no levanta openpadel). Override de
+URL con `window.__OPENPADEL_CHAT__.url`; `openOnLoad: false` arranca el
+panel cerrado.
 
 **Nango (login OAuth Google/Microsoft, ADR-012):** el backend crea las "connect
 sessions" apuntando a `NANGO_HOST` (ver `.env.prod`). Hoy apunta a la **URL
