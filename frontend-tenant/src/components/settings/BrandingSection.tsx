@@ -246,7 +246,7 @@ export const BrandingSection = () => {
   const fallbackLetter = (tenant?.name || '?').charAt(0).toUpperCase();
 
   return (
-    <Card shadow="none">
+    <Card className="md:col-span-1" shadow="sm">
       <h2 className="text-xl font-semibold text-gray-900 mb-4">Marca</h2>
 
       {error && (

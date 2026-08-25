@@ -102,7 +102,7 @@ export const BiometricSection = () => {
   if (!isNative) return null;
 
   return (
-    <Card shadow="none">
+    <Card className="md:col-span-3" shadow="sm">
       <div className="flex items-center gap-3 mb-3">
         <Fingerprint className="w-5 h-5 text-gray-500" />
         <h2 className="text-xl font-semibold text-gray-900">Acceso con huella</h2>

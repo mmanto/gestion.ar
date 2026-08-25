@@ -23,7 +23,7 @@
 | Pantalla | Ruta | Descripción |
 |---|---|---|
 | Registro "Crea tu cuenta" | `/registro` (alias `/register`) | Autoregistro público de un admin del tenant: plan mensual/anual, nombre/correo/contraseña y pago Mercado Pago. Réplica del bloque de la landing ius. |
-| Ajustes | `/settings` | Información de la cuenta, branding, honorarios, huella y "Mi link de chat". |
+| Ajustes | `/settings` | Información de la cuenta, branding, honorarios y huella. |
 | Compartir | `/compartir` | El staff comparte sus datos y su link de chat web propio con un cliente por WhatsApp: input de número + botón que abre `wa.me` con el mensaje armado. |
 
 ---

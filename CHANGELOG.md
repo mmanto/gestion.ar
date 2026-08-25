@@ -21,6 +21,15 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `/api/public/channels/{id}` (sin redeploy del frontend).
 
 ### Cambiado
+- **Pantalla Ajustes rediseñada y sin "Mi link de chat"** (`frontend-tenant/`, web
+  y APK móvil del tenant). Se eliminó el bloque "Mi link de chat" (QR + link +
+  copiar) de `/settings`; el link propio sigue disponible desde "Compartir"
+  (`/compartir`). Las secciones (Mi cuenta, Marca, biometría) pasaron de cards
+  sin caja a cards contenidas (`bg-white`, borde, sombra suave) y la grilla
+  quedó responsive (`grid-cols-1 md:grid-cols-3`): en mobile las cards apilan
+  con separación y padding cómodos, el campo Honorarios pasa a columna completa
+  y su nota "pesos mexicanos" envuelve bajo el input en vez de desbordar.
+  Requiere rebuild + redeploy del frontend del tenant y del APK.
 - **Login/registro con Google: pantalla intermedia de carga en vez de
   quedarse en el formulario.** Tras autenticar en el Chrome Custom Tab y
   volver a la app, en conexiones lentas el usuario veía el login con el botón
