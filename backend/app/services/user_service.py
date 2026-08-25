@@ -1,16 +1,27 @@
-"""
-User Service - Gestión de usuarios en PostgreSQL (ver ADR-006 en docs/dev/DECISIONS.md)
-"""
+"""User Service - Gestión de usuarios en PostgreSQL (ver ADR-006 en docs/dev/DECISIONS.md)"""
 
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.sql.elements import ColumnElement
 
 from app.auth_service import get_password_hash, verify_password, User
 from app.db.database import AsyncSessionLocal
 from app.db.models import User as UserModel
+
+
+def owner_scope_clause(owner_column: ColumnElement, owner_usernames: List[str]) -> ColumnElement:
+    """Filtro de clientes/conversaciones visibles para un staff no-admin.
+
+    Un cliente SIN owner (owner_username NULL) llegó por el canal general del
+    bot o es legacy pre-migración — no pertenece a ningún abogado en
+    particular, así que lo ve TODO el staff del tenant (mismo criterio que
+    get_notified_usernames, que avisa a todo el staff para clientes sin
+    owner). Los clientes con owner solo los ve su abogado (o su broker).
+    """
+    return or_(owner_column.in_(owner_usernames), owner_column.is_(None))
 
 
 class UserInDB(BaseModel):

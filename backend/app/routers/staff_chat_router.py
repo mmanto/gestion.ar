@@ -103,7 +103,10 @@ async def staff_chat_websocket(
                     conversation = await conv_service.get_conversation(conversation_id)
                     conv_client_id = conversation.get("client_id") if conversation else None
                     conv_client = await get_client_service().get_client(conv_client_id) if conv_client_id else None
-                    if not conv_client or conv_client.owner_username not in owner_usernames:
+                                        # Cliente sin owner (canal general/legacy): cualquier
+                    # staff del tenant puede responder — ver
+                    # owner_scope_clause en user_service.py.
+                    if conv_client and conv_client.owner_username is not None and conv_client.owner_username not in owner_usernames:
                         await websocket.send_json({
                             "type": "error",
                             "message": "Conversación no encontrada",

@@ -16,6 +16,7 @@ from app.db.database import AsyncSessionLocal
 from app.db.models import Client as ClientModel
 from app.db.models import Conversation as ConversationModel
 from app.db.models import Message as MessageModel
+from app.services.user_service import owner_scope_clause
 
 
 class ConversationMessage(BaseModel):
@@ -416,7 +417,7 @@ class ConversationService:
             base_filters.append(or_(ConversationModel.bot_id.in_(bot_ids), ConversationModel.bot_id.is_(None)))
         if owner_usernames is not None:
             owned_client_ids = select(ClientModel.client_id).where(
-                ClientModel.owner_username.in_(owner_usernames)
+                                owner_scope_clause(ClientModel.owner_username, owner_usernames)
             )
             base_filters.append(ConversationModel.client_id.in_(owned_client_ids))
 
@@ -508,7 +509,7 @@ class ConversationService:
 
         if owner_usernames is not None:
             owned_client_ids = select(ClientModel.client_id).where(
-                ClientModel.owner_username.in_(owner_usernames)
+                                owner_scope_clause(ClientModel.owner_username, owner_usernames)
             )
             filters.append(ConversationModel.client_id.in_(owned_client_ids))
 
@@ -583,7 +584,7 @@ class ConversationService:
             filters.append(or_(ConversationModel.bot_id.in_(bot_ids), ConversationModel.bot_id.is_(None)))
         if owner_usernames is not None:
             owned_client_ids = select(ClientModel.client_id).where(
-                ClientModel.owner_username.in_(owner_usernames)
+                                owner_scope_clause(ClientModel.owner_username, owner_usernames)
             )
             filters.append(ConversationModel.client_id.in_(owned_client_ids))
 

@@ -641,7 +641,9 @@ async def _verify_conversation_owner_access(conversation: dict, current_user: Us
         return
     client_id = conversation.get("client_id")
     client = await get_client_service().get_client(client_id) if client_id else None
-    if not client or client.owner_username not in owner_usernames:
+        # Clientes sin owner (canal general/legacy) o sin cliente ligado: los ve
+    # todo el staff del tenant (ver owner_scope_clause en user_service.py).
+    if client and client.owner_username is not None and client.owner_username not in owner_usernames:
         raise HTTPException(status_code=404, detail="Conversación no encontrada")
 
 

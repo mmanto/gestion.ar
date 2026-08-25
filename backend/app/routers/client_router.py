@@ -42,7 +42,13 @@ async def _verify_client_access(client, current_user: User) -> None:
     """404 (no 403: no revelar que el cliente existe) si el cliente no
     pertenece al alcance del usuario actual — ver UserService.get_scoped_owner_usernames."""
     owner_usernames = await get_user_service().get_scoped_owner_usernames(current_user)
-    if owner_usernames is not None and client.owner_username not in owner_usernames:
+            # Clientes sin owner (canal general/legacy) los ve todo el staff del
+    # tenant — mismo criterio que owner_scope_clause.
+    if (
+        owner_usernames is not None
+        and client.owner_username is not None
+        and client.owner_username not in owner_usernames
+    ):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Cliente no encontrado")
 
 

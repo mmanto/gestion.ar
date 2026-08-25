@@ -21,6 +21,17 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `/api/public/channels/{id}` (sin redeploy del frontend).
 
 ### Cambiado
+- **Clientes y conversaciones del canal general visibles para todo el staff.**
+  Los clientes que entran por el chat del bot sin link de abogado asignado
+  (`clients.owner_username` vacío — canal general o registros previos a la
+  separación por usuario) no aparecían en Clientes/Conversaciones para
+  operativos y brokers: el filtro `owner_username IN (…)` los excluía, así
+  que solo el admin (sin restricción) los veía. Ahora el alcance por rol
+  incluye también los clientes sin owner, consistente con las notificaciones
+  (`get_notified_usernames` ya avisaba a todo el staff para esos clientes).
+  Aplica a `/api/clients`, `/api/clients/stats`, `/api/conversations`,
+  timeline/stats, detalle de cliente/conversación y el WebSocket del staff.
+  Solo backend — sin rebuild del frontend.
 - **Pantalla Ajustes rediseñada y sin "Mi link de chat"** (`frontend-tenant/`, web
   y APK móvil del tenant). Se eliminó el bloque "Mi link de chat" (QR + link +
   copiar) de `/settings`; el link propio sigue disponible desde "Compartir"

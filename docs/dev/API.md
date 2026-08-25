@@ -295,9 +295,11 @@ Eliminar un canal.
 
 Personas que interactúan con un bot a través de algún canal.
 
-### GET `/api/clients`
-
-Listar todos los clientes de los bots del usuario autenticado. Query params: `page`, `limit`, `status`, `search`.
+**Alcance por rol:** admin/super_admin ven todos los clientes del tenant. Un
+operativo ve solo sus clientes (los que entraron por su link propio,
+`clients.owner_username = su username`) más los del canal general del bot sin
+abogado asignado (`owner_username NULL`) — mismo criterio que las
+notificaciones. Un broker ve lo suyo + lo de su equipo + los sin owner.
 
 ### GET `/api/bots/{bot_id}/clients`
 

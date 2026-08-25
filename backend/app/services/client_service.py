@@ -12,6 +12,7 @@ from sqlalchemy import func, or_, select
 from app.db.database import AsyncSessionLocal
 from app.db.models import Bot as BotModel, Channel as ChannelModel, Client as ClientModel
 from app.models.client import Client, ClientCreate, ClientSource, ClientStatus, ClientUpdate, estado_from_color
+from app.services.user_service import owner_scope_clause
 
 
 def calculate_score(total_messages: int, first_contact_at: str) -> float:
@@ -243,7 +244,7 @@ class ClientService:
         """
         filters = [ClientModel.bot_id == bot_id]
         if owner_usernames is not None:
-            filters.append(ClientModel.owner_username.in_(owner_usernames))
+            filters.append(owner_scope_clause(ClientModel.owner_username, owner_usernames))
         return await self._query_clients(filters, skip, limit, status, search, color_semaforo)
 
     async def get_clients_by_bot_ids(
@@ -262,7 +263,7 @@ class ClientService:
         """
         filters = [ClientModel.bot_id.in_(bot_ids)]
         if owner_usernames is not None:
-            filters.append(ClientModel.owner_username.in_(owner_usernames))
+            filters.append(owner_scope_clause(ClientModel.owner_username, owner_usernames))
         return await self._query_clients(filters, skip, limit, status, search, color_semaforo)
 
     async def count_clients_by_color(
@@ -275,7 +276,7 @@ class ClientService:
         counts = {"verde": 0, "amarillo": 0, "rojo": 0, "sin_clasificar": 0}
         filters = [ClientModel.bot_id.in_(bot_ids)]
         if owner_usernames is not None:
-            filters.append(ClientModel.owner_username.in_(owner_usernames))
+            filters.append(owner_scope_clause(ClientModel.owner_username, owner_usernames))
         async with AsyncSessionLocal() as session:
             result = await session.execute(
                 select(ClientModel.color_semaforo, func.count())
