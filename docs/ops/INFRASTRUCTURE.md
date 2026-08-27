@@ -142,8 +142,7 @@ traefik:
 | laboralia | laboralia.intellify.pro | `sites/laboralia-landing/` | `frontend-tenant-laboralia`, `landing-laboralia` |
 | proptech | proptech.intellify.pro | `sites/proptech-landing/` | `frontend-tenant-proptech`, `landing-proptech` |
 | erma | erma.com.ar | `sites/erma/` | `frontend-tenant-erma`, `landing-erma` |
-| pachoteayuda | pachoteayuda.ar | — | `frontend-tenant-pachoteayuda` |
-| ipachoteayuda | pachoteayuda.intellify.pro | `sites/ipachoteayuda-landing/` | `frontend-tenant-ipachoteayuda`, `landing-ipachoteayuda` |
+| pachoteayuda | pachoteayuda.ar | `sites/pachoteayuda-landing/` | `frontend-tenant-pachoteayuda`, `landing-pachoteayuda` |
 | openpadel | openpadel.pro | `sites/openpadel-landing/` | `frontend-tenant-openpadel`, `landing-openpadel` |
 
 > DNS: para dominios propios del cliente (`erma.com.ar`, `pachoteayuda.ar`,
@@ -155,7 +154,7 @@ traefik:
 
 ## Ruteo de landings en dominio compartido con tenant
 
-Cada landing (ius, laboralia, proptech, erma, ipachoteayuda, openpadel — ver `docker-compose.tenants.prod.yml`)
+Cada landing (ius, laboralia, proptech, erma, openpadel — ver `docker-compose.tenants.prod.yml`)
 comparte el dominio con el SPA de su tenant (`frontend-tenant-*`). El SPA es un
 app de una sola página cuyo nginx sirve `index.html` para casi cualquier ruta
 (`try_files $uri /index.html`), así que si una página estática de la landing

@@ -21,6 +21,18 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `/api/public/channels/{id}` (sin redeploy del frontend).
 
 ### Cambiado
+- **Eliminado el tenant `ipachoteayuda` (`pachoteayuda.intellify.pro`).** El
+  tenant de negocio de Pacho queda solo en el dominio propio del cliente
+  `pachoteayuda.ar`. Se eliminaron los service blocks
+  `frontend-tenant-ipachoteayuda` y `landing-ipachoteayuda` de
+  `docker-compose.tenants.{prod,local,dev}.yml`, el directorio
+  `sites/ipachoteayuda-landing/`, el seed
+  `backend/scripts/create_ipachoteayuda_tenant.py` y la variable
+  `TENANT_ID_IPACHOTESAYUDA`. `TENANT_ID_PACHOTESAYUDA` ahora apunta al
+  tenant real `tenant_2fc38a44e696`. El borrado de la fila de DB (tenant +
+  bot + canal + datos de negocio) se hace con
+  `backend/scripts/remove_ipachoteayuda_tenant.py` (idempotente, nunca toca
+  `tenant_2fc38a44e696`).
 - **Clientes y conversaciones del canal general visibles para todo el staff.**
   Los clientes que entran por el chat del bot sin link de abogado asignado
   (`clients.owner_username` vacío — canal general o registros previos a la

@@ -1,10 +1,10 @@
-/* Chat embed para la landing ipachoteayuda — botón flotante + panel con el
+/* Chat embed para la landing pachoteayuda — botón flotante + panel con el
  * chat del tenant en un iframe. Vanilla JS a propósito: la landing es
- * estática (sites/ipachoteayuda-landing/), así que este script se inyecta
+ * estática (sites/pachoteayuda-landing/), así que este script se inyecta
  * desde index.html sin tocar la app.
  *
  * El iframe apunta al mismo origen (location.origin) para que funcione igual
- * en prod (https://pachoteayuda.intellify.pro) y en local (*.test) — el
+ * en prod (https://pachoteayuda.ar) y en local (*.test) — el
  * X-Frame-Options del nginx del tenant es SAMEORIGIN, así que el chat solo
  * puede embeberse desde propio dominio. El panel arranca ABIERTO (se abre
  * ni bien carga la página); se cierra con la X y se reabre con el botón
@@ -16,7 +16,7 @@
   'use strict';
 
   var CHAT_PATH = '/chat/c/channel_96ad03bc1a1d';
-  var DEFAULT_ORIGIN = 'https://pachoteayuda.intellify.pro';
+  var DEFAULT_ORIGIN = 'https://pachoteayuda.ar';
 
   // Override para entornos distintos (ej. dev local contra el VPS):
   //   <script>window.__IPA_CHAT__ = { url: 'https://.../chat/c/...' }</script>
@@ -66,7 +66,7 @@
   // (color + logo del tenant, ver frontend-tenant ChatHeader.tsx). La X
   // cierra el panel como overlay sobre esa barra.
   panel.innerHTML =
-    '<iframe id="ipa-chat-frame" src="' + chatUrl + '" title="Chat ipachoteayuda" loading="lazy" allow="microphone"></iframe>' +
+    '<iframe id="ipa-chat-frame" src="' + chatUrl + '" title="Chat pachoteayuda" loading="lazy" allow="microphone"></iframe>' +
     '<button id="ipa-chat-close" type="button" aria-label="Cerrar chat">&times;</button>';
   document.body.appendChild(panel);
 

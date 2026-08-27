@@ -114,36 +114,7 @@ services:
       - "traefik.http.routers.tenant-pachoteayuda-hmr.priority=20"
       - "traefik.http.routers.tenant-pachoteayuda-hmr.service=tenant-pachoteayuda"
 
-  frontend-tenant-ipachoteayuda:
-    build:
-      context: ./frontend-tenant
-      dockerfile: Dockerfile.dev
-    working_dir: /app/frontend-tenant
-    command: sh -c "npm install && npm run dev -- --host"
-    volumes:
-      - ./:/app
-      - frontend_tenant_node_modules_ipachoteayuda:/app/frontend-tenant/node_modules
-    environment:
-      - TENANT_ID=${TENANT_ID_IPACHOTESAYUDA:-tenant_9ef2a8bdd6b7}
-      - TENANT_SLUG=ipachoteayuda
-      - VITE_APPOINTMENTS_REMOTE_URL=http://localhost:8180/remoteEntry.js
-      - VITE_NANGO_CONNECT_URL=https://nango.intellify.pro
-      - VITE_NANGO_API_URL=https://api.nango.intellify.pro
-      - VITE_HMR_CLIENT_PORT=80
-    labels:
-      - "traefik.http.services.tenant-ipachoteayuda.loadbalancer.server.port=5174"
-      # pachoteayuda.test comparte dominio con landing-ipachoteayuda y con la
-      # app del tenant — el websocket de HMR de Vite siempre conecta contra
-      # "/" en el mismo host:puerto de la página, así que sin este router
-      # aparte cae en la landing (nginx, sin upgrade) en vez del dev-server.
-      # Prioridad 20 (> landing) y solo matchea el upgrade de websocket.
-      - "traefik.http.routers.tenant-ipachoteayuda-hmr.rule=Host(`pachoteayuda.test`) && Header(`Upgrade`, `websocket`)"
-      - "traefik.http.routers.tenant-ipachoteayuda-hmr.entrypoints=web"
-      - "traefik.http.routers.tenant-ipachoteayuda-hmr.priority=20"
-      - "traefik.http.routers.tenant-ipachoteayuda-hmr.service=tenant-ipachoteayuda"
-
 volumes:
   frontend_tenant_node_modules_erma:
   frontend_tenant_node_modules_ius:
   frontend_tenant_node_modules_pachoteayuda:
-  frontend_tenant_node_modules_ipachoteayuda:

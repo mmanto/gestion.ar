@@ -2,8 +2,8 @@
 """
 Desactiva las notificaciones push en el chat de pachoteayuda: pone
 `config.push_notifications_enabled = False` en todos los bots de los tenants
-pachoteayuda (pachoteayuda.ar) e ipachoteayuda (pachoteayuda.intellify.pro, el
-chat embebido en la landing de César Pacho). Con el flag en False, el chat del
+pachoteayuda (pachoteayuda.ar, el chat
+embebido en la landing de César Pacho). Con el flag en False, el chat del
 cliente deja de mostrar el botón "Recibir notificaciones" (ver
 BotConfig.push_notifications_enabled).
 
@@ -21,11 +21,11 @@ from sqlalchemy import select
 from app.db.database import AsyncSessionLocal
 from app.db.models import Bot
 
-# ipachoteayuda → pachoteayuda.intellify.pro (chat embebido en la landing de
-# César Pacho, canal channel_96ad03bc1a1d). pachoteayuda → pachoteayuda.ar.
+# pachoteayuda.ar — único tenant de Pacho en prod (la "Pacho te ayuda",
+# id verificado 2026-08-16). El tenant del subdominio pachoteayuda.intellify.pro
+# fue eliminado, así que solo queda este.
 PACHOTEAYUDA_TENANT_IDS = [
-    "tenant_2fc38a44e696",  # ipachoteayuda (verificado en prod 2026-08-16)
-    "tenant_7099f777c4d8",  # pachoteayuda
+    "tenant_2fc38a44e696",
 ]
 
 

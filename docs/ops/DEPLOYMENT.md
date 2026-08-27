@@ -228,14 +228,12 @@ la zona DNS del `Host()`.
 |---|---|---|
 | erma | erma.com.ar | `backend/scripts/create_erma_tenant.py` |
 | pachoteayuda | pachoteayuda.ar | `backend/scripts/create_pachoteayuda_tenant.py` |
-| ipachoteayuda | pachoteayuda.intellify.pro | `backend/scripts/create_ipachoteayuda_tenant.py` |
-`pachoteayuda` y `ipachoteayuda` son el mismo tenant de negocio: comparten
-la misma landing (`sites/pachoteayuda-landing/` es copia verbatim de
-`sites/ipachoteayuda-landing/`) y el mismo canal de chat. Cada dominio tiene
-su propio router de landing (`landing-pachoteayuda` en `pachoteayuda.ar`,
-`landing-ipachoteayuda` en `pachoteayuda.intellify.pro`) que comparte el
-`Host()` con el `frontend-tenant` correspondiente — el widget de chat resuelve
-el origen en runtime y la info pública del canal no está acotada por tenant.
+
+
+El tenant ipachoteayuda (`pachoteayuda.intellify.pro`) fue eliminado de la
+infraestructura (service blocks en compose); su fila de DB se quita con
+`backend/scripts/remove_ipachoteayuda_tenant.py` — solo queda el dominio del
+cliente `pachoteayuda.ar`.
 
 **openpadel.pro — deploy inicial:**
 

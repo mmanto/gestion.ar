@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Alta de tenant "pachoteayuda" con dominio propio pachoteayuda.ar (mismo
-procedimiento que create_openpadel_tenant.py / create_ipachoteayuda_tenant.py,
+procedimiento que create_openpadel_tenant.py / create_pachoteayuda_tenant.py,
 pero para un tenant nuevo, sin mover un bot existente).
 
 Crea (idempotente por domain):
