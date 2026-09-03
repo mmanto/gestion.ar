@@ -7,6 +7,13 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **Pantalla de progreso en la landing de pachoteayuda.ar**
+  (`sites/pachoteayuda-landing/index.html`). Overlay a pantalla completa con
+  marca, spinner y barra de progreso que cubre la página hasta que cargan
+  todos sus elementos: decodificación de las imágenes base64, tipografías de
+  Google y el evento `load` del documento (con red de seguridad de 12 s y
+  variante sin-JS que no bloquea la página). El overlay se elimina del DOM al
+  terminar; el scroll queda bloqueado mientras dura la carga.
 - **Chatbot en la landing de openpadel.pro** (`sites/openpadel-landing/`).
   Botón flotante verde (marca de la landing) que abre un panel con el chat del
   tenant en un iframe (`/chat/c/channel_9c867a601ecf`, mismo origen) — mismo
