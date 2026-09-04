@@ -21,13 +21,14 @@ export function ChatHeader({ isConnected }: ChatHeaderProps) {
       className="flex items-center gap-3 px-4 py-3 text-white shadow-md"
       style={{ backgroundColor: primaryColor }}
     >
-      {/* El badge es circular (espacio blanco w-9). Si la imagen del tenant no
-          es cuadrada, sin object-cover el navegador la estira al tamaño del
-          slot (w-7 h-7) y las esquinas del rectángulo sobresalen del círculo.
-          rounded-full + object-cover la recortan en círculo desde el centro,
-          como avatar (vale para foto o logo). */}
+      {/* El badge es circular. La imagen llena el disco completo (w-9 h-9):
+          sin object-cover el navegador la estira al tamaño del slot y las
+          esquinas de un rectángulo sobresaldrían del círculo; rounded-full +
+          object-cover la recortan en círculo desde el centro. El bg-white del
+          contenedor solo queda visible detrás de logos con transparencia;
+          para imágenes opacas (foto-avatar) no se ve ningún borde. */}
       <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center shrink-0 overflow-hidden">
-        <img src={logo || FALLBACK_LOGO} alt={tenantName} className="w-7 h-7 rounded-full object-cover" />
+        <img src={logo || FALLBACK_LOGO} alt={tenantName} className="w-9 h-9 rounded-full object-cover" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm truncate">{tenantName}</p>

@@ -51,6 +51,15 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   Aplica a `/api/clients`, `/api/clients/stats`, `/api/conversations`,
   timeline/stats, detalle de cliente/conversación y el WebSocket del staff.
   Solo backend — sin rebuild del frontend.
+- **Avatar del chat del tenant: eliminado el borde blanco alrededor de la
+  imagen** (`frontend-tenant/src/components/chat/ChatHeader.tsx`). El badge
+  circular (`w-9 h-9`) dejaba un halo blanco de ~4px visible porque la imagen
+  se renderizaba más chica (`w-7 h-7`) centrada sobre el disco `bg-white`.
+  Ahora la imagen llena el círculo completo (`w-9 h-9`), manteniendo el
+  recorte circular (`rounded-full` + `object-cover`); el fondo blanco solo
+  queda como respaldo detrás de logos con transparencia, ya no como borde
+  en avatares opacos (foto de pachoteayuda). **Requiere rebuild + redeploy
+  de `frontend-tenant`.**
 - **Pantalla Ajustes rediseñada y sin "Mi link de chat"** (`frontend-tenant/`, web
   y APK móvil del tenant). Se eliminó el bloque "Mi link de chat" (QR + link +
   copiar) de `/settings`; el link propio sigue disponible desde "Compartir"
