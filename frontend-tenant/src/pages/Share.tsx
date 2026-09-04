@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Share2 } from 'lucide-react';
+import { Share2 } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { PageHeader } from '../components/common/PageHeader';
 import { Alert } from '../components/common/Alert';
@@ -17,7 +16,6 @@ import { publicService } from '../services/public.service';
  */
 export const Share = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   // El link de chat del abogado es su canal web propio (ver Settings "Mi link
   // de chat"): `publicUrl/chat/c/{channel_id}` del primer bot activo del tenant.
@@ -90,12 +88,6 @@ export const Share = () => {
           description="Enviá tus datos y tu link de chat por WhatsApp"
           titleClassName="font-semibold uppercase tracking-[0.08em]"
           descriptionClassName="text-gray-800"
-          actions={
-            <Button variant="outline" onClick={() => navigate('/dashboard')}>
-              <LayoutDashboard className="w-4 h-4 mr-1.5" />
-              Ir al Escritorio
-            </Button>
-          }
         />
 
         {error && <Alert variant="error" className="mb-6">{error}</Alert>}

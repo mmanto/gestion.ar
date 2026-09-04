@@ -7,7 +7,8 @@ interface PageHeaderProps {
   /** Si se pasa, muestra una flecha de volver a la izquierda del título en vez de
    * un botón de acción aparte — patrón de app bar nativo para pantallas que son
    * un "drill-down" en el mismo componente (ej. filtro por categoría) en vez de
-   * un cambio de ruta. Para navegación por ruta, ver `Navbar`'s `backTo`. */
+   * un cambio de ruta. Para volver entre rutas, la flecha vive en la topbar
+   * (ver `BackButton`). */
   onBack?: () => void;
   /** Clases adicionales para el <h1>, para páginas que necesitan un tratamiento propio del título */
   titleClassName?: string;

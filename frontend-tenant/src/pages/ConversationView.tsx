@@ -54,7 +54,7 @@ export const ConversationView = () => {
   if (error) {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50">
-        <Navbar backTo="/conversations" />
+        <Navbar />
         {sidebarVisible && <Sidebar />}
         <main className={`flex-grow py-8 px-4 sm:px-6 lg:px-8 transition-all duration-300 ${mainMargin}`}>
           <div className="max-w-7xl mx-auto">
@@ -80,7 +80,7 @@ export const ConversationView = () => {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
-      <Navbar backTo="/conversations" />
+      <Navbar />
       {sidebarVisible && <Sidebar />}
       <main className={`flex-1 flex flex-col overflow-hidden min-h-0 transition-all duration-300 ${mainMargin}`}>
         <div className="flex-1 flex flex-col w-4/5 mx-auto bg-gray-50 overflow-hidden">

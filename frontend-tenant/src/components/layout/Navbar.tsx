@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useTenant } from '../../hooks/useTenant';
+import { BackButton } from './BackButton';
 import { UserMenu } from './UserMenu';
 
 const LANDING_LINKS = [
@@ -11,14 +12,9 @@ const LANDING_LINKS = [
   { label: 'Contacto',      id: 'contacto'       },
 ];
 
-interface NavbarProps {
-  /** Ruta del "padre" lógico de la pantalla actual. Si se pasa, en mobile
-   * se muestra una flecha de volver en vez del botón hamburguesa — patrón
-   * de navegación jerárquica típico de apps nativas (ej. conversación -> lista). */
-  backTo?: string;
-}
-
-export const Navbar: React.FC<NavbarProps> = ({ backTo }) => {
+// Flecha de volver automática por ruta (ver BackButton) — el resto del chrome
+// (logo/menú de usuario) no depende de props.
+export const Navbar: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const { tenant } = useTenant();
   const navigate  = useNavigate();
@@ -79,8 +75,9 @@ export const Navbar: React.FC<NavbarProps> = ({ backTo }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
 
-          {/* ── Izquierda: logo (solo no autenticado) ── */}
+          {/* ── Izquierda: flecha de volver (autenticado) o logo (público) ── */}
           <div className="flex items-center gap-8">
+            {isAuthenticated && <BackButton variant="dark" />}
             {!isAuthenticated && (
               <Link to="/">
                 <span
@@ -129,23 +126,8 @@ export const Navbar: React.FC<NavbarProps> = ({ backTo }) => {
 
             {/* Menú de usuario — autenticado. En mobile es el ÚNICO menú: la
                 navegación de la aplicación vive en el menú del avatar (ver
-                UserMenu) en vez del drawer lateral. Solo se muestra la flecha
-                de volver cuando la pantalla tiene un padre lógico. */}
-            {isAuthenticated && (
-              <>
-                {backTo ? (
-                  /* Flecha de volver — pantallas con un padre lógico (ej. conversación -> lista) */
-                  <button
-                    onClick={() => navigate(backTo)}
-                    className="md:hidden p-2 rounded-lg text-white hover:bg-white/10 transition-colors"
-                    aria-label="Volver"
-                  >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 12H5M12 19l-7-7 7-7" /></svg>
-                  </button>
-                ) : null}
-                <UserMenu variant="dark" />
-              </>
-            )}
+                UserMenu) en vez del drawer lateral. */}
+            {isAuthenticated && <UserMenu variant="dark" />}
           </div>
         </div>
       </div>

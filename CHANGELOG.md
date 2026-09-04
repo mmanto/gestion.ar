@@ -28,6 +28,19 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `/api/public/channels/{id}` (sin redeploy del frontend).
 
 ### Cambiado
+- **Unificada la navegación de retorno: flecha de volver arriba a la
+  izquierda en toda pantalla que no es el Escritorio.** Antes convivían un
+  botón "Ir al Escritorio" (Ajustes, Compartir) con flechas de volver
+  (ConversationView, drill del Dashboard). Ahora un único `BackButton`
+  (frontend-tenant/src/components/layout/BackButton.tsx) se muestra
+  automáticamente en la topbar (navbar clásica y topbar kero, ya bajo
+  safe-area): vuelve a la pantalla anterior si hay historial en la sesión
+  (`history.state.idx > 0`) y, si se entró por deep-link, va al padre lógico
+  (lista de conversaciones para `/conversations/:id`, Escritorio para el
+  resto). Se eliminaron los botones "Ir al Escritorio" de `Settings.tsx` y
+  `Share.tsx` y la prop `backTo` de `Navbar`. El drill interno del Dashboard
+  (categoría → clientes) conserva su flecha en el encabezado por ser estado
+  de la misma ruta. **Requiere rebuild + redeploy de `frontend-tenant`.**
 - **Simplificado el menú del avatar (topbar) del panel de tenant.** Se
   quitaron las categorías "Navegación" y "Mi cuenta" y el acceso directo
   "Escritorio" del dropdown (`components/layout/UserMenu.tsx`, frontend-

@@ -1,13 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { BrandingSection } from '../components/settings/BrandingSection';
 import { BiometricSection } from '../components/settings/BiometricSection';
-import { LayoutDashboard } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { PageHeader } from '../components/common/PageHeader';
 import { Alert } from '../components/common/Alert';
 import { Card } from '../components/common/Card';
-import { Button } from '../components/common/Button';
 import { useAuth } from '../hooks/useAuth';
 import { useAccentTheme } from '../hooks/useAccentTheme';
 import botsService from '../services/bots.service';
@@ -16,7 +13,6 @@ import modulesService from '../services/modules.service';
 export const Settings = () => {
   const { user } = useAuth();
   const { accent, accentSoft } = useAccentTheme();
-  const navigate = useNavigate();
 
   // Los honorarios viven como custom fact del bot (ver modulesService) — se
   // guarda el mapa completo de facts (no solo "honorarios") porque el backend
@@ -73,12 +69,6 @@ export const Settings = () => {
           description="Información de tu cuenta"
           titleClassName="font-semibold uppercase tracking-[0.08em]"
           descriptionClassName="text-gray-800"
-          actions={
-            <Button variant="outline" onClick={() => navigate('/dashboard')}>
-              <LayoutDashboard className="w-4 h-4 mr-1.5" />
-              Ir al Escritorio
-            </Button>
-          }
         />
 
         {error && <Alert variant="error" className="mb-6">{error}</Alert>}
