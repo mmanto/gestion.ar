@@ -28,6 +28,11 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `/api/public/channels/{id}` (sin redeploy del frontend).
 
 ### Cambiado
+- **Simplificado el menú del avatar (topbar) del panel de tenant.** Se
+  quitaron las categorías "Navegación" y "Mi cuenta" y el acceso directo
+  "Escritorio" del dropdown (`components/layout/UserMenu.tsx`, frontend-
+  tenant). "Compartir" ahora va primero —por encima de "Ajustes"— con texto e
+  ícono en el color de acento del template para llamar la atención.
 - **Rediseñado el menú de cuatro cards del Escritorio del tenant iUS**
   (semáforo VIABLE / POTENCIAL / EXPLORACIÓN / SOLICITAN CONTACTO) para
   replicar la referencia `dashboard_clientes.html`: cada card pasa de tinte

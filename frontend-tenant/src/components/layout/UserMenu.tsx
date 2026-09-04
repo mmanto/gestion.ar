@@ -20,9 +20,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
 
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const isActive = (path: string) =>
-    location.pathname === path || location.pathname.startsWith(path + '/');
-
   // useEffect(() => {
   //   publicService.getLlmInfo().then((info) => setLlmModel(info.model)).catch(() => { });
   // }, []);
@@ -124,32 +121,21 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
             )}
           </div>
 
-          {/* Navegación de la aplicación — solo mobile (md:hidden). En
-              desktop la sidebar es el menú de aplicación. Por definición de
-              producto, el menú mobile solo lleva "Escritorio" (además de
-              Ajustes y Salir abajo). */}
-          <div className="md:hidden border-t border-gray-100">
-            <p className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">Navegación</p>
-            <div className="pb-1">
-              <Link
-                to="/dashboard"
-                onClick={() => setMenuOpen(false)}
-                className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
-                  isActive('/dashboard')
-                    ? 'text-blue-600 bg-blue-50 font-semibold'
-                    : 'text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3v18h18M7 15l4-6 3 4 5-8" />
-                </svg>
-                Escritorio
-              </Link>
-            </div>
-          </div>
-
-          <p className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">Mi cuenta</p>
-          <div className="pb-1">
+          {/* Acciones de cuenta — sin categorías. Compartir va primero y
+              destacado con el color de acento del template (ver Share.tsx
+              para el flujo). */}
+          <div className="pt-2 pb-2">
+            <Link
+              to="/compartir"
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-gray-50"
+              style={{ color: accent }}
+            >
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 0l-7 5M18 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98" />
+              </svg>
+              Compartir
+            </Link>
             <Link
               to="/settings"
               className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-900 hover:bg-gray-50 transition-colors"
@@ -159,16 +145,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
               Ajustes
-            </Link>
-            <Link
-              to="/compartir"
-              onClick={() => setMenuOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-900 hover:bg-gray-50 transition-colors"
-            >
-              <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 0l-7 5M18 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98" />
-              </svg>
-              Compartir
             </Link>
             <button
               type="button"
