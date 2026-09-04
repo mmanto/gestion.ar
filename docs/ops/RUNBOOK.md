@@ -59,6 +59,31 @@ curl -X DELETE http://localhost:8000/api/rag/clear
 
 ---
 
+## El backend no carga el modelo de embeddings (warning de huggingface.co en logs)
+
+Síntoma: al arrancar (o en cada request de documentos) aparece en logs
+`huggingface.co ... Failed to resolve 'huggingface.co'` / `NameResolutionError` y
+RAG queda desactivado ("Error inicializando RAG" al levantar la app).
+
+Causa: el modelo de embeddings (`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`)
+se descargaba de Hugging Face en el primer arranque del contenedor. Si el host
+no resuelve `huggingface.co`, la descarga falla y el modelo nunca carga.
+
+Solución: reconstruir la imagen — el modelo ahora se bakea en build y el runtime
+corre offline (`HF_HUB_OFFLINE=1`):
+
+```bash
+scripts/rebuild.sh            # o: docker compose build && docker compose up -d
+docker compose exec app python -c "from app.rag_service import get_rag_service; print(get_rag_service().get_stats())"
+```
+
+Alternativa sin rebuild (entorno sin acceso a Hugging Face ni siquiera en
+build): descargar el snapshot en una máquina con internet, copiarlo al host y
+apuntar `EMBEDDING_MODEL` a esa ruta (ver ENV.md). El modelo debe quedar
+accesible dentro del contenedor (p. ej. montado por volumen).
+
+---
+
 ## MongoDB no arranca
 
 ```bash

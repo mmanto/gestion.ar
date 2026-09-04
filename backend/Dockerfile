@@ -21,10 +21,24 @@ RUN apt-get update && apt-get install -y \
 # Copiar requirements
 COPY requirements.txt .
 
-# Instalar dependencias de Python; devbout-oauth es repo público
+# Copiar dependencias de Python; devbout-oauth es repo público
 RUN pip install --no-cache-dir --no-input \
       -r requirements.txt \
       "devbout-oauth @ git+https://github.com/mmanto/devbout-oauth.git@v0.2.0"
+
+# Modelo de embeddings de RAG: se descarga en BUILD (donde hay acceso a
+# huggingface.co) y queda bakeado en la imagen, para que el runtime NUNCA
+# dependa de la red. Sin esto, cada contenedor nuevo intenta descargar el
+# modelo al arrancar y falla si el host no resuelve huggingface.co (ver
+# docs/ops/RUNBOOK.md). Override con: docker build --build-arg EMBEDDING_MODEL=<id>
+ARG EMBEDDING_MODEL=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('${EMBEDDING_MODEL}'); print('Modelo de embeddings bakeado:', '${EMBEDDING_MODEL}')"
+# Runtime offline: huggingface_hub / transformers no intentan contactar el hub.
+# EMBEDDING_MODEL se exporta para que app/rag_service.py resuelva el mismo
+# modelo con el que se construyó la imagen.
+ENV HF_HUB_OFFLINE=1 \
+    TRANSFORMERS_OFFLINE=1 \
+    EMBEDDING_MODEL=${EMBEDDING_MODEL}
 
 # Copiar aplicación
 COPY . .

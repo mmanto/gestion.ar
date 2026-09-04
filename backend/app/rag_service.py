@@ -19,7 +19,7 @@ class RAGService:
     def __init__(
         self,
         chroma_path: str = "./chroma_db",
-        embedding_model: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        embedding_model: str = None,
         chunk_size: int = 500,
         chunk_overlap: int = 50
     ):
@@ -28,12 +28,15 @@ class RAGService:
 
         Args:
             chroma_path: Ruta para ChromaDB
-            embedding_model: Modelo de embeddings (pequeño y multiidioma)
+            embedding_model: Modelo de embeddings (pequeño y multiidioma).
+                Si es None se resuelve de la variable de entorno EMBEDDING_MODEL,
+                y si tampoco está definida se usa
+                "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2".
+                Puede ser un ID de Hugging Face Hub o una ruta local a un
+                snapshot ya descargado (útil si no hay acceso a huggingface.co).
             chunk_size: Tamaño de chunks (tokens)
             chunk_overlap: Overlap entre chunks
         """
-
-        # ChromaDB client
         self.chroma_client = chromadb.PersistentClient(
             path=chroma_path,
             settings=Settings(allow_reset=True)
@@ -46,8 +49,23 @@ class RAGService:
         )
 
         # Modelo de embeddings (384 dimensiones, liviano)
-        print("📥 Cargando modelo de embeddings...")
-        self.embedder = SentenceTransformer(embedding_model)
+        embedding_model = embedding_model or os.getenv(
+            "EMBEDDING_MODEL",
+            "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        )
+        print(f"📥 Cargando modelo de embeddings ({embedding_model})...")
+        try:
+            self.embedder = SentenceTransformer(embedding_model)
+        except Exception as e:
+            raise RuntimeError(
+                "No se pudo cargar el modelo de embeddings de RAG. "
+                f"Modelo solicitado: {embedding_model!r}. "
+                "Si el contenedor no tiene acceso a huggingface.co, descargá el "
+                "snapshot en una máquina con internet y apuntá EMBEDDING_MODEL "
+                "a esa ruta local (ver ENV.md), o reconstruí la imagen Docker, "
+                "que bakea el modelo en build. "
+                f"Causa original: {type(e).__name__}: {e}"
+            ) from e
         print(f"✅ Modelo cargado ({self.embedder.get_sentence_embedding_dimension()} dimensiones)")
 
         # Text splitter

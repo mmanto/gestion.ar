@@ -31,6 +31,12 @@ Internet
 | `traefik` | traefik:v3 (prod) | ~50 MB | 80, 443 | — |
 
 > El backend consume más RAM por `sentence-transformers` (PyTorch): ~1.8-2.5 GB solo para el proceso Python.
+>
+> El modelo de embeddings RAG (`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`,
+> ~470 MB) se descarga en **build** de la imagen y queda bakeado en
+> `/root/.cache/huggingface`; el runtime corre con `HF_HUB_OFFLINE=1` y nunca
+> contacta huggingface.co (el contenedor puede no tener DNS hacia el hub).
+> Sobreescribir el modelo con `--build-arg EMBEDDING_MODEL=<id>` en el build.
 
 ---
 

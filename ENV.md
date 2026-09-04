@@ -30,6 +30,9 @@ se usan para sustituir `${...}` dentro de `docker-compose.yml`/`docker-compose.p
 | `DB_PASSWORD` | ✅ | Password Postgres | — |
 | `REDIS_URL` | ✅ | URL de conexión Redis | `redis://redis:6379` |
 | `CHROMA_PATH` | ✅ | Path de ChromaDB dentro del contenedor | `/app/chroma_db` |
+| `EMBEDDING_MODEL` | ❌ | Modelo de embeddings RAG: ID de Hugging Face Hub o ruta local a un snapshot descargado. Default bakeado en la imagen Docker | `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` |
+| `HF_HUB_OFFLINE` | ❌ | Fuerza modo offline de huggingface_hub (default `1` en la imagen; el modelo se descarga en build) | `1` |
+| `TRANSFORMERS_OFFLINE` | ❌ | Fuerza modo offline de transformers (default `1` en la imagen) | `1` |
 
 > En Docker, usar nombres de servicios (`postgres`, `redis`) en lugar de `localhost`.
 > Postgres se expone en el host en el puerto `5433` para evitar colisiones. Redis en `6380`.

@@ -143,6 +143,19 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   scripts/apply_erma_branding.py`).
 
 ### Corregido
+- **El modelo de embeddings RAG no cargaba cuando el host no resuelve
+  `huggingface.co`.** `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`
+  se descargaba de Hugging Face en el primer arranque del contenedor; sin DNS
+  hacia el hub el arranque fallaba (warning `NameResolutionError`, RAG
+  desactivado) y cada request reintentaba la descarga. Ahora el modelo se
+  descarga y bakea en **build** de la imagen Docker (`backend/Dockerfile`) y el
+  runtime corre offline (`HF_HUB_OFFLINE=1` / `TRANSFORMERS_OFFLINE=1`, sin
+  contactar el hub). `backend/app/rag_service.py` resuelve el modelo desde la
+  env `EMBEDDING_MODEL` (default bakeado; admite ruta local a un snapshot si el
+  entorno tampoco tiene acceso al hub en build) y ahora falla con un error
+  accionable si no encuentra el modelo. **Requiere rebuild de la imagen del
+  backend** (`scripts/rebuild.sh` o `docker compose build && docker compose up
+  -d`).
 - **El menú superior / botón de volver se superponía a la barra de sistema en
   mobile.** En PWA standalone y en la app nativa (APK con targetSdk 36 →
   edge-to-edge forzado en Android 15+) la WebView corre debajo de la barra de
