@@ -107,6 +107,17 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   scripts/apply_erma_branding.py`).
 
 ### Corregido
+- **Avatar del chat del tenant se veía como un cuadrado deformado dentro del
+  círculo del header.** El `ChatHeader` de `frontend-tenant`
+  (`frontend-tenant/src/components/chat/ChatHeader.tsx`) renderizaba la imagen
+  del branding (`logo_url_vertical`/`logo_url`) en el badge circular como un
+  `<img>` de 28px sin `object-cover` ni recorte circular: con una fuente no
+  cuadrada (la foto-avatar de pachoteayuda es 1664×928) el navegador la
+  estiraba para llenar el cuadrado y las esquinas del rectángulo sobresalían
+  del disco blanco. Ahora la imagen se recorta en círculo desde el centro
+  (`rounded-full` + `object-cover`, contenedor con `overflow-hidden`) y se ve
+  como un avatar circular nítido, sin importar la proporción de la imagen
+  subida. **Requiere rebuild + redeploy de `frontend-tenant`.**
 - **El diálogo de permisos de notificaciones se pedía en el instante en que
   terminaba el login con Google, cortando el flujo en algunos equipos.**
   `useNativeStaffPush` lanzaba `PushNotifications.requestPermissions()` apenas
