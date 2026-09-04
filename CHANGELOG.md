@@ -28,6 +28,15 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `/api/public/channels/{id}` (sin redeploy del frontend).
 
 ### Cambiado
+- **Rediseñado el menú de cuatro cards del Escritorio del tenant iUS**
+  (semáforo VIABLE / POTENCIAL / EXPLORACIÓN / SOLICITAN CONTACTO) para
+  replicar la referencia `dashboard_clientes.html`: cada card pasa de tinte
+  plano con ícono en círculo a degradado suave 150°, píldora de color sólida
+  con el estado, descripción, número grande con etiqueta "clientes" e ícono
+  al costado, y franja inferior "Ver clientes" con flecha. En mobile el
+  encabezado del menú ahora saluda con "Hola, <nombre>" + "Gestioná tus
+  clientes y oportunidades". Componentes: `TrendStatCard.tsx`, `StatsCards.tsx`
+  y el branch mobile de `pages/Dashboard.tsx` (frontend-tenant).
 - **Eliminado el tenant `ipachoteayuda` (`pachoteayuda.intellify.pro`).** El
   tenant de negocio de Pacho queda solo en el dominio propio del cliente
   `pachoteayuda.ar`. Se eliminaron los service blocks

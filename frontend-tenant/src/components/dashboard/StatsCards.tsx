@@ -1,4 +1,4 @@
-import { Check, Star, Search, User } from 'lucide-react';
+import { ChartColumnIncreasing, Filter, ClipboardCheck, MailOpen } from 'lucide-react';
 import TrendStatCard from './TrendStatCard';
 import { formatNumber } from '../../utils/formatters';
 import { useTenant } from '../../hooks/useTenant';
@@ -15,40 +15,44 @@ const StatsCards = ({ colorStats, selectedColor, onSelectColor }: StatsCardsProp
   const mobileCols = statsTwoColsMobile ? 'grid-cols-2' : 'grid-cols-1';
 
   return (
-    <div className={`grid ${mobileCols} md:grid-cols-2 lg:grid-cols-4 gap-3`}>
+    <div className={`grid ${mobileCols} md:grid-cols-2 lg:grid-cols-4 gap-4`}>
       <TrendStatCard
         variant="green"
-        icon={<Check className="w-5 h-5 text-white" />}
+        icon={<ChartColumnIncreasing className="w-12 h-12 opacity-50" strokeWidth={1.5} />}
         title="VIABLE"
-        description="Clientes con alto potencial y listos para avanzar."
+        description="Clientes con alto potencial para avanzar."
         value={formatNumber(colorStats.verde)}
+        caption="clientes"
         onClick={onSelectColor ? () => onSelectColor('verde') : undefined}
         selected={selectedColor === 'verde'}
       />
       <TrendStatCard
         variant="yellow"
-        icon={<Star className="w-5 h-5 text-white" />}
+        icon={<Filter className="w-12 h-12 opacity-50" strokeWidth={1.5} />}
         title="POTENCIAL"
-        description="Clientes interesados, con potencial de conversión."
+        description="Clientes con potencial de conversión."
         value={formatNumber(colorStats.amarillo)}
+        caption="clientes"
         onClick={onSelectColor ? () => onSelectColor('amarillo') : undefined}
         selected={selectedColor === 'amarillo'}
       />
       <TrendStatCard
         variant="red"
-        icon={<Search className="w-5 h-5 text-white" />}
+        icon={<ClipboardCheck className="w-12 h-12 opacity-50" strokeWidth={1.5} />}
         title="EXPLORACIÓN"
         description="Clientes en evaluación inicial."
         value={formatNumber(colorStats.rojo)}
+        caption="clientes"
         onClick={onSelectColor ? () => onSelectColor('rojo') : undefined}
         selected={selectedColor === 'rojo'}
       />
       <TrendStatCard
         variant="purple"
-        icon={<User className="w-5 h-5 text-white" />}
+        icon={<MailOpen className="w-12 h-12 opacity-50" strokeWidth={1.5} />}
         title="Solicitan contacto"
         description="Clientes que solicitaron contacto."
         value={formatNumber(colorStats.sin_clasificar)}
+        caption="clientes"
         onClick={onSelectColor ? () => onSelectColor('sin_clasificar') : undefined}
         selected={selectedColor === 'sin_clasificar'}
       />
