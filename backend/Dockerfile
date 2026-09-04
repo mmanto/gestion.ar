@@ -26,19 +26,30 @@ RUN pip install --no-cache-dir --no-input \
       -r requirements.txt \
       "devbout-oauth @ git+https://github.com/mmanto/devbout-oauth.git@v0.2.0"
 
-# Modelo de embeddings de RAG: se descarga en BUILD (donde hay acceso a
-# huggingface.co) y queda bakeado en la imagen, para que el runtime NUNCA
-# dependa de la red. Sin esto, cada contenedor nuevo intenta descargar el
-# modelo al arrancar y falla si el host no resuelve huggingface.co (ver
-# docs/ops/RUNBOOK.md). Override con: docker build --build-arg EMBEDDING_MODEL=<id>
+# Modelo de embeddings de RAG: se intenta descargar de huggingface.co en BUILD
+# para bakearlo en la imagen y que el runtime no dependa de la red. El paso es
+# TOLERANTE a propósito: si este host no alcanza huggingface.co (DNS/egress
+# bloqueado), el build CONTINÚA sin el modelo en vez de abortar — un abort acá
+# deja corriendo la imagen vieja para siempre (deploy fallido). Cuando el bake
+# falla, el runtime resuelve el modelo vía EMBEDDING_MODEL=<ruta local montada>
+# (docker-compose.prod.yml monta /models/embedding-model) o falla con un error
+# accionable. Override del id: docker build --build-arg EMBEDDING_MODEL=<id>
 ARG EMBEDDING_MODEL=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('${EMBEDDING_MODEL}'); print('Modelo de embeddings bakeado:', '${EMBEDDING_MODEL}')"
+ENV EMBEDDING_MODEL=${EMBEDDING_MODEL}
+RUN python - <<'PYEOF'
+import os
+from sentence_transformers import SentenceTransformer
+model = os.environ.get("EMBEDDING_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+try:
+    SentenceTransformer(model)
+    print("Modelo de embeddings bakeado:", model)
+except Exception as exc:
+    print("[build] AVISO: no se pudo bakear el modelo de embeddings (", type(exc).__name__, ":", exc, ")")
+    print("[build] La imagen queda sin modelo. En runtime se cargará de EMBEDDING_MODEL si apunta a un snapshot local, o fallará con error accionable (ver docs/ops/RUNBOOK.md).")
+PYEOF
 # Runtime offline: huggingface_hub / transformers no intentan contactar el hub.
-# EMBEDDING_MODEL se exporta para que app/rag_service.py resuelva el mismo
-# modelo con el que se construyó la imagen.
 ENV HF_HUB_OFFLINE=1 \
-    TRANSFORMERS_OFFLINE=1 \
-    EMBEDDING_MODEL=${EMBEDDING_MODEL}
+    TRANSFORMERS_OFFLINE=1
 
 # Copiar aplicación
 COPY . .

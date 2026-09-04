@@ -63,24 +63,41 @@ curl -X DELETE http://localhost:8000/api/rag/clear
 
 Síntoma: al arrancar (o en cada request de documentos) aparece en logs
 `huggingface.co ... Failed to resolve 'huggingface.co'` / `NameResolutionError` y
-RAG queda desactivado ("Error inicializando RAG" al levantar la app).
+RAG queda desactivado ("Error inicializando RAG" al levantar la app). Si además
+el `docker compose build` muere en el paso del modelo con `exit code: 1`, el
+host tampoco alcanza huggingface.co en build — y el deploy abortado deja
+corriendo la imagen vieja (que es la que sigue tirando el warning).
 
 Causa: el modelo de embeddings (`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`)
 se descargaba de Hugging Face en el primer arranque del contenedor. Si el host
 no resuelve `huggingface.co`, la descarga falla y el modelo nunca carga.
 
-Solución: reconstruir la imagen — el modelo ahora se bakea en build y el runtime
-corre offline (`HF_HUB_OFFLINE=1`):
+### Hosts con acceso a huggingface.co (build normal)
+
+El Dockerfile intenta descargar y bakear el modelo en build; el runtime corre
+offline (`HF_HUB_OFFLINE=1`). Con acceso, reconstruir alcanza:
 
 ```bash
-scripts/rebuild.sh            # o: docker compose build && docker compose up -d
-docker compose exec app python -c "from app.rag_service import get_rag_service; print(get_rag_service().get_stats())"
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml up -d --build app
+# El build debe imprimir: Modelo de embeddings bakeado: sentence-transformers/...
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml exec app python -c "from app.rag_service import get_rag_service; print(get_rag_service().get_stats())"
 ```
 
-Alternativa sin rebuild (entorno sin acceso a Hugging Face ni siquiera en
-build): descargar el snapshot en una máquina con internet, copiarlo al host y
-apuntar `EMBEDDING_MODEL` a esa ruta (ver ENV.md). El modelo debe quedar
-accesible dentro del contenedor (p. ej. montado por volumen).
+### Hosts SIN acceso a huggingface.co (ni en build)
+
+El paso de bake es tolerante: el build termina con un AVISO y la imagen sale sin
+modelo. El modelo se provee como snapshot local montado (una sola vez):
+
+1. En una máquina con internet (el dev), exportar el snapshot del modelo:
+   `huggingface_hub.snapshot_download("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", local_dir="/tmp/embedding-model")`.
+2. Copiarlo al servidor: `scp -r /tmp/embedding-model deploy@<server>:/tmp/`
+   y colocarlo fuera del repo: `sudo mv /tmp/embedding-model /opt/models/embedding-model`.
+3. En `.env.prod` del servidor (no commiteado): `EMBEDDING_MODEL=/models/embedding-model`.
+   `docker-compose.prod.yml` ya monta `/opt/models/embedding-model:/models/embedding-model:ro`.
+4. Redeploy normal: el runtime carga el modelo del snapshot local, sin red.
+
+Verificar carga: `docker compose ... logs app | grep "Cargando modelo"` debe
+mostrar `/models/embedding-model` y "✅ Modelo cargado (384 dimensiones)".
 
 ---
 

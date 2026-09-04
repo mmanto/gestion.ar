@@ -147,15 +147,18 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `huggingface.co`.** `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`
   se descargaba de Hugging Face en el primer arranque del contenedor; sin DNS
   hacia el hub el arranque fallaba (warning `NameResolutionError`, RAG
-  desactivado) y cada request reintentaba la descarga. Ahora el modelo se
-  descarga y bakea en **build** de la imagen Docker (`backend/Dockerfile`) y el
+  desactivado) y cada request reintentaba la descarga. Ahora el Dockerfile
+  (`backend/Dockerfile`) intenta descargar y bakear el modelo en **build** y el
   runtime corre offline (`HF_HUB_OFFLINE=1` / `TRANSFORMERS_OFFLINE=1`, sin
-  contactar el hub). `backend/app/rag_service.py` resuelve el modelo desde la
-  env `EMBEDDING_MODEL` (default bakeado; admite ruta local a un snapshot si el
-  entorno tampoco tiene acceso al hub en build) y ahora falla con un error
-  accionable si no encuentra el modelo. **Requiere rebuild de la imagen del
-  backend** (`scripts/rebuild.sh` o `docker compose build && docker compose up
-  -d`).
+  contactar el hub). El paso de bake es **tolerante**: si el host del build no
+  alcanza huggingface.co, la imagen se construye igual (antes el deploy
+  abortaba y quedaba corriendo la imagen vieja) y el modelo se provee como
+  snapshot local montado en `/models/embedding-model` (docker-compose.prod.yml)
+  con `EMBEDDING_MODEL` en `.env.prod`. `backend/app/rag_service.py` resuelve
+  el modelo desde la env `EMBEDDING_MODEL` (ID de HF o ruta local) y falla con
+  un error accionable si no lo encuentra. **Requiere rebuild de la imagen del
+  backend**; en hosts sin acceso al hub, además montar el snapshot (ver
+  docs/ops/RUNBOOK.md).
 - **El menú superior / botón de volver se superponía a la barra de sistema en
   mobile.** En PWA standalone y en la app nativa (APK con targetSdk 36 →
   edge-to-edge forzado en Android 15+) la WebView corre debajo de la barra de

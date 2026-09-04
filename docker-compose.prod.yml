@@ -31,8 +31,16 @@ services:
     # git) — hoy solo firebase-credentials.json (push nativo staff, ver
     # FCM_CREDENTIALS_PATH en .env.prod y docs/dev/MOBILE.md). :ro porque el
     # backend solo lee credenciales, nunca las escribe.
+    #
+    # /opt/models/embedding-model: snapshot local del modelo de embeddings RAG
+    # para hosts cuyo build NO alcanza huggingface.co (el paso de bake del
+    # Dockerfile es tolerante y la imagen sale sin modelo). Se activa con
+    # EMBEDDING_MODEL=/models/embedding-model en .env.prod. Si la carpeta no
+    # existe o la env no está definida, no tiene efecto (se usa el modelo
+    # bakeado en la imagen). Ver docs/ops/RUNBOOK.md.
     volumes:
       - /opt/secrets:/app/secrets:ro
+      - /opt/models/embedding-model:/models/embedding-model:ro
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
     networks:
       - default
