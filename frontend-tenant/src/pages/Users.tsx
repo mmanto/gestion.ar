@@ -254,7 +254,15 @@ export const Users = () => {
       </div>
 
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          style={{
+            // El modal nunca entra debajo de la barra de sistema (PWA
+            // standalone / app nativa edge-to-edge). env() es 0 en navegador.
+            paddingTop: 'calc(env(safe-area-inset-top) + 1rem)',
+            paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)',
+          }}
+        >
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Nuevo usuario</h2>
             <form onSubmit={handleCreateUser}>
@@ -341,7 +349,15 @@ export const Users = () => {
       )}
 
       {editingUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          style={{
+            // El modal nunca entra debajo de la barra de sistema (PWA
+            // standalone / app nativa edge-to-edge). env() es 0 en navegador.
+            paddingTop: 'calc(env(safe-area-inset-top) + 1rem)',
+            paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)',
+          }}
+        >
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Editar {editingUser.username}</h2>
             <form onSubmit={handleSaveEdit}>

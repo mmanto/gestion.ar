@@ -130,6 +130,20 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   scripts/apply_erma_branding.py`).
 
 ### Corregido
+- **El menú superior / botón de volver se superponía a la barra de sistema en
+  mobile.** En PWA standalone y en la app nativa (APK con targetSdk 36 →
+  edge-to-edge forzado en Android 15+) la WebView corre debajo de la barra de
+  estado y las barras superiores (navbar clásica y layout kero) quedaban
+  debajo del notch. Se agregó soporte de safe-area (`env(safe-area-inset-*)`,
+  ya activo vía `viewport-fit=cover`): utilidades `.pt-safe-area` /
+  `.pb-safe-area` en `frontend-tenant/src/index.css`, aplicadas a la navbar
+  (`components/layout/Navbar.tsx`), al layout kero
+  (`templates/kero/AppLayout.tsx`), al header del chat
+  (`components/chat/ChatHeader.tsx`) y a los overlays a pantalla completa
+  (`common/Modal.tsx`, `common/Drawer.tsx` y los modales inline de
+  `pages/Users.tsx`), de modo que menú y botones de volver quedan siempre
+  debajo de la barra del sistema. En navegador/desktop `env()` vale 0: sin
+  cambio visual. **Requiere rebuild + redeploy de `frontend-tenant`.**
 - **Avatar del chat del tenant se veía como un cuadrado deformado dentro del
   círculo del header.** El `ChatHeader` de `frontend-tenant`
   (`frontend-tenant/src/components/chat/ChatHeader.tsx`) renderizaba la imagen

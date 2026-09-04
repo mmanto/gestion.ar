@@ -19,7 +19,13 @@ export function ChatHeader({ isConnected }: ChatHeaderProps) {
   return (
     <div
       className="flex items-center gap-3 px-4 py-3 text-white shadow-md"
-      style={{ backgroundColor: primaryColor }}
+      style={{
+        backgroundColor: primaryColor,
+        // La barra de marca se extiende debajo de la barra de sistema (PWA
+        // standalone / app nativa edge-to-edge); el contenido queda debajo
+        // del inset. env() es 0 en navegador/desktop.
+        paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)',
+      }}
     >
       {/* El badge es circular. La imagen llena el disco completo (w-9 h-9):
           sin object-cover el navegador la estira al tamaño del slot y las

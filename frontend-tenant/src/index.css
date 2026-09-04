@@ -161,3 +161,22 @@
 .animate-ripple {
   animation: ripple 600ms ease-out;
 }
+
+/*
+ * Safe areas de la barra de sistema (viewport-fit=cover en index.html).
+ *
+ * En PWA standalone y en la app nativa (WebView edge-to-edge) la app corre
+ * DEBAJO de la barra de estado / notch; env() devuelve el alto real del
+ * inset, y 0 en navegador/desktop — por eso estas clases son inocuas fuera
+ * de esos contextos.
+ *
+ * Van sin @layer (CSS sin capa) a propósito: ganan a cualquier utility de
+ * padding de Tailwind en el mismo elemento.
+ */
+.pt-safe-area {
+  padding-top: env(safe-area-inset-top);
+}
+
+.pb-safe-area {
+  padding-bottom: env(safe-area-inset-bottom);
+}

@@ -21,7 +21,15 @@ export const Modal = ({ open, onClose, title, children }: ModalProps) => {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-[70] flex items-center justify-center px-4 py-4"
+      style={{
+        // El modal nunca entra debajo de la barra de sistema (PWA standalone /
+        // app nativa edge-to-edge). env() es 0 en navegador/desktop.
+        paddingTop: 'calc(env(safe-area-inset-top) + 1rem)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)',
+      }}
+    >
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
       <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl flex flex-col max-h-full">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-300">

@@ -30,7 +30,14 @@ export const Drawer = ({ open, onClose, title, children }: DrawerProps) => {
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-300">
+        <div
+          className="flex items-center justify-between px-6 py-4 border-b border-gray-300"
+          style={{
+            // Header a pantalla completa: queda debajo de la barra de sistema
+            // en PWA standalone / app nativa. env() es 0 en navegador/desktop.
+            paddingTop: 'calc(env(safe-area-inset-top) + 1rem)',
+          }}
+        >
           <h2 className="text-lg font-semibold text-gray-900 truncate">{title}</h2>
           <button
             onClick={onClose}
@@ -40,7 +47,7 @@ export const Drawer = ({ open, onClose, title, children }: DrawerProps) => {
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto flex flex-col min-h-0">{children}</div>
+        <div className="flex-1 overflow-y-auto flex flex-col min-h-0 pb-safe-area">{children}</div>
       </div>
     </div>
   );

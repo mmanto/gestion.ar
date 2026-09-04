@@ -18,7 +18,7 @@ export function KeroAppLayout({ children }: KeroAppLayoutProps) {
   return (
     <div className="min-h-screen" style={{ backgroundColor: KERO_PAGE_BG }}>
       {sidebarVisible && <KeroSidebar />}
-      <div className={`flex flex-col min-h-screen transition-all duration-300 ${contentPadding}`}>
+      <div className={`flex flex-col min-h-screen pt-safe-area transition-all duration-300 ${contentPadding}`}>
         <KeroTopbar />
         <main className="flex-grow px-2 pb-2 md:px-8 md:pb-10">
           <div className="w-full">
