@@ -9,8 +9,11 @@
     <title>Terapia Ocupacional Vida Activa</title>
     <script src="./assets/bundle.js" defer></script>
     <link rel="stylesheet" href="./assets/style-DsA80jQ7.css">
-    <!-- Chat embed: botón flotante + iframe con el chat del tenant (ver chat-widget.js) -->
-    <script src="./chat-widget.js" defer></script>
+    <!-- Chat embed: botón flotante + iframe con el chat del tenant (ver chat-widget.js).
+         COMENTADO 2026-09-07: chat desactivado de la landing. Para reactivarlo,
+         descomentar la línea <script> de abajo (chat-widget.js se sigue sirviendo
+         y sigue listado en nginx.conf / reglas Path de Traefik). -->
+    <!-- <script src="./chat-widget.js" defer></script> -->
     <!-- Scroll nativo: neutraliza el smooth-scroll de Lenis del bundle (ver scroll-fix.js) -->
     <script src="./scroll-fix.js" defer></script>
     <!-- Pantalla de carga del sitio: cubre la landing hasta que termina de

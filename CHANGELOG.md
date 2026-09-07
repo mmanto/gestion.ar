@@ -28,6 +28,11 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `/api/public/channels/{id}` (sin redeploy del frontend).
 
 ### Cambiado
+- **Chat desactivado en la landing de ERMA** (`sites/erma/index.html`): el
+  `<script src="./chat-widget.js">` queda comentado, así la landing ya no
+  muestra el botón flotante ni el panel de chat embebido. Reversible: basta
+  descomentar la línea; `chat-widget.js` se sigue sirviendo y permanece
+  listado en `nginx.conf` y en las reglas Path de Traefik.
 - **Unificada la navegación de retorno: flecha de volver arriba a la
   izquierda en toda pantalla que no es el Escritorio.** Antes convivían un
   botón "Ir al Escritorio" (Ajustes, Compartir) con flechas de volver
