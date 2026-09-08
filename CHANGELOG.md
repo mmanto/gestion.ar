@@ -28,6 +28,14 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `/api/public/channels/{id}` (sin redeploy del frontend).
 
 ### Cambiado
+- **Trigger del menú del avatar solo con "Opciones" en todas las pantallas**
+  (`frontend-tenant/src/components/layout/UserMenu.tsx`). El botón que abre
+  el menú mostraba el círculo con la inicial del nombre en desktop y mobile
+  (en desktop además el texto "Opciones", oculto bajo `sm`). Ahora el
+  trigger es solo el texto "Opciones" con el chevron, sin el círculo de la
+  inicial, en ambas variantes (dark/light) y cualquier ancho. La identidad
+  del usuario (avatar + nombre + email) sigue en el banner del dropdown
+  abierto.
 - **Colores del tag de suscripción en el menú del avatar del panel**
   (`frontend-tenant/src/components/layout/UserMenu.tsx`). El tag con el plan
   del abogado ahora distingue el estado de la suscripción con una paleta

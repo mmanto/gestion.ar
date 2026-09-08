@@ -51,20 +51,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
   const isLight = variant === 'light';
 
   const triggerClass = isLight
-    ? 'flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200'
-    : 'flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-white/30';
-
-  const avatarWrapClass = isLight
-    ? 'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0'
-    : 'w-8 h-8 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0';
-
-  const avatarTextClass = isLight
-    ? 'font-editorial font-semibold text-lg tracking-[0.08em] text-gray-900'
-    : 'font-editorial font-semibold text-lg tracking-[0.08em] text-white';
+    ? 'flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200'
+    : 'flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-white/30';
 
   const usernameClass = isLight
-    ? 'hidden sm:block text-sm font-medium text-gray-900 max-w-[120px] truncate'
-    : 'hidden sm:block text-sm font-medium text-white/90 max-w-[120px] truncate';
+    ? 'text-sm font-medium text-gray-900'
+    : 'text-sm font-medium text-white/90';
 
   const chevronClass = isLight
     ? `w-3.5 h-3.5 text-gray-400 flex-shrink-0 transition-transform duration-150 ${menuOpen ? 'rotate-180' : ''}`
@@ -73,13 +65,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
   return (
     <div className="relative" ref={menuRef}>
       <button onClick={() => setMenuOpen(v => !v)} className={triggerClass}>
-        <div className={avatarWrapClass}>
-          {user?.avatar_url ? (
-            <img src={user.avatar_url} alt={fullName} className="w-full h-full rounded-full object-cover" />
-          ) : (
-            <span className={avatarTextClass}>{avatarInitial}</span>
-          )}
-        </div>
         <span className={usernameClass}>
           Opciones
         </span>
