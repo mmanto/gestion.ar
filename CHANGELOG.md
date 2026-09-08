@@ -28,6 +28,11 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `/api/public/channels/{id}` (sin redeploy del frontend).
 
 ### Cambiado
+- **Se quita el email del mensaje de la pantalla Compartir**
+  (`frontend-tenant/src/pages/Share.tsx`). El mensaje que el abogado envía
+  por WhatsApp ya no incluye la línea "Mi correo: …" — queda solo la
+  presentación con el nombre y el link de chat (también se actualiza la
+  vista previa, que deriva del mismo texto).
 - **Logo del tenant en el círculo del banner del menú del avatar**
   (`frontend-tenant/src/components/layout/UserMenu.tsx`). El círculo donde
   iba la imagen/foto del usuario ahora muestra el logo del tenant (para iUS,

@@ -59,7 +59,6 @@ export const Share = () => {
   const messageLines = (): string[] =>
     [
       `Hola, soy ${fullName}`.trim(),
-      user?.email ? `Mi correo: ${user.email}` : null,
       'Podés escribirme directamente desde este enlace:',
       chatLink,
     ]
