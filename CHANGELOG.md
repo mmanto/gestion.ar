@@ -27,6 +27,14 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   scripts/disable_openpadel_push_notifications.py`. Se aplica en vivo vía
   `/api/public/channels/{id}` (sin redeploy del frontend).
 
+### Cambiado
+- **Colores del tag de suscripción en el menú del avatar del panel**
+  (`frontend-tenant/src/components/layout/UserMenu.tsx`). El tag con el plan
+  del abogado ahora distingue el estado de la suscripción con una paleta
+  discreta: `pending` se muestra en ámbar (como antes) y `approved`/`active`
+  en verde suave (antes verde intenso `green-500` con texto blanco), para no
+  competir con el banner de acento del template.
+
 ### Corregido
 - **Footer sin estilos en las pantallas legales de la landing de iUS**
   (`terminos-condiciones.html`, `aviso-privacidad.html` y las demás páginas
