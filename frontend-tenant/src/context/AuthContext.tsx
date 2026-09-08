@@ -64,12 +64,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Guardar token y usuario
       await authService.saveToken(response.access_token);
-      await authService.saveUser(response.user);
-      await tokenStorage.setItem('lastUsername', response.user.username);
+      // El login no devuelve el usuario completo (plan/suscripción); se
+      // obtiene de /auth/me como en loginWithProvider para que el tag del
+      // plan en el menú del avatar aparezca sin depender de un reload.
+      let fullUser = response.user;
+      try {
+        fullUser = await authService.verifyToken();
+      } catch {
+        // El token recién emitido ya validó la sesión; si /auth/me falla por
+        // red se usa el usuario del login y el próximo arranque refresca.
+      }
+      await authService.saveUser(fullUser);
+      await tokenStorage.setItem('lastUsername', fullUser.username);
 
       // Actualizar estado
       setToken(response.access_token);
-      setUser(response.user);
+      setUser(fullUser);
       setIsAuthenticated(true);
     } catch (error) {
       console.error('Login error:', error);

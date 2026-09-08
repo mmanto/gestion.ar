@@ -27,6 +27,16 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   scripts/disable_openpadel_push_notifications.py`. Se aplica en vivo vía
   `/api/public/channels/{id}` (sin redeploy del frontend).
 
+### Corregido
+- **El tag del plan dejaba de verse en el menú del avatar tras entrar con
+  correo+contraseña** (`frontend-tenant/src/context/AuthContext.tsx`). El
+  login guardaba como usuario la respuesta de `/auth/login`, que no incluye
+  el plan (`requested_plan_id`/`subscription_status`/`plan_name`) — esos
+  campos solo vienen de `/auth/me`, así que el tag aparecía recién tras un
+  reload de la app (o en los flujos Google/huella, que sí refrescan). Ahora
+  el login por contraseña refresca el usuario con `/auth/me` después de
+  emitir el token, igual que ya hacía `loginWithProvider`.
+
 ### Cambiado
 - **Chat desactivado en la landing de ERMA** (`sites/erma/index.html`): el
   `<script src="./chat-widget.js">` queda comentado, así la landing ya no
