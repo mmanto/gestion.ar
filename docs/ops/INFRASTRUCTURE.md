@@ -194,6 +194,16 @@ lista de `Path(...)` del router `landing-ius` — si se suman más assets no-htm
 `expires -1` sobre ese bundle porque su nombre es fijo entre redeploys
 (cache heurística del navegador podría servir una versión vieja).
 
+> **Caso footer.css (2026-09-07):** las páginas legales de la landing ius
+> (`terminos-condiciones.html`, `aviso-privacidad.html`, etc.) comparten
+> `footer.css`, que **no** estaba en la lista de `Path(...)` del router
+> `landing-ius` ni en el `COPY *.css` del Dockerfile de la landing — Traefik
+> mandaba `/footer.css` al SPA del tenant (que devuelve su index/404) y los
+> footers se renderizaban sin estilos. Se agregó `/footer.css` a la lista de
+> `Path(...)` del router (prod y local) y `*.css` al `COPY`. Regla práctica:
+> cada asset no-html nuevo de una landing requiere su `Path(...)` **y** su
+> `COPY` en el Dockerfile.
+
 **Chat embebido en la landing erma (`sites/erma/chat-widget.js`):** botón
 flotante + panel que carga el chat del tenant en un iframe
 (`/chat/c/{channel_id}`, mismo origen — el `X-Frame-Options: SAMEORIGIN` del

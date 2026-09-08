@@ -28,6 +28,16 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `/api/public/channels/{id}` (sin redeploy del frontend).
 
 ### Corregido
+- **Footer sin estilos en las pantallas legales de la landing de iUS**
+  (`terminos-condiciones.html`, `aviso-privacidad.html` y las demás páginas
+  que comparten `footer.css` en `sites/ius-landing/`). El CSS del footer no
+  se copiaba a la imagen Docker (`Dockerfile` copiaba solo `*.html`,
+  `register-embed.js` e imágenes) ni estaba listado en la regla del router
+  `landing-ius` de Traefik (`docker-compose.tenants.prod.yml` /
+  `docker-compose.tenants.local.yml`), así que `/footer.css` caía en el SPA
+  del tenant y devolvía 404 — el footer renderizaba como HTML sin estilos.
+  Se agrega `*.css` al `COPY` del Dockerfile y `Path(`/footer.css`)` a la
+  rule del router landing-ius (prod y local).
 - **El tag del plan dejaba de verse en el menú del avatar tras entrar con
   correo+contraseña** (`frontend-tenant/src/context/AuthContext.tsx`). El
   login guardaba como usuario la respuesta de `/auth/login`, que no incluye
