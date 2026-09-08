@@ -118,23 +118,23 @@ const ClientsGrid = ({ colorFilter }: ClientsGridProps) => {
           />
         </Card>
       ) : (
-        <Table>
+        <Table tableClassName={isMobile ? 'table-fixed w-full' : ''}>
           <TableHead>
             <tr>
               <TableHeaderCell>Cliente</TableHeaderCell>
-              <TableHeaderCell>Acciones</TableHeaderCell>
+              <TableHeaderCell className={isMobile ? 'w-32' : ''}>Acciones</TableHeaderCell>
             </tr>
           </TableHead>
           <TableBody>
             {clients.map((client) => (
               <TableRow key={client.client_id}>
-                <TableCell>
-                  <div>
-                    <p className="text-lg font-normal text-gray-900">
+                <TableCell className={isMobile ? 'min-w-0' : ''}>
+                  <div className={isMobile ? 'min-w-0' : ''}>
+                    <p className={`text-lg font-normal text-gray-900 ${isMobile ? 'truncate' : ''}`}>
                       {client.name || client.external_id}
                     </p>
                     {client.dni && (
-                      <p className="text-base text-gray-800">DNI: {client.dni}</p>
+                      <p className={`text-base text-gray-800 ${isMobile ? 'truncate' : ''}`}>DNI: {client.dni}</p>
                     )}
                   </div>
                 </TableCell>

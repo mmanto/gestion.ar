@@ -28,6 +28,14 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `/api/public/channels/{id}` (sin redeploy del frontend).
 
 ### Cambiado
+- **Logo del tenant en el círculo del banner del menú del avatar**
+  (`frontend-tenant/src/components/layout/UserMenu.tsx`). El círculo donde
+  iba la imagen/foto del usuario ahora muestra el logo del tenant (para iUS,
+  el logo de iUS) con fondo blanco para que conserve su color original; el
+  logo usado es el vertical del branding con fallback al general/horizontal.
+  Si el tenant no tiene logo configurado se mantiene el comportamiento
+  anterior (avatar del usuario o inicial). Aplica a todos los tenants — cada
+  uno ve su propio logo.
 - **Trigger del menú del avatar solo con "Opciones" en todas las pantallas**
   (`frontend-tenant/src/components/layout/UserMenu.tsx`). El botón que abre
   el menú mostraba el círculo con la inicial del nombre en desktop y mobile
@@ -44,6 +52,17 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   competir con el banner de acento del template.
 
 ### Corregido
+- **Scroll horizontal en las grillas de clientes del Escritorio (mobile)**
+  (`frontend-tenant/src/components/dashboard/ClientsGrid.tsx`,
+  `frontend-tenant/src/templates/kero/ClientsGrid.tsx`,
+  `frontend-tenant/src/components/common/Table.tsx`). En pantallas
+  móviles la grilla de clientes (las 4 vistas de llegada filtradas por
+  semáforo desde el Escritorio) forzaba un ancho mayor al viewport — la
+  primera columna con el nombre del cliente crecía con el contenido y el
+  wrapper mostraba scroll horizontal. Ahora en mobile la tabla usa layout
+  fijo (`table-fixed w-full`): la primera columna (Cliente) ocupa el ancho
+  restante y su contenido se trunca con ellipsis, y la columna de acciones
+  queda fija — sin desplazamiento horizontal. Desktop sin cambios.
 - **Footer sin estilos en las pantallas legales de la landing de iUS**
   (`terminos-condiciones.html`, `aviso-privacidad.html` y las demás páginas
   que comparten `footer.css` en `sites/ius-landing/`). El CSS del footer no

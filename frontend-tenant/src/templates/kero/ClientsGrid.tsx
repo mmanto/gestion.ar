@@ -137,13 +137,13 @@ const KeroClientsGrid = ({ colorFilter }: ClientsGridProps) => {
         // borde y esquinas redondeadas (la forma característica de kero),
         // líneas verticales y horizontales entre celdas.
         <div className="border border-[#dee2e6] rounded-[1.4rem] bg-white overflow-hidden overflow-x-auto">
-          <table className="min-w-full border-collapse">
+          <table className={`min-w-full border-collapse ${isMobile ? 'table-fixed w-full' : ''}`}>
             <thead className="bg-white border-b border-[#dee2e6]">
               <tr className="divide-x divide-[#dee2e6]">
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Cliente</th>
                 <th className="hidden md:table-cell px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Canal</th>
                 <th className="hidden md:table-cell px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Último contacto</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Acciones</th>
+                <th className={`px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider ${isMobile ? 'w-32' : ''}`}>Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#dee2e6]">

@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useAccentTheme } from '../../hooks/useAccentTheme';
+import { useTenant } from '../../hooks/useTenant';
+import { resolveAssetUrl } from '../../utils/assetUrl';
 // import { publicService } from '../../services/public.service';
 
 interface UserMenuProps {
@@ -12,6 +14,7 @@ interface UserMenuProps {
 export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
   const { user, logout } = useAuth();
   const { accent } = useAccentTheme();
+  const { tenant } = useTenant();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -48,6 +51,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
   const fullName = [user?.nombre, user?.apellido].filter(Boolean).join(' ') || user?.username || '';
   const avatarInitial = (user?.nombre || user?.username || '?').charAt(0).toUpperCase();
 
+  // Logo del tenant para el círculo del banner: en un espacio circular chico
+  // entra mejor el logo vertical (marca apilada) que el horizontal.
+  const tenantLogo = resolveAssetUrl(
+    tenant?.branding.logo_url_vertical || tenant?.branding.logo_url || tenant?.branding.logo_url_horizontal
+  );
+  const tenantName = tenant?.name || 'iUS';
+
   const isLight = variant === 'light';
 
   const triggerClass = isLight
@@ -80,8 +90,14 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
           <div className="relative px-4 pt-4 pb-5" style={{ backgroundColor: accent }}>
 
             <div className="flex items-center gap-3 pr-16">
-              <div className="w-12 h-12 bg-white/20 ring-2 ring-white/30 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
-                {user?.avatar_url ? (
+              <div
+                className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${
+                  tenantLogo ? 'bg-white ring-1 ring-black/10' : 'bg-white/20 ring-2 ring-white/30'
+                }`}
+              >
+                {tenantLogo ? (
+                  <img src={tenantLogo} alt={tenantName} className="w-8 h-8 object-contain" />
+                ) : user?.avatar_url ? (
                   <img src={user.avatar_url} alt={fullName} className="w-full h-full object-cover" />
                 ) : (
                   <span className="font-editorial font-semibold text-2xl tracking-[0.08em] text-white">

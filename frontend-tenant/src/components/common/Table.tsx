@@ -3,6 +3,8 @@ import React from 'react';
 interface TableProps {
   children: React.ReactNode;
   className?: string;
+  /** Clases extra para el <table> interno (p.ej. `table-fixed` en mobile). */
+  tableClassName?: string;
 }
 
 // Sin caja propia (ni bg-white/border/shadow): en esta app la Table siempre
@@ -10,9 +12,9 @@ interface TableProps {
 // shadow="none"), así que ese fondo+borde solo agregaba una caja repetida
 // adentro de otra. El header teñido (TableHead) y los separadores entre
 // filas (divide-y) ya alcanzan para leer la tabla sin el box extra.
-export const Table: React.FC<TableProps> = ({ children, className = '' }) => (
+export const Table: React.FC<TableProps> = ({ children, className = '', tableClassName = '' }) => (
   <div className={`overflow-x-auto ${className}`}>
-    <table className="min-w-full divide-y divide-gray-200">{children}</table>
+    <table className={`min-w-full divide-y divide-gray-200 ${tableClassName}`}>{children}</table>
   </div>
 );
 
