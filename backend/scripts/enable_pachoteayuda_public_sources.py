@@ -7,12 +7,15 @@ el chat embebido en la landing de César Pacho):
      web le ofrezca al LLM las tools del Boletín Oficial Municipal (SIBOM) y de
      la farmacia de turno del sitio del municipio (ver BotConfig /
      PublicSourcesConfig y app/services/public_sources_service.py).
-  2. Marca esas dos herramientas como implementadas en
-     `ius_config.estado_de_herramientas`. Sin esto la tool funciona igual, pero
-     el prompt le prohíbe al agente usarlas o mencionarlas
-     (`regla_si_no_implementada`), así que el vecino seguiría recibiendo el
-     rechazo. Además reemplaza la documentación obsoleta del bloque (describía
-     cómo extraer el dato del HTML a mano, cuando ahora lo devuelve la tool).
+  2. Marca las herramientas del bloque `ius_config.estado_de_herramientas` como
+     implementadas y agrega la búsqueda de normas publicadas
+     (`buscar_norma_publicada`, que no existía). Sin esto la tool funciona
+     igual, pero el prompt le prohíbe al agente usarlas o mencionarlas
+     (`regla_si_no_implementada`) y, para los temas de
+     `datos_que_cambian_seguido`, sólo consulta en vivo las herramientas
+     listadas ahí: el vecino seguiría recibiendo el rechazo. Además reemplaza
+     la documentación obsoleta del bloque (describía cómo extraer el dato del
+     HTML a mano, cuando ahora lo devuelve la tool).
 
 Uso (dentro del contenedor del backend):
 
@@ -44,6 +47,24 @@ FARMACIA_FUENTE = (
     "dirección y teléfono (renderizado en el servidor)"
 )
 FARMACIA_PATRON = "Últimas 48 h: {{nombre}}|DIRECCIÓN|TELÉFONO"
+
+# La tool de SIBOM también tiene que figurar en estado_de_herramientas: el
+# prompt del bot decide "consultar en vivo" sólo por las herramientas listadas
+# ahí (ver prioridad_de_respuesta), así que sin esta entrada el agente deriva al
+# vecino a mirar el boletín por su cuenta en vez de buscarlo — el mismo rechazo
+# que se está corrigiendo con las fuentes públicas.
+SIBOM_HERRAMIENTA = {
+    "implementada": True,
+    "fuente": (
+        "https://sibom.slyt.gba.gob.ar/ — búsqueda de normas del Partido de Bolívar con el "
+        "boletín, la fecha de publicación y el texto completo de cada una"
+    ),
+    "cuando": (
+        "Cuando pregunten si una norma está publicada, en qué boletín o en qué fecha salió, o "
+        "pidan su texto (tema 'boletín oficial' de datos_que_cambian_seguido). Sólo publica desde "
+        "2016: para normas anteriores responde la base de conocimiento."
+    ),
+}
 
 # Documentación del bloque que quedó obsoleta al pasar la consulta a una tool
 # del backend (`regex_sugerida` describía cómo extraer el nombre del farmacia
@@ -92,6 +113,18 @@ async def main() -> None:
                         if clave in farmacia:
                             del farmacia[clave]
                             cambios.append(f"ius_config.farmacia_de_turno_en_vivo.{clave} (eliminada)")
+
+                sibom = herramientas.get("buscar_norma_publicada")
+                if not isinstance(sibom, dict):
+                    herramientas["buscar_norma_publicada"] = dict(SIBOM_HERRAMIENTA)
+                    cambios.append("ius_config.estado_de_herramientas.buscar_norma_publicada")
+                else:
+                    for clave, valor in SIBOM_HERRAMIENTA.items():
+                        if sibom.get(clave) != valor:
+                            sibom[clave] = valor
+                            cambios.append(
+                                f"ius_config.estado_de_herramientas.buscar_norma_publicada.{clave}"
+                            )
 
             if not cambios:
                 print(f"   bot {row.bot_id} ({row.name}): sin cambios (ya aplicado)")
