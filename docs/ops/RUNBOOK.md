@@ -393,6 +393,57 @@ esa falla el problema está en `RAGService._norm_number_variants`, no en el índ
 
 ---
 
+## El chat de pachoteayuda no trae datos en vivo (boletín oficial / farmacia de turno)
+
+El bot `bot_7b6946dceb98` consulta dos fuentes públicas en el momento de la
+conversación (ver ADR-018): SIBOM (boletín oficial municipal, ordenanzas,
+decretos y resoluciones desde 2016) y la farmacia de turno del sitio del
+municipio. Se habilitan con `config.public_sources` más la entrada
+correspondiente en `ius_config` (`estado_de_herramientas` y el mapa
+`datos_que_cambian_seguido.herramienta_por_tema`). Todo eso lo deja listo un
+script idempotente:
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml \
+  exec -T app python scripts/enable_pachoteayuda_public_sources.py
+```
+
+> El script necesita `flag_modified` para escribir: los cambios son anidados
+> dentro del JSONB `config` y SQLAlchemy no incluye la columna en el UPDATE si
+> sólo cambió contenido anidado (el commit informa éxito y el cambio no queda).
+
+Chequeo de las tools sin pasar por el chat (dentro del contenedor):
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml \
+  exec -T app python -c "from app.services.public_sources_service import search_sibom, get_farmacias_turno; import json; print(json.dumps(search_sibom(15, 'ordenanza 2459', 'ordenanza')['resultados'][:1], ensure_ascii=False)); print(json.dumps(get_farmacias_turno('https://www.bolivar.gob.ar/'), ensure_ascii=False))"
+```
+
+Si el agente responde que no tiene el dato, en orden:
+
+1. `config.public_sources` en el bot (lo imprime el script al correrlo).
+2. La herramienta en `estado_de_herramientas` con `implementada: true` — con
+   `false` el prompt se lo prohíbe (`regla_si_no_implementada`).
+3. El mapa `datos_que_cambian_seguido.herramienta_por_tema`: sin la entrada del
+   tema, el agente deriva al vecino en vez de consultar (comprobable mirando si
+   aparecen claves nuevas en la caché de Redis, ver abajo).
+4. Si la tool corre y devuelve `{"error": ...}`: egress del contenedor
+   (`curl -sI https://sibom.slyt.gba.gob.ar/`) o markup cambiado. En ese caso el
+   parser devuelve vacío a propósito y el chat cae al comportamiento anterior;
+   hay que ajustar el parser en `backend/app/services/public_sources_service.py`
+   y **subir `CACHE_PREFIX` a `v2`** para invalidar lo cacheado con el formato
+   viejo, y redeployar `app`.
+
+Ver la caché (búsquedas de SIBOM 24 h, contenido de normas 7 días, farmacia 1 h):
+
+```bash
+docker exec gestionar_redis sh -c "redis-cli --scan --pattern 'public_sources:*'"
+# Vaciar todo lo cacheado de las fuentes públicas:
+docker exec gestionar_redis sh -c "redis-cli --scan --pattern 'public_sources:*' | xargs -r redis-cli del"
+```
+
+---
+
 ## Limpieza de disco
 
 ```bash

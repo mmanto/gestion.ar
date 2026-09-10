@@ -975,3 +975,104 @@ contexto, no el prompt del tenant.
 - Los tests de los proveedores mockean `sync_generate`/`httpx`, así que el
   contrato a verificar es el mensaje final; `tests/test_rag_norm_numbers.py`
   cubre la otra mitad (las variantes por número de norma).
+
+---
+
+## ADR-018: Fuentes públicas en vivo (SIBOM y farmacia de turno) por tool calling, sin reindexar
+
+**Estado:** Aceptado
+**Fecha:** 2026-09-10
+
+### Contexto
+
+El chat de pachoteayuda respondía sólo con el corpus de normas del HCD indexado
+en ChromaDB (ADR-016). Dos límites concretos:
+
+1. El corpus es una foto: no ve nada publicado después de indexar.
+2. Hay datos que no son del corpus y cambian todo el tiempo, como la farmacia de
+   turno (`bolivar.gob.ar`, listado semanal con el día de hoy marcado).
+
+`hcdbolivar.gob.ar` queda afuera de cualquier consulta en vivo: está detrás de un
+desafío JS anti-bot (cookie `wssplashchk`). SIBOM (`sibom.slyt.gba.gob.ar`) —el
+registro donde el municipio publica ordenanzas, decretos y resoluciones desde
+2016— responde GET plano, sin credenciales ni JS, con buscador avanzado por
+municipio (Bolívar = `city_id` 15) y el texto completo de cada norma.
+
+### Opciones consideradas
+
+1. **Re-indexar el corpus periódicamente** (sumar SIBOM al pipeline del HCD y
+   correrlo por cron) — el dato sigue siendo una foto, hay que mantener dos
+   pipelines, y no cubre datos por hora como la farmacia de turno.
+2. **Tool en vivo con caché en Redis** — el LLM consulta la fuente en el turno
+   en que la necesita; la caché evita pegarle al sitio en cada mensaje.
+3. **Derivar al vecino al sitio oficial** (lo que el bot ya hacía: "consultalo
+   acá") — cero riesgo técnico, pero deja sin responder la pregunta que el
+   vecino hizo.
+
+### Decisión
+
+Opción 2. `app/services/public_sources_service.py` expone dos tools
+(`buscar_norma_publicada` y `farmacia_de_turno`) que el chat web ofrece cuando el
+bot tiene `config.public_sources` (`BotConfig.public_sources`; sin migración:
+`config` es JSONB). Los parsers de HTML están separados de la red y se prueban
+contra recortes literales del HTML real. La caché es Redis con TTLs por tipo de
+dato (24 h búsquedas, 7 días contenido de normas, 1 h farmacias) y se degrada a
+"sin caché" si Redis no responde. La consulta nunca rompe el chat: ante cualquier
+fallo la tool devuelve `{"error": ...}` con la URL oficial y el modelo responde
+con lo que ya tenía.
+
+El servicio es síncrono a propósito: lo llaman los executors de tools, que ya
+corren en el thread de `asyncio.to_thread` de `sync_generate` (mismo contrato que
+`prospect_auto_qualify_service`), así que no necesita el puente
+`run_coroutine_threadsafe` (ese existe para servicios que tocan la base).
+
+### Consecuencias
+
+- El markup de dos sitios de terceros pasa a ser una dependencia: si cambia, el
+  parser devuelve vacío y la tool responde `error` con la URL oficial (el chat
+  cae al comportamiento anterior). Al ajustar un parser hay que subir
+  `CACHE_PREFIX` a `v2` para invalidar lo cacheado con el formato viejo.
+- `config.public_sources` ausente = bot sin las tools: los demás tenants no
+  cambian de comportamiento (y el bloque tiene defaults, para que un `{}` cargado
+  a mano en el panel no rompa la carga del bot).
+- Habilitar la herramienta en `ius_config.estado_de_herramientas` es parte de la
+  decisión, no un detalle: el prompt del bot sólo consulta en vivo lo que figura
+  ahí (`prioridad_de_respuesta`) y con `implementada: false` la
+  `regla_si_no_implementada` le prohíbe usarla. Lo aplica
+  `scripts/enable_pachoteayuda_public_sources.py`, idempotente — y ese script
+  necesita `flag_modified` porque sus cambios quedan anidados dentro del JSONB
+  `config`.
+- Además hizo falta un mapa tema → herramienta
+  (`datos_que_cambian_seguido.herramienta_por_tema`) y una instrucción de uso
+  (`como_consultar_en_vivo`): `prioridad_de_respuesta` pide "consultar en vivo"
+  sin nombrar la herramienta, y sin el mapa el agente derivaba al vecino aunque
+  la tool existiera (verificado: cero consultas y cero entradas nuevas en la
+  caché durante las pruebas en el chat).
+- La invocación depende del modelo, no sólo del prompt. Medido en el contenedor
+  con el prompt y el contexto RAG reales (`deepseek-v4-flash`): la tool de la
+  farmacia se llama 4/4 veces; la de SIBOM, para "¿en qué boletín se publicó la
+  ordenanza 2459?", 3/4 y 2/4 en dos tandas con el mismo prompt (la variabilidad
+  es del modelo con `tool_choice: auto`, no del prompt: probó peor prohibir la
+  derivación explícitamente, agregar la regla a `restrictions` y explicitar que
+  la fecha del contexto es la de sanción y no la de publicación). Cuando la llama,
+  el dato siempre es el correcto; cuando no, deriva al vecino sin inventar. No hay
+  palanca de temperatura para ajustar eso: `bot.config.temperature` no viaja en
+  el payload de ningún proveedor (ni DeepSeek, ni Claude, ni Ollama). Si en
+  algún caso hace falta que el dato salga siempre, el camino es forzar la tool
+  (`tool_choice`) para ese tema, no reescribir el prompt.
+- Cuando el corpus ya tiene el texto de la norma, el modelo tiende a no consultar
+  nada: la instrucción tiene que decir explícitamente que el número de boletín y
+  la fecha de publicación no están en la base ni se deducen del texto. Antes de
+  esa aclaración, una corrida respondió con una fecha de publicación inventada
+  (la fecha de la norma no es la fecha del boletín).
+- El resultado de SIBOM lleva una `nota` explícita ("ordena por relevancia y
+  publica desde 2016: que no aparezca no implica que no exista") porque su
+  buscador no hace coincidencia exacta y devuelve normas parecidas: sin eso el
+  modelo concluiría que una norma no existe cuando en realidad es anterior al
+  boletín (caso Ordenanza 2130/2010, que sólo está en el corpus del HCD).
+- Las URLs que el bot ya escribía se linkifican en el SPA del tenant
+  (`frontend-tenant/src/utils/linkify.tsx`). Eso destapó un problema aparte: el
+  `index.html` del SPA no declaraba `Cache-Control`, así que un navegador que ya
+  había visitado el sitio podía seguir ejecutando el bundle viejo después de un
+  deploy; ahora se revalida en cada carga y los assets hasheados siguen con caché
+  inmutable.

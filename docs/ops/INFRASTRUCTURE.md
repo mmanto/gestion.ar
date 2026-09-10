@@ -164,7 +164,12 @@ Cada landing (ius, laboralia, proptech, erma, openpadel — ver `docker-compose.
 comparte el dominio con el SPA de su tenant (`frontend-tenant-*`). El SPA es un
 app de una sola página cuyo nginx sirve `index.html` para casi cualquier ruta
 (`try_files $uri /index.html`), así que si una página estática de la landing
-cae en el router del tenant, "no se ve" (devuelve el index del SPA).
+cae en el router del tenant, "no se ve" (devuelve el index del SPA). Ese
+`index.html` se sirve con `Cache-Control: no-cache` (revalida en cada carga):
+referencia los assets por hash, así que un HTML guardado "fresco" por
+heurística del navegador dejaba al visitante ejecutando el bundle viejo durante
+horas después de un deploy. Los assets hasheados siguen con caché inmutable de
+un año.
 
 Por eso el router de la landing lleva prioridad explícita y matchea por path:
 

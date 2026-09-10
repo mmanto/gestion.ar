@@ -59,8 +59,57 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   flag en `ChatPage`). Ejecutar en el backend: `docker compose exec app python
   scripts/disable_openpadel_push_notifications.py`. Se aplica en vivo vía
   `/api/public/channels/{id}` (sin redeploy del frontend).
+- **Fuentes públicas en vivo en el chat de pachoteayuda.ar**
+  (`backend/app/services/public_sources_service.py`). El corpus del HCD es
+  estático (no ve nada publicado después de indexar), así que el chat suma dos
+  tools que el LLM consulta en el momento de la conversación, sin reindexar ni
+  reiniciar contenedores. Se habilitan por bot con `config.public_sources`
+  (`BotConfig.public_sources`, sin migración: `config` es JSONB), así que los
+  demás tenants no cambian de comportamiento:
+  - `buscar_norma_publicada`: búsqueda en el Sistema de Boletín Oficial
+    Municipal (SIBOM, `sibom.slyt.gba.gob.ar`; Bolívar = `city_id` 15) con el
+    texto completo de la norma más relevante y su enlace oficial. El resultado
+    aclara que SIBOM ordena por relevancia y publica desde 2016, para que el
+    modelo no concluya que una norma no existe cuando en realidad es anterior
+    al boletín (caso Ordenanza 2130/2010, que sólo está en el corpus del HCD).
+  - `farmacia_de_turno`: listado semanal de farmacias del sitio del municipio
+    (`#listafarmacias`), con la de hoy marcada — un dato que el corpus no puede
+    tener. Verificado en vivo contra el sitio oficial: nombre, dirección y
+    teléfono coinciden.
+  Las consultas se cachean en Redis (`public_sources:v1:*`: 24 h búsquedas,
+  7 días contenido de normas, 1 h farmacias) y se degradan a "sin caché" si
+  Redis no responde. Los parsers están separados de la red y se prueban contra
+  recortes literales del HTML real (`backend/tests/test_public_sources_service.py`);
+  el listado de farmacias anida un `<ul>` por farmacia, así que el recorte del
+  listado balancea etiquetas en vez de cortar en el primer `</ul>`.
+  `backend/scripts/enable_pachoteayuda_public_sources.py` (idempotente) carga el
+  bloque en el bot, agrega las herramientas a
+  `ius_config.estado_de_herramientas` y completa `datos_que_cambian_seguido` con
+  el mapa tema → herramienta y la instrucción de usarla: el prompt pide
+  "consultar en vivo" cuando el tema es de `datos_que_cambian_seguido` y la
+  herramienta está implementada, pero no nombra cuál, y con la entrada en
+  `false` la `regla_si_no_implementada` le prohíbe al agente usarla. Medido con
+  el prompt y el RAG reales: la farmacia de turno se consulta siempre; la
+  búsqueda en SIBOM, cuando el corpus ya tiene la norma, en 2-3 de cada 4
+  corridas (la variabilidad es del modelo con tool choice automático; cuando no
+  la llama, deriva al sitio oficial sin inventar el dato).
+- **Enlaces clickeables en el chat del tenant**
+  (`frontend-tenant/src/utils/linkify.tsx`). Las URLs que el bot ya escribía en
+  sus respuestas (normas, boletín, sitio del municipio) salían como texto
+  plano: ahora se convierten en enlaces que abren en otra pestaña
+  (`target="_blank"`, `rel="noopener noreferrer"`), recortando antes los signos
+  de puntuación que quedan pegados al final de la URL. El resto del mensaje
+  conserva el formato, y los mensajes sin URLs no cambian.
 
 ### Cambiado
+- **El `index.html` del SPA de tenant no se cachea** (`frontend-tenant/nginx.conf`).
+  Sin `Cache-Control`, el navegador lo guardaba "fresco" por heurística (10 % del
+  tiempo desde el deploy) y un deploy quedaba invisible para quien ya había
+  visitado el sitio: seguía ejecutando el bundle viejo durante horas, porque el
+  HTML referencia los assets por hash. Detectado en la verificación en vivo del
+  linkify, donde la pestaña seguía corriendo el bundle previo al deploy. Los
+  assets hasheados mantienen cache inmutable de 1 año (mismo criterio que el
+  service worker, que ya revalida el shell contra la red).
 - **Se quita el email del mensaje de la pantalla Compartir**
   (`frontend-tenant/src/pages/Share.tsx`). El mensaje que el abogado envía
   por WhatsApp ya no incluye la línea "Mi correo: …" — queda solo la
