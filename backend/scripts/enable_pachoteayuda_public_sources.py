@@ -27,6 +27,7 @@ Idempotente: re-ejecutarlo es seguro (ya aplicado → no cambia nada).
 import asyncio
 
 from sqlalchemy import select
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.db.database import AsyncSessionLocal
 from app.db.models import Bot
@@ -131,6 +132,13 @@ async def main() -> None:
                 continue
 
             row.config = config
+            # `config` es JSONB y los cambios de este script son, en una
+            # re-ejecución sobre un bot ya configurado, SÓLO anidados
+            # (ius_config.estado_de_herramientas.*): sin flag_modified
+            # SQLAlchemy no incluye la columna en el UPDATE y el cambio se
+            # pierde en silencio (verificado en prod 2026-09-10: el commit
+            # informa éxito y la clave no queda en la base).
+            flag_modified(row, "config")
             await session.commit()
             actualizados += 1
             print(f"✅ bot {row.bot_id} ({row.name}) — tenant {row.tenant_id}: {', '.join(cambios)}")
