@@ -81,9 +81,10 @@ DATOS_QUE_CAMBIAN_EXTRA = {
         "farmacia de turno": "farmacia_de_turno_en_vivo",
     },
     "como_consultar_en_vivo": (
-        "Si el vecino pregunta por el boletín oficial, la fecha de publicación o el texto de una "
-        "norma, usá la herramienta que indica 'herramienta_por_tema' y respondé con el enlace "
-        "oficial de lo que encuentres: no derives al Concejo por ese dato. Sólo publica normas "
+        "Para el boletín oficial, la fecha de publicación o el texto de una norma, llamá a la "
+        "herramienta que indica 'herramienta_por_tema' ANTES de responder y respondé con el enlace "
+        "oficial que devuelva. Aunque el texto de la norma ya esté en la base, el número de boletín "
+        "y la fecha de publicación NO están ahí y no se deducen del texto. Sólo publica normas "
         "desde 2016; para las anteriores la respuesta sale de la base de conocimiento."
     ),
 }
