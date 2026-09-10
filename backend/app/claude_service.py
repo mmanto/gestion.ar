@@ -32,6 +32,34 @@ class ChatResponse(BaseModel):
     context_used: Optional[str] = None
 
 
+# Etiqueta del bloque de contexto recuperado. Además de encabezarlo, le dice al
+# modelo que eso es la fuente cuando la consulta es por un documento que sí está
+# cargado -- sin esa aclaración, un asistente con instrucciones conservadoras
+# ("si no estás seguro, decí que no lo tenés") deriva a la fuente oficial aunque
+# el texto esté delante.
+_RAG_CONTEXT_LABEL = (
+    "CONTEXTO RELEVANTE (extractos de documentos ya cargados; es tu fuente para esta "
+    "respuesta: si contiene el dato consultado —la misma norma, trámite o tema—, "
+    "respondé con ese contenido y no digas que no lo tenés):"
+)
+
+
+def build_user_message_with_context(user_message: str, context: Optional[str]) -> str:
+    """
+    Devuelve el mensaje del usuario con el contexto RAG pegado al final.
+
+    El contexto va en el turno del usuario, no en el system prompt, a propósito:
+    con el contexto en el system prompt, un asistente que ya había respondido
+    "no tengo esa ordenanza" seguía sosteniendo el rechazo en los turnos
+    siguientes de la misma conversación aunque el documento se recuperara bien;
+    delante del último turno del usuario sí lo usa (medido contra el corpus de
+    normas del HCD de Bolívar del bot de pachoteayuda, ver ADR-016).
+    """
+    if not context:
+        return user_message
+    return f"{user_message}\n\n{_RAG_CONTEXT_LABEL}\n{context}"
+
+
 class ClaudeService:
     """Servicio para interacciones con Claude API"""
 
@@ -118,22 +146,11 @@ class ClaudeService:
             ChatResponse con la respuesta y metadatos
         """
         try:
-            # Construir el system prompt: default o el del bot, seguido siempre
-            # del contexto RAG si existe (antes se perdía el contexto cuando
-            # se pasaba un system_prompt propio, ver _build_system_prompt)
+            # Construir el system prompt: default o el del bot. El contexto RAG
+            # viaja en el turno del usuario (ver build_user_message_with_context),
+            # no acá.
             if not system_prompt:
                 system_prompt = self._build_system_prompt()
-            if context:
-                system_prompt += (
-                    "\n\nCONTEXTO RELEVANTE (información de la base de conocimiento):\n"
-                    f"{context}\n\n"
-                    "INSTRUCCIONES:\n"
-                    "- Usa el contexto proporcionado para responder cuando sea relevante\n"
-                    "- Si la información del contexto responde directamente la pregunta, úsala\n"
-                    "- Si el contexto no tiene información relevante, responde basándote en tu conocimiento general\n"
-                    "- Sé claro, conciso y profesional\n"
-                    "- Si no estás seguro de algo, admítelo honestamente"
-                )
 
             # Construir mensajes
             messages = []
@@ -146,10 +163,10 @@ class ClaudeService:
                         "content": msg.content
                     })
 
-            # Agregar mensaje del usuario
+            # Agregar mensaje del usuario, con el contexto RAG si existe
             messages.append({
                 "role": "user",
-                "content": user_message
+                "content": build_user_message_with_context(user_message, context)
             })
 
             # Reusa sync_generate (incluye el loop de tool calling) en vez de

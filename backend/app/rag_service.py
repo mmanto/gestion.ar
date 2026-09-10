@@ -5,6 +5,7 @@ Gestiona la base de conocimiento vectorial con ChromaDB y Sentence-Transformers
 
 import os
 import re
+from datetime import datetime
 from typing import List, Dict
 import chromadb
 from chromadb.config import Settings
@@ -239,6 +240,21 @@ class RAGService:
     _NORM_NUMBER_RE = re.compile(r"\b(\d{1,5})\s*/\s*(\d{2,4})\b")
     # dd/mm/yyyy (o dd/mm/yy): no es un número de norma
     _DATE_RE = re.compile(r"\b\d{1,2}\s*/\s*\d{1,2}\s*/\s*\d{2,4}\b")
+    # Palabras que anuncian un número de norma
+    _NORM_WORD = (r"ordenanza|decreto|resoluci[oó]n|comunicaci[oó]n|disposici[oó]n"
+                  r"|ley|norma|expediente|ord|res")
+    # "ordenanza 2130", "decreto nº 1234": número sin año, con la palabra delante
+    _BARE_NORM_RE = re.compile(
+        rf"\b(?:{_NORM_WORD})\b\.?\s*(?:n[°º]?\.?|nro\.?|n[uú]mero)?\s*(\d{{1,5}})(?!/)\b",
+        re.I,
+    )
+    # Número suelto de 3 a 5 cifras, sin la palabra delante: "y la 2130?"
+    _BARE_NUMBER_RE = re.compile(r"\b(\d{3,5})(?!/)\b")
+
+    # Año más viejo que tiene sentido como sufijo de una norma del corpus. Los
+    # números de norma pelados se expanden a `numero/AAAA` y `numero/AA` contra
+    # este piso (ver _norm_number_variants).
+    _EARLIEST_NORM_YEAR = 1940
 
     @classmethod
     def _norm_number_variants(cls, query: str) -> List[str]:
@@ -250,15 +266,28 @@ class RAGService:
         miles de normas, "¿qué dice la ordenanza 3142/2026?" recuperaba el
         documento correcto apenas ~7% de las veces (medido), mientras que el
         filtro exacto por `numero` acierta el 100%.
+
+        Un número escrito sin año ("ordenanza 2130") no tiene forma de saberse
+        de qué año es, así que se expande a todos los años posibles del corpus:
+        la metadata guarda el identificador completo ("2130/2010") y Chroma no
+        filtra por prefijo, pero un `$in` de ~180 valores resuelve lo mismo.
         """
-        # Una fecha (12/09/2026) contiene un "12/09" que no es número de norma.
         cleaned = cls._DATE_RE.sub(" ", query)
         # Los números cortos sólo se toman con una palabra de norma delante
         # ("ordenanza 1/2024"): sueltos, "12/09" es una fecha.
-        has_keyword = bool(re.search(
-            r"\b(ordenanza|decreto|resoluci[oó]n|comunicaci[oó]n|disposici[oó]n"
-            r"|ley|norma|expediente|ord|res)\b", query, re.I))
+        has_keyword = bool(re.search(rf"\b(?:{cls._NORM_WORD})\b", query, re.I))
         variants: List[str] = []
+
+        def add(variant: str) -> None:
+            if variant not in variants:
+                variants.append(variant)
+
+        def add_all_years(num: str) -> None:
+            """Número sin año: se prueban todos los años posibles del corpus."""
+            for year in range(cls._EARLIEST_NORM_YEAR, datetime.now().year + 1):
+                add(f"{num}/{year}")
+                add(f"{num}/{year % 100:02d}")
+
         for m in cls._NORM_NUMBER_RE.finditer(cleaned):
             num, year = str(int(m.group(1))), m.group(2)
             if len(num) < 3 and not has_keyword:
@@ -266,8 +295,19 @@ class RAGService:
             yy = year[-2:]
             yyyy = year if len(year) == 4 else f"{'19' if int(yy) > 30 else '20'}{yy}"
             for v in (f"{num}/{yy}", f"{num}/{yyyy}", f"{num}/{year}"):
-                if v not in variants:
-                    variants.append(v)
+                add(v)
+
+        if has_keyword:
+            for m in cls._BARE_NORM_RE.finditer(cleaned):
+                add_all_years(str(int(m.group(1))))
+        for m in cls._BARE_NUMBER_RE.finditer(cleaned):
+            num = m.group(1)
+            # Un código de área arranca con 0 y un año no es un número de norma:
+            # ninguno de los dos se expande a menos que la palabra esté delante.
+            if num.startswith("0") or (len(num) == 4 and 1900 <= int(num) <= 2100):
+                continue
+            add_all_years(str(int(num)))
+
         return variants
 
     def search(

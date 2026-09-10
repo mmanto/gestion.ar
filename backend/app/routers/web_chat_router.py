@@ -17,7 +17,13 @@ from fastapi.responses import Response
 
 from app.auth_service import User
 from app.dependencies.auth import get_current_user
-from app.claude_service import get_llm_service, ChatMessage, build_effective_system_prompt, get_effective_welcome_message
+from app.claude_service import (
+    get_llm_service,
+    ChatMessage,
+    build_effective_system_prompt,
+    build_user_message_with_context,
+    get_effective_welcome_message,
+)
 from app.connection_manager import connection_manager, notify_staff_of_client_message
 from app.conversation_service import get_conversation_service
 from app.rag_service import get_rag_service
@@ -836,10 +842,8 @@ def _sync_generate(
 ) -> dict:
     """Wrapper síncrono para llamar al LLM activo desde asyncio.to_thread."""
     messages = [{"role": m.role, "content": m.content} for m in history]
-    messages.append({"role": "user", "content": user_message})
+    # El contexto RAG viaja en el turno del usuario, no en el system prompt
+    # (ver build_user_message_with_context).
+    messages.append({"role": "user", "content": build_user_message_with_context(user_message, context)})
 
-    full_system_prompt = system_prompt
-    if context:
-        full_system_prompt += f"\n\nCONTEXTO RELEVANTE:\n{context}"
-
-    return llm.sync_generate(full_system_prompt, messages, max_tokens, thinking, tools, tool_executor)
+    return llm.sync_generate(system_prompt, messages, max_tokens, thinking, tools, tool_executor)

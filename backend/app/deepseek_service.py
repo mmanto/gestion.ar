@@ -13,7 +13,7 @@ from typing import Optional, List, Callable
 
 import httpx
 
-from app.claude_service import ChatMessage, ChatResponse
+from app.claude_service import ChatMessage, ChatResponse, build_user_message_with_context
 
 
 class DeepSeekService:
@@ -207,14 +207,14 @@ class DeepSeekService:
     ) -> ChatResponse:
         if not system_prompt:
             system_prompt = "Eres un asistente virtual inteligente y servicial."
-        if context:
-            system_prompt += f"\n\nCONTEXTO RELEVANTE:\n{context}"
 
         messages = []
         if conversation_history:
             for msg in conversation_history:
                 messages.append({"role": msg.role, "content": msg.content})
-        messages.append({"role": "user", "content": user_message})
+        # El contexto RAG viaja en el turno del usuario, no en el system prompt
+        # (ver build_user_message_with_context).
+        messages.append({"role": "user", "content": build_user_message_with_context(user_message, context)})
 
         result = await asyncio.to_thread(
             self.sync_generate, system_prompt, messages, max_tokens, thinking, tools, tool_executor
