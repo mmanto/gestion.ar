@@ -7,6 +7,34 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **Páginas de normas del HCD y de trámites municipales en pachoteayuda.ar**
+  (`scripts/generate_pachoteayuda_pages.py`,
+  `sites/pachoteayuda-landing/`). El dominio servía una sola URL de 80 palabras
+  y todo el contenido real (las ~3.800 normas del HCD, las fuentes públicas en
+  vivo) vivía detrás del WebSocket del chat: para un buscador el sitio era una
+  página de marca. El generador —stdlib, sin dependencias— arma desde el mismo
+  corpus JSONL que indexa el RAG (ver ADR-016) una página por norma
+  (`/normas/<sección>/<año>/<slug>/`, con el texto completo, la fecha y el enlace
+  al PDF oficial en `hcdbolivar.gob.ar`), más índices por sección y año, el hub
+  `/normas/`, los 9 trámites de la Guía de Trámites del municipio en `/tramites/`
+  (requisitos citados y enlace oficial) y el `sitemap.xml` con las 3.642 URLs.
+  Datos estructurados por tipo (`Legislation` + `BreadcrumbList` en las normas,
+  `FAQPage` en los trámites) y CTA al chat en todas. Las ~300 normas sin texto
+  digitalizado se publican igual pero con `noindex, follow` y fuera del sitemap.
+  Las páginas generadas no se versionan: se regeneran antes del build (paso en
+  `docs/ops/DEPLOYMENT.md`). Requiere rebuild + redeploy de
+  `landing-pachoteayuda`. Ver ADR-019.
+- **SEO técnico de la landing de pachoteayuda.ar**
+  (`sites/pachoteayuda-landing/`). `robots.txt` propio (el SPA del tenant
+  respondía `200 text/html` en `/robots.txt`, así que el archivo no existía para
+  Google), `sitemap.xml`, favicons, `og-image.png` 1200×630 con Open Graph y
+  Twitter Card (el link compartido por WhatsApp no mostraba imagen), JSON-LD
+  `Organization` + `FAQPage`, una sección visible de preguntas frecuentes —cuyas
+  respuestas son exactamente las del JSON-LD— y otra de "Qué podés consultar"
+  que enlaza `/tramites/` y `/normas/`. Las cinco imágenes que estaban embebidas
+  en base64 pasaron a `.webp` en `/landing/` con `width`/`height`, `loading` y
+  `fetchpriority`. El router de la landing suma `/robots.txt`, `/sitemap.xml`,
+  `/landing/`, `/normas/` y `/tramites/`.
 - **Base de conocimiento de normas del HCD de Bolívar para el chat de
   pachoteayuda.ar.** El bot del chat de la landing (`bot_7b6946dceb98`, canal
   `channel_96ad03bc1a1d`) puede responder con el texto completo de las ~3.800
@@ -150,6 +178,23 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   competir con el banner de acento del template.
 
 ### Corregido
+- **La landing de pachoteayuda ya no se queda en la pantalla de carga**
+  (`sites/pachoteayuda-landing/index.html`). El overlay de progreso tapaba todo
+  el contenido (`position:fixed; inset:0; z-index:99999`) hasta que se cumplían
+  el `load`, `document.fonts.ready` y el decode de las cinco imágenes, con una
+  red de seguridad de 12 s: medido en el navegador, podía seguir visible después
+  del `load` — el LCP era la pantalla de carga, no el hero. Con el overlay
+  eliminado y las imágenes fuera del HTML, la página queda en 25 KB de HTML
+  (7,7 KB gzip) contra los 280 KB (194 KB gzip) que se transferían antes: 259 KB
+  (92 %) eran cinco JPEG en base64, incacheables y sin `lazy`.
+- **`robots.txt` y `sitemap.xml` de pachoteayuda.ar los servía el SPA del
+  tenant** (`docker-compose.tenants.prod.yml`,
+  `sites/pachoteayuda-landing/nginx.conf`). El router de la landing sólo
+  matcheaba `/`, `*.html` y `/chat-widget.js`, así que ambos paths caían en el
+  router del tenant:`200 text/html` con `<title>Backoffice</title>` — un
+  robots.txt en HTML que Google descarta. Ahora los sirve la landing
+  (`text/plain` y `text/xml`) y además cualquier ruta inexistente del dominio
+  devuelve 404 en esas páginas, en vez del `200` del catch-all del SPA.
 - **`www.pachoteayuda.ar` no daba certificado**
   (`docker-compose.tenants.prod.yml`). El DNS de www ya apuntaba al servidor por
   CNAME, pero ningún router de Traefik matcheaba ese host: no había certificado

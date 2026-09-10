@@ -133,9 +133,13 @@ services:
 
   # landing-pachoteayuda comparte dominio con frontend-tenant-pachoteayuda
   # (pachoteayuda.ar): este router matchea "/", cualquier página .html de la
-  # landing (PathRegexp) y el chat-widget — cualquier otra ruta (/login,
-  # /dashboard, /assets/*, /api/*...) cae en tenant-pachoteayuda. La landing
-  # es copia de la que servía pachoteayuda.intellify.pro (hoy eliminada).
+  # landing (PathRegexp), el chat-widget, robots.txt/sitemap.xml (SEO: el SPA
+  # del tenant responde 200 con su index.html en cualquier ruta, así que el
+  # robots.txt tenía que salir de acá) y las páginas generadas /normas/ y
+  # /tramites/ (ver scripts/generate_pachoteayuda_pages.py) junto con sus
+  # assets propios en /landing/ — cualquier otra ruta (/login, /dashboard,
+  # /assets/*, /api/*...) cae en tenant-pachoteayuda. La landing es copia de
+  # la que servía pachoteayuda.intellify.pro (hoy eliminada).
   landing-pachoteayuda:
     build:
       context: ./sites/pachoteayuda-landing
@@ -145,7 +149,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_public"
-      - 'traefik.http.routers.landing-pachoteayuda.rule=Host(`pachoteayuda.ar`) && (PathRegexp(`^/.*\.html$`) || Path(`/`) || Path(`/chat-widget.js`))'
+      - 'traefik.http.routers.landing-pachoteayuda.rule=Host(`pachoteayuda.ar`) && (Path(`/`) || PathRegexp(`^/.*\.html$`) || Path(`/chat-widget.js`) || Path(`/robots.txt`) || Path(`/sitemap.xml`) || PathPrefix(`/landing/`) || PathPrefix(`/normas/`) || PathPrefix(`/tramites/`))'
       - "traefik.http.routers.landing-pachoteayuda.entrypoints=websecure"
       - "traefik.http.routers.landing-pachoteayuda.tls.certresolver=letsencrypt"
       - "traefik.http.routers.landing-pachoteayuda.priority=10"

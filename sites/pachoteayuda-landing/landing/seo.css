@@ -1,0 +1,150 @@
+/* Estilos de las páginas generadas de pachoteayuda.ar (/normas/ y /tramites/).
+ * La landing (index.html) lleva su CSS embebido; estas páginas comparten este
+ * archivo para no repetir 20 KB de estilos en cada una de las ~3.900 páginas.
+ * Misma paleta y tipografías que index.html. */
+
+:root{
+  --purple-900:#130a21;
+  --purple-800:#1f1034;
+  --violet:#2a1648;
+  --accent:#441e7d;
+  --bg:#f5f3fb;
+  --ink:#1b1330;
+  --muted:#655e78;
+  --line:#e4dff5;
+  --white:#fff;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:'Montserrat',system-ui,-apple-system,sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  line-height:1.6;
+}
+a{color:inherit;text-decoration:none;}
+img{max-width:100%;height:auto;}
+
+/* ---------- HEADER ---------- */
+.site-header{
+  background:var(--purple-900);
+  padding:14px 22px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  flex-wrap:wrap;
+}
+.site-header .brand img{height:44px;width:auto;display:block;}
+.site-header nav{display:flex;gap:20px;flex-wrap:wrap;}
+.site-header nav a{color:rgba(255,255,255,.82);font-weight:600;font-size:14.5px;}
+.site-header nav a:hover{color:var(--white);text-decoration:underline;}
+
+/* ---------- ESTRUCTURA ---------- */
+.wrap{max-width:1000px;margin:0 auto;padding:28px 22px 64px;}
+.breadcrumbs{font-size:13.5px;color:var(--muted);margin-bottom:22px;display:flex;gap:8px;flex-wrap:wrap;}
+.breadcrumbs a{color:var(--accent);font-weight:600;}
+.breadcrumbs a:hover{text-decoration:underline;}
+.breadcrumbs span{color:var(--muted);}
+
+h1{font-size:clamp(24px,3.4vw,36px);font-weight:800;color:var(--purple-800);letter-spacing:-.4px;line-height:1.2;}
+h2{font-size:clamp(19px,2.4vw,24px);font-weight:800;color:var(--purple-800);margin-bottom:10px;}
+h3{font-size:16.5px;font-weight:800;color:var(--purple-800);}
+.lead{color:var(--muted);font-size:16.5px;max-width:760px;margin-top:12px;}
+.meta{font-family:'JetBrains Mono',Consolas,monospace;font-size:12.5px;letter-spacing:.4px;color:var(--muted);margin-top:14px;text-transform:uppercase;}
+
+/* ---------- TEXTO DE UNA NORMA ---------- */
+.norm-text{
+  background:var(--white);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:26px 28px;
+  margin-top:26px;
+  font-size:15.5px;
+}
+.norm-text p{white-space:pre-wrap;margin-bottom:16px;overflow-wrap:break-word;}
+.norm-text p:last-child{margin-bottom:0;}
+.missing{
+  background:#fff8e6;
+  border:1px solid #f0dfae;
+  border-radius:16px;
+  padding:20px 22px;
+  margin-top:26px;
+  font-size:15px;
+}
+.source{margin-top:18px;font-size:14.5px;color:var(--muted);}
+.source a{color:var(--accent);font-weight:700;}
+.source a:hover{text-decoration:underline;}
+
+/* ---------- LISTADOS ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-top:26px;}
+.card{background:var(--white);border:1px solid var(--line);border-radius:18px;padding:20px 22px;display:flex;flex-direction:column;gap:8px;}
+.card p{color:var(--muted);font-size:14.5px;}
+.card a{color:var(--accent);font-weight:700;font-size:14.5px;margin-top:auto;}
+.card a:hover{text-decoration:underline;}
+.count{font-family:'JetBrains Mono',Consolas,monospace;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;}
+
+.norm-list{list-style:none;margin-top:22px;display:flex;flex-direction:column;gap:2px;}
+.norm-list li{border-bottom:1px solid var(--line);}
+.norm-list a{display:flex;gap:16px;padding:12px 6px;align-items:baseline;}
+.norm-list a:hover{background:var(--white);}
+.norm-list .num{font-family:'JetBrains Mono',Consolas,monospace;font-size:13px;font-weight:600;color:var(--accent);min-width:112px;}
+.norm-list .t{font-size:15px;flex:1;}
+.norm-list .d{font-family:'JetBrains Mono',Consolas,monospace;font-size:12px;color:var(--muted);white-space:nowrap;}
+
+.siblings{display:flex;justify-content:space-between;gap:16px;margin-top:26px;font-size:14.5px;flex-wrap:wrap;}
+.siblings a{color:var(--accent);font-weight:700;}
+.siblings a:hover{text-decoration:underline;}
+
+/* ---------- CTA AL CHAT ---------- */
+.cta{
+  margin-top:34px;
+  background:linear-gradient(160deg,var(--purple-900),var(--accent));
+  border-radius:20px;
+  padding:26px 28px;
+  color:var(--white);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  flex-wrap:wrap;
+}
+.cta p{font-size:16px;font-weight:600;max-width:560px;}
+.cta small{display:block;font-weight:500;font-size:13.5px;color:rgba(255,255,255,.72);margin-top:6px;}
+.btn-chat{
+  font-family:inherit;
+  font-size:15px;
+  font-weight:700;
+  color:var(--purple-900);
+  background:#c4b5fd;
+  border:0;
+  border-radius:999px;
+  padding:14px 26px;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.btn-chat:hover{background:var(--white);}
+
+/* ---------- TRÁMITES ---------- */
+.req{background:var(--white);border:1px solid var(--line);border-radius:18px;padding:24px 26px;margin-top:24px;}
+.req h2{font-size:17px;text-transform:uppercase;letter-spacing:.6px;font-family:'JetBrains Mono',Consolas,monospace;color:var(--accent);}
+.req p,.req li{font-size:15px;white-space:pre-wrap;}
+.req ul{margin:10px 0 0 20px;}
+.req p + p{margin-top:12px;}
+.forms{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;}
+.forms a{background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-size:13.5px;font-weight:600;color:var(--accent);}
+.forms a:hover{border-color:var(--accent);}
+
+/* ---------- FOOTER ---------- */
+.site-footer{background:var(--purple-900);color:rgba(255,255,255,.78);padding:34px 22px;font-size:14px;}
+.site-footer .inner{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:10px;}
+.site-footer a{color:#c4b5fd;font-weight:600;}
+.site-footer a:hover{text-decoration:underline;}
+
+@media (max-width:620px){
+  .norm-list a{flex-direction:column;gap:2px;}
+  .norm-list .num{min-width:0;}
+  .wrap{padding:22px 16px 48px;}
+  .norm-text{padding:20px 18px;}
+}

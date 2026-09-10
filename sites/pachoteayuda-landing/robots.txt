@@ -1,0 +1,18 @@
+# pachoteayuda.ar — landing pública (puerto 80/443 del mismo host que la app
+# del tenant). La landing se indexa; la app no: /login y /dashboard son el
+# panel privado y /chat/ es el cliente del asistente en vivo (SPA, sin
+# contenido propio que indexar).
+#
+# Este archivo lo sirve el contenedor landing-pachoteayuda: el router de Traefik
+# enruta Path(`/robots.txt`) ahí (docker-compose.tenants.prod.yml).
+
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /dashboard
+Disallow: /chat/
+Disallow: /api/
+Disallow: /ws/
+Disallow: /tenant-config.js
+
+Sitemap: https://pachoteayuda.ar/sitemap.xml

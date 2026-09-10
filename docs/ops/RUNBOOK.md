@@ -420,6 +420,23 @@ deben traer el contenido del PDF y el enlace oficial; el número pelado se
 resuelve por metadata expandiendo los años posibles (ver ADR-016), así que si
 esa falla el problema está en `RAGService._norm_number_variants`, no en el índice.
 
+### 3. Regenerar las páginas públicas de la landing
+
+El mismo corpus alimenta las páginas de normas de `pachoteayuda.ar`
+(`/normas/…`, una por norma, con `Legislation` y enlace al PDF oficial). Se
+generan en la máquina de trabajo y viajan en la imagen de `landing-pachoteayuda`:
+
+```bash
+cd ~/workspace/gestion.ar
+python3 scripts/generate_pachoteayuda_pages.py --corpus ~/workspace/bolivar/normas_corpus.jsonl
+```
+
+Escribe `sites/pachoteayuda-landing/{normas,tramites,sitemap.xml}` (~15 s, sólo
+stdlib; los trámites se leen en vivo de `bolivar.gob.ar`). Nada de eso se
+versiona: se regenera antes de cada build. `--only tramites` regenera sólo la
+guía de trámites, sin corpus. El deploy, en `DEPLOYMENT.md`.
+
+
 ---
 
 ## El chat de pachoteayuda no trae datos en vivo (boletín oficial / farmacia de turno)

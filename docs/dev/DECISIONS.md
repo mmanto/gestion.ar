@@ -1083,3 +1083,71 @@ corren en el thread de `asyncio.to_thread` de `sync_generate` (mismo contrato qu
   había visitado el sitio podía seguir ejecutando el bundle viejo después de un
   deploy; ahora se revalida en cada carga y los assets hasheados siguen con caché
   inmutable.
+---
+
+## ADR-019: Páginas estáticas de normas y trámites para el SEO de pachoteayuda.ar
+
+**Estado:** Aceptado
+**Fecha:** 2026-09-10
+
+**Contexto**
+
+El dominio `pachoteayuda.ar` servía una sola URL: la landing estática (80
+palabras visibles) con el chat embebido en un iframe. Todo el contenido real
+—~3.800 normas del HCD indexadas en Chroma (ADR-016) y las fuentes públicas en
+vivo (ADR-018)— estaba detrás de un WebSocket: para un buscador, el sitio era
+una página de marca. Y ni siquiera esa página era indexable de forma confiable:
+
+- `robots.txt` y `sitemap.xml` no existían: los servía el SPA del tenant
+  (`200 text/html`, `<title>Backoffice</title>`), porque el router de la landing
+  sólo matcheaba `/`, `*.html` y `/chat-widget.js`.
+- Cualquier ruta inexistente (`/asdasd`) devolvía `200` con el shell del SPA
+  (soft 404, un catch-all de React Router).
+- `259 KB` de los `280 KB` del `index.html` eran cinco JPEG en base64 (no
+  cacheables, no responsive, no lazy) y un overlay tapaba el contenido hasta
+  `load` + `document.fonts.ready` + decode de imágenes.
+
+**Decisión**
+
+1. La landing se convierte en un sitio estático con páginas generadas por
+   `scripts/generate_pachoteayuda_pages.py` a partir de las **mismas fuentes
+   oficiales** que alimentan el chat: el corpus JSONL del HCD
+   (`scripts/fetch_bolivar_normas.py`) y la Guía de Trámites de
+   `bolivar.gob.ar`. Un solo origen de datos para RAG y para las páginas.
+2. Jerarquía de URLs `/normas/<sección>/<año>/<slug>/` (+ índices por sección y
+   año), `/tramites/` y `/tramites/<slug>/`, con `Legislation` + `BreadcrumbList`
+   (normas) y `FAQPage` (trámites) como datos estructurados y CTA al chat en
+   todas.
+3. El router de la landing en `docker-compose.tenants.prod.yml` suma
+   `Path(/robots.txt)`, `Path(/sitemap.xml)`, `PathPrefix(/landing/)` (assets
+   propios), `PathPrefix(/normas/)` y `PathPrefix(/tramites/)`. Los assets van
+   bajo `/landing/` para no colisionar con `/assets/`, `/img/` e `/icons/` del
+   SPA del tenant.
+4. Las ~300 normas sin texto digitalizado se publican igual (ficha con fecha y
+   enlace al PDF oficial) pero con `noindex, follow` y fuera del sitemap: son
+   300 páginas casi idénticas de un párrafo, y el vecino que busca el número
+   igual llega por el listado del año.
+5. Las páginas generadas y el `sitemap.xml` no se versionan (`.gitignore`) y se
+   regeneran antes de cada build de la imagen.
+
+**Consecuencias**
+
+- El contenido deja de depender del rastreo de un WebSocket y pasa a ser HTML
+  plano servido por nginx (~4 s de generación para 3.861 páginas).
+- El build de `landing-pachoteayuda` requiere correr el generador (necesita el
+  corpus JSONL); el `COPY normas/ tramites/` del Dockerfile falla fuerte si
+  falta, en vez de publicar un sitio incompleto en silencio.
+- Se suman ~67 MB al contexto de build de la landing (HTML con el texto
+  completo de las normas, ~7 KB por página, `gzip` de nginx encima).
+
+**Alternativas descartadas**
+
+- **Un SSG (Astro/Hugo/Eleventy):** el sitio ya es HTML plano servido por nginx
+  y la plantilla es una sola; un generador de stdlib evita meter una toolchain
+  Node en el deploy de una landing estática.
+- **Publicar los trámites copiando la guía municipal completa:** sólo se
+  publican los 9 trámites que el municipio expone en su guía, con los requisitos
+  citados y el enlace oficial, para no competir con la fuente en su propio
+  contenido.
+- **Indexar las 300 normas sin texto:** un clúster de páginas de un párrafo no
+  aporta y diluye el resto del archivo.

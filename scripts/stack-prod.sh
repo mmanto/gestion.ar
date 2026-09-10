@@ -42,7 +42,7 @@ TENANTS=(ius erma)
 # ius-landing comparte dominio con el tenant "ius" (routing por Path en
 # Traefik, ver docker-compose.tenants.prod.yml) — mismo host que TENANTS,
 # por eso no necesita entrada propia en health_check().
-SITES=(ius-landing erma-landing)
+SITES=(ius-landing erma-landing pachoteayuda-landing)
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'

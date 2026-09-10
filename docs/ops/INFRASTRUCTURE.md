@@ -184,6 +184,23 @@ ve, primero verificar que el `.html` exista dentro del contenedor de la landing
 (`docker exec <landing> ls /usr/share/nginx/html`); si la ruta es correcta y el
 archivo existe, el `PathRegexp` ya la enruta al contenedor correcto.
 
+### Caso pachoteayuda: assets propios y páginas generadas
+
+El router de `landing-pachoteayuda` matchea, además de `/` y los `.html`,
+`/robots.txt`, `/sitemap.xml`, el prefijo `/landing/` (assets propios: logo, foto
+del hero, `og-image.png`, favicon y `seo.css`) y los prefijos `/normas/` y
+`/tramites/` — las páginas que genera `scripts/generate_pachoteayuda_pages.py`
+(ver ADR-019 y el paso de build en DEPLOYMENT.md).
+
+Antes de esa regla, `robots.txt` y `sitemap.xml` los servía el SPA del tenant
+(`200 text/html` con `<title>Backoffice</title>`), así que el robots.txt no tenía
+ningún efecto para los buscadores; cualquier ruta inexistente también devolvía
+`200` con el shell del SPA, porque su catch-all redirige a `/`.
+
+Los assets van bajo `/landing/` a propósito: `/assets/`, `/img/`, `/icons/` y
+`/favicon.ico` son del SPA del tenant, y el router de la landing gana por
+prioridad (10 contra 1).
+
 ### Subdominio `www`
 
 `www.pachoteayuda.ar` resuelve por CNAME al apex y **redirige 301** ahí: el apex

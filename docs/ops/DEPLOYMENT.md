@@ -235,6 +235,43 @@ infraestructura (service blocks en compose); su fila de DB se quita con
 `backend/scripts/remove_ipachoteayuda_tenant.py` — solo queda el dominio del
 cliente `pachoteayuda.ar`.
 
+### Landing de pachoteayuda: generar las páginas antes del build
+
+`landing-pachoteayuda` no sirve una sola página: además del `index.html` atiende
+`/normas/…` (una página por norma del HCD de Bolívar), `/tramites/`, el
+`sitemap.xml` y sus assets en `/landing/`. Nada de eso se versiona — lo genera
+`scripts/generate_pachoteayuda_pages.py`, y el `COPY normas/ tramites/` del
+`Dockerfile` falla si no se corrió (a propósito: mejor un build roto que un sitio
+publicado a medias).
+
+En el VPS, antes de rebuildear el servicio:
+
+```bash
+cd /opt/gestion.ar
+
+# El corpus JSONL viaja desde la máquina de trabajo (es el mismo que indexa el
+# RAG — ver RUNBOOK.md § normas):
+#   scp ~/workspace/bolivar/normas_corpus.jsonl mmanto@<VPS>:/tmp/
+python3 scripts/generate_pachoteayuda_pages.py --corpus /tmp/normas_corpus.jsonl
+#   3.861 páginas de norma + 9 de trámites + sitemap.xml — ~15 s, sólo stdlib.
+#   Los trámites se leen en vivo de bolivar.gob.ar/guia-de-tramites: este paso
+#   necesita salida a internet.
+
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml \
+  -f docker-compose.tenants.prod.yml up -d --build landing-pachoteayuda
+```
+
+Verificación (el router de la landing sólo matchea `/`, `*.html`, `/robots.txt`,
+`/sitemap.xml`, `/landing/`, `/normas/` y `/tramites/`; todo lo demás cae en el
+SPA del tenant — ver INFRASTRUCTURE.md):
+
+```bash
+curl -sI https://pachoteayuda.ar/robots.txt | head -1   # 200 text/plain
+curl -s  https://pachoteayuda.ar/sitemap.xml | head -3  # <urlset …>
+curl -sI https://pachoteayuda.ar/normas/ | head -1      # 200
+curl -sI https://pachoteayuda.ar/login   | head -1      # 200 (SPA del tenant)
+```
+
 **openpadel.pro — deploy inicial:**
 
 ```bash
