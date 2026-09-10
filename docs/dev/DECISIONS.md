@@ -790,3 +790,110 @@ En `frontend/src/pages/ChatPage.tsx`, descomentar la línea:
 {/* <PushNotificationButton channelId={channelId} botId={botId} /> */}
 ```
 y luego implementar el control granular según la opción elegida.
+
+---
+
+## ADR-016: Corpus de normas del HCD de Bolívar indexado full-text en el RAG de pachoteayuda
+
+**Estado:** Aceptado
+**Fecha:** 2026-09-09
+
+### Contexto
+
+El chat de `pachoteayuda.ar` (bot `bot_7b6946dceb98`, canal
+`channel_96ad03bc1a1d`) es el asistente ciudadano de Bolívar: recibe consultas
+sobre ordenanzas, decretos, resoluciones y comunicaciones del Honorable Concejo
+Deliberante. Respondía con información genérica porque su base de conocimiento
+no tenía el contenido de las normas.
+
+El material de origen (`hcdbolivar.gob.ar`) es una **grilla**: número, fecha,
+título y un enlace al PDF de cada norma (~3.810 normas, 1965–2026). El texto
+real está en esos PDFs, no en la grilla; indexar sólo la grilla permite decir
+"existe la norma X, mirá el enlace", pero no responder qué dice.
+
+### Opciones consideradas
+
+1. **Indexar sólo la grilla** (título + fecha + enlace) — barato y rápido, pero
+   no habilita respuestas precisas sobre el contenido: el problema reportado
+   ("contesta genérico") persiste.
+2. **Descargar los PDFs enlazados, extraer su texto e indexarlo full-text** —
+   el chat responde con el articulado real y puede citar número y enlace. Costo:
+   ~3.810 descargas (~800 MB, que no hace falta conservar), OCR para las
+   escaneadas y ~58.000 chunks en ChromaDB.
+3. **RAG en vivo** (consultar el sitio en cada pregunta) — descarta: agrega
+   latencia y fragilidad a cada mensaje, y el sitio está detrás de un desafío JS
+   anti-bot.
+
+### Decisión
+
+Opción 2, con el pipeline partido en dos pasos por dónde necesita correr cada
+uno:
+
+- `scripts/fetch_bolivar_normas.py` (máquina de trabajo): descarga con `curl`
+  —el sitio devuelve un challenge JS y exige la cookie `wssplashchk`, que hay
+  que refrescar desde un navegador real—, extrae texto con poppler y OCR con
+  tesseract para las escaneadas chicas, y descarta cada PDF al extraerlo. Salida:
+  JSONL con `{id, seccion, fecha, titulo, numero, url, texto}`. Resumible.
+- `backend/scripts/index_bolivar_normas.py` (contenedor `app`): indexa el JSONL
+  en ChromaDB scoped al bot, **un documento por norma** (`doc_id`
+  `norma_<sha1(url)>`), con metadata de título, número, sección, fecha y URL.
+  Idempotente; `--purge` re-indexa de cero.
+
+El número de norma se extrae del texto del PDF (la grilla viene corrida una fila
+respecto del enlace, así que el título de la fila no siempre corresponde al PDF).
+
+`RAGService.get_context` ahora encabeza cada fragmento con su fuente
+(`[título · número · sección · fecha · enlace]`), porque `search()` devuelve la
+metadata pero el LLM sólo veía el texto: sin eso el modelo no puede citar la
+norma ni el enlace exactos.
+
+### Chunking y recuperación (medido, no estimado)
+
+`paraphrase-multilingual-MiniLM-L12-v2` (el embedder de la plataforma, ver
+ADR-003) trunca a **128 tokens** (~450 caracteres): en chunks de 1.000, la mitad
+del texto nunca entra al embedding. Sobre un subconjunto fijo de 400 normas y
+120 consultas (recall@5 de recuperar el documento correcto):
+
+| config | recall@5 | recall@5 por título |
+|---|---|---|
+| 1.000/150 | 23,3 % | 33,8 % |
+| 450/80 | 30,8 % | 42,5 % |
+| 700/120 + identidad en cada chunk | 38,3 % | 75,0 % |
+| 450/80 + identidad en cada chunk | 39,2 % | 80,0 % |
+
+De ahí la configuración adoptada: **700/120** (misma calidad que 450/80 con ~35 %
+menos chunks) y la identidad de la norma —`[número] título`— repetida al frente de
+**todos** los chunks, no sólo del primero: en las normas largas (presupuestos,
+códigos, impositivas) el título sólo vive en el primer chunk y el resto quedaba
+sólo recuperable por el cuerpo.
+
+Las consultas por identificador ("¿qué dice la ordenanza 3142/2026?") **no las
+resuelve el embedding**: recuperaban el documento correcto 2,5–7,5 % de las veces
+(el espacio de embeddings está dominado por el texto legal, no por los números).
+`RAGService.search` ahora detecta un número de norma en la consulta
+(`_norm_number_variants`: `3142/26` y `3142/2026`) y resuelve esas normas por
+metadata exacta antes del resultado vectorial: **100 %** en la misma medición.
+
+### Consecuencias
+
+- **57.840 chunks** en el volumen `chroma_data` (~450 MB de SQLite; ~16 min de
+  indexado en una máquina de 16 núcleos), un documento por norma y metadata de
+  número, sección, fecha y enlace oficial.
+- `rag_results_count` del bot a **5**: con 3 fragmentos, en un corpus de miles de
+  normas, la respuesta correcta queda afuera del contexto con frecuencia.
+- Después de indexar hay que **reiniciar el contenedor `app`**: el proceso
+  cachea la colección de Chroma y no ve los chunks agregados por otro proceso.
+- Las ~300 normas escaneadas sin texto extraíble (PDFs grandes o ilegibles) se
+  indexan igual como ficha con título, fecha y enlace: el bot puede orientar y
+  dar el enlace, aunque no citar el articulado.
+- **Límite conocido:** con este embedder el recall@5 de consultas temáticas ronda
+  el 38–40 % — para preguntas que no citan el número de norma, el techo lo pone
+  el modelo, no el corpus. La mejora de mayor impacto es cambiar el modelo de
+  embeddings por uno de recuperación multilingüe (p. ej. `multilingual-e5` o
+  `bge-m3`, con prefijos `query:`/`passage:`); como las colecciones de Chroma no
+  son comparables entre modelos, implica re-indexar la base de **todos** los
+  bots, así que va como decisión aparte y no se hizo acá.
+- Actualizar el corpus cuando el HCD publique normas nuevas es re-correr los dos
+  pasos (ver `docs/ops/RUNBOOK.md`); no hay automatización programada.
+- El corpus (`~/workspace/bolivar/normas_corpus.jsonl`, 30 MB) y la grilla
+  (`normas_enlaces.csv`) viven fuera del repo: no se versionan. Los scripts sí.

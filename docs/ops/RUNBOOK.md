@@ -291,6 +291,93 @@ curl -s -o /dev/null -w '%{http_code}\n' "$API/api/tenant/oauth/connect/login/st
 
 ---
 
+## Cargar o actualizar las normas del HCD de Bolívar en el RAG de pachoteayuda
+
+El chat de `pachoteayuda.ar` (canal `channel_96ad03bc1a1d` → bot
+`bot_7b6946dceb98`) responde consultas sobre las normas del Honorable Concejo
+Deliberante de Bolívar. El contenido real vive en los PDFs que enlaza la grilla
+de `hcdbolivar.gob.ar` (la grilla sola — título + enlace — no alcanza para
+responder con precisión), así que se descargan y se indexa el texto completo.
+
+Pipeline de dos pasos: **fetch** (en la máquina de trabajo) → JSONL → **index**
+(dentro del contenedor `app`, contra el volumen de ChromaDB).
+
+### 1. Armar el corpus (máquina de trabajo)
+
+Necesita `curl` y poppler (`pdftotext`/`pdftoppm`); para las normas escaneadas,
+`tesseract` + tessdata de español (`TESSDATA_PREFIX=~/.local/share/tessdata`).
+
+```bash
+# La cookie se saca abriendo https://www.hcdbolivar.gob.ar/ en un navegador
+# real y copiando la cookie `wssplashchk` (el sitio está detrás de un desafío
+# JS anti-bot: sin ella la descarga va a ~0,1 archivos/s en vez de ~12/s).
+cd ~/workspace/gestion.ar
+
+python3 scripts/fetch_bolivar_normas.py \
+  --grid ~/workspace/bolivar/normas_enlaces.csv \
+  --out  ~/workspace/bolivar/normas_corpus.jsonl \
+  --cookie "wssplashchk=..."
+
+# Segunda pasada: reintenta con OCR las normas escaneadas (quedan ~300 de
+# ~3810 sin texto; ésas se indexan igual como ficha con título/fecha/enlace).
+python3 scripts/fetch_bolivar_normas.py \
+  --grid ~/workspace/bolivar/normas_enlaces.csv \
+  --out  ~/workspace/bolivar/normas_corpus.jsonl \
+  --cookie "wssplashchk=..." --retry-scans
+```
+
+Es resumible: si se corta, volver a correr el mismo comando sigue donde quedó.
+Los PDFs se descartan a medida que se extraen (no se guardan ~800 MB en disco);
+el corpus final es ~30 MB.
+
+### 2. Indexar (en el VPS, dentro del contenedor `app`)
+
+Primero deployar el código (el script y los cambios de `RAGService` viven en la
+imagen; el contenedor actual no los tiene):
+
+```bash
+ssh mmanto@<VPS>
+cd /opt/gestion.ar && ./deploy.sh
+```
+
+Después copiar el corpus y indexar:
+
+```bash
+scp ~/workspace/bolivar/normas_corpus.jsonl mmanto@<VPS>:/tmp/
+
+ssh mmanto@<VPS>
+cd /opt/gestion.ar
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml \
+  cp /tmp/normas_corpus.jsonl app:/tmp/normas_corpus.jsonl
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml \
+  exec -T app python scripts/index_bolivar_normas.py \
+    --jsonl /tmp/normas_corpus.jsonl --bot-id bot_7b6946dceb98 --rag-results 5
+
+# El proceso de la app cachea la colección: reiniciar para que el chat vea
+# los chunks nuevos.
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml \
+  restart app
+```
+
+Es idempotente: las normas ya indexadas se saltean (re-correrlo sólo agrega las
+nuevas). **Ojo**: si cambian los parámetros de chunking (`--chunk-size`,
+`--chunk-overlap`), la idempotencia saltea los documentos ya indexados y no los
+re-chunkea — en ese caso hay que re-indexar de cero con `--purge` (borra sólo
+los documentos `norma_*` de ese bot, no el resto de su base).
+
+`--rag-results 5` sube `config.rag_results_count` del bot (cuántos fragmentos se
+recuperan por consulta). Omitirlo para no tocar la config del bot.
+
+Números de referencia del corpus completo (2026-09): 3.810 normas, **57.840
+chunks**, ~30 MB de JSONL, ~450 MB en el volumen `chroma_data`, ~16 min de
+indexado. El paso 1 tarda ~6 min la primera pasada y ~1 min el `--retry-scans`.
+
+Después de indexar, verificar en el chat de `pachoteayuda.ar` una consulta
+puntual (p. ej. "¿qué dice la ordenanza 3142/2026?"): la respuesta debe traer el
+contenido del PDF y el enlace oficial.
+
+---
+
 ## Limpieza de disco
 
 ```bash

@@ -4,6 +4,7 @@ Gestiona la base de conocimiento vectorial con ChromaDB y Sentence-Transformers
 """
 
 import os
+import re
 from typing import List, Dict
 import chromadb
 from chromadb.config import Settings
@@ -234,6 +235,41 @@ class RAGService:
 
         return len(results["ids"])
 
+    # "ordenanza 3142/2026", "ley 3142/26", "expediente 3142/2026"
+    _NORM_NUMBER_RE = re.compile(r"\b(\d{1,5})\s*/\s*(\d{2,4})\b")
+    # dd/mm/yyyy (o dd/mm/yy): no es un número de norma
+    _DATE_RE = re.compile(r"\b\d{1,2}\s*/\s*\d{1,2}\s*/\s*\d{2,4}\b")
+
+    @classmethod
+    def _norm_number_variants(cls, query: str) -> List[str]:
+        """
+        Números de norma citados en la consulta, en sus variantes de año
+        (`3142/26` y `3142/2026`), para poder buscarlos por metadata.
+
+        El embedding no resuelve consultas por identificador: en un corpus de
+        miles de normas, "¿qué dice la ordenanza 3142/2026?" recuperaba el
+        documento correcto apenas ~7% de las veces (medido), mientras que el
+        filtro exacto por `numero` acierta el 100%.
+        """
+        # Una fecha (12/09/2026) contiene un "12/09" que no es número de norma.
+        cleaned = cls._DATE_RE.sub(" ", query)
+        # Los números cortos sólo se toman con una palabra de norma delante
+        # ("ordenanza 1/2024"): sueltos, "12/09" es una fecha.
+        has_keyword = bool(re.search(
+            r"\b(ordenanza|decreto|resoluci[oó]n|comunicaci[oó]n|disposici[oó]n"
+            r"|ley|norma|expediente|ord|res)\b", query, re.I))
+        variants: List[str] = []
+        for m in cls._NORM_NUMBER_RE.finditer(cleaned):
+            num, year = str(int(m.group(1))), m.group(2)
+            if len(num) < 3 and not has_keyword:
+                continue
+            yy = year[-2:]
+            yyyy = year if len(year) == 4 else f"{'19' if int(yy) > 30 else '20'}{yy}"
+            for v in (f"{num}/{yy}", f"{num}/{yyyy}", f"{num}/{year}"):
+                if v not in variants:
+                    variants.append(v)
+        return variants
+
     def search(
         self,
         query: str,
@@ -282,7 +318,64 @@ class RAGService:
                 "distance": results['distances'][0][i] if 'distances' in results else None
             })
 
+        # Si la consulta cita un número de norma, esos documentos van primero:
+        # es la parte que el embedding no resuelve (ver _norm_number_variants).
+        if not filter_metadata:
+            exact = self._exact_number_matches(query, bot_id, n_results)
+            if exact:
+                seen = {d["id"] for d in exact}
+                documents = exact + [d for d in documents if d["id"] not in seen]
+
         return documents
+
+    def _exact_number_matches(self, query: str, bot_id: str, n_results: int) -> List[Dict]:
+        """Chunks de las normas cuyo número se cita en la consulta, en orden."""
+        variants = self._norm_number_variants(query)
+        if not variants:
+            return []
+
+        try:
+            results = self.collection.get(
+                where={"$and": [{"bot_id": bot_id}, {"numero": {"$in": variants}}]},
+                include=["documents", "metadatas"],
+            )
+        except Exception:
+            # La metadata `numero` sólo existe en los documentos que la traen
+            # (p. ej. el corpus de normas del HCD); un filtro sin resultados no
+            # debe romper la búsqueda vectorial.
+            return []
+
+        pairs = sorted(
+            zip(results["ids"], results["documents"], results["metadatas"] or [{}] * len(results["ids"])),
+            key=lambda p: ((p[2] or {}).get("doc_id", ""), (p[2] or {}).get("chunk_index", 0)),
+        )
+        return [
+            {"id": cid, "text": text, "metadata": meta, "distance": 0.0}
+            for cid, text, meta in pairs[:n_results]
+        ]
+
+    @staticmethod
+    def _source_header(meta: Dict) -> str:
+        """
+        Encabezado de fuente de un chunk, para que el LLM pueda citar de dónde
+        salió cada dato (título, número de norma, sección, fecha y enlace).
+        Sólo incluye los campos presentes en la metadata.
+        """
+        parts = []
+        for key in ("title", "titulo", "numero"):
+            val = str(meta.get(key) or "").strip()
+            if val and val not in parts:
+                parts.append(val)
+        seccion = str(meta.get("seccion") or meta.get("category") or "").strip()
+        if seccion and seccion != "general":
+            parts.append(seccion)
+        fecha = str(meta.get("fecha") or "").strip()
+        if fecha:
+            parts.append(fecha)
+        ref = str(meta.get("url") or meta.get("source") or "").strip()
+        if ref and ref != "direct_input":
+            parts.append(ref)
+        return " · ".join(parts)
 
     def get_context(
         self,
@@ -316,6 +409,9 @@ class RAGService:
 
         for doc in docs:
             text = doc['text']
+            header = self._source_header(doc.get('metadata') or {})
+            if header:
+                text = f"[{header}]\n{text}"
             # Estimar tokens (aprox 4 chars = 1 token)
             tokens = len(text) // 4
 

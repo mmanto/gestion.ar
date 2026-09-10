@@ -7,6 +7,39 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **Base de conocimiento de normas del HCD de Bolívar para el chat de
+  pachoteayuda.ar.** El bot del chat de la landing (`bot_7b6946dceb98`, canal
+  `channel_96ad03bc1a1d`) puede responder con el texto completo de las ~3.800
+  normas municipales (ordenanzas, decretos, resoluciones y comunicaciones,
+  1965–2026) en lugar de hacerlo con información genérica: la grilla de
+  `hcdbolivar.gob.ar` es sólo título + enlace y el contenido real está en los
+  PDFs enlazados. Pipeline de dos pasos, idempotente y resumible:
+  `scripts/fetch_bolivar_normas.py` (máquina de trabajo: descarga los PDFs
+  —el sitio está detrás de un desafío JS anti-bot, de ahí la cookie
+  `wssplashchk`— y arma un corpus JSONL con el texto extraído vía poppler, con
+  OCR de tesseract para las escaneadas, descartando cada PDF al extraerlo) y
+  `backend/scripts/index_bolivar_normas.py` (dentro del contenedor `app`:
+  indexa el corpus en ChromaDB scoped al bot, un documento por norma
+  —**57.840 chunks** en total— con chunking 700/120 y la identidad de la norma
+  repetida al frente de cada chunk, más metadata de número, sección, fecha y
+  enlace oficial; `--purge` para re-indexar de cero y `--rag-results` para fijar
+  `rag_results_count` del bot). Del corpus quedan ~300 normas escaneadas sin
+  texto extraíble: se indexan como ficha con título, fecha y enlace.
+  Procedimiento completo en `docs/ops/RUNBOOK.md`.
+- **La fuente de cada fragmento va en el contexto RAG**
+  (`RAGService.get_context`, `backend/app/rag_service.py`). Cada chunk del
+  contexto va encabezado por `[título · número · sección · fecha · enlace]`
+  (sólo los campos presentes en la metadata del documento), así el modelo cita
+  la norma y el enlace exactos en vez de parafrasear el contenido. Aplica a
+  cualquier documento subido con metadata, no sólo al corpus del HCD.
+- **Búsqueda RAG por número de norma** (`RAGService.search`,
+  `backend/app/rag_service.py`). Cuando la consulta cita un identificador
+  (`3142/2026`, `3142/26`), esos documentos se resuelven por metadata exacta y
+  van primero en el contexto, antes del resultado vectorial. El embedding no
+  resuelve identificadores: en el corpus del HCD recuperaba el documento
+  correcto el 2,5–7,5 % de las veces por similitud y el 100 % con este filtro.
+  Sólo aplica a documentos indexados con metadata `numero`; el resto de los bots
+  no cambia de comportamiento.
 - **Pantalla de progreso en la landing de pachoteayuda.ar**
   (`sites/pachoteayuda-landing/index.html`). Overlay a pantalla completa con
   marca, spinner y barra de progreso que cubre la página hasta que cargan
@@ -315,7 +348,8 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `backend/scripts/create_ipachoteayuda_tenant.py` — el canal es el que
   embeber la landing en `/chat/c/<channel_id>`. (Nota: el canal activo en
   prod — verificado el 2026-08-16 — es `channel_96ad03bc1a1d`, bot
-  `bot_7b69446dceb98` "Muni bolivar AG"; el id originalmente documentado
+  `bot_7b6946dceb98` "Muni bolivar AG" (id corregido 2026-09-09, estaba escrito
+  con un dígito de más); el id originalmente documentado
   `channel_1d2fc630d688` no existía en la DB.) Landing estática en
   `sites/ipachoteayuda-landing/` (`index.html` + `chat-widget.js` +
   `nginx.conf` + `Dockerfile`, estilo laboralia/erma) con botón/chat flotante
