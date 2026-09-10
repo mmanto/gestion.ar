@@ -184,6 +184,18 @@ ve, primero verificar que el `.html` exista dentro del contenedor de la landing
 (`docker exec <landing> ls /usr/share/nginx/html`); si la ruta es correcta y el
 archivo existe, el `PathRegexp` ya la enruta al contenedor correcto.
 
+### Subdominio `www`
+
+`www.pachoteayuda.ar` resuelve por CNAME al apex y **redirige 301** ahí: el apex
+es el dominio canónico (landing + chat, y así lo declara el
+`<link rel="canonical">` de la landing), y el redirect conserva path y query. El
+router del subdominio vive en `docker-compose.tenants.prod.yml`, junto al del
+tenant. No es sólo cosmético: **un host sin router no recibe certificado** —
+Traefik completa el handshake con su certificado por defecto y el navegador lo
+rechaza —, así que agregar el `Host(...)` con `tls.certresolver=letsencrypt` es
+lo que dispara la emisión por TLS-ALPN (diagnóstico paso a paso en
+`docs/ops/RUNBOOK.md`).
+
 > **Caso erma (2026-08-11):** la landing de `sites/erma/` se publicó primero en
 > un VPS externo (Hostinger) y el DNS de `erma.com.ar` quedó apuntando ahí —
 > servía la landing para **toda** ruta, incluido `/login`, que nunca llegaba al

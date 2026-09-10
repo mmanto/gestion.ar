@@ -128,6 +128,35 @@ docker compose logs traefik
 cat /letsencrypt/acme.json | python3 -m json.tool | grep -A2 "notAfter"
 ```
 
+## SSL / "TRAEFIK DEFAULT CERT" en un subdominio (www u otro host)
+
+Síntoma: `https://www.<dominio>/` falla el TLS (`curl` da `ssl_verify_result=1`
+y `code=000`) aunque el DNS del subdominio resuelva bien:
+
+```bash
+echo | openssl s_client -servername www.<dominio> -connect www.<dominio>:443 2>/dev/null \
+  | openssl x509 -noout -subject -issuer
+# subject=CN=TRAEFIK DEFAULT CERT  issuer=CN=TRAEFIK DEFAULT CERT
+```
+
+Causa: **ningún router de Traefik matchea ese host**, así que no hay certificado
+que pedir y Traefik completa el handshake con su certificado por defecto. Un
+`Host(...)` que no nombra al subdominio no alcanza: la emisión la dispara el
+router (`tls.certresolver`), no el DNS (el CNAME sólo hace que el challenge
+TLS-ALPN llegue al servidor).
+
+Fix: agregar el router del subdominio con ese `Host(...)` y
+`tls.certresolver=letsencrypt`, y recrear el contenedor para que Traefik lea las
+labels nuevas. Si el subdominio no es canónico, sumarle un middleware
+`redirectregex` hacia el dominio principal (ver el redirect de
+`www.pachoteayuda.ar` en `docker-compose.tenants.prod.yml`, con `$$1` en el
+replacement porque Compose interpola los `$`).
+
+Verificar: `curl -sS -o /dev/null -w '%{http_code} %{ssl_verify_result} %{redirect_url}\n' https://www.<dominio>/`
+→ `301 0 https://<dominio>/`.
+
+---
+
 ## SSL / Host nuevo nunca obtiene certificado ("tls: internal error" en ACME)
 
 Síntoma: un tenant/dominio nuevo (`Host(...)` con `tls.certresolver=letsencrypt`)

@@ -150,6 +150,17 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   competir con el banner de acento del template.
 
 ### Corregido
+- **`www.pachoteayuda.ar` no daba certificado**
+  (`docker-compose.tenants.prod.yml`). El DNS de www ya apuntaba al servidor por
+  CNAME, pero ningún router de Traefik matcheaba ese host: no había certificado
+  que pedir y Traefik completaba el handshake con su certificado por defecto
+  (`CN=TRAEFIK DEFAULT CERT`), que el navegador rechaza. Se agrega un router para
+  `www` con `tls.certresolver=letsencrypt` — es lo que dispara la emisión por el
+  challenge TLS-ALPN ya configurado — más una redirección 301 al apex, que es el
+  dominio canónico (ahí viven la landing y el chat, y así lo declara el
+  `<link rel="canonical">` de la landing). Verificado: certificado de Let's
+  Encrypt para www, 301 que conserva path y query, y la cadena
+  `http://www…` → apex termina en 200 con el chat conectado.
 - **El chat de pachoteayuda ahora responde por una norma citada sin el año
   ("Ordenanza 2130")** (`backend/app/rag_service.py`). `_norm_number_variants`
   sólo reconocía números con año (`3142/2026`) — la forma en que la metadata
