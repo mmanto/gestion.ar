@@ -8,11 +8,11 @@ el chat embebido en la landing de César Pacho):
      la farmacia de turno del sitio del municipio (ver BotConfig /
      PublicSourcesConfig y app/services/public_sources_service.py).
   2. Marca las herramientas del bloque `ius_config.estado_de_herramientas` como
-     implementadas, agrega la búsqueda de normas publicadas
-     (`buscar_norma_publicada`, que no existía) y completa
-     `datos_que_cambian_seguido` con el mapa tema → herramienta. Sin esto la
-     tool funciona igual, pero el prompt le prohíbe al agente usarlas o
-     mencionarlas (`regla_si_no_implementada`) y, para los temas de
+     implementadas, agrega las que no existían (`buscar_norma_publicada` y
+     `autoridades_municipales`) y completa `datos_que_cambian_seguido` con el
+     mapa tema → herramienta y las instrucciones de uso. Sin esto la tool
+     funciona igual, pero el prompt le prohíbe al agente usarlas o mencionarlas
+     (`regla_si_no_implementada`) y, para los temas de
      `datos_que_cambian_seguido`, el agente no tiene cómo saber qué herramienta
      consultar: el vecino seguiría recibiendo la derivación. Además reemplaza
      la documentación obsoleta del bloque (describía cómo extraer el dato del
@@ -68,6 +68,27 @@ SIBOM_HERRAMIENTA = {
     ),
 }
 
+# Igual que la de SIBOM: el prompt decide "consultar en vivo" según lo que figura
+# en estado_de_herramientas (ver prioridad_de_respuesta).
+AUTORIDADES_HERRAMIENTA = {
+    "implementada": True,
+    "fuente": (
+        "https://www.bolivar.gob.ar/autoridades/ — intendente, y por área secretarios, directores "
+        "y jefes, con su cargo, dirección y teléfonos"
+    ),
+    "cuando": (
+        "Cuando pregunten quién es el intendente, un secretario, un director o un jefe de área, o "
+        "pidan el listado de funcionarios (tema 'nombre del intendente, secretarios y directores' "
+        "de datos_que_cambian_seguido). No incluye concejales: el Concejo Deliberante tiene su "
+        "propio sitio."
+    ),
+}
+
+HERRAMIENTAS_EXTRA = {
+    "buscar_norma_publicada": SIBOM_HERRAMIENTA,
+    "autoridades_municipales": AUTORIDADES_HERRAMIENTA,
+}
+
 # Qué herramienta corresponde a cada tema de `datos_que_cambian_seguido`. El
 # prompt pide consultar en vivo "cuando el tema figura en datos_que_cambian_seguido
 # Y la herramienta correspondiente está implementada" (prioridad_de_respuesta,
@@ -79,6 +100,7 @@ DATOS_QUE_CAMBIAN_EXTRA = {
     "herramienta_por_tema": {
         "boletín oficial": "buscar_norma_publicada",
         "farmacia de turno": "farmacia_de_turno_en_vivo",
+        "nombre del intendente, secretarios y directores": "autoridades_municipales",
     },
     "como_consultar_en_vivo": (
         "Para el boletín oficial, la fecha de publicación o el texto de una norma, llamá a la "
@@ -86,6 +108,12 @@ DATOS_QUE_CAMBIAN_EXTRA = {
         "oficial que devuelva. Aunque el texto de la norma ya esté en la base, el número de boletín "
         "y la fecha de publicación NO están ahí y no se deducen del texto. Sólo publica normas "
         "desde 2016; para las anteriores la respuesta sale de la base de conocimiento."
+    ),
+    "como_consultar_autoridades": (
+        "Cuando pregunten por el intendente, un secretario, un director o un jefe de área, o pidan "
+        "el listado de funcionarios, llamá a 'autoridades_municipales' ANTES de responder: los "
+        "nombres y los cargos no están en la base y respondé con los que devuelva la herramienta. "
+        "No incluye concejales ni bloques del Concejo Deliberante: eso está en el sitio del Concejo."
     ),
 }
 
@@ -137,17 +165,16 @@ async def main() -> None:
                             del farmacia[clave]
                             cambios.append(f"ius_config.farmacia_de_turno_en_vivo.{clave} (eliminada)")
 
-                sibom = herramientas.get("buscar_norma_publicada")
-                if not isinstance(sibom, dict):
-                    herramientas["buscar_norma_publicada"] = dict(SIBOM_HERRAMIENTA)
-                    cambios.append("ius_config.estado_de_herramientas.buscar_norma_publicada")
-                else:
-                    for clave, valor in SIBOM_HERRAMIENTA.items():
-                        if sibom.get(clave) != valor:
-                            sibom[clave] = valor
-                            cambios.append(
-                                f"ius_config.estado_de_herramientas.buscar_norma_publicada.{clave}"
-                            )
+                for nombre, entrada in HERRAMIENTAS_EXTRA.items():
+                    herramienta = herramientas.get(nombre)
+                    if not isinstance(herramienta, dict):
+                        herramientas[nombre] = dict(entrada)
+                        cambios.append(f"ius_config.estado_de_herramientas.{nombre}")
+                        continue
+                    for clave, valor in entrada.items():
+                        if herramienta.get(clave) != valor:
+                            herramienta[clave] = valor
+                            cambios.append(f"ius_config.estado_de_herramientas.{nombre}.{clave}")
 
             datos_cambian = ius_config.get("datos_que_cambian_seguido") if isinstance(ius_config, dict) else None
             if isinstance(datos_cambian, dict):

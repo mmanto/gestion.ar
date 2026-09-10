@@ -12,6 +12,9 @@ tiene `config.public_sources` (ver BotConfig / PublicSourcesConfig):
     desde 2016, con el texto completo de cada una.
   - `farmacia_de_turno` → listado semanal de farmacias de turno del sitio del
     municipio (`bolivar.gob.ar`, servido en el HTML, sin JS ni credenciales).
+  - `autoridades_municipales` → listado oficial de autoridades del municipio
+    (intendente, y por área secretarios, directores y jefes, con cargo y
+    contactos) de la página `/autoridades` del sitio del municipio.
 
 Todo el módulo es SÍNCRONO: lo llaman los executors de tools, que ya corren en
 el thread de `asyncio.to_thread` de `sync_generate` (ver
@@ -34,8 +37,9 @@ import json
 import logging
 import os
 import re
+import unicodedata
 from typing import Callable, Dict, List, Optional, Tuple
-from urllib.parse import quote
+from urllib.parse import quote, urljoin
 
 import httpx
 import redis
@@ -54,6 +58,11 @@ CACHE_PREFIX = "public_sources:v1:"
 SIBOM_SEARCH_TTL = 86400      # 24 h — el boletín cambia como mucho a diario
 SIBOM_CONTENT_TTL = 604800    # 7 días — una norma publicada ya no cambia
 FARMACIA_TTL = 3600           # 1 h — el listado es semanal, pero hoy/mañana cambia
+AUTORIDADES_TTL = 86400       # 24 h — los cargos cambian con los cambios de gestión
+
+# Página de autoridades del sitio del municipio, relativa a
+# PublicSourcesConfig.municipal_url.
+AUTORIDADES_PATH = "autoridades/"
 
 MAX_RESULTADOS = 5
 # Recorte del texto completo de SIBOM que viaja al contexto del LLM: alcanza
@@ -144,6 +153,12 @@ def _fetch_html(url: str, params: Optional[dict] = None) -> str:
 def _plain_text(markup: str) -> str:
     """Saca etiquetas y entidades HTML y colapsa los espacios (incluye &nbsp;)."""
     return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", markup))).strip()
+
+
+def _normalizar(texto: str) -> str:
+    """Minúsculas y sin acentos, para comparar nombres de áreas y cargos."""
+    sin_tildes = unicodedata.normalize("NFKD", texto.lower())
+    return "".join(c for c in sin_tildes if not unicodedata.combining(c))
 
 
 def _ul_region(markup: str, start: int) -> str:
@@ -272,6 +287,75 @@ def parse_farmacias(markup: str) -> List[dict]:
             "es_hoy": bool(re.search(r'class="fw[^"]*\bde-turno\b', li)),
         })
     return farmacias
+
+
+def _contacto(tarjeta: str) -> dict:
+    """Dirección, teléfonos y mails del bloque `<div class="card-contacto">` de una tarjeta."""
+    bloque = re.search(r'<div class="card-contacto">(.*?)</div>', tarjeta, re.S)
+    if not bloque:
+        return {}
+
+    contacto = bloque.group(1)
+    direccion = re.search(r'ti-map-pin"></i><span>(.*?)</span>', contacto, re.S)
+    telefonos = re.findall(r'<a href="tel:[^"]*">(.*?)</a>', contacto, re.S)
+    emails = re.findall(r'<a href="mailto:[^"]*">(.*?)</a>', contacto, re.S)
+
+    datos: dict = {}
+    if direccion:
+        datos["direccion"] = _plain_text(direccion.group(1))
+    if telefonos:
+        datos["telefonos"] = [_plain_text(t) for t in telefonos]
+    if emails:
+        datos["emails"] = [_plain_text(e) for e in emails]
+    return datos
+
+
+def parse_autoridades(markup: str) -> dict:
+    """
+    Autoridades del municipio (`/autoridades`): el intendente y, por área, cada
+    secretario, director o jefe con su cargo y contactos.
+
+    El listado va como `<h2>` — primero el nombre del intendente, después el
+    nombre de cada área — y dentro de cada área, tarjetas
+    `<div class="carousel-card">` con el nombre en `<h3>` y el cargo en `<h4>`.
+    El intendente es la excepción: su `<h2>` es el nombre y el `<h3>` el cargo
+    (por eso se detecta como el primer `<h2>` sin tarjetas). Devuelve {} si el
+    listado no está.
+    """
+    i = markup.find('id="autoridades"')
+    if i == -1:
+        return {}
+    j = markup.find("<footer", i)
+    seg = markup[i:] if j == -1 else markup[i:j]
+
+    partes = re.split(r"<h2>(.*?)</h2>", seg, flags=re.S)
+    intendente: Optional[dict] = None
+    autoridades: List[dict] = []
+    for titulo, cuerpo in zip(partes[1::2], partes[2::2]):
+        if intendente is None and '<div class="carousel-card' not in cuerpo:
+            cargo_m = re.search(r"<h3>(.*?)</h3>", cuerpo, re.S)
+            intendente = {
+                "nombre": _plain_text(titulo),
+                "cargo": _plain_text(cargo_m.group(1)) if cargo_m else None,
+            }
+            continue
+
+        area = _plain_text(titulo)
+        for tarjeta in re.split(r'<div class="carousel-card', cuerpo)[1:]:
+            nombre_m = re.search(r"<h3>(.*?)</h3>", tarjeta, re.S)
+            if not nombre_m:
+                continue
+            cargo_m = re.search(r"<h4>(.*?)</h4>", tarjeta, re.S)
+            autoridades.append({
+                "area": area,
+                "nombre": _plain_text(nombre_m.group(1)),
+                "cargo": _plain_text(cargo_m.group(1)) if cargo_m else None,
+                **_contacto(tarjeta),
+            })
+
+    if intendente is None and not autoridades:
+        return {}
+    return {"intendente": intendente, "autoridades": autoridades}
 
 
 # ---------------------------------------------------------------------------
@@ -414,6 +498,53 @@ def get_farmacias_turno(municipal_url: str, dia: str = "hoy") -> dict:
     return {"fuente": datos["fuente"], "hoy": datos["hoy"]}
 
 
+def get_autoridades(municipal_url: str, area: Optional[str] = None) -> dict:
+    """
+    Autoridades del municipio según la página oficial del sitio del municipio.
+    `area` (opcional) filtra por área, nombre o cargo, sin acentos ni
+    mayúsculas; si no coincide con nada, devuelve el listado completo con una
+    nota, para que el modelo pueda responder con lo que hay. Nunca levanta.
+    """
+    url = urljoin(municipal_url, AUTORIDADES_PATH)
+    clave = CACHE_PREFIX + "autoridades:" + hashlib.sha1(url.encode("utf-8")).hexdigest()
+    datos = _cache_get(clave)
+    if datos is None:
+        try:
+            datos = parse_autoridades(_fetch_html(url))
+        except httpx.HTTPError as exc:
+            logger.warning("PublicSources: falló la consulta de autoridades del municipio (%s): %s", url, exc)
+            return {
+                "error": "No se pudo consultar el listado de autoridades del municipio en este momento.",
+                "url": url,
+            }
+        if not datos:
+            logger.warning("PublicSources: el sitio del municipio no devolvió el listado de autoridades (%s)", url)
+            return {
+                "error": "No se pudo consultar el listado de autoridades del municipio en este momento.",
+                "url": url,
+            }
+        _cache_set(clave, datos, AUTORIDADES_TTL)
+
+    resultado = {"fuente": url, **datos}
+    if not area:
+        return resultado
+
+    filtro = _normalizar(area)
+    coincidencias = [
+        persona
+        for persona in datos["autoridades"]
+        if filtro in _normalizar(
+            f"{persona.get('area') or ''} {persona.get('nombre') or ''} {persona.get('cargo') or ''}"
+        )
+    ]
+    if coincidencias:
+        return {**resultado, "autoridades": coincidencias, "filtro": area}
+    return {
+        **resultado,
+        "nota": f"Ningún área, nombre o cargo coincide con '{area}': este es el listado completo.",
+    }
+
+
 # ---------------------------------------------------------------------------
 # Tools para el LLM
 # ---------------------------------------------------------------------------
@@ -471,6 +602,33 @@ FARMACIA_TOOL_SPEC = {
     },
 }
 
+AUTORIDADES_TOOL_NAME = "autoridades_municipales"
+
+AUTORIDADES_TOOL_SPEC = {
+    "name": AUTORIDADES_TOOL_NAME,
+    "description": (
+        "Devuelve el listado oficial de autoridades del municipio — el intendente y, por área, "
+        "secretarios, directores y jefes, con su cargo, dirección y teléfonos — según la página de "
+        "Autoridades del sitio del municipio. Llamala SIEMPRE que pregunten quién es el intendente, "
+        "un secretario, un director o un jefe de área, o que pidan el listado de funcionarios, "
+        "aunque creas saber la respuesta. No incluye concejales: el Concejo Deliberante tiene su "
+        "propio sitio."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "area": {
+                "type": "string",
+                "description": (
+                    "Área, secretaría o apellido, sólo si el vecino preguntó por uno puntual "
+                    "(por ejemplo 'Salud' o 'Hacienda')."
+                ),
+            },
+        },
+        "required": [],
+    },
+}
+
 
 def build_public_sources_tools(
     cfg: PublicSourcesConfig,
@@ -499,7 +657,17 @@ def build_public_sources_tools(
         dia = "semana" if args.get("dia") == "semana" else "hoy"
         return get_farmacias_turno(cfg.municipal_url, dia)
 
+    def _autoridades_executor(tool_name: str, args: dict) -> dict:
+        if tool_name != AUTORIDADES_TOOL_NAME:
+            return {"error": f"Tool desconocida: {tool_name}"}
+        area = (args.get("area") or "").strip() or None
+        return get_autoridades(cfg.municipal_url, area)
+
     return (
-        [SIBOM_TOOL_SPEC, FARMACIA_TOOL_SPEC],
-        {SIBOM_TOOL_NAME: _sibom_executor, FARMACIA_TOOL_NAME: _farmacia_executor},
+        [SIBOM_TOOL_SPEC, FARMACIA_TOOL_SPEC, AUTORIDADES_TOOL_SPEC],
+        {
+            SIBOM_TOOL_NAME: _sibom_executor,
+            FARMACIA_TOOL_NAME: _farmacia_executor,
+            AUTORIDADES_TOOL_NAME: _autoridades_executor,
+        },
     )

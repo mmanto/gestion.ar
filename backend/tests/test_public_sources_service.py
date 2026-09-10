@@ -20,17 +20,21 @@ import pytest
 from app.models.bot import BotConfig, PublicSourcesConfig
 from app.services import public_sources_service as mod
 from app.services.public_sources_service import (
+    AUTORIDADES_TOOL_NAME,
     FARMACIA_TOOL_NAME,
     MAX_TEXTO_CARACTERES,
     SIBOM_TOOL_NAME,
     build_public_sources_tools,
+    get_autoridades,
     get_farmacias_turno,
+    parse_autoridades,
     parse_farmacias,
     parse_sibom_content,
     parse_sibom_results,
     search_sibom,
 )
 from fixtures_public_sources_html import (
+    AUTORIDADES_HTML,
     FARMACIAS_HTML,
     SIBOM_CONTENT_HTML,
     SIBOM_SEARCH_HTML,
@@ -163,6 +167,59 @@ def test_parse_farmacias_sin_listado():
     assert parse_farmacias("<html><body>sin farmacias</body></html>") == []
 
 
+def test_parse_autoridades():
+    datos = parse_autoridades(AUTORIDADES_HTML)
+
+    assert datos["intendente"] == {"nombre": "Eduardo Luján Bucca", "cargo": "Intendente"}
+    assert len(datos["autoridades"]) == 10
+    assert datos["autoridades"][0] == {
+        "area": "Protección Ciudadana y Defensa Civil",
+        "nombre": "Roque Bazán",
+        "cargo": "Director de Protección Ciudadana y Defensa Civil",
+        "direccion": "Av. Fabrés García 702",
+        "telefonos": ["2314-482404", "2314-421780"],
+    }
+    # Las áreas se repiten en cada persona, y una persona sin teléfono no
+    # inventa la clave.
+    areas = {p["area"] for p in datos["autoridades"]}
+    assert areas == {"Protección Ciudadana y Defensa Civil", "Secretaría de Hacienda"}
+    jefa = next(p for p in datos["autoridades"] if p["nombre"] == "María Emilia Pavia")
+    assert jefa["cargo"] == "Jefa de Compras"
+    assert jefa["telefonos"] == ["2314-482505"]
+    secretario = next(p for p in datos["autoridades"] if p["nombre"] == "Javier Erreca")
+    assert secretario["cargo"] == "Secretario"
+    assert "telefonos" not in secretario
+
+
+def test_parse_autoridades_sin_listado():
+    assert parse_autoridades("<html><body><h1>Autoridades</h1></body></html>") == {}
+
+
+def test_get_autoridades_filtra_sin_acentos(cache, monkeypatch):
+    monkeypatch.setattr(mod, "_fetch_html", lambda url, params=None: AUTORIDADES_HTML)
+
+    completo = get_autoridades(MUNICIPAL_URL)
+    filtrado = get_autoridades(MUNICIPAL_URL, "proteccion ciudadana")
+    inexistente = get_autoridades(MUNICIPAL_URL, "turismo")
+
+    assert completo["fuente"] == "https://www.bolivar.gob.ar/autoridades/"
+    assert len(completo["autoridades"]) == 10
+    assert [p["nombre"] for p in filtrado["autoridades"]] == ["Roque Bazán"]
+    assert filtrado["filtro"] == "proteccion ciudadana"
+    # Un filtro que no coincide devuelve el listado completo, no una lista vacía.
+    assert len(inexistente["autoridades"]) == 10
+    assert "turismo" in inexistente["nota"]
+
+
+def test_get_autoridades_devuelve_error_si_cambia_el_markup(cache, monkeypatch):
+    monkeypatch.setattr(mod, "_fetch_html", lambda url, params=None: "<html><body>rediseño</body></html>")
+
+    resultado = get_autoridades(MUNICIPAL_URL)
+
+    assert resultado["error"].startswith("No se pudo consultar el listado de autoridades")
+    assert resultado["url"] == "https://www.bolivar.gob.ar/autoridades/"
+
+
 # ---------------------------------------------------------------------------
 # Consultas: caché, tipo de norma y fallos
 # ---------------------------------------------------------------------------
@@ -280,8 +337,8 @@ def test_executors_validan_los_argumentos_sin_tocar_la_red(cache, monkeypatch):
 
     tools, executors = build_public_sources_tools(PublicSourcesConfig())
 
-    assert [tool["name"] for tool in tools] == [SIBOM_TOOL_NAME, FARMACIA_TOOL_NAME]
-    assert set(executors) == {SIBOM_TOOL_NAME, FARMACIA_TOOL_NAME}
+    assert [tool["name"] for tool in tools] == [SIBOM_TOOL_NAME, FARMACIA_TOOL_NAME, AUTORIDADES_TOOL_NAME]
+    assert set(executors) == {SIBOM_TOOL_NAME, FARMACIA_TOOL_NAME, AUTORIDADES_TOOL_NAME}
     assert executors[SIBOM_TOOL_NAME](SIBOM_TOOL_NAME, {"consulta": "   "}) == {
         "error": "Falta el número o el tema a buscar."
     }
@@ -290,6 +347,28 @@ def test_executors_validan_los_argumentos_sin_tocar_la_red(cache, monkeypatch):
     }
     assert executors[SIBOM_TOOL_NAME]("otra_tool", {"consulta": "x"}) == {"error": "Tool desconocida: otra_tool"}
     assert executors[FARMACIA_TOOL_NAME]("otra_tool", {}) == {"error": "Tool desconocida: otra_tool"}
+    assert executors[AUTORIDADES_TOOL_NAME]("otra_tool", {}) == {"error": "Tool desconocida: otra_tool"}
+
+
+def test_executor_autoridades_usa_la_url_del_municipio_y_filtra(cache, monkeypatch):
+    urls = []
+
+    def _fetch(url, params=None):
+        urls.append(url)
+        return AUTORIDADES_HTML
+
+    monkeypatch.setattr(mod, "_fetch_html", _fetch)
+    _, executors = build_public_sources_tools(PublicSourcesConfig(municipal_url="https://www.bolivar.gob.ar/"))
+
+    resultado = executors[AUTORIDADES_TOOL_NAME](AUTORIDADES_TOOL_NAME, {"area": "Hacienda"})
+
+    assert urls == ["https://www.bolivar.gob.ar/autoridades/"]
+    assert len(resultado["autoridades"]) == 9
+    assert {p["area"] for p in resultado["autoridades"]} == {"Secretaría de Hacienda"}
+    # Sin filtro devuelve el listado completo (la llamada sale de la caché).
+    completo = executors[AUTORIDADES_TOOL_NAME](AUTORIDADES_TOOL_NAME, {})
+    assert len(completo["autoridades"]) == 10
+    assert len(urls) == 1
 
 
 def test_executor_sibom_usa_el_city_id_de_la_config(cache, sibom_offline):
