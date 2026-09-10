@@ -93,6 +93,14 @@ class BotConfig(BaseModel):
     temperature: float = Field(default=0.7, ge=0.0, le=1.0)
     use_rag: bool = Field(default=True, description="Usar RAG para respuestas")
     rag_results_count: int = Field(default=3, ge=1, le=10)
+    public_sources: Optional[PublicSourcesConfig] = Field(
+        default=None,
+        description=(
+            "Fuentes públicas oficiales que el chat puede consultar en vivo "
+            "(Boletín Oficial Municipal / farmacias de turno). None = el bot no "
+            "expone esas tools. Ver public_sources_service.py."
+        ),
+    )
     rate_limit_messages: int = Field(default=10, description="Mensajes por minuto")
     rate_limit_window: int = Field(default=60, description="Ventana en segundos")
     flow: Optional[FlowConfig] = Field(

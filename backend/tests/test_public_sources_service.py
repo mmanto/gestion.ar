@@ -17,7 +17,7 @@ LLM son inválidos.
 import httpx
 import pytest
 
-from app.models.bot import PublicSourcesConfig
+from app.models.bot import BotConfig, PublicSourcesConfig
 from app.services import public_sources_service as mod
 from app.services.public_sources_service import (
     FARMACIA_TOOL_NAME,
@@ -72,6 +72,25 @@ def cache(monkeypatch):
     yield creados
     mod._cache_client = None
     mod._cache_attempted = False
+
+
+# ---------------------------------------------------------------------------
+# Config del bot (es lo que habilita las tools en el chat web)
+# ---------------------------------------------------------------------------
+
+def test_bot_config_parsea_public_sources():
+    # El bloque llega desde el JSONB de la fila: sin el campo en BotConfig,
+    # _build_llm_tools revienta con AttributeError y el chat contesta el
+    # fallback (regresión real detectada en prod).
+    assert BotConfig().public_sources is None
+
+    config = BotConfig(
+        public_sources={"sibom_city_id": 15, "municipal_url": "https://www.bolivar.gob.ar/"}
+    )
+    assert config.public_sources == PublicSourcesConfig()
+
+    # Un bloque vacío cargado a mano en el panel tampoco rompe la carga del bot.
+    assert BotConfig(public_sources={}).public_sources == PublicSourcesConfig()
 
 
 # ---------------------------------------------------------------------------
