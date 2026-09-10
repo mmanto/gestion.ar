@@ -116,6 +116,20 @@ services:
       - "traefik.http.routers.tenant-pachoteayuda.tls.certresolver=letsencrypt"
       - "traefik.http.routers.tenant-pachoteayuda.priority=1"
       - "traefik.http.services.tenant-pachoteayuda.loadbalancer.server.port=80"
+      # --- www.pachoteayuda.ar: el dominio canónico es el apex (ahí viven la
+      # landing y el chat, y así lo declara el <link rel="canonical">), así que
+      # www sólo redirige. Además de la redirección, este router es lo que hace
+      # que Traefik pida el certificado para www: sin él no hay router que
+      # matchee ese host y Traefik responde su certificado por defecto, que el
+      # navegador rechaza (el DNS de www ya apunta acá por CNAME). ---
+      - "traefik.http.middlewares.pachoteayuda-www-redirect.redirectregex.regex=^https://www\\.pachoteayuda\\.ar/(.*)"
+      - "traefik.http.middlewares.pachoteayuda-www-redirect.redirectregex.replacement=https://pachoteayuda.ar/$$1"
+      - "traefik.http.middlewares.pachoteayuda-www-redirect.redirectregex.permanent=true"
+      - "traefik.http.routers.pachoteayuda-www.rule=Host(`www.pachoteayuda.ar`)"
+      - "traefik.http.routers.pachoteayuda-www.entrypoints=websecure"
+      - "traefik.http.routers.pachoteayuda-www.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.pachoteayuda-www.middlewares=pachoteayuda-www-redirect"
+      - "traefik.http.routers.pachoteayuda-www.service=tenant-pachoteayuda"
 
   # landing-pachoteayuda comparte dominio con frontend-tenant-pachoteayuda
   # (pachoteayuda.ar): este router matchea "/", cualquier página .html de la
