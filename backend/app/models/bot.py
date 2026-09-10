@@ -53,6 +53,24 @@ class FlowConfig(BaseModel):
     )
 
 
+class PublicSourcesConfig(BaseModel):
+    """
+    Fuentes públicas oficiales que el chat puede consultar en vivo (ver
+    app/services/public_sources_service.py): el Boletín Oficial Municipal
+    (SIBOM) y el listado de farmacias de turno del sitio del municipio. Sin
+    este bloque el bot no expone esas tools: los demás tenants no cambian de
+    comportamiento.
+    """
+    sibom_city_id: int = Field(
+        default=15,
+        description="ID del municipio en SIBOM (San Carlos de Bolívar = 15)",
+    )
+    municipal_url: str = Field(
+        default="https://www.bolivar.gob.ar/",
+        description="Sitio del municipio donde se publica la farmacia de turno",
+    )
+
+
 class BotConfig(BaseModel):
     """Configuración del bot"""
     system_prompt: str = Field(

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useWebSocketChat } from '../../hooks/useWebSocketChat';
 import { parseAppointmentWidget } from '../../types/chat.types';
+import { linkify } from '../../utils/linkify';
 import { ChatHeader } from './ChatHeader';
 import { ChatInputBar } from './ChatInputBar';
 import { TypingIndicator } from './TypingIndicator';
@@ -75,7 +76,7 @@ export function ChatInterface({ botId, channelId, blankOnLoad = false }: ChatInt
                       : 'bg-white text-gray-800 border border-gray-300 rounded-bl-sm'
                   }`}
                 >
-                  {msg.content}
+                  {linkify(msg.content)}
                 </div>
 
                 {widget && (

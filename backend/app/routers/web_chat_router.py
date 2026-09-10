@@ -46,6 +46,7 @@ from app.services.prospect_auto_qualify_service import (
     QUALIFICATION_TOOL_SPEC,
     build_qualification_tool_executor,
 )
+from app.services.public_sources_service import build_public_sources_tools
 from app.models.client import Client, ClientUpdate
 
 logger = logging.getLogger(__name__)
@@ -84,9 +85,10 @@ async def _capture_client_fields_background(client_id: str, user_text: str) -> N
 async def _build_llm_tools(bot, client: Optional[Client], client_id: Optional[str], canal: str):
     """
     Arma la lista de tools + executor dispatcher para una llamada al LLM
-    (calificación por semáforo y/o inicio de reserva de turnos), y el
-    "output box" donde build_booking_tool_executor exporta el BookingState
-    si el LLM decide iniciar una reserva (ver appointment_booking_service.py).
+    (calificación por semáforo, inicio de reserva de turnos y/o consulta de
+    fuentes públicas del municipio), y el "output box" donde
+    build_booking_tool_executor exporta el BookingState si el LLM decide
+    iniciar una reserva (ver appointment_booking_service.py).
 
     La reserva de turnos se dispara únicamente cuando el propio LLM invoca
     la tool, siguiendo sus instrucciones de configuración (ius_config u
@@ -106,6 +108,14 @@ async def _build_llm_tools(bot, client: Optional[Client], client_id: Optional[st
     if await get_module_service().is_enabled(bot.bot_id, "appointments"):
         tools.append(BOOKING_TOOL_SPEC)
         executors[BOOKING_TOOL_NAME] = build_booking_tool_executor(bot, client_id, booking_output)
+
+    # Fuentes públicas oficiales (Boletín Oficial Municipal / farmacias de
+    # turno) — sólo para bots con config.public_sources: consultan en vivo, sin
+    # depender del corpus indexado. Ver public_sources_service.py.
+    if bot.config.public_sources:
+        src_tools, src_executors = build_public_sources_tools(bot.config.public_sources)
+        tools.extend(src_tools)
+        executors.update(src_executors)
 
     if not tools:
         return None, None, booking_output
