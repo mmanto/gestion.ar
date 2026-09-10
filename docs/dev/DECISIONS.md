@@ -1011,15 +1011,15 @@ municipio (Bolívar = `city_id` 15) y el texto completo de cada norma.
 
 ### Decisión
 
-Opción 2. `app/services/public_sources_service.py` expone dos tools
-(`buscar_norma_publicada` y `farmacia_de_turno`) que el chat web ofrece cuando el
-bot tiene `config.public_sources` (`BotConfig.public_sources`; sin migración:
-`config` es JSONB). Los parsers de HTML están separados de la red y se prueban
-contra recortes literales del HTML real. La caché es Redis con TTLs por tipo de
-dato (24 h búsquedas, 7 días contenido de normas, 1 h farmacias) y se degrada a
-"sin caché" si Redis no responde. La consulta nunca rompe el chat: ante cualquier
-fallo la tool devuelve `{"error": ...}` con la URL oficial y el modelo responde
-con lo que ya tenía.
+Opción 2. `app/services/public_sources_service.py` expone tres tools
+(`buscar_norma_publicada`, `farmacia_de_turno` y `autoridades_municipales`) que
+el chat web ofrece cuando el bot tiene `config.public_sources`
+(`BotConfig.public_sources`; sin migración: `config` es JSONB). Los parsers de
+HTML están separados de la red y se prueban contra recortes literales del HTML
+real. La caché es Redis con TTLs por tipo de dato (24 h búsquedas y autoridades,
+7 días contenido de normas, 1 h farmacias) y se degrada a "sin caché" si Redis no
+responde. La consulta nunca rompe el chat: ante cualquier fallo la tool devuelve
+`{"error": ...}` con la URL oficial y el modelo responde con lo que ya tenía.
 
 El servicio es síncrono a propósito: lo llaman los executors de tools, que ya
 corren en el thread de `asyncio.to_thread` de `sync_generate` (mismo contrato que
@@ -1070,6 +1070,13 @@ corren en el thread de `asyncio.to_thread` de `sync_generate` (mismo contrato qu
   buscador no hace coincidencia exacta y devuelve normas parecidas: sin eso el
   modelo concluiría que una norma no existe cuando en realidad es anterior al
   boletín (caso Ordenanza 2130/2010, que sólo está en el corpus del HCD).
+- Las autoridades municipales se leen de `bolivar.gob.ar/autoridades` y no de la
+  página del organigrama, que hoy redirige a la home (`/gobierno/` responde 403
+  a un fetch sin navegador). El intendente se detecta por estructura — su bloque
+  es el único `<h2>` sin tarjetas — y no por texto, para que un cambio de
+  intendente no rompa el parser. Los concejales y bloques del Concejo quedan
+  afuera: el sitio del Concejo está detrás del desafío anti-bot, así que para ese
+  tema el agente sigue derivando al sitio oficial.
 - Las URLs que el bot ya escribía se linkifican en el SPA del tenant
   (`frontend-tenant/src/utils/linkify.tsx`). Eso destapó un problema aparte: el
   `index.html` del SPA no declaraba `Cache-Control`, así que un navegador que ya

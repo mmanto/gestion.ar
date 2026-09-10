@@ -416,8 +416,13 @@ Chequeo de las tools sin pasar por el chat (dentro del contenedor):
 
 ```bash
 docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml \
-  exec -T app python -c "from app.services.public_sources_service import search_sibom, get_farmacias_turno; import json; print(json.dumps(search_sibom(15, 'ordenanza 2459', 'ordenanza')['resultados'][:1], ensure_ascii=False)); print(json.dumps(get_farmacias_turno('https://www.bolivar.gob.ar/'), ensure_ascii=False))"
+  exec -T app python -c "from app.services.public_sources_service import search_sibom, get_farmacias_turno, get_autoridades; import json; print(json.dumps(search_sibom(15, 'ordenanza 2459', 'ordenanza')['resultados'][:1], ensure_ascii=False)); print(json.dumps(get_farmacias_turno('https://www.bolivar.gob.ar/'), ensure_ascii=False)); print(json.dumps(get_autoridades('https://www.bolivar.gob.ar/', 'Salud'), ensure_ascii=False)[:600])"
 ```
+
+Las tres herramientas son: `buscar_norma_publicada` (SIBOM), `farmacia_de_turno`
+y `autoridades_municipales` (intendente, secretarios, directores y jefes con
+cargo y contactos, de `/autoridades` del sitio del municipio). Los concejales no
+están: el sitio del Concejo está detrás de un desafío anti-bot.
 
 Si el agente responde que no tiene el dato, en orden:
 
@@ -434,7 +439,8 @@ Si el agente responde que no tiene el dato, en orden:
    y **subir `CACHE_PREFIX` a `v2`** para invalidar lo cacheado con el formato
    viejo, y redeployar `app`.
 
-Ver la caché (búsquedas de SIBOM 24 h, contenido de normas 7 días, farmacia 1 h):
+Ver la caché (búsquedas de SIBOM y autoridades 24 h, contenido de normas 7 días,
+farmacia 1 h):
 
 ```bash
 docker exec gestionar_redis sh -c "redis-cli --scan --pattern 'public_sources:*'"

@@ -76,8 +76,19 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
     (`#listafarmacias`), con la de hoy marcada — un dato que el corpus no puede
     tener. Verificado en vivo contra el sitio oficial: nombre, dirección y
     teléfono coinciden.
-  Las consultas se cachean en Redis (`public_sources:v1:*`: 24 h búsquedas,
-  7 días contenido de normas, 1 h farmacias) y se degradan a "sin caché" si
+  - `autoridades_municipales`: el listado oficial de `bolivar.gob.ar/autoridades`
+    — el intendente y, por área, secretarios, directores y jefes, con cargo,
+    dirección y teléfonos (44 personas en 10 áreas al momento de la
+    verificación). Sin esta tool el chat respondía "no tengo confirmados los
+    nombres de las autoridades": el prompt le prohíbe afirmarlos sin
+    verificarlos en el sitio oficial y ninguna otra tool leía esa página. El
+    parámetro opcional `area` filtra sin acentos ni mayúsculas y, si no coincide
+    con nada, devuelve el listado completo con una nota. Los concejales quedan
+    afuera a propósito: el sitio del Concejo está detrás de un desafío anti-bot,
+    así que no hay fuente parseable (la tool lo aclara).
+  Las consultas se cachean en Redis (`public_sources:v1:*`: 24 h búsquedas y
+  autoridades, 7 días contenido de normas, 1 h farmacias) y se degradan a "sin
+  caché" si
   Redis no responde. Los parsers están separados de la red y se prueban contra
   recortes literales del HTML real (`backend/tests/test_public_sources_service.py`);
   el listado de farmacias anida un `<ul>` por farmacia, así que el recorte del
