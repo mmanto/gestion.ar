@@ -881,8 +881,11 @@ metadata exacta antes del resultado vectorial: **100 %** en la misma medición.
   número, sección, fecha y enlace oficial.
 - `rag_results_count` del bot a **5**: con 3 fragmentos, en un corpus de miles de
   normas, la respuesta correcta queda afuera del contexto con frecuencia.
-- Después de indexar hay que **reiniciar el contenedor `app`**: el proceso
-  cachea la colección de Chroma y no ve los chunks agregados por otro proceso.
+- Después de indexar hay que **reiniciar el contenedor `app`**: el índice
+  vectorial (HNSW) vive en memoria del proceso y no ve los vectores agregados
+  por otro proceso (verificado: seguía sin verlos 90 s después). Sólo aplica a
+  este pipeline — un documento subido desde el panel lo indexa el propio
+  proceso de la app y el chat lo ve en la consulta siguiente, sin restart.
 - Las ~300 normas escaneadas sin texto extraíble (PDFs grandes o ilegibles) se
   indexan igual como ficha con título, fecha y enlace: el bot puede orientar y
   dar el enlace, aunque no citar el articulado.
@@ -897,3 +900,78 @@ metadata exacta antes del resultado vectorial: **100 %** en la misma medición.
   pasos (ver `docs/ops/RUNBOOK.md`); no hay automatización programada.
 - El corpus (`~/workspace/bolivar/normas_corpus.jsonl`, 30 MB) y la grilla
   (`normas_enlaces.csv`) viven fuera del repo: no se versionan. Los scripts sí.
+
+### Adenda (2026-09-10): números de norma sin año
+
+El filtro exacto por `numero` sólo se disparaba con el identificador completo
+("2130/2010", "3142/26"). Un vecino escribe el número pelado —"Ordenanza 2130",
+"dame información sobre la ordenanza 2130"— y esa consulta no generaba ninguna
+variante: quedaba sólo el embedding (recall ~7 % para identificadores, ver
+arriba) y el bot derivaba al HCD aunque la norma estuviera indexada. Con el año
+la respuesta era correcta; sin el año, encima, el rechazo quedaba anclado en la
+conversación (ver ADR-017).
+
+`_norm_number_variants` ahora expande un número sin año a todas las variantes
+`2130/AAAA` y `2130/AA` desde 1940 hasta el año en curso (~175 valores, un solo
+`$in`; la metadata guarda el identificador completo y Chroma no filtra por
+prefijo). Para no inyectar normas ajenas: un año suelto ("el presupuesto 2026")
+y un código de área ("02314", empieza con 0) no se expanden salvo que la palabra
+de norma esté delante ("ordenanza 2026").
+
+---
+
+## ADR-017: El contexto RAG va en el turno del usuario, no en el system prompt
+
+**Estado:** Aceptado
+**Fecha:** 2026-09-10
+
+### Contexto
+
+`search()` recuperaba bien la Ordenanza 2130/2010 (`dist 0.0`, el texto completo
+en 5 fragmentos) y, aun así, el chat de pachoteayuda respondía "no tengo el
+texto de esa ordenanza". La recuperación no era el problema en ese caso: el
+contexto estaba en el system prompt y el modelo igual derivaba al Concejo.
+
+Medido sobre la conversación real (mismo system prompt del bot, mismo contexto
+recuperado, `deepseek-v4-flash`):
+
+| dónde va el contexto | historial de la conversación | respuesta |
+|---|---|---|
+| system prompt | limpio | resume la ordenanza |
+| system prompt | con 2 rechazos previos | **"no tengo el texto de la Ordenanza 2130/2010"** |
+| system prompt + instrucción de corregirse | con 2 rechazos previos | sigue sin darla |
+| turno del usuario | con 2 rechazos previos | **resume la ordenanza** |
+
+El asistente de este tenant tiene instrucciones explícitas de no inventar y de
+"contestar que no tiene información" cuando no está seguro (las exige el cliente
+y son correctas para trámites). El efecto secundario: una vez que dijo "no lo
+tengo" en la conversación, el system prompt ya no le alcanza para desdecirse
+—la coherencia con sus propios turnos previos pesa más— aunque el documento
+esté delante.
+
+### Decisión
+
+El contexto recuperado se pega al final del mensaje del usuario
+(`build_user_message_with_context`, en `backend/app/claude_service.py`) en vez de
+concatenarse al system prompt. Aplica a los tres proveedores (`ClaudeService`,
+`DeepSeekService`, `OllamaService`) y al wrapper `_sync_generate` del chat web,
+que eran los cuatro lugares donde se armaba el `CONTEXTO RELEVANTE` por
+separado; el bloque lleva una etiqueta que dice que esa es la fuente cuando
+contiene el dato consultado.
+
+No se tocaron las instrucciones del bot: el problema era *dónde* viajaba el
+contexto, no el prompt del tenant.
+
+### Consecuencias
+
+- El comportamiento de RAG deja de depender del proveedor de LLM y de la
+  ruta (web/WhatsApp/Telegram), que antes tenían cuatro implementaciones del
+  mismo bloque.
+- El contenido recuperado viaja en un turno de usuario: al ser texto de
+  documentos del propio tenant, el riesgo de inyección es el mismo que tenía en
+  el system prompt, pero deja de estar en la posición de mayor privilegio.
+- Quien arme un prompt con contexto RAG debe usar `build_user_message_with_context`;
+  concatenarlo al system prompt reintroduce el rechazo anclado.
+- Los tests de los proveedores mockean `sync_generate`/`httpx`, así que el
+  contrato a verificar es el mensaje final; `tests/test_rag_norm_numbers.py`
+  cubre la otra mitad (las variantes por número de norma).

@@ -302,6 +302,18 @@ responder con precisión), así que se descargan y se indexa el texto completo.
 Pipeline de dos pasos: **fetch** (en la máquina de trabajo) → JSONL → **index**
 (dentro del contenedor `app`, contra el volumen de ChromaDB).
 
+> **Subir un documento desde el panel** (`/bots/<id>/documents` →
+> `POST /api/bots/<bot_id>/documents/upload|text`) **no** requiere nada de esto:
+> la escritura la hace el propio proceso de la app y el chat lo ve en la
+> consulta siguiente, sin restart (verificado: `add` en proceso → recuperable
+> por similitud enseguida). El `restart app` es necesario sólo para este
+> pipeline, que indexa desde **otro** proceso: el índice vectorial (HNSW) vive
+> en memoria del proceso de la app y no ve los vectores agregados afuera
+> (verificado: seguía sin verlos 90 s después). La metadata, en cambio, sí se
+> ve desde el otro proceso apenas se escribe, porque sale de SQLite — por eso
+> las consultas por número de norma funcionan antes del restart y las
+> temáticas no.
+
 ### 1. Armar el corpus (máquina de trabajo)
 
 Necesita `curl` y poppler (`pdftotext`/`pdftoppm`); para las normas escaneadas,
@@ -372,9 +384,12 @@ Números de referencia del corpus completo (2026-09): 3.810 normas, **57.840
 chunks**, ~30 MB de JSONL, ~450 MB en el volumen `chroma_data`, ~16 min de
 indexado. El paso 1 tarda ~6 min la primera pasada y ~1 min el `--retry-scans`.
 
-Después de indexar, verificar en el chat de `pachoteayuda.ar` una consulta
-puntual (p. ej. "¿qué dice la ordenanza 3142/2026?"): la respuesta debe traer el
-contenido del PDF y el enlace oficial.
+Después de indexar, verificar en el chat de `pachoteayuda.ar` dos consultas:
+una con el número completo ("¿qué dice la ordenanza 3142/2026?") y una con el
+número pelado ("Ordenanza 2130", la forma en que la pide un vecino). Las dos
+deben traer el contenido del PDF y el enlace oficial; el número pelado se
+resuelve por metadata expandiendo los años posibles (ver ADR-016), así que si
+esa falla el problema está en `RAGService._norm_number_variants`, no en el índice.
 
 ---
 

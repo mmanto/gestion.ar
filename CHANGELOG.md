@@ -90,6 +90,25 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   competir con el banner de acento del template.
 
 ### Corregido
+- **El chat de pachoteayuda ahora responde por una norma citada sin el año
+  ("Ordenanza 2130")** (`backend/app/rag_service.py`). `_norm_number_variants`
+  sólo reconocía números con año (`3142/2026`) — la forma en que la metadata
+  `numero` guarda el identificador — así que una consulta con el número pelado
+  no generaba ninguna variante y se salteaba el filtro exacto por metadata:
+  quedaba sólo la búsqueda vectorial, que no resuelve identificadores, y el
+  bot contestaba que no tenía la ordenanza aunque estuviera indexada (con el
+  año, "2130/2010", respondía bien). Ahora un número sin año se expande a todas
+  las variantes `número/AAAA` y `número/AA` de los años posibles del corpus en
+  un solo `$in`. Los años sueltos ("el presupuesto 2026") y los códigos de área
+  ("02314") no se expanden, para no inyectar normas ajenas a la consulta.
+- **El contexto RAG viaja en el turno del usuario, no en el system prompt**
+  (`backend/app/claude_service.py`, `deepseek_service.py`, `ollama_service.py`,
+  `routers/web_chat_router.py`). Un asistente que ya había respondido "no tengo
+  esa ordenanza" seguía sosteniendo el rechazo en los turnos siguientes de la
+  misma conversación aunque el documento se recuperara bien: con el contexto
+  delante del último turno del usuario sí lo usa. `build_user_message_with_context`
+  centraliza el armado para los tres proveedores y el wrapper del chat web, así
+  que el comportamiento deja de depender del proveedor de LLM.
 - **Scroll horizontal en las grillas de clientes del Escritorio (mobile)**
   (`frontend-tenant/src/components/dashboard/ClientsGrid.tsx`,
   `frontend-tenant/src/templates/kero/ClientsGrid.tsx`,
