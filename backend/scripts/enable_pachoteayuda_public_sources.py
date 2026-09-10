@@ -8,12 +8,13 @@ el chat embebido en la landing de César Pacho):
      la farmacia de turno del sitio del municipio (ver BotConfig /
      PublicSourcesConfig y app/services/public_sources_service.py).
   2. Marca las herramientas del bloque `ius_config.estado_de_herramientas` como
-     implementadas y agrega la búsqueda de normas publicadas
-     (`buscar_norma_publicada`, que no existía). Sin esto la tool funciona
-     igual, pero el prompt le prohíbe al agente usarlas o mencionarlas
-     (`regla_si_no_implementada`) y, para los temas de
-     `datos_que_cambian_seguido`, sólo consulta en vivo las herramientas
-     listadas ahí: el vecino seguiría recibiendo el rechazo. Además reemplaza
+     implementadas, agrega la búsqueda de normas publicadas
+     (`buscar_norma_publicada`, que no existía) y completa
+     `datos_que_cambian_seguido` con el mapa tema → herramienta. Sin esto la
+     tool funciona igual, pero el prompt le prohíbe al agente usarlas o
+     mencionarlas (`regla_si_no_implementada`) y, para los temas de
+     `datos_que_cambian_seguido`, el agente no tiene cómo saber qué herramienta
+     consultar: el vecino seguiría recibiendo la derivación. Además reemplaza
      la documentación obsoleta del bloque (describía cómo extraer el dato del
      HTML a mano, cuando ahora lo devuelve la tool).
 
@@ -64,6 +65,26 @@ SIBOM_HERRAMIENTA = {
         "Cuando pregunten si una norma está publicada, en qué boletín o en qué fecha salió, o "
         "pidan su texto (tema 'boletín oficial' de datos_que_cambian_seguido). Sólo publica desde "
         "2016: para normas anteriores responde la base de conocimiento."
+    ),
+}
+
+# Qué herramienta corresponde a cada tema de `datos_que_cambian_seguido`. El
+# prompt pide consultar en vivo "cuando el tema figura en datos_que_cambian_seguido
+# Y la herramienta correspondiente está implementada" (prioridad_de_respuesta,
+# paso 2) pero no nombra la herramienta: sin este mapa el agente deriva al vecino
+# (paso 3) aunque la tool exista — verificado en vivo: ante "¿en qué boletín se
+# publicó la ordenanza 2459?" contestaba que el dato lo tenía el Concejo y la
+# tool nunca se llamaba (sin consultas ni entradas de caché).
+DATOS_QUE_CAMBIAN_EXTRA = {
+    "herramienta_por_tema": {
+        "boletín oficial": "buscar_norma_publicada",
+        "farmacia de turno": "farmacia_de_turno_en_vivo",
+    },
+    "como_consultar_en_vivo": (
+        "Si el vecino pregunta por el boletín oficial, la fecha de publicación o el texto de una "
+        "norma, usá la herramienta que indica 'herramienta_por_tema' y respondé con el enlace "
+        "oficial de lo que encuentres: no derives al Concejo por ese dato. Sólo publica normas "
+        "desde 2016; para las anteriores la respuesta sale de la base de conocimiento."
     ),
 }
 
@@ -126,6 +147,13 @@ async def main() -> None:
                             cambios.append(
                                 f"ius_config.estado_de_herramientas.buscar_norma_publicada.{clave}"
                             )
+
+            datos_cambian = ius_config.get("datos_que_cambian_seguido") if isinstance(ius_config, dict) else None
+            if isinstance(datos_cambian, dict):
+                for clave, valor in DATOS_QUE_CAMBIAN_EXTRA.items():
+                    if datos_cambian.get(clave) != valor:
+                        datos_cambian[clave] = valor
+                        cambios.append(f"ius_config.datos_que_cambian_seguido.{clave}")
 
             if not cambios:
                 print(f"   bot {row.bot_id} ({row.name}): sin cambios (ya aplicado)")
