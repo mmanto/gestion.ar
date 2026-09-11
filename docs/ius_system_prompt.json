@@ -10,10 +10,18 @@
       "6. Determina el semáforo con 'traffic_light'",
       "7. Si VERDE o AMARILLO: ejecuta 'persuasion.secuencia_7_pasos'",
       "8. Si el usuario presenta objeción: busca en 'objection_handling'",
-      "9. Verifica 'restrictions' en CADA respuesta antes de enviarla"
+      "9. Verifica 'restrictions' en CADA respuesta antes de enviarla",
+      "10. Al determinar el semáforo, registralo con la herramienta registrar_calificacion_prospecto (ver registro_automatico_calificacion) y recién después respondé al usuario"
     ],
     "regla_de_prioridad": "plazos_legales > criterios_viabilidad > semaforo > persuasion",
     "nota_critica": "Nunca saltes el paso 4. Un asunto fuera de plazo es ROJO inmediato sin importar los demás factores."
+  },
+
+  "registro_automatico_calificacion": {
+    "cuando": "Cuando ya determinaste el color del semáforo según traffic_light y priority.",
+    "como": "Invocá UNA SOLA VEZ por conversación la herramienta registrar_calificacion_prospecto con: color (verde, amarillo o rojo), nombre (el del usuario; si no lo dio, usá Prospecto) y resumen_caso (resumen breve del caso y la regla aplicada).",
+    "aclaracion_importante": "El registro es interno del CRM del despacho, NO es una conclusión jurídica hacia el usuario y NO contradice la sección restrictions. No le digas al usuario el color ni menciones la palabra semáforo. Si los datos del caso ya están en la conversación, no los vuelvas a pedir: registrá la calificación y continuá con la respuesta que corresponda.",
+    "precedencia": "Si el caso cumple una regla ROJO (fuera de plazo, renuncia voluntaria firmada, personal de confianza del sector público, interinato sindical, sin institución sin documentación), NO la recalifiques como amarillo o verde: registrá rojo."
   },
 
   "config": {

@@ -7,6 +7,45 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **Suite de integración LLM de calificación por semáforo de iUS**
+  (`scripts/test_ius_casos_semaforo.py`, `docs/qa/ius_casos_semaforo.txt`).
+  Corre los 15 casos reales de calificación (5 rojo / 5 amarillo / 5 verde) por el
+  canal de chat web/PWA (`/ws/chat/{bot_id}` o `/ws/chat/channel/{channel_id}`),
+  descubre el bot calificable (acepta los dos schemas de `ius_config`,
+  `traffic_light` o `priority.reglas`) y verifica que el agente registre el color
+  vía `registrar_calificacion_prospecto` leyendo `clients.color_semaforo`. Reporta
+  OK / MISMATCH / SIN_CALIFICACIÓN por caso. El fixture versionado normaliza las
+  26 fechas del archivo original a formas relativas: el prompt usa la fecha real
+  del sistema y los 5 casos GANABLE estaban fechados en junio 2026, por lo que
+  quedaban fuera de la ventana `pocos_dias` y verde era inalcanzable. Además, la
+  suite no existía: el único test que tocaba el semáforo era el de plumbing del
+  event loop. Informe completo en `docs/IUS_SEMAFORO_INFORME_2026-09-11.md`.
+- **Prompt canónico de iUS versionado** (`docs/ius_legal_config.json`). El prompt
+  de producción (reglas de calificación en `priority.reglas`, `traffic_light`,
+  `flujo`) existía únicamente en la base de datos, sin copia en el repo; se exportó
+  con la instrucción de la tool y las 3 decisiones de calificación.
+
+### Cambiado
+- **La calificación por semáforo necesita instrucción explícita de la tool en el
+  prompt** (`docs/ius_legal_config.json`, `docs/ius_system_prompt.json`). Con
+  DeepSeek/Claude, la descripción del schema de `registrar_calificacion_prospecto`
+  no alcanzaba: el modelo respondía con orientación o se negaba a "clasificar"
+  (la sección `restrictions`/`forbidden` le prohíbe dar conclusiones jurídicas), y
+  el color no se registraba en 12 de 15 casos. Se agregó `registro_automatico_calificacion`
+  (cuándo, cómo y la aclaración de que el registro es interno, no una conclusión
+  hacia el usuario), un paso en `HOW_TO_USE.orden_de_ejecucion`, una regla más en
+  `rules` y la precedencia "si aplica una regla ROJO, no recalificar". Medido:
+  3/15 → 9/15 (rojo 5/5). El arnés no cambia el orden de evaluación de las reglas
+  de color: el procedimiento explícito que se probó no mejoró el total (9/15) y se
+  descartó.
+- **Reglas de calificación ajustadas** (`docs/ius_legal_config.json`, 27 reglas):
+  terminación por embarazo u otra condición protegida → verde sin corte por plazo
+  (`embarazo_discriminacion`); `personal_confianza_sector_publico` se evalúa por
+  las funciones reales y no por la etiqueta del nombramiento;
+  `renuncia_voluntaria_firmada` no aplica cuando hubo promesa de liquidación
+  incumplida o retractación documentada
+  (`renuncia_con_promesa_liquidacion_incumplida`, verde). Pendiente de validación
+  del equipo legal del cliente.
 - **Páginas de normas del HCD y de trámites municipales en pachoteayuda.ar**
   (`scripts/generate_pachoteayuda_pages.py`,
   `sites/pachoteayuda-landing/`). El dominio servía una sola URL de 80 palabras

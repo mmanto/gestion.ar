@@ -93,6 +93,18 @@ Requisitos:
 - Con DeepSeek y `llm_thinking` activo, el `max_tokens` del bot debe ser holgado
   (≥4096): el razonamiento oculto consume el presupuesto y la respuesta queda vacía.
 
+Hallazgo (corrida sobre el bot de QA, 2026-09-11): el modelo solo invoca
+`registrar_calificacion_prospecto` si el `ius_config` lo instruye explícitamente
+(no alcanza con la descripción del schema de la tool). Medido con el prompt de
+producción (27 reglas en `priority.reglas`, canónico en `docs/ius_legal_config.json`)
+y el fixture `docs/qa/ius_casos_semaforo.txt`: sin instrucción 3/15 → con
+instrucción y `llm_thinking=false` 9/15 (rojo 5/5, amarillo 3/5, verde 1/5). Con
+`llm_thinking=true` reaparecen respuestas vacías: se midió `output_tokens == 4096`
+(tope) con `content` vacío — es presupuesto de salida, no contexto (el input por
+request no pasa de ~24k tokens). Los casos que no coinciden son desacuerdos de
+definición de las reglas, no de infraestructura; detalle en
+`docs/IUS_SEMAFORO_INFORME_2026-09-11.md`.
+
 ```bash
 python scripts/test_ius_casos_semaforo.py --limit 1        # smoke
 python scripts/test_ius_casos_semaforo.py                  # los 15 casos

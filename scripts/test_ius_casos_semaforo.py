@@ -2,11 +2,14 @@
 """
 Suite de integración LLM — casos de prueba del semáforo IUS (canal web/PWA).
 
-Toma los casos reales de `~/Documentos/iUS/casos_prueba.txt` (15 historias:
-5 esperadas ROJO, 5 AMARILLO, 5 VERDE), inicia una conversación de chat web
-nueva por caso contra el bot IUS que corre en el stack, y verifica que el
-agente termina registrando el color esperado vía la tool
+Toma los casos de `docs/qa/ius_casos_semaforo.txt` (15 historias: 5 esperadas
+ROJO, 5 AMARILLO, 5 VERDE, con fechas relativas), inicia una conversación de
+chat web nueva por caso contra el bot IUS que corre en el stack, y verifica que
+el agente termina registrando el color esperado vía la tool
 `registrar_calificacion_prospecto` (persistido en `clients.color_semaforo`).
+Con `--casos` se puede apuntar al original `~/Documentos/iUS/casos_prueba.txt`,
+cuyas fechas absolutas de junio 2026 quedan fuera de las ventanas de tiempo del
+prompt cuando corre con la fecha real del sistema.
 
 Solo cubre el canal web/PWA (`/ws/chat/{bot_id}` o `/ws/chat/channel/{channel_id}`
 con canal tipo web|pwa). No toca Telegram ni WhatsApp.
@@ -45,7 +48,10 @@ import websockets.sync.client
 from dotenv import load_dotenv
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_CASOS = Path.home() / "Documentos" / "iUS" / "casos_prueba.txt"
+# Fixture versionado con fechas relativas (el original de ~/Documentos/iUS usa
+# fechas absolutas de junio 2026 y queda fuera de las ventanas de tiempo del
+# prompt cuando corre con la fecha real del sistema). Ver --casos.
+DEFAULT_CASOS = REPO_ROOT / "docs" / "qa" / "ius_casos_semaforo.txt"
 
 # Mapas de color: sección del archivo -> valor de clients.color_semaforo
 COLOR_FROM_SECTION = {
@@ -156,7 +162,13 @@ class DB:
         self.conn.autocommit = True
 
     def find_bot(self, args):
-        """Elige el bot IUS con ius_config moderno; devuelve (bot_id, channel_id|None)."""
+        """Elige el bot IUS calificable; devuelve (bot_id, channel_id|None).
+
+        Acepta los dos schemas de ius_config en uso: el de `traffic_light`
+        (prompt moderno) y el de `priority.reglas` (prompt de producción de 25
+        reglas), identificando la identidad IUS en `agent_identity` (nombre/rol)
+        o en `identity` (name/role).
+        """
         if args.bot_id:
             bot_id = args.bot_id
         else:
@@ -165,21 +177,26 @@ class DB:
                     """
                     SELECT bot_id FROM bots
                     WHERE jsonb_typeof(config->'ius_config') = 'object'
-                      AND config->'ius_config' ? 'traffic_light'
+                      AND (config->'ius_config' ? 'traffic_light'
+                           OR config->'ius_config' ? 'priority')
                       AND (
                         config->'ius_config'->'agent_identity'->>'nombre' ILIKE '%ius%'
                         OR config->'ius_config'->'agent_identity'->>'rol' ILIKE '%legal%'
+                        OR config->'ius_config'->'identity'->>'name' ILIKE '%ius%'
+                        OR config->'ius_config'->'identity'->>'role' ILIKE '%laboral%'
                       )
-                      AND status = 'active'
-                    ORDER BY jsonb_array_length(coalesce(config->'auto_qualify_colors','[]'::jsonb)) DESC
+                      AND config->'auto_qualify_colors' IS NOT NULL
+                      AND jsonb_array_length(coalesce(config->'auto_qualify_colors','[]'::jsonb)) > 0
+                    ORDER BY status = 'active' DESC, updated_at DESC
                     LIMIT 1
                     """
                 )
                 row = cur.fetchone()
             if not row:
                 raise SystemExit(
-                    "No hay bot IUS activo con ius_config moderno (traffic_light). "
-                    "Pasá --bot-id explícito o creá el bot de QA."
+                    "No hay bot IUS con ius_config (traffic_light o priority.reglas) y "
+                    "auto_qualify_colors habilitado. Pasá --bot-id explícito, o usá "
+                    "--enable-auto-colors con --bot-id (dev/QA)."
                 )
             bot_id = row[0]
 
@@ -305,7 +322,6 @@ def main():
 
     db = DB(args)
     bot_id, channel_id = db.find_bot(args)
-    via = f"channel/{channel_id}" if channel_id else f"bot/{bot_id}"
     print(f"[target] bot={bot_id} canal_web={'sí' if channel_id else 'no (ruta por bot)'}")
 
     results = []
