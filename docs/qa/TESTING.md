@@ -72,6 +72,38 @@ Para probar un canal en condiciones reales:
 
 ---
 
+## Integración LLM — casos de semáforo IUS (canal web)
+
+`scripts/test_ius_casos_semaforo.py` corre los 15 casos reales de
+`~/Documentos/iUS/casos_prueba.txt` (5 esperados rojo, 5 amarillo, 5 verde)
+contra el bot IUS por el canal de chat web (`/ws/chat/{bot_id}`, o
+`/ws/chat/channel/{channel_id}` cuando el bot tiene canal `web`/`pwa`) y verifica
+que el agente registre el color con la tool `registrar_calificacion_prospecto`
+(persistido en `clients.color_semaforo`). No cubre Telegram ni WhatsApp.
+
+Requisitos:
+
+- Stack arriba (postgres + redis + backend). Mapeos dev: postgres `127.0.0.1:5433`,
+  redis `6380`, backend `8000`.
+- Bot IUS con `ius_config` moderno (`traffic_light`) y `auto_qualify_colors` no
+  vacío; `--enable-auto-colors` lo habilita (dev/QA).
+- Provider LLM con tool calling: `claude` o `deepseek`. **Ollama no soporta tool
+  calling** (`app/ollama_service.py`), así que con ese provider la calificación
+  nunca se registra.
+- Con DeepSeek y `llm_thinking` activo, el `max_tokens` del bot debe ser holgado
+  (≥4096): el razonamiento oculto consume el presupuesto y la respuesta queda vacía.
+
+```bash
+python scripts/test_ius_casos_semaforo.py --limit 1        # smoke
+python scripts/test_ius_casos_semaforo.py                  # los 15 casos
+```
+
+Reporta OK / MISMATCH / SIN_CALIFICACIÓN por caso y sale con código 1 si alguno
+no coincide. La calificación es no determinista: el resultado depende del modelo
+configurado en el backend.
+
+---
+
 ## Qué testear en cada PR
 
 - [ ] Nuevos endpoints responden con el código HTTP correcto

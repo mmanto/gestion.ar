@@ -22,6 +22,10 @@ Requisitos del entorno:
 El resultado depende del modelo: la clasificación no es determinista, por eso
 el script reporta caso por caso y termina con resumen. No es un test de pytest.
 
+Cada caso abre una sesión nueva (device_id propio) y crea/usa un client de
+prueba con `external_id = ius-sem-*` en el bot objetivo: apuntá la suite a un
+bot de QA/dev, no a uno con datos reales.
+
 Uso:
   python scripts/test_ius_casos_semaforo.py [--casos RUTA] [--ws-url URL]
       [--bot-id ID] [--channel-id ID] [--limit N] [--max-turns 3]
@@ -53,15 +57,23 @@ COLOR_FROM_SECTION = {
 SECTION_RE = re.compile(r"^ASUNTOS\s+EN\s+(ROJO|AMARILLO|VERDE)", re.IGNORECASE)
 CASE_NUM_RE = re.compile(r"^\s*\d+[.)]?\s+\S")
 
-FOLLOW_UP_TURNS = [
-    # Segundo mensaje: el caso ya está completo en el primer mensaje; se le
-    # pide avanzar sin aportar datos nuevos (igual que un usuario real al que
-    # el bot le pide más datos que ya dio).
-    "Esa es toda la información de mi caso, no tengo nada más que agregar. "
-    "Clasificá mi caso y registrá la calificación final ahora.",
-    "Clasificá mi caso ahora mismo con la información que ya te di y registrá "
-    "la calificación del semáforo.",
-]
+def follow_up_messages(text: str, max_turns: int):
+    """Mensajes de continuación cuando el bot no registró la calificación.
+
+    Un usuario real, ante un bot que vuelve a pedir datos que ya dio, repite
+    la información. El caso ya es completo en el primer mensaje, así que el
+    segundo turno lo reenvía; el tercero cierra explícitamente.
+    """
+    nudge_repeat = f"Te repito toda la información que tengo sobre mi caso: {text}"
+    nudge_close = (
+        "No tengo más datos ni documentación. Con lo que ya te di, determiná el "
+        "color del semáforo y registrá la calificación ahora."
+    )
+    pool = [nudge_repeat, nudge_close]
+    if max_turns - 1 > len(pool):
+        pool += [nudge_close] * (max_turns - 1 - len(pool))
+    return pool[: max(0, max_turns - 1)]
+
 
 
 def parse_casos(path: Path):
@@ -221,6 +233,7 @@ def run_case(ws_url, bot_id, channel_id, session_id, text, db, max_turns, turn_t
     )
     endpoint = f"{ws_url}{path}"
     messages = []
+    metas = []
     color = None
     turns = 0
     error = None
@@ -233,7 +246,7 @@ def run_case(ws_url, bot_id, channel_id, session_id, text, db, max_turns, turn_t
             if msg.get("type") == "welcome":
                 break
 
-        user_messages = [text, *FOLLOW_UP_TURNS[: max_turns - 1]]
+        user_messages = [text, *follow_up_messages(text, max_turns)]
         for turn_idx, user_text in enumerate(user_messages):
             turns += 1
             ws.send(json.dumps({"type": "message", "content": user_text}))
@@ -245,6 +258,8 @@ def run_case(ws_url, bot_id, channel_id, session_id, text, db, max_turns, turn_t
                 if mtype == "message" and msg.get("role") == "assistant":
                     reply = msg.get("content") or reply
                     messages.append(reply)
+                    if msg.get("metadata"):
+                        metas.append(msg["metadata"])
                 elif mtype == "error":
                     error = msg.get("message")
                     break
@@ -262,6 +277,7 @@ def run_case(ws_url, bot_id, channel_id, session_id, text, db, max_turns, turn_t
         "turns": turns,
         "error": error,
         "last_reply": (messages[-1] if messages else ""),
+        "tokens_used": sum(m.get("tokens_used", 0) or 0 for m in metas),
     }
 
 
@@ -308,8 +324,11 @@ def main():
                 state = "OK"
             else:
                 state = "MISMATCH"
-            tail = (r["last_reply"] or "").replace("\n", " ")[:110]
-            print(f"{state}  obtenido={got or '—'}  turnos={r['turns']}")
+            tail = (r["last_reply"] or "").replace("\n", " ")[:110] or "(respuesta vacía)"
+            print(
+                f"{state}  obtenido={got or '—'}  turnos={r['turns']}  "
+                f"tokens={r['tokens_used']}"
+            )
             print(f"      respuesta: {tail}")
         except Exception as exc:  # noqa: BLE001 — un caso no debe tumbar la suite
             got = None
