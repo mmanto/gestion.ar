@@ -23,11 +23,14 @@ from app.services.public_sources_service import (
     AUTORIDADES_TOOL_NAME,
     FARMACIA_TOOL_NAME,
     MAX_TEXTO_CARACTERES,
+    RESIDUOS_TOOL_NAME,
     SIBOM_TOOL_NAME,
     build_public_sources_tools,
     get_autoridades,
     get_farmacias_turno,
+    get_recoleccion_residuos,
     parse_autoridades,
+    parse_bolivar_verde,
     parse_farmacias,
     parse_sibom_content,
     parse_sibom_results,
@@ -35,6 +38,7 @@ from app.services.public_sources_service import (
 )
 from fixtures_public_sources_html import (
     AUTORIDADES_HTML,
+    BOLIVAR_VERDE_HTML,
     FARMACIAS_HTML,
     SIBOM_CONTENT_HTML,
     SIBOM_SEARCH_HTML,
@@ -195,6 +199,43 @@ def test_parse_autoridades_sin_listado():
     assert parse_autoridades("<html><body><h1>Autoridades</h1></body></html>") == {}
 
 
+def test_parse_bolivar_verde_arma_secciones_y_contactos():
+    datos = parse_bolivar_verde(BOLIVAR_VERDE_HTML)
+
+    assert [s["titulo"] for s in datos["secciones"]] == [
+        "Recolección de Residuos Gruesos",
+        "Recolección de Residuos Domiciliarios",
+        "Barrido",
+        "Residuos Secos",
+        "Residuos Especiales",
+    ]
+
+    # La grilla es una lista de días y zonas: el texto conserva los cortes de
+    # línea (aplanado, "desde las 6am" queda pegado al día siguiente).
+    gruesos = datos["secciones"][0]["detalle"]
+    assert "- Lunes, miércoles y viernes: paralelas a la Av. San Martín desde las 6am" in gruesos
+    assert "BARRIOS: de lunes a sábado por la tarde" in gruesos
+
+    # Los apartados <h5> viajan con su título: "PILAS" solo no dice nada.
+    especiales = datos["secciones"][4]["detalle"]
+    assert "PILAS\nNo hay campaña de acopio actualmente." in especiales
+    assert "RAAEs\nAbarcan computadoras" in especiales
+    # El pie de la página está fuera de las <section>: no entra en la última.
+    assert "Avenida Belgrano" not in especiales
+
+    assert [c["area"] for c in datos["contactos"]] == [
+        "SECRETARIA DE ESPACIOS PÚBLICOS",
+        "DIRECCIÓN DE AMBIENTE Y DESARROLLO SUSTENTABLE",
+        None,
+    ]
+    assert "Teléfono: 2314482722" in datos["contactos"][0]["detalle"]
+    assert "Cooperativa Mundo Reciclado LTDA" in datos["contactos"][2]["detalle"]
+
+
+def test_parse_bolivar_verde_sin_grilla():
+    assert parse_bolivar_verde("<html><body><h1>Bolívar Verde</h1></body></html>") == {}
+
+
 def test_get_autoridades_filtra_sin_acentos(cache, monkeypatch):
     monkeypatch.setattr(mod, "_fetch_html", lambda url, params=None: AUTORIDADES_HTML)
 
@@ -218,6 +259,43 @@ def test_get_autoridades_devuelve_error_si_cambia_el_markup(cache, monkeypatch):
 
     assert resultado["error"].startswith("No se pudo consultar el listado de autoridades")
     assert resultado["url"] == "https://www.bolivar.gob.ar/autoridades/"
+
+
+def test_get_recoleccion_residuos_filtra_por_tema(cache, monkeypatch):
+    monkeypatch.setattr(mod, "_fetch_html", lambda url, params=None: BOLIVAR_VERDE_HTML)
+
+    completo = get_recoleccion_residuos(MUNICIPAL_URL)
+    camion = get_recoleccion_residuos(MUNICIPAL_URL, "¿cuándo pasa el camión de la basura?")
+    pilas = get_recoleccion_residuos(MUNICIPAL_URL, "dónde llevo las pilas")
+    reclamo = get_recoleccion_residuos(MUNICIPAL_URL, "a quién le reclamo por el barrido")
+    inexistente = get_recoleccion_residuos(MUNICIPAL_URL, "habilitación de comercios")
+
+    assert completo["fuente"] == "https://www.bolivar.gob.ar/bolivarverde/"
+    assert len(completo["secciones"]) == 5
+
+    # "camión"/"basura" no comparten palabra con "Residuos Domiciliarios": el
+    # filtro tiene que resolverlo por sinónimos (ver ALIAS_RESIDUOS).
+    assert [s["titulo"] for s in camion["secciones"]] == ["Recolección de Residuos Domiciliarios"]
+    assert [s["titulo"] for s in pilas["secciones"]] == ["Residuos Especiales"]
+    assert camion["filtro"] == "¿cuándo pasa el camión de la basura?"
+
+    # Un pedido de contacto (reclamo) suma los teléfonos de las áreas, que los
+    # bloques de la página no asocian a ningún tema.
+    assert [s["titulo"] for s in reclamo["secciones"]] == ["Barrido"]
+    assert len(reclamo["contactos"]) == 3
+
+    # Un tema que no es de residuos devuelve la grilla completa, no una vacía.
+    assert len(inexistente["secciones"]) == 5
+    assert "habilitación de comercios" in inexistente["nota"]
+
+
+def test_get_recoleccion_residuos_devuelve_error_si_cambia_el_markup(cache, monkeypatch):
+    monkeypatch.setattr(mod, "_fetch_html", lambda url, params=None: "<html><body>rediseño</body></html>")
+
+    resultado = get_recoleccion_residuos(MUNICIPAL_URL)
+
+    assert resultado["error"].startswith("No se pudo consultar la página de recolección")
+    assert resultado["url"] == "https://www.bolivar.gob.ar/bolivarverde/"
 
 
 # ---------------------------------------------------------------------------
@@ -337,8 +415,10 @@ def test_executors_validan_los_argumentos_sin_tocar_la_red(cache, monkeypatch):
 
     tools, executors = build_public_sources_tools(PublicSourcesConfig())
 
-    assert [tool["name"] for tool in tools] == [SIBOM_TOOL_NAME, FARMACIA_TOOL_NAME, AUTORIDADES_TOOL_NAME]
-    assert set(executors) == {SIBOM_TOOL_NAME, FARMACIA_TOOL_NAME, AUTORIDADES_TOOL_NAME}
+    assert [tool["name"] for tool in tools] == [
+        SIBOM_TOOL_NAME, FARMACIA_TOOL_NAME, AUTORIDADES_TOOL_NAME, RESIDUOS_TOOL_NAME,
+    ]
+    assert set(executors) == {SIBOM_TOOL_NAME, FARMACIA_TOOL_NAME, AUTORIDADES_TOOL_NAME, RESIDUOS_TOOL_NAME}
     assert executors[SIBOM_TOOL_NAME](SIBOM_TOOL_NAME, {"consulta": "   "}) == {
         "error": "Falta el número o el tema a buscar."
     }
@@ -348,6 +428,7 @@ def test_executors_validan_los_argumentos_sin_tocar_la_red(cache, monkeypatch):
     assert executors[SIBOM_TOOL_NAME]("otra_tool", {"consulta": "x"}) == {"error": "Tool desconocida: otra_tool"}
     assert executors[FARMACIA_TOOL_NAME]("otra_tool", {}) == {"error": "Tool desconocida: otra_tool"}
     assert executors[AUTORIDADES_TOOL_NAME]("otra_tool", {}) == {"error": "Tool desconocida: otra_tool"}
+    assert executors[RESIDUOS_TOOL_NAME]("otra_tool", {}) == {"error": "Tool desconocida: otra_tool"}
 
 
 def test_executor_autoridades_usa_la_url_del_municipio_y_filtra(cache, monkeypatch):
@@ -389,3 +470,25 @@ def test_executor_farmacia_ignora_un_dia_desconocido(cache, monkeypatch):
     resultado = executors[FARMACIA_TOOL_NAME](FARMACIA_TOOL_NAME, {"dia": "mañana"})
 
     assert resultado["hoy"]["farmacia"] == "IGLESIAS"
+
+
+def test_executor_residuos_usa_la_url_del_municipio_y_filtra(cache, monkeypatch):
+    urls = []
+
+    def _fetch(url, params=None):
+        urls.append(url)
+        return BOLIVAR_VERDE_HTML
+
+    monkeypatch.setattr(mod, "_fetch_html", _fetch)
+    _, executors = build_public_sources_tools(PublicSourcesConfig(municipal_url="https://www.bolivar.gob.ar/"))
+
+    resultado = executors[RESIDUOS_TOOL_NAME](RESIDUOS_TOOL_NAME, {"tema": " puntos verdes "})
+
+    assert urls == ["https://www.bolivar.gob.ar/bolivarverde/"]
+    assert [s["titulo"] for s in resultado["secciones"]] == ["Residuos Secos"]
+    # Los espacios del argumento del LLM no llegan al filtro ni a la respuesta.
+    assert resultado["filtro"] == "puntos verdes"
+    # Sin tema devuelve la grilla completa (la segunda llamada sale de la caché).
+    completo = executors[RESIDUOS_TOOL_NAME](RESIDUOS_TOOL_NAME, {})
+    assert len(completo["secciones"]) == 5
+    assert len(urls) == 1

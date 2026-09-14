@@ -7,6 +7,34 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **Preguntas sobre recolección de residuos en el chat de pachoteayuda.ar**
+  (`backend/app/services/public_sources_service.py`,
+  `backend/scripts/enable_pachoteayuda_public_sources.py`). El prompt del
+  asistente ya prometía responder "cuándo pasa el camión de la basura ·
+  reciclado y puntos verdes · dónde tirar pilas, electrónicos, aceite usado o
+  neumáticos" (`menu_de_capacidades`) y `mapa_urls_por_tema` ya apuntaba a
+  `bolivar.gob.ar/bolivarverde/`, pero el dato no estaba en ninguna de las dos
+  fuentes del chat —el corpus del RAG es sólo el HCD y las fuentes públicas en
+  vivo cubrían SIBOM, farmacia y autoridades—: la consulta terminaba en la
+  derivación al municipio. Se sumó la cuarta tool de fuentes públicas,
+  `recoleccion_de_residuos` (residuos gruesos, domiciliarios, barrido, secos y
+  especiales, con los teléfonos de las áreas responsables), con filtro opcional
+  por tema que resuelve sinónimos del vecino ("el camión de la basura" →
+  "Residuos Domiciliarios") priorizando el título de la sección, caché Redis de
+  24 h y el mismo contrato de error con la URL oficial que las otras tres. El
+  parser conserva los cortes de línea de la grilla (aplanada, "desde las 6am"
+  queda pegado al día siguiente) y el script idempotente de fuentes públicas
+  agrega el tema a `datos_que_cambian_seguido.temas`, la entrada en
+  `herramienta_por_tema` y la instrucción `como_consultar_residuos`. Ver ADR-020.
+- **Páginas de recolección de residuos en pachoteayuda.ar**
+  (`scripts/generate_pachoteayuda_pages.py`, `sites/pachoteayuda-landing/`).
+  `/residuos/` y `/residuos/<slug>/` —una por sección, con el texto completo, el
+  contacto del área responsable, `FAQPage` y BreadcrumbList— generadas desde la
+  misma página oficial del municipio y sin necesitar el corpus (`--only
+  residuos`). El router de la landing suma `PathPrefix(/residuos/)` y el
+  `COPY residuos/` del Dockerfile rompe el build si el generador no corrió, como
+  los otros dos. La portada (manual) suma la tarjeta que enlaza el hub. Ver
+  ADR-020.
 - **Suite de integración LLM de calificación por semáforo de iUS**
   (`scripts/test_ius_casos_semaforo.py`, `docs/qa/ius_casos_semaforo.txt`).
   Corre los 15 casos reales de calificación (5 rojo / 5 amarillo / 5 verde) por el

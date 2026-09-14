@@ -1151,3 +1151,103 @@ una página de marca. Y ni siquiera esa página era indexable de forma confiable
   contenido.
 - **Indexar las 300 normas sin texto:** un clúster de páginas de un párrafo no
   aporta y diluye el resto del archivo.
+
+---
+
+## ADR-020: Grilla de recolección de residuos por tool en vivo y páginas estáticas, sin indexarla en el RAG
+
+**Estado:** Aceptado
+**Fecha:** 2026-09-14
+
+### Contexto
+
+El prompt del asistente de `pachoteayuda.ar` (`bot_7b6946dceb98`) ya prometía
+responder sobre residuos: `menu_de_capacidades` ofrece "cuándo pasa el camión de
+la basura · reciclado y puntos verdes · dónde tirar pilas, electrónicos, aceite
+usado o neumáticos", y `mapa_urls_por_tema` ya apunta a
+`https://www.bolivar.gob.ar/bolivarverde/`. Pero el dato no estaba en ninguna de
+las dos fuentes del chat: el corpus indexado (ADR-016) es sólo el HCD, y las
+fuentes públicas en vivo (ADR-018) cubren SIBOM, farmacia de turno y
+autoridades. La consulta terminaba en la derivación al municipio.
+
+La grilla oficial de esa página tiene cinco secciones —residuos gruesos,
+domiciliarios, barrido, secos y especiales— con días, horarios y zonas, más los
+teléfonos de las áreas responsables (`<h4>` por sección, `<h5>` por apartado,
+`<div class="dato-contacto">` por área). Verificado antes de decidir: se sirve en
+HTML plano (`200`, 24 KB, renderizada en el servidor, sin challenge JS ni
+credenciales ni `<table>`), igual que las otras tres páginas del municipio que el
+servicio ya consume.
+
+### Opciones consideradas
+
+1. **Indexar la grilla en el RAG** (documento del bot, como el corpus del HCD):
+   cero código nuevo, pero cae justo en el eje débil del embedder. Las consultas
+   de este tema no citan identificadores ("¿cuándo pasa el camión?", "¿a dónde
+   llevo el aceite usado?"), así que la palanca que hace bueno al RAG del HCD
+   —resolución exacta por número de norma, `_norm_number_variants`, 100 % en la
+   medición de ADR-016— no aplica: queda el embedding, con recall@5 temático
+   medido en 38–40 %. Además la grilla competiría por los 5 resultados con los
+   57.840 chunks de normas, y el `RecursiveCharacterTextSplitter` corta por
+   `\n\n`/`\n`: una grilla es una tabla donde el encabezado (zona · días ·
+   horario) vive sólo en el primer chunk, el problema que ADR-016 resolvió
+   repitiendo la identidad a mano en cada uno.
+2. **Pegar la grilla en el `ius_config`** (segunda copia en el system prompt):
+   siempre presente y sin latencia, pero se desincroniza en silencio el día que
+   el municipio cambie un horario, y engorda un prompt que ya es denso. ADR-017
+   ya mostró que en este bot la ubicación del dato pesa más que su presencia.
+3. **Tool en vivo** (`recoleccion_de_residuos` en `app/services/public_sources_service.py`),
+   con la caché Redis y el contrato de error que ya usan las otras tres: la
+   respuesta sale de la fuente oficial en el turno en que se necesita, con el
+   enlace para que el vecino la verifique, sin copia que mantener.
+
+### Decisión
+
+Opción 3, más las páginas estáticas del mismo dato para el SEO (patrón ADR-019).
+
+- **Tool**: `recoleccion_de_residuos` con `tema` opcional (por ejemplo "residuos
+  gruesos", "puntos verdes", "pilas"). El parser devuelve las secciones con sus
+  cortes de línea —una grilla aplanada en un renglón deja de decir a qué día
+  corresponde cada horario— y los bloques de contacto. El filtro por tema
+  resuelve sinónimos del vecino (`ALIAS_RESIDUOS`: "el camión de la basura" →
+  "Residuos Domiciliarios") y **prioriza el título de la sección**: el barrido por
+  el cuerpo arrastraba "Residuos Secos" a la pregunta por el camión, porque esa
+  sección dice "basura por un lado y reciclables por otro" (verificado: 532 chars
+  de la sección correcta contra 1.170 con el falso positivo). Un tema que no
+  coincide con nada devuelve la grilla completa con una nota, igual que
+  `autoridades_municipales`. TTL de caché 24 h (`RESIDUOS_TTL`).
+- **Cableado del prompt** (`scripts/enable_pachoteayuda_public_sources.py`, que ya
+  aplicaba el de las otras tres): entrada en `estado_de_herramientas` con
+  `implementada: true`, `"recolección de residuos"` agregado a
+  `datos_que_cambian_seguido.temas`, la entrada en `herramienta_por_tema` y una
+  instrucción `como_consultar_residuos`. La entrada en `temas` no es adorno: el
+  paso 2 de `prioridad_de_respuesta` exige que el tema figure ahí **y** que la
+  herramienta del mapa esté implementada — sin lo primero la tool existe y el
+  agente no tiene por qué consultarla (el mismo cableado que costó SIBOM, ADR-018).
+- **Páginas** `/residuos/` y `/residuos/<slug>/` generadas por
+  `scripts/generate_pachoteayuda_pages.py` desde la misma página oficial, con
+  `PathPrefix(/residuos/)` en el router de la landing (ver ADR-019).
+
+### Consecuencias
+
+- El contrato de `config.public_sources` no cambia (ninguna migración: la URL de
+  Bolívar Verde cuelga de `municipal_url`, como `/autoridades`), y sigue siendo
+  la única bandera: los demás tenants no ven la tool.
+- El markup de `bolivarverde/` pasa a ser una dependencia más de las tres que ya
+  existían: si cambia, el parser devuelve vacío, la tool responde `error` con la
+  URL oficial y el chat cae al comportamiento anterior (derivar). Al retocar el
+  parser hay que subir `CACHE_PREFIX` (contrato del servicio).
+- La invocación sigue dependiendo del modelo (`tool_choice: auto`): la mitigación
+  es la misma que en ADR-018 —tema en `temas` + mapa + instrucción— y se mide
+  igual, mirando si aparecen claves `public_sources:*:residuos:*` en la caché.
+- Hay dos parsers de la misma página (el del servicio y el del generador de
+  páginas). No se unifican a propósito: corren en runtimes distintos (contenedor
+  con `httpx`/`redis` contra un generador stdlib-only que no puede importar el
+  backend), y cada uno tiene su verificación (fixture HTML + test contra la
+  generación real).
+- Dos datos del `.md` que originó el pedido **no** están en la página oficial (el
+  Aula Verde y el contacto de la Dirección de Innovación / CRUB, 2314-417550): la
+  tool responde con lo que publica la fuente, así que quedan afuera a propósito.
+  La página sí publica algo que el `.md` no tenía: "Botellas de Amor" entre los
+  residuos especiales.
+- El mismo archivo `.md` vive fuera del repo (como el corpus del HCD): la fuente
+  es la página oficial, no el archivo.

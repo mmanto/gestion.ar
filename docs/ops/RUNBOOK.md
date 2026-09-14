@@ -439,15 +439,16 @@ guía de trámites, sin corpus. El deploy, en `DEPLOYMENT.md`.
 
 ---
 
-## El chat de pachoteayuda no trae datos en vivo (boletín oficial / farmacia de turno)
+## El chat de pachoteayuda no trae datos en vivo (boletín oficial / farmacia / autoridades / residuos)
 
-El bot `bot_7b6946dceb98` consulta dos fuentes públicas en el momento de la
-conversación (ver ADR-018): SIBOM (boletín oficial municipal, ordenanzas,
-decretos y resoluciones desde 2016) y la farmacia de turno del sitio del
+El bot `bot_7b6946dceb98` consulta fuentes públicas en el momento de la
+conversación (ver ADR-018 y ADR-020): SIBOM (boletín oficial municipal,
+ordenanzas, decretos y resoluciones desde 2016), la farmacia de turno, las
+autoridades y la grilla de recolección de residuos (Bolívar Verde) del sitio del
 municipio. Se habilitan con `config.public_sources` más la entrada
-correspondiente en `ius_config` (`estado_de_herramientas` y el mapa
-`datos_que_cambian_seguido.herramienta_por_tema`). Todo eso lo deja listo un
-script idempotente:
+correspondiente en `ius_config` (`estado_de_herramientas`, el tema en
+`datos_que_cambian_seguido.temas` y el mapa `herramienta_por_tema`). Todo eso lo
+deja listo un script idempotente:
 
 ```bash
 docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml \
@@ -462,12 +463,14 @@ Chequeo de las tools sin pasar por el chat (dentro del contenedor):
 
 ```bash
 docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml \
-  exec -T app python -c "from app.services.public_sources_service import search_sibom, get_farmacias_turno, get_autoridades; import json; print(json.dumps(search_sibom(15, 'ordenanza 2459', 'ordenanza')['resultados'][:1], ensure_ascii=False)); print(json.dumps(get_farmacias_turno('https://www.bolivar.gob.ar/'), ensure_ascii=False)); print(json.dumps(get_autoridades('https://www.bolivar.gob.ar/', 'Salud'), ensure_ascii=False)[:600])"
+  exec -T app python -c "from app.services.public_sources_service import search_sibom, get_farmacias_turno, get_autoridades, get_recoleccion_residuos; import json; print(json.dumps(search_sibom(15, 'ordenanza 2459', 'ordenanza')['resultados'][:1], ensure_ascii=False)); print(json.dumps(get_farmacias_turno('https://www.bolivar.gob.ar/'), ensure_ascii=False)); print(json.dumps(get_autoridades('https://www.bolivar.gob.ar/', 'Salud'), ensure_ascii=False)[:600]); print(json.dumps(get_recoleccion_residuos('https://www.bolivar.gob.ar/', 'residuos gruesos'), ensure_ascii=False))"
 ```
 
-Las tres herramientas son: `buscar_norma_publicada` (SIBOM), `farmacia_de_turno`
-y `autoridades_municipales` (intendente, secretarios, directores y jefes con
-cargo y contactos, de `/autoridades` del sitio del municipio). Los concejales no
+Las cuatro herramientas son: `buscar_norma_publicada` (SIBOM), `farmacia_de_turno`,
+`autoridades_municipales` (intendente, secretarios, directores y jefes con
+cargo y contactos, de `/autoridades` del sitio del municipio) y
+`recoleccion_de_residuos` (grilla de `bolivarverde/`: residuos gruesos,
+domiciliarios, barrido, secos y especiales). Los concejales no
 están: el sitio del Concejo está detrás de un desafío anti-bot.
 
 Si el agente responde que no tiene el dato, en orden:
@@ -486,7 +489,7 @@ Si el agente responde que no tiene el dato, en orden:
    viejo, y redeployar `app`.
 
 Ver la caché (búsquedas de SIBOM y autoridades 24 h, contenido de normas 7 días,
-farmacia 1 h):
+farmacia 1 h, grilla de residuos 24 h):
 
 ```bash
 docker exec gestionar_redis sh -c "redis-cli --scan --pattern 'public_sources:*'"

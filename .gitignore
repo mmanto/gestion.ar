@@ -93,8 +93,10 @@ documents/
 
 # Páginas generadas para el SEO de la landing de pachoteayuda.ar
 # (scripts/generate_pachoteayuda_pages.py: una por norma del HCD + la guía de
-# trámites, más el sitemap.xml índice de todas). Se regeneran antes de cada
-# build de landing-pachoteayuda; nada de esto se versiona.
+# trámites + las secciones de recolección de residuos, más el sitemap.xml índice
+# de todas). Se regeneran antes de cada build de landing-pachoteayuda; nada de
+# esto se versiona.
 sites/pachoteayuda-landing/normas/
 sites/pachoteayuda-landing/tramites/
+sites/pachoteayuda-landing/residuos/
 sites/pachoteayuda-landing/sitemap.xml

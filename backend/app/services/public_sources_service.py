@@ -15,6 +15,9 @@ tiene `config.public_sources` (ver BotConfig / PublicSourcesConfig):
   - `autoridades_municipales` → listado oficial de autoridades del municipio
     (intendente, y por área secretarios, directores y jefes, con cargo y
     contactos) de la página `/autoridades` del sitio del municipio.
+  - `recoleccion_de_residuos` → grilla oficial de residuos de `bolivar.gob.ar/bolivarverde/`
+    (días, horarios y zonas de cada servicio; qué se recicla; dónde llevar los
+    residuos especiales) con los teléfonos de las áreas responsables.
 
 Todo el módulo es SÍNCRONO: lo llaman los executors de tools, que ya corren en
 el thread de `asyncio.to_thread` de `sync_generate` (ver
@@ -59,10 +62,11 @@ SIBOM_SEARCH_TTL = 86400      # 24 h — el boletín cambia como mucho a diario
 SIBOM_CONTENT_TTL = 604800    # 7 días — una norma publicada ya no cambia
 FARMACIA_TTL = 3600           # 1 h — el listado es semanal, pero hoy/mañana cambia
 AUTORIDADES_TTL = 86400       # 24 h — los cargos cambian con los cambios de gestión
+RESIDUOS_TTL = 86400          # 24 h — la grilla de recolección cambia como mucho de temporada
 
-# Página de autoridades del sitio del municipio, relativa a
-# PublicSourcesConfig.municipal_url.
+# Páginas del sitio del municipio, relativas a PublicSourcesConfig.municipal_url.
 AUTORIDADES_PATH = "autoridades/"
+BOLIVAR_VERDE_PATH = "bolivarverde/"
 
 MAX_RESULTADOS = 5
 # Recorte del texto completo de SIBOM que viaja al contexto del LLM: alcanza
@@ -73,6 +77,30 @@ SIBOM_TIPOS = {
     "ordenanza": "Ordinance",
     "decreto": "Decree",
     "resolucion": "Resolution",
+}
+
+# Palabras que usa el vecino → sección de la grilla de residuos que las
+# responde, por nombre de la sección en la página (el filtro por tema busca
+# estos términos en el título y el texto de cada sección, sin acentos ni
+# mayúsculas). "¿Cuándo pasa el camión?" no comparte ninguna palabra con
+# "Recolección de Residuos Domiciliarios": sin el mapa, el tema no filtraría
+# nada y la tool devolvería la grilla entera en cada consulta.
+ALIAS_RESIDUOS = {
+    "residuos gruesos": (
+        "grueso", "voluminoso", "escombro", "mueble", "poda", "ramas",
+        "electrodomestico", "chatarra",
+    ),
+    "residuos domiciliarios": ("domiciliari", "basura", "camion", "bolsas", "todos los dias"),
+    "barrido": ("barrido", "barredora", "barrendero", "vereda", "limpieza de calles"),
+    "residuos secos": (
+        "seco", "recicl", "punto verde", "contenedor", "carton", "plastico",
+        "vidrio", "aluminio", "tetra", "papel", "metal", "separacion en origen",
+    ),
+    "residuos especiales": (
+        "especial", "pila", "bateria", "raee", "electronic", "aceite",
+        "neumatic", "peligroso", "botellas de amor",
+    ),
+    "contactos": ("contacto", "telefono", "reclamo", "cooperativa", "numero", "atencion"),
 }
 
 
@@ -159,6 +187,19 @@ def _normalizar(texto: str) -> str:
     """Minúsculas y sin acentos, para comparar nombres de áreas y cargos."""
     sin_tildes = unicodedata.normalize("NFKD", texto.lower())
     return "".join(c for c in sin_tildes if not unicodedata.combining(c))
+
+
+def _plain_lines(markup: str) -> str:
+    """
+    Como `_plain_text` pero conservando los cortes de línea de los bloques y las
+    listas (`<br>`, `</p>`, `</li>`, `</div>`, encabezados), con los `<li>`
+    como viñetas. La grilla de residuos es una lista de días y zonas: aplanada
+    en un solo renglón se lee como un párrafo corrido y se pierde a qué día
+    corresponde cada horario.
+    """
+    con_saltos = re.sub(r"(?i)<li\b[^>]*>", "\n- ", markup)
+    con_saltos = re.sub(r"(?i)<br\s*/?>|</(?:p|li|div|h[1-6]|ul|ol)\s*>", "\n", con_saltos)
+    return "\n".join(linea for linea in (_plain_text(l) for l in con_saltos.split("\n")) if linea)
 
 
 def _ul_region(markup: str, start: int) -> str:
@@ -358,6 +399,67 @@ def parse_autoridades(markup: str) -> dict:
     return {"intendente": intendente, "autoridades": autoridades}
 
 
+# Secciones de la grilla (cada una un <h4>, con sus apartados en <h5>) y los
+# bloques de contacto de las áreas responsables (<div class="dato-contacto">,
+# con el nombre del área en el <h3> cuando lo tiene).
+_H4_RE = re.compile(r"(?is)<h4\b[^>]*>(.*?)</h4>")
+_H5_RE = re.compile(r"(?is)<h5\b[^>]*>(.*?)</h5>")
+_DATO_CONTACTO_RE = re.compile(r'(?is)<div class="dato-contacto">(.*?)</div>')
+_H3_RE = re.compile(r"(?is)<h3\b[^>]*>(.*?)</h3>")
+
+
+def parse_bolivar_verde(markup: str) -> dict:
+    """
+    Grilla de servicios de Bolívar Verde (`/bolivarverde/`, la página oficial de
+    residuos del municipio): las secciones de recolección y servicios —cada una
+    un `<h4>`, con sus apartados en `<h5>`— y los contactos de las áreas
+    responsables.
+
+    El texto de cada sección se devuelve con sus cortes de línea (ver
+    `_plain_lines`): es una grilla de días, zonas y horarios, y aplanada deja de
+    decir a qué día corresponde cada horario. Devuelve {} si no hay ninguna
+    sección ni contacto — el caller lo trata como cambio de markup.
+    """
+    secciones = []
+    encabezados = list(_H4_RE.finditer(markup))
+    for i, encabezado in enumerate(encabezados):
+        fin = encabezados[i + 1].start() if i + 1 < len(encabezados) else len(markup)
+        cierre = markup.find("</section>", encabezado.end())
+        if cierre != -1:
+            fin = min(fin, cierre)
+        cuerpo = markup[encabezado.end():fin]
+
+        apartados = list(_H5_RE.finditer(cuerpo))
+        partes = []
+        intro = _plain_lines(cuerpo[:apartados[0].start()] if apartados else cuerpo)
+        if intro:
+            partes.append(intro)
+        for j, apartado in enumerate(apartados):
+            proximo = apartados[j + 1].start() if j + 1 < len(apartados) else len(cuerpo)
+            detalle = _plain_lines(cuerpo[apartado.end():proximo])
+            titulo_apartado = _plain_text(apartado.group(1)).rstrip(":")
+            partes.append(f"{titulo_apartado}\n{detalle}" if detalle else titulo_apartado)
+
+        titulo = _plain_text(encabezado.group(1))
+        if titulo:
+            secciones.append({"titulo": titulo, "detalle": "\n".join(partes)})
+
+    contactos = []
+    for bloque in _DATO_CONTACTO_RE.finditer(markup):
+        area_m = _H3_RE.search(bloque.group(1))
+        detalle = _plain_lines(_H3_RE.sub("", bloque.group(1), count=1))
+        if not detalle:
+            continue
+        contactos.append({
+            "area": _plain_text(area_m.group(1)) if area_m else None,
+            "detalle": detalle,
+        })
+
+    if not secciones and not contactos:
+        return {}
+    return {"secciones": secciones, "contactos": contactos}
+
+
 # ---------------------------------------------------------------------------
 # Consultas (caché + red + manejo de error)
 # ---------------------------------------------------------------------------
@@ -545,6 +647,95 @@ def get_autoridades(municipal_url: str, area: Optional[str] = None) -> dict:
     }
 
 
+def _terminos_de_tema(tema: str) -> List[str]:
+    """
+    Términos por los que filtrar la grilla de residuos para un tema escrito por
+    el vecino (o por el modelo): el tema tal cual, más el nombre de la sección
+    de la página al que pertenece y sus sinónimos ("¿cuándo pasa el camión?" →
+    "residuos domiciliarios").
+    """
+    filtro = _normalizar(tema)
+    terminos = [filtro]
+    for seccion, alias in ALIAS_RESIDUOS.items():
+        if seccion in filtro or any(a in filtro for a in alias):
+            terminos.append(seccion)
+            terminos.extend(alias)
+    return terminos
+
+
+def get_recoleccion_residuos(municipal_url: str, tema: Optional[str] = None) -> dict:
+    """
+    Grilla de recolección y servicios de residuos de Bolívar Verde (página
+    oficial del municipio): días, horarios y zonas de cada servicio, qué se
+    recicla, dónde llevar los residuos especiales y los teléfonos de las áreas
+    responsables.
+
+    `tema` (opcional) filtra las secciones —"el camión de la basura", "puntos
+    verdes", "pilas"—; si no coincide con ninguna, devuelve la grilla completa
+    con una nota, para que el modelo responda con lo que hay. Nunca levanta:
+    ante un fallo devuelve `{"error": ..., "url": ...}`.
+    """
+    url = urljoin(municipal_url, BOLIVAR_VERDE_PATH)
+    clave = CACHE_PREFIX + "residuos:" + hashlib.sha1(url.encode("utf-8")).hexdigest()
+    datos = _cache_get(clave)
+    if datos is None:
+        try:
+            datos = parse_bolivar_verde(_fetch_html(url))
+        except httpx.HTTPError as exc:
+            logger.warning("PublicSources: falló la consulta de Bolívar Verde (%s): %s", url, exc)
+            return {
+                "error": "No se pudo consultar la página de recolección de residuos del municipio en este momento.",
+                "url": url,
+            }
+        if not datos:
+            logger.warning("PublicSources: Bolívar Verde no devolvió la grilla de residuos (%s)", url)
+            return {
+                "error": "No se pudo consultar la página de recolección de residuos del municipio en este momento.",
+                "url": url,
+            }
+        _cache_set(clave, datos, RESIDUOS_TTL)
+
+    resultado = {"fuente": url, **datos}
+    if not tema:
+        return resultado
+
+    terminos = _terminos_de_tema(tema)
+
+    def _coincide(texto: Optional[str]) -> bool:
+        if not texto:
+            return False
+        normalizado = _normalizar(texto)
+        return any(termino in normalizado for termino in terminos)
+
+    # El título manda: si el tema cae en el título de una sección, no se
+    # arrastran las que sólo mencionan la palabra de paso ("basura por un lado y
+    # reciclables por otro" está en el texto de Residuos Secos, y no es la
+    # respuesta a "¿cuándo pasa el camión de la basura?"). El barrido por el
+    # texto queda como respaldo, para temas que no nombran ninguna sección.
+    secciones = [seccion for seccion in datos["secciones"] if _coincide(seccion["titulo"])]
+    contactos = [contacto for contacto in datos["contactos"] if _coincide(contacto["area"])]
+    # Un tema de contacto ("¿a quién le reclamo?", "el teléfono de Ambiente")
+    # devuelve los bloques completos: ninguno nombra el tema consultado (el de
+    # la Cooperativa ni siquiera tiene área).
+    if "contactos" in terminos:
+        contactos = list(datos["contactos"])
+    if not secciones and not contactos:
+        secciones = [
+            seccion for seccion in datos["secciones"]
+            if _coincide(seccion["titulo"]) or _coincide(seccion["detalle"])
+        ]
+        contactos = [
+            contacto for contacto in datos["contactos"]
+            if _coincide(contacto["area"]) or _coincide(contacto["detalle"])
+        ]
+    if secciones or contactos:
+        return {**resultado, "secciones": secciones, "contactos": contactos, "filtro": tema}
+    return {
+        **resultado,
+        "nota": f"Ningún servicio de residuos coincide con '{tema}': esta es la grilla completa.",
+    }
+
+
 # ---------------------------------------------------------------------------
 # Tools para el LLM
 # ---------------------------------------------------------------------------
@@ -630,6 +821,36 @@ AUTORIDADES_TOOL_SPEC = {
 }
 
 
+RESIDUOS_TOOL_NAME = "recoleccion_de_residuos"
+
+RESIDUOS_TOOL_SPEC = {
+    "name": RESIDUOS_TOOL_NAME,
+    "description": (
+        "Devuelve la grilla oficial de residuos de San Carlos de Bolívar (Bolívar Verde, sitio del "
+        "municipio): días, horarios y zonas de la recolección de residuos gruesos, domiciliarios y "
+        "secos, el barrido, los puntos verdes, qué se recicla y dónde llevar los residuos especiales "
+        "(pilas, RAAEs, aceite vegetal usado, neumáticos), con los teléfonos de las áreas "
+        "responsables. Llamala SIEMPRE que pregunten qué día o a qué hora pasa la recolección en una "
+        "zona, dónde llevar un residuo o qué se recicla, aunque creas saber la respuesta. Devolvé "
+        "siempre el enlace oficial de la página."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "tema": {
+                "type": "string",
+                "description": (
+                    "Tema puntual que preguntó el vecino, si preguntó por uno (por ejemplo 'residuos "
+                    "gruesos', 'basura', 'barrido', 'puntos verdes', 'pilas' o 'aceite usado'). "
+                    "Omitilo para traer la grilla completa."
+                ),
+            },
+        },
+        "required": [],
+    },
+}
+
+
 def build_public_sources_tools(
     cfg: PublicSourcesConfig,
 ) -> Tuple[List[dict], Dict[str, Callable[[str, dict], dict]]]:
@@ -663,11 +884,18 @@ def build_public_sources_tools(
         area = (args.get("area") or "").strip() or None
         return get_autoridades(cfg.municipal_url, area)
 
+    def _residuos_executor(tool_name: str, args: dict) -> dict:
+        if tool_name != RESIDUOS_TOOL_NAME:
+            return {"error": f"Tool desconocida: {tool_name}"}
+        tema = (args.get("tema") or "").strip() or None
+        return get_recoleccion_residuos(cfg.municipal_url, tema)
+
     return (
-        [SIBOM_TOOL_SPEC, FARMACIA_TOOL_SPEC, AUTORIDADES_TOOL_SPEC],
+        [SIBOM_TOOL_SPEC, FARMACIA_TOOL_SPEC, AUTORIDADES_TOOL_SPEC, RESIDUOS_TOOL_SPEC],
         {
             SIBOM_TOOL_NAME: _sibom_executor,
             FARMACIA_TOOL_NAME: _farmacia_executor,
             AUTORIDADES_TOOL_NAME: _autoridades_executor,
+            RESIDUOS_TOOL_NAME: _residuos_executor,
         },
     )

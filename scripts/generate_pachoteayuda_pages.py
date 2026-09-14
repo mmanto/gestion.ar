@@ -10,13 +10,18 @@ del contenedor landing-pachoteayuda):
     /normas/<seccion>/<anio>/<slug>/    una norma, con su texto y el PDF oficial
     /tramites/                          guía de trámites del municipio
     /tramites/<slug>/                   un trámite, con requisitos oficiales
+    /residuos/                          recolección de residuos (Bolívar Verde)
+    /residuos/<slug>/                   una sección, con días y horarios
     sitemap.xml                         todas las URLs generadas
 
-Fuentes (las dos oficiales):
+Fuentes (las tres oficiales):
   - corpus JSONL del HCD de Bolívar, producido por scripts/fetch_bolivar_normas.py
     e indexado por backend/scripts/index_bolivar_normas.py. Cada registro:
     {id, seccion, fecha, titulo, numero, url, chars, origen, texto}.
   - Guía de Trámites del sitio del municipio (bolivar.gob.ar/guia-de-tramites).
+  - Bolívar Verde, el programa de residuos del municipio
+    (bolivar.gob.ar/bolivarverde/): recolección de residuos gruesos y
+    domiciliarios, barrido, residuos secos y residuos especiales.
 
 Uso (en la máquina de trabajo, antes de `docker compose build` de la landing):
 
@@ -25,6 +30,9 @@ Uso (en la máquina de trabajo, antes de `docker compose build` de la landing):
 
     # sólo trámites (no necesita corpus, las páginas quedan en el build)
     python3 scripts/generate_pachoteayuda_pages.py --only tramites
+
+    # sólo residuos (tampoco necesita corpus)
+    python3 scripts/generate_pachoteayuda_pages.py --only residuos
 
 Las páginas generadas y el sitemap.xml NO se versionan (ver .gitignore): se
 regeneran antes de cada build de landing-pachoteayuda.
@@ -325,6 +333,7 @@ def page(*, title: str, description: str, canonical: str, body: str,
   <a class="brand" href="/"><img src="/landing/logo.webp" alt="Pacho Te Ayuda" width="558" height="200" /></a>
   <nav>
     <a href="/tramites/">Trámites</a>
+    <a href="/residuos/">Residuos</a>
     <a href="/normas/">Normas del HCD</a>
     <a href="/">Asistente</a>
   </nav>
@@ -831,6 +840,271 @@ def generar_tramites(escritor: Escritor, limite: Optional[int] = None) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Recolección de residuos (programa Bolívar Verde del sitio del municipio)
+# ---------------------------------------------------------------------------
+
+VERDE_URL = f"{MUNICIPIO}/bolivarverde/"
+
+# Secciones canónicas de /residuos/, en el orden en que las publica el
+# municipio: cada <h4> de la página es el corte de una sección y define el
+# slug. Si la fuente deja de traerlas en este orden, el generador corta (ver
+# generar_residuos): publicar las que quedaron sería publicar de menos.
+RECOLECCION = [
+    {
+        "slug": "recoleccion-de-residuos-gruesos",
+        "titulo": "Recolección de residuos gruesos",
+        "pregunta": "¿Cuándo se recolectan los residuos gruesos en Bolívar?",
+        "enlace": "Ver días, zonas y horarios",
+    },
+    {
+        "slug": "recoleccion-de-residuos-domiciliarios",
+        "titulo": "Recolección de residuos domiciliarios",
+        "pregunta": "¿Cuándo se recolectan los residuos domiciliarios en Bolívar?",
+        "enlace": "Ver días y horarios",
+    },
+    {
+        "slug": "barrido",
+        "titulo": "Barrido",
+        "pregunta": "¿Cómo funciona el barrido de las calles de Bolívar?",
+        "enlace": "Ver horarios y responsabilidades",
+    },
+    {
+        "slug": "residuos-secos",
+        "titulo": "Residuos secos",
+        "pregunta": "¿Cómo se separan y dónde se dejan los residuos secos en Bolívar?",
+        "enlace": "Ver qué se recupera y dónde llevarlo",
+    },
+    {
+        "slug": "residuos-especiales",
+        "titulo": "Residuos especiales",
+        "pregunta": "¿Dónde se llevan los residuos especiales en Bolívar?",
+        "enlace": "Ver dónde se llevan",
+    },
+]
+
+
+def texto_lineas(markup: str) -> List[str]:
+    """Renglones de un fragmento de HTML: <br>, </p>, </li> y </div> cortan
+    línea. La página del municipio usa los <br> como renglones de una lista
+    (días y horarios), así que sin esto el texto queda como un párrafo corrido.
+    Los saltos del propio código fuente del municipio no cuentan: se colapsan
+    antes de cortar (si no, cada renglón del .html sería un ítem de la lista).
+    """
+    markup = re.sub(r"<!--.*?-->", " ", markup, flags=re.S)
+    plano = re.sub(r"<br\s*/?>|</(?:p|li|div)\s*>", "\x00", markup, flags=re.I)
+    plano = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", plano)))
+    return [linea for linea in (l.strip() for l in plano.split("\x00")) if linea]
+
+
+def unir_renglones(renglones: Sequence[str]) -> str:
+    """Renglones como un texto corrido. Los que no terminan en punto (las
+    celdas de la grilla de días y horarios, los rótulos) se separan con un punto
+    medio; si no, el renglón siguiente queda pegado al anterior."""
+    partes: List[str] = []
+    for renglon in renglones:
+        if partes and not partes[-1].endswith((".", ":", ";", "…")):
+            partes.append("·")
+        partes.append(renglon)
+    return " ".join(partes)
+
+
+def bloques_verde(cuerpo: str) -> List[Dict[str, object]]:
+    """Bloques de una sección: el texto previo al primer <h5> y cada <h5> con
+    el suyo. Adentro se conserva el orden de párrafos y listas, y un <p> con
+    varios renglones se separa como lista (misma regla que parse_tramite).
+    """
+    bloques: List[Dict[str, object]] = []
+    partes = re.split(r"<h5\b[^>]*>(.*?)</h5>", cuerpo, flags=re.S | re.I)
+    for titulo, markup in [(None, partes[0])] + list(zip(partes[1::2], partes[2::2])):
+        bloque: Dict[str, object] = {
+            "titulo": texto_plano(titulo) if titulo else "", "partes": []}
+        for trozo in re.split(r"(<(?:p|ul|ol)\b[^>]*>.*?</(?:p|ul|ol)>)", markup,
+                              flags=re.S | re.I)[1::2]:
+            lineas = texto_lineas(trozo)
+            if not lineas:
+                continue
+            if trozo[:2].lower() == "<p" and len(lineas) == 1:
+                bloque["partes"].append(("p", lineas[0]))
+            else:
+                bloque["partes"].append(("ul", lineas))
+        if bloque["titulo"] or bloque["partes"]:
+            bloques.append(bloque)
+    return bloques
+
+
+def parse_verde(markup: str) -> Dict:
+    """Intro, secciones y contacto del área de bolivar.gob.ar/bolivarverde/.
+
+    Estructura real de la fuente: <section id="intro"> con la bajada, el
+    contenido en <div id="content-wrapper">, el área responsable en el <h3> de
+    un <div class="dato-contacto"> (con la dirección y el teléfono en un <p>
+    partido por <br>) y las secciones en <h4>, con los sub-ítems en <h5>.
+    """
+    inicio = markup.find('<div id="content-wrapper">')
+    fin = markup.find("<footer", inicio)
+    if inicio == -1:
+        return {}
+    contenido = markup[inicio:fin if fin != -1 else len(markup)]
+
+    intro_m = re.search(r'<section id="intro">(.*?)</section>', contenido, re.S)
+    intro = " ".join(texto_lineas(intro_m.group(1))) if intro_m else ""
+
+    # Áreas: se guardan con la posición del bloque para asignarle a cada <h4> la
+    # última que lo precede.
+    contactos = []
+    for div in re.finditer(r'<div class="dato-contacto"[^>]*>(.*?)</div>', contenido, re.S):
+        nombre_m = re.search(r"<h3[^>]*>(.*?)</h3>", div.group(1), re.S)
+        if not nombre_m:
+            continue
+        lineas: List[str] = []
+        for parrafo in re.findall(r"<p\b[^>]*>(.*?)</p>", div.group(1), re.S):
+            lineas.extend(texto_lineas(parrafo))
+        contactos.append((div.start(), texto_plano(nombre_m.group(1)), lineas))
+
+    cortes = list(re.finditer(r"<h4\b[^>]*>(.*?)</h4>", contenido, re.S))
+    fines = [m.start() for m in re.finditer(r"</section\s*>", contenido, re.I)]
+    if not cortes or not intro:
+        return {}
+    secciones = []
+    for i, corte in enumerate(cortes):
+        fin_cuerpo = cortes[i + 1].start() if i + 1 < len(cortes) else len(contenido)
+        # El <h4> siguiente corta la sección, pero nunca se sale de su propio
+        # <section>: lo que viene después (el contacto del área siguiente, su
+        # bajada) es de otro bloque de la página.
+        fin_cuerpo = min(fin_cuerpo,
+                         next((fin for fin in fines if fin > corte.end()), len(contenido)))
+        contacto = [{"nombre": nombre, "lineas": lineas}
+                    for pos, nombre, lineas in contactos if pos < corte.start()]
+        secciones.append({
+            "titulo": texto_plano(corte.group(1)),
+            "contacto": contacto[-1] if contacto else {},
+            "bloques": bloques_verde(contenido[corte.end():fin_cuerpo]),
+        })
+    return {"intro": intro, "secciones": secciones}
+
+
+def render_bloque_verde(bloque: Dict[str, object]) -> str:
+    """Un bloque de Bolívar Verde como tarjeta (<section class="req">), con los
+    párrafos y las listas en el orden en que los publica el municipio."""
+    partes = []
+    if bloque["titulo"]:
+        partes.append(f"<h2>{esc(bloque['titulo'])}</h2>")
+    for tipo, valor in bloque["partes"]:
+        if tipo == "p":
+            partes.append(f"<p>{esc(valor)}</p>")
+        else:
+            partes.append("<ul>"
+                          + "".join(f"<li>{esc(i)}</li>" for i in valor) + "</ul>")
+    return ('    <section class="req">\n      ' + "\n      ".join(partes)
+            + "\n    </section>")
+
+
+def generar_residuos(escritor: Escritor) -> None:
+    """
+    Páginas de /residuos/ desde Bolívar Verde. A diferencia de los trámites acá
+    no se saltea nada: el COPY residuos/ del Dockerfile exige el directorio en
+    el build, así que una fuente caída o un markup distinto tienen que cortar
+    fuerte en vez de publicar el sitio de menos (sin contenido inventado).
+    """
+    try:
+        markup = fetch(VERDE_URL)
+    except (urllib.error.URLError, TimeoutError) as exc:
+        raise SystemExit(f"residuos: no se pudo leer {VERDE_URL} ({exc})") from exc
+
+    fuente = parse_verde(markup)
+    secciones = fuente.get("secciones") or []
+    encontradas = [s["titulo"] for s in secciones]
+    esperadas = [s["titulo"] for s in RECOLECCION]
+    if [normalized(t) for t in encontradas] != [normalized(t) for t in esperadas]:
+        raise SystemExit(
+            f"residuos: {VERDE_URL} no trae las {len(esperadas)} secciones "
+            f"esperadas en el orden conocido (encontradas: "
+            f"{', '.join(encontradas) or 'ninguna'}) — cambió el markup de la "
+            "fuente: revisá parse_verde() antes de publicar")
+
+    resumenes: List[str] = []
+    for entrada, seccion in zip(RECOLECCION, secciones):
+        bloques = seccion["bloques"]
+        renglones: List[str] = []
+        for bloque in bloques:
+            for tipo, valor in bloque["partes"]:
+                renglones.extend([valor] if tipo == "p" else valor)
+        if not renglones:
+            raise SystemExit(f"residuos: la sección '{seccion['titulo']}' de "
+                             f"{VERDE_URL} quedó sin texto: revisá parse_verde()")
+        resumenes.append(clip(unir_renglones(renglones[:3]), 145))
+
+        contacto = seccion["contacto"]
+        area = contacto.get("nombre", "")
+        respuesta = clip(unir_renglones(renglones), 700)
+        items = [("Inicio", "/"), ("Recolección de residuos", "/residuos/"),
+                 (entrada["titulo"], None)]
+        cuerpo = "\n".join(render_bloque_verde(b) for b in bloques)
+        if contacto:
+            cuerpo += "\n" + render_bloque_verde({
+                "titulo": "Contacto del área responsable",
+                "partes": [("p", area), ("ul", contacto["lineas"])]})
+        faq = [{
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [{
+                "@type": "Question",
+                "name": entrada["pregunta"],
+                "acceptedAnswer": {"@type": "Answer", "text": respuesta},
+            }],
+        }, jsonld_migas(items)]
+
+        meta = (f'<p class="meta">Área: {esc(area)} · {esc(MUNICIPIO_NOMBRE)}</p>'
+                if area else f'<p class="meta">{esc(MUNICIPIO_NOMBRE)}</p>')
+        body = f"""{breadcrumbs(items)}
+      <h1>{esc(entrada['titulo'])}</h1>
+      {meta}
+      <p class="lead">Cómo funciona en Bolívar, tal como lo publica el programa Bolívar Verde del municipio. Si te queda una duda, preguntale al asistente.</p>
+    {cuerpo}
+      <p class="source">Fuente oficial: <a href="{esc(VERDE_URL)}" target="_blank" rel="noopener nofollow">Bolívar Verde — {esc(MUNICIPIO_NOMBRE)}</a>. Ante un cambio de horario o una campaña nueva, vale lo que publica el municipio.</p>
+      <h2 style="margin-top:34px">Preguntas frecuentes</h2>
+      <div class="faq">
+        <details open>
+          <summary>{esc(entrada['pregunta'])}</summary>
+          <p>{esc(respuesta)}</p>
+        </details>
+      </div>
+      {cta('¿Te queda alguna duda con la recolección?', 'El asistente responde con la información oficial del municipio, a cualquier hora.')}"""
+        escritor.write(
+            f"/residuos/{entrada['slug']}/",
+            page(title=clip(f"{entrada['titulo']} en Bolívar: días, horarios y contacto", 62),
+                 description=clip(f"{entrada['titulo']}: {resumenes[-1]} Información oficial de Bolívar Verde, {MUNICIPIO_NOMBRE}.", 155),
+                 canonical=f"{SITE}/residuos/{entrada['slug']}/",
+                 body=body,
+                 jsonld=faq))
+
+    tarjetas = "\n".join(
+        f"""    <article class="card">
+      <h3>{esc(entrada['titulo'])}</h3>
+      <p>{esc(resumen)}</p>
+      <a href="/residuos/{esc(entrada['slug'])}/">{esc(entrada['enlace'])}</a>
+    </article>""" for entrada, resumen in zip(RECOLECCION, resumenes))
+    items = [("Inicio", "/"), ("Recolección de residuos", None)]
+    body = f"""{breadcrumbs(items)}
+  <h1>Recolección de residuos en Bolívar</h1>
+  <p class="lead">{esc(fuente['intro'])}</p>
+  <p class="lead">Estas son las {len(RECOLECCION)} partes del servicio: qué se recolecta, qué días, a qué hora y adónde llevás lo que no se lleva el camión. Si no encontrás lo tuyo, preguntale al asistente.</p>
+  <div class="cards">
+{tarjetas}
+  </div>
+  {cta('¿No sabés qué hacer con un residuo?', 'Escribile al asistente qué tenés y te dice si lo pasa el camión, cuándo y dónde llevarlo.')}"""
+    escritor.write(
+        "/residuos/",
+        page(title=clip("Recolección de residuos en Bolívar · días y horarios", 62),
+             description=clip(f"Cómo funcionan la recolección de residuos, el barrido y el reciclado en el {MUNICIPIO_NOMBRE}: días, horarios, qué se recupera y adónde llevás los residuos especiales.", 155),
+             canonical=f"{SITE}/residuos/",
+             body=body,
+             jsonld=[jsonld_migas(items)]))
+    areas = {s["contacto"].get("nombre") for s in secciones if s["contacto"]}
+    print(f"residuos: {len(RECOLECCION)} páginas + hub ({len(areas)} áreas)")
+
+
+# ---------------------------------------------------------------------------
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
@@ -839,8 +1113,8 @@ def main() -> int:
                     help="JSONL del HCD (scripts/fetch_bolivar_normas.py)")
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT,
                     help=f"directorio de la landing (default: {DEFAULT_OUT})")
-    ap.add_argument("--only", choices=["normas", "tramites"],
-                    help="generar sólo una parte (tramites no necesita corpus)")
+    ap.add_argument("--only", choices=["normas", "tramites", "residuos"],
+                    help="generar sólo una parte (tramites y residuos no necesitan corpus)")
     ap.add_argument("--limit-tramites", type=int, default=None,
                     help="sólo los primeros N trámites (para probar)")
     args = ap.parse_args()
@@ -850,17 +1124,20 @@ def main() -> int:
         return 1
     escritor = Escritor(args.out)
 
-    if args.only != "tramites":
+    if args.only in (None, "normas"):
         if not args.corpus:
-            print("falta --corpus (o usá --only tramites)", file=sys.stderr)
+            print("falta --corpus (o usá --only tramites|residuos)", file=sys.stderr)
             return 1
         if not args.corpus.is_file():
             print(f"no existe el corpus: {args.corpus}", file=sys.stderr)
             return 1
         generar_normas(cargar_normas(args.corpus), escritor)
 
-    if args.only != "normas":
+    if args.only in (None, "tramites"):
         generar_tramites(escritor, args.limit_tramites)
+
+    if args.only in (None, "residuos"):
+        generar_residuos(escritor)
 
     escritor.sitemap()
     return 0

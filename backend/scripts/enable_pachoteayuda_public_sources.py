@@ -4,19 +4,21 @@ Habilita las fuentes públicas en vivo en el chat de pachoteayuda (pachoteayuda.
 el chat embebido en la landing de César Pacho):
 
   1. Agrega `config.public_sources` al bot — es la bandera que hace que el chat
-     web le ofrezca al LLM las tools del Boletín Oficial Municipal (SIBOM) y de
-     la farmacia de turno del sitio del municipio (ver BotConfig /
-     PublicSourcesConfig y app/services/public_sources_service.py).
+     web le ofrezca al LLM las tools del Boletín Oficial Municipal (SIBOM), de
+     la farmacia de turno, de las autoridades y de la recolección de residuos
+     del sitio del municipio (ver BotConfig / PublicSourcesConfig y
+     app/services/public_sources_service.py).
   2. Marca las herramientas del bloque `ius_config.estado_de_herramientas` como
-     implementadas, agrega las que no existían (`buscar_norma_publicada` y
-     `autoridades_municipales`) y completa `datos_que_cambian_seguido` con el
-     mapa tema → herramienta y las instrucciones de uso. Sin esto la tool
-     funciona igual, pero el prompt le prohíbe al agente usarlas o mencionarlas
-     (`regla_si_no_implementada`) y, para los temas de
-     `datos_que_cambian_seguido`, el agente no tiene cómo saber qué herramienta
-     consultar: el vecino seguiría recibiendo la derivación. Además reemplaza
-     la documentación obsoleta del bloque (describía cómo extraer el dato del
-     HTML a mano, cuando ahora lo devuelve la tool).
+     implementadas, agrega las que no existían (`buscar_norma_publicada`,
+     `autoridades_municipales` y `recoleccion_de_residuos`) y completa
+     `datos_que_cambian_seguido` con el tema, el mapa tema → herramienta y las
+     instrucciones de uso. Sin esto la tool funciona igual, pero el prompt le
+     prohíbe al agente usarlas o mencionarlas (`regla_si_no_implementada`) y,
+     para los temas de `datos_que_cambian_seguido`, el agente no tiene cómo
+     saber qué herramienta consultar: el vecino seguiría recibiendo la
+     derivación. Además reemplaza la documentación obsoleta del bloque
+     (describía cómo extraer el dato del HTML a mano, cuando ahora lo devuelve
+     la tool).
 
 Uso (dentro del contenedor del backend):
 
@@ -84,9 +86,30 @@ AUTORIDADES_HERRAMIENTA = {
     ),
 }
 
+# La grilla de residuos es de la misma página del municipio que la farmacia y las
+# autoridades: el chat ya prometía en `menu_de_capacidades` responder "cuándo pasa
+# el camión de la basura · reciclado y puntos verdes · dónde tirar pilas,
+# electrónicos, aceite usado o neumáticos" sin tener de dónde.
+RESIDUOS_HERRAMIENTA = {
+    "implementada": True,
+    "fuente": (
+        "https://www.bolivar.gob.ar/bolivarverde/ — días, horarios y zonas de la recolección de "
+        "residuos gruesos, domiciliarios y secos, el barrido, los puntos verdes y dónde llevar los "
+        "residuos especiales (pilas, RAAEs, aceite vegetal usado, neumáticos), con los teléfonos de "
+        "las áreas responsables"
+    ),
+    "cuando": (
+        "Cuando pregunten qué día o a qué hora pasa la recolección, dónde llevar un residuo (pilas, "
+        "electrónicos, aceite usado, neumáticos) o qué se recicla (tema 'recolección de residuos' "
+        "de datos_que_cambian_seguido)."
+    ),
+    "cache_sugerido_minutos": 1440,
+}
+
 HERRAMIENTAS_EXTRA = {
     "buscar_norma_publicada": SIBOM_HERRAMIENTA,
     "autoridades_municipales": AUTORIDADES_HERRAMIENTA,
+    "recoleccion_de_residuos": RESIDUOS_HERRAMIENTA,
 }
 
 # Qué herramienta corresponde a cada tema de `datos_que_cambian_seguido`. El
@@ -101,6 +124,7 @@ DATOS_QUE_CAMBIAN_EXTRA = {
         "boletín oficial": "buscar_norma_publicada",
         "farmacia de turno": "farmacia_de_turno_en_vivo",
         "nombre del intendente, secretarios y directores": "autoridades_municipales",
+        "recolección de residuos": "recoleccion_de_residuos",
     },
     "como_consultar_en_vivo": (
         "Para el boletín oficial, la fecha de publicación o el texto de una norma, llamá a la "
@@ -115,7 +139,21 @@ DATOS_QUE_CAMBIAN_EXTRA = {
         "nombres y los cargos no están en la base y respondé con los que devuelva la herramienta. "
         "No incluye concejales ni bloques del Concejo Deliberante: eso está en el sitio del Concejo."
     ),
+    "como_consultar_residuos": (
+        "Cuando pregunten qué día o a qué hora pasa la recolección, por dónde llevar un residuo "
+        "(pilas, electrónicos, aceite usado, neumáticos) o por qué se recicla, llamá a "
+        "'recoleccion_de_residuos' ANTES de responder y respondé con la grilla y el enlace oficial "
+        "que devuelva. La grilla distingue planta urbana (paralelas y perpendiculares a Av. San "
+        "Martín) y barrios: si el vecino pregunta por un barrio puntual, dale el horario de barrios "
+        "y el teléfono de Espacios Públicos para confirmarlo."
+    ),
 }
+
+# El paso 2 de `prioridad_de_respuesta` pide el tema en
+# `datos_que_cambian_seguido.temas` Y la herramienta del mapa implementada: con
+# la entrada sólo en el mapa, la tool existe pero el tema no dispara la consulta
+# en vivo (mismo cableado que SIBOM y autoridades, ver ADR-018).
+TEMAS_EXTRA = ("recolección de residuos",)
 
 # Documentación del bloque que quedó obsoleta al pasar la consulta a una tool
 # del backend (`regex_sugerida` describía cómo extraer el nombre del farmacia
@@ -182,6 +220,13 @@ async def main() -> None:
                     if datos_cambian.get(clave) != valor:
                         datos_cambian[clave] = valor
                         cambios.append(f"ius_config.datos_que_cambian_seguido.{clave}")
+
+                temas = datos_cambian.get("temas")
+                if isinstance(temas, list):
+                    for tema in TEMAS_EXTRA:
+                        if tema not in temas:
+                            temas.append(tema)
+                            cambios.append(f"ius_config.datos_que_cambian_seguido.temas['{tema}']")
 
             if not cambios:
                 print(f"   bot {row.bot_id} ({row.name}): sin cambios (ya aplicado)")
