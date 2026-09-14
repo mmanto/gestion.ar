@@ -831,8 +831,9 @@ RESIDUOS_TOOL_SPEC = {
         "secos, el barrido, los puntos verdes, qué se recicla y dónde llevar los residuos especiales "
         "(pilas, RAAEs, aceite vegetal usado, neumáticos), con los teléfonos de las áreas "
         "responsables. Llamala SIEMPRE que pregunten qué día o a qué hora pasa la recolección en una "
-        "zona, dónde llevar un residuo o qué se recicla, aunque creas saber la respuesta. Devolvé "
-        "siempre el enlace oficial de la página."
+        "zona, dónde llevar un residuo o qué se recicla, aunque creas saber la respuesta: los días, "
+        "horarios y puntos de recepción vigentes no están en las normas del HCD ni en la base de "
+        "conocimiento. Devolvé siempre el enlace oficial de la página."
     ),
     "parameters": {
         "type": "object",

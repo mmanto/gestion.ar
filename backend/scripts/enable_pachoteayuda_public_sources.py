@@ -100,8 +100,10 @@ RESIDUOS_HERRAMIENTA = {
     ),
     "cuando": (
         "Cuando pregunten qué día o a qué hora pasa la recolección, dónde llevar un residuo (pilas, "
-        "electrónicos, aceite usado, neumáticos) o qué se recicla (tema 'recolección de residuos' "
-        "de datos_que_cambian_seguido)."
+        "electrónicos, aceite usado, neumáticos) o qué se recicla (temas de 'recolección de "
+        "residuos', 'residuos especiales' y 'puntos verdes' de datos_que_cambian_seguido). Los días, "
+        "horarios y puntos de recepción vigentes no están en la base de conocimiento: no los "
+        "deduzcas de las normas."
     ),
     "cache_sugerido_minutos": 1440,
 }
@@ -125,6 +127,8 @@ DATOS_QUE_CAMBIAN_EXTRA = {
         "farmacia de turno": "farmacia_de_turno_en_vivo",
         "nombre del intendente, secretarios y directores": "autoridades_municipales",
         "recolección de residuos": "recoleccion_de_residuos",
+        "residuos especiales (pilas, electrónicos, aceite usado, neumáticos)": "recoleccion_de_residuos",
+        "puntos verdes y separación de residuos secos": "recoleccion_de_residuos",
     },
     "como_consultar_en_vivo": (
         "Para el boletín oficial, la fecha de publicación o el texto de una norma, llamá a la "
@@ -143,9 +147,13 @@ DATOS_QUE_CAMBIAN_EXTRA = {
         "Cuando pregunten qué día o a qué hora pasa la recolección, por dónde llevar un residuo "
         "(pilas, electrónicos, aceite usado, neumáticos) o por qué se recicla, llamá a "
         "'recoleccion_de_residuos' ANTES de responder y respondé con la grilla y el enlace oficial "
-        "que devuelva. La grilla distingue planta urbana (paralelas y perpendiculares a Av. San "
-        "Martín) y barrios: si el vecino pregunta por un barrio puntual, dale el horario de barrios "
-        "y el teléfono de Espacios Públicos para confirmarlo."
+        "que devuelva. Los días, horarios y puntos de recepción vigentes NO están en la base de "
+        "conocimiento: las ordenanzas y los anexos de presupuesto describen el servicio (unidades, "
+        "turnos, zonas) pero no la grilla ni dónde se recibe cada residuo — no los deduzcas del "
+        "texto legal ni los supongas por lo que recuerdes. La grilla distingue planta urbana "
+        "(paralelas y perpendiculares a Av. San Martín) y barrios: si el vecino pregunta por un "
+        "barrio puntual, dale el horario de barrios y el teléfono de Espacios Públicos para "
+        "confirmarlo."
     ),
 }
 
@@ -153,7 +161,19 @@ DATOS_QUE_CAMBIAN_EXTRA = {
 # `datos_que_cambian_seguido.temas` Y la herramienta del mapa implementada: con
 # la entrada sólo en el mapa, la tool existe pero el tema no dispara la consulta
 # en vivo (mismo cableado que SIBOM y autoridades, ver ADR-018).
-TEMAS_EXTRA = ("recolección de residuos",)
+#
+# Los temas de residuos van separados y con las palabras del vecino: con una
+# sola entrada genérica ("recolección de residuos") y el corpus del HCD
+# conteniendo anexos de presupuesto que describen el servicio, el agente
+# contestaba "dónde llevo el aceite usado y las pilas" sin consultar nada
+# (verificado en el chat: cero claves nuevas en la caché y una respuesta
+# genérica con "puntos verdes" para el aceite, que en la grilla oficial va a la
+# Escuela Nº 501).
+TEMAS_EXTRA = (
+    "recolección de residuos",
+    "residuos especiales (pilas, electrónicos, aceite usado, neumáticos)",
+    "puntos verdes y separación de residuos secos",
+)
 
 # Documentación del bloque que quedó obsoleta al pasar la consulta a una tool
 # del backend (`regex_sugerida` describía cómo extraer el nombre del farmacia
