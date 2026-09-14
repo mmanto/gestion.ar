@@ -1239,6 +1239,17 @@ Opción 3, más las páginas estáticas del mismo dato para el SEO (patrón ADR-
 - La invocación sigue dependiendo del modelo (`tool_choice: auto`): la mitigación
   es la misma que en ADR-018 —tema en `temas` + mapa + instrucción— y se mide
   igual, mirando si aparecen claves `public_sources:*:residuos:*` en la caché.
+  Medido en el chat de producción, con la caché vaciada antes de cada turno:
+  con la entrada genérica ("recolección de residuos") el agente contestó "¿dónde
+  llevo el aceite de cocina usado y las pilas?" **sin consultar** (cero claves
+  nuevas) y mandó el aceite usado a los "puntos verdes", cuando la grilla lo
+  recibe en la Escuela Nº 501 — el corpus del HCD tiene anexos de presupuesto que
+  describen el servicio, así que el modelo cree que ya tiene el dato (el mismo
+  modo de falla que ADR-018 documentó con SIBOM). Con el tema desglosado en tres
+  entradas con las palabras del vecino y la aclaración de que la grilla vigente
+  no está en la base ni se deduce de las normas, los tres casos probados
+  (residuos gruesos por zona, aceite usado y pilas, horario de la basura)
+  llamaron a la tool y respondieron con la grilla y el enlace oficial.
 - Hay dos parsers de la misma página (el del servicio y el del generador de
   páginas). No se unifican a propósito: corren en runtimes distintos (contenedor
   con `httpx`/`redis` contra un generador stdlib-only que no puede importar el

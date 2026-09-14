@@ -53,6 +53,25 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `flujo`) existía únicamente en la base de datos, sin copia en el repo; se exportó
   con la instrucción de la tool y las 3 decisiones de calificación.
 
+### Corregido
+- **El agente consulta la grilla de residuos aunque el corpus hable del tema**
+  (`backend/scripts/enable_pachoteayuda_public_sources.py`). Verificado en el
+  chat de producción: ante "¿dónde llevo el aceite de cocina usado y las
+  pilas?" el asistente respondió sin consultar la fuente (cero claves nuevas en
+  la caché de Redis) y mandó el aceite usado a los "puntos verdes", cuando la
+  grilla oficial lo recibe en la Escuela Nº 501. El corpus del HCD tiene anexos
+  de presupuesto que describen el servicio de recolección, así que el modelo
+  cree que ya tiene el dato — el mismo modo de falla que ADR-018 documentó con
+  SIBOM. Ahora la instrucción y la descripción de la tool aclaran que los días,
+  horarios y puntos de recepción vigentes NO están en la base ni se deducen de
+  las normas, y los temas entran desglosados con las palabras del vecino
+  ("residuos especiales (pilas, electrónicos, aceite usado, neumáticos)",
+  "puntos verdes y separación de residuos secos"). Medido en el chat, con la
+  caché vaciada antes de cada turno: los tres casos probados (residuos gruesos
+  por zona, aceite usado y pilas, horario de la basura) llamaron a la tool
+  (clave `public_sources:v1:residuos:*` nueva) y respondieron con la grilla y el
+  enlace oficial.
+
 ### Cambiado
 - **La calificación por semáforo necesita instrucción explícita de la tool en el
   prompt** (`docs/ius_legal_config.json`, `docs/ius_system_prompt.json`). Con
