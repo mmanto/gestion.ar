@@ -147,12 +147,20 @@ acreditar la relación laboral por otros medios? (b) ¿un despido con rescisión
 es amarillo o verde? (c) completar en el fixture la fecha de terminación del caso 9 y la
 documentación exacta de los casos 11/13/15.
 
+Estas preguntas están desglosadas, caso por caso, con el texto de prueba, los fragmentos que
+hacen fallar cada caso y la corrección propuesta, en
+`docs/qa/IUS_CONSULTA_ABOGADO_SEMAFORO.md` (documento para entregar al abogado de referencia:
+definiciones D1–D3, una por tema, con espacio de respuesta).
+
 ## 7. Entregables
 
 | Archivo | Qué es |
 |---|---|
 | `scripts/test_ius_casos_semaforo.py` | Suite de integración LLM por canal web/PWA |
 | `docs/qa/ius_casos_semaforo.txt` | Fixture versionado de los 15 casos, fechas normalizadas |
+| `docs/qa/IUS_CONSULTA_ABOGADO_SEMAFORO.md` | Consulta al abogado de referencia: los 6 casos abiertos, D1–D3 y la corrección propuesta de cada uno |
+| `docs/qa/IUS_CONSULTA_ABOGADO_SEMAFORO.html` | La misma consulta en HTML autocontenido (tema claro): los 9 `Definición` son campos de respuesta, con guardado local, descarga de las respuestas en `.md` e impresión |
+| `scripts/build_ius_consulta_abogado.py` | Genera el HTML desde el `.md` (evita duplicar los 6 textos de caso a mano) |
 | `docs/ius_legal_config.json` | **Prompt canónico** (27 reglas + instrucción de tool + notas) |
 | `docs/ius_system_prompt.json` | Template del repo: paso 10 + sección `registro_automatico_calificacion` |
 | `docs/IUS_SEMAFORO_INFORME_2026-09-11.md` | Este informe |

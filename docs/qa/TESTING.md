@@ -103,7 +103,9 @@ instrucción y `llm_thinking=false` 9/15 (rojo 5/5, amarillo 3/5, verde 1/5). Co
 (tope) con `content` vacío — es presupuesto de salida, no contexto (el input por
 request no pasa de ~24k tokens). Los casos que no coinciden son desacuerdos de
 definición de las reglas, no de infraestructura; detalle en
-`docs/IUS_SEMAFORO_INFORME_2026-09-11.md`.
+`docs/IUS_SEMAFORO_INFORME_2026-09-11.md` §6 y, caso por caso (texto de prueba,
+fragmentos que hacen fallar cada caso y corrección propuesta), en
+`docs/qa/IUS_CONSULTA_ABOGADO_SEMAFORO.md`.
 
 ```bash
 python scripts/test_ius_casos_semaforo.py --limit 1        # smoke

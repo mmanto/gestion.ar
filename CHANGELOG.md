@@ -45,7 +45,14 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `renuncia_voluntaria_firmada` no aplica cuando hubo promesa de liquidación
   incumplida o retractación documentada
   (`renuncia_con_promesa_liquidacion_incumplida`, verde). Pendiente de validación
-  del equipo legal del cliente.
+  del equipo legal del cliente: las definiciones abiertas de la corrida (6 casos)
+  quedaron desglosadas para el abogado de referencia en
+  `docs/qa/IUS_CONSULTA_ABOGADO_SEMAFORO.md`, con el texto de prueba, los fragmentos
+  que hacen fallar cada caso y la corrección propuesta. El mismo documento tiene
+  versión interactiva en HTML (tema claro, `docs/qa/IUS_CONSULTA_ABOGADO_SEMAFORO.html`):
+  los nueve `Definición` son campos de respuesta, con guardado local, descarga de las
+  respuestas en `.md` e impresión; se genera con
+  `scripts/build_ius_consulta_abogado.py`.
 - **Páginas de normas del HCD y de trámites municipales en pachoteayuda.ar**
   (`scripts/generate_pachoteayuda_pages.py`,
   `sites/pachoteayuda-landing/`). El dominio servía una sola URL de 80 palabras
