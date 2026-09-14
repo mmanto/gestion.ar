@@ -431,10 +431,12 @@ cd ~/workspace/gestion.ar
 python3 scripts/generate_pachoteayuda_pages.py --corpus ~/workspace/bolivar/normas_corpus.jsonl
 ```
 
-Escribe `sites/pachoteayuda-landing/{normas,tramites,sitemap.xml}` (~15 s, sólo
-stdlib; los trámites se leen en vivo de `bolivar.gob.ar`). Nada de eso se
-versiona: se regenera antes de cada build. `--only tramites` regenera sólo la
-guía de trámites, sin corpus. El deploy, en `DEPLOYMENT.md`.
+Escribe `sites/pachoteayuda-landing/{normas,tramites,residuos,sitemap.xml}` (~15 s,
+sólo stdlib; los trámites y la grilla de residuos se leen en vivo de
+`bolivar.gob.ar`). Nada de eso se versiona: se regenera antes de cada build.
+`--only tramites` y `--only residuos` regeneran sólo esa parte, sin corpus (ojo:
+el `sitemap.xml` se reescribe con lo generado en esa corrida — antes de un build
+siempre va la corrida completa). El deploy, en `DEPLOYMENT.md`.
 
 
 ---

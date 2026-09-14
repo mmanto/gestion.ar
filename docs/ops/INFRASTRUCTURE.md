@@ -188,9 +188,10 @@ archivo existe, el `PathRegexp` ya la enruta al contenedor correcto.
 
 El router de `landing-pachoteayuda` matchea, además de `/` y los `.html`,
 `/robots.txt`, `/sitemap.xml`, el prefijo `/landing/` (assets propios: logo, foto
-del hero, `og-image.png`, favicon y `seo.css`) y los prefijos `/normas/` y
-`/tramites/` — las páginas que genera `scripts/generate_pachoteayuda_pages.py`
-(ver ADR-019 y el paso de build en DEPLOYMENT.md).
+del hero, `og-image.png`, favicon y `seo.css`) y los prefijos `/normas/`,
+`/tramites/` y `/residuos/` — las páginas que genera
+`scripts/generate_pachoteayuda_pages.py` (ver ADR-019, ADR-020 y el paso de build
+en DEPLOYMENT.md).
 
 Antes de esa regla, `robots.txt` y `sitemap.xml` los servía el SPA del tenant
 (`200 text/html` con `<title>Backoffice</title>`), así que el robots.txt no tenía
