@@ -475,6 +475,15 @@ cargo y contactos, de `/autoridades` del sitio del municipio) y
 domiciliarios, barrido, secos y especiales). Los concejales no
 están: el sitio del Concejo está detrás de un desafío anti-bot.
 
+El enlace oficial **no** se agrega como cierre de la respuesta (ADR-021): va sólo
+si el vecino lo pide o pregunta por la fuente, si la tool no pudo responder, o si
+es la fuente del texto citado (el caso de una norma). La regla es el mismo texto
+en las descripciones de las tools (`public_sources_service.REGLA_DE_ENLACES`) y
+en el bloque `ius_config.regla_de_enlaces` que carga el script de arriba — si el
+chat vuelve a cerrar con "podés ver la grilla completa en …", el primer lugar a
+mirar es `mapa_urls_por_tema` del bot, que vive sólo en la base y el script no
+toca.
+
 Si el agente responde que no tiene el dato, en orden:
 
 1. `config.public_sources` en el bot (lo imprime el script al correrlo).

@@ -19,6 +19,10 @@ el chat embebido en la landing de César Pacho):
      derivación. Además reemplaza la documentación obsoleta del bloque
      (describía cómo extraer el dato del HTML a mano, cuando ahora lo devuelve
      la tool).
+  3. Carga `ius_config.regla_de_enlaces`: la respuesta no se cierra mandando al
+     vecino a la página oficial cuando la pregunta ya está contestada (mismo
+     texto que las descripciones de las tools, ver
+     public_sources_service.REGLA_DE_ENLACES).
 
 Uso (dentro del contenedor del backend):
 
@@ -34,6 +38,7 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from app.db.database import AsyncSessionLocal
 from app.db.models import Bot
+from app.services.public_sources_service import REGLA_DE_ENLACES
 
 # pachoteayuda.ar — único tenant de Pacho en prod (id verificado 2026-08-16).
 PACHOTEAYUDA_TENANT_IDS = [
@@ -132,10 +137,12 @@ DATOS_QUE_CAMBIAN_EXTRA = {
     },
     "como_consultar_en_vivo": (
         "Para el boletín oficial, la fecha de publicación o el texto de una norma, llamá a la "
-        "herramienta que indica 'herramienta_por_tema' ANTES de responder y respondé con el enlace "
-        "oficial que devuelva. Aunque el texto de la norma ya esté en la base, el número de boletín "
-        "y la fecha de publicación NO están ahí y no se deducen del texto. Sólo publica normas "
-        "desde 2016; para las anteriores la respuesta sale de la base de conocimiento."
+        "herramienta que indica 'herramienta_por_tema' ANTES de responder y respondé con el número "
+        "de boletín, la fecha y el texto que devuelva (el enlace de la norma es la fuente de ese "
+        "texto: va al final como cita, no como invitación a seguir leyendo en otro lado). Aunque el "
+        "texto de la norma ya esté en la base, el número de boletín y la fecha de publicación NO "
+        "están ahí y no se deducen del texto. Sólo publica normas desde 2016; para las anteriores la "
+        "respuesta sale de la base de conocimiento."
     ),
     "como_consultar_autoridades": (
         "Cuando pregunten por el intendente, un secretario, un director o un jefe de área, o pidan "
@@ -146,15 +153,24 @@ DATOS_QUE_CAMBIAN_EXTRA = {
     "como_consultar_residuos": (
         "Cuando pregunten qué día o a qué hora pasa la recolección, por dónde llevar un residuo "
         "(pilas, electrónicos, aceite usado, neumáticos) o por qué se recicla, llamá a "
-        "'recoleccion_de_residuos' ANTES de responder y respondé con la grilla y el enlace oficial "
-        "que devuelva. Los días, horarios y puntos de recepción vigentes NO están en la base de "
-        "conocimiento: las ordenanzas y los anexos de presupuesto describen el servicio (unidades, "
-        "turnos, zonas) pero no la grilla ni dónde se recibe cada residuo — no los deduzcas del "
-        "texto legal ni los supongas por lo que recuerdes. La grilla distingue planta urbana "
-        "(paralelas y perpendiculares a Av. San Martín) y barrios: si el vecino pregunta por un "
-        "barrio puntual, dale el horario de barrios y el teléfono de Espacios Públicos para "
-        "confirmarlo."
+        "'recoleccion_de_residuos' ANTES de responder y respondé con los días, horarios, zonas y "
+        "teléfonos que devuelva la grilla. Los días, horarios y puntos de recepción vigentes NO "
+        "están en la base de conocimiento: las ordenanzas y los anexos de presupuesto describen el "
+        "servicio (unidades, turnos, zonas) pero no la grilla ni dónde se recibe cada residuo — no "
+        "los deduzcas del texto legal ni los supongas por lo que recuerdes. La grilla distingue "
+        "planta urbana (paralelas y perpendiculares a Av. San Martín) y barrios: si el vecino "
+        "pregunta por un barrio puntual, dale el horario de barrios y el teléfono de Espacios "
+        "Públicos para confirmarlo."
     ),
+}
+
+# La respuesta no se cierra mandando al vecino a la página oficial: era el cierre
+# que hacía salir del chat con la pregunta ya contestada (ver REGLA_DE_ENLACES, la
+# misma regla que va en las descripciones de las tools). Va como bloque propio y
+# no sólo dentro de 'datos_que_cambian_seguido' porque el enlace de cierre no es
+# sólo de los temas que se consultan en vivo: alcanza a cualquier respuesta.
+REGLA_DE_ENLACES_JSON = {
+    "instruccion": REGLA_DE_ENLACES.strip(),
 }
 
 # El paso 2 de `prioridad_de_respuesta` pide el tema en
@@ -233,6 +249,11 @@ async def main() -> None:
                         if herramienta.get(clave) != valor:
                             herramienta[clave] = valor
                             cambios.append(f"ius_config.estado_de_herramientas.{nombre}.{clave}")
+
+            if isinstance(ius_config, dict):
+                if ius_config.get("regla_de_enlaces") != REGLA_DE_ENLACES_JSON:
+                    ius_config["regla_de_enlaces"] = dict(REGLA_DE_ENLACES_JSON)
+                    cambios.append("ius_config.regla_de_enlaces")
 
             datos_cambian = ius_config.get("datos_que_cambian_seguido") if isinstance(ius_config, dict) else None
             if isinstance(datos_cambian, dict):

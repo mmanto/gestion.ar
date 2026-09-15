@@ -740,6 +740,22 @@ def get_recoleccion_residuos(municipal_url: str, tema: Optional[str] = None) -> 
 # Tools para el LLM
 # ---------------------------------------------------------------------------
 
+# El enlace oficial no es el cierre de la respuesta. Medido en el chat de
+# pachoteayuda.ar (2026-09-14): ante una consulta por el horario de recolección
+# que el asistente YA había respondido con la grilla, cerraba con "Si querés
+# consultar los horarios por tu zona o barrio puntual, podés llamar a Espacios
+# Públicos o ver la grilla completa en https://www.bolivar.gob.ar/bolivarverde/"
+# — el vecino sale del chat sin necesidad. Antes cada spec pedía lo contrario
+# ("Devolvé siempre el enlace oficial"), así que el modelo lo repetía en toda
+# respuesta: la regla va acá, en la instrucción que el modelo lee en el momento
+# de responder, y no sólo en el prompt del bot.
+REGLA_DE_ENLACES = (
+    " No cierres la respuesta con el enlace oficial cuando ya le contestaste al vecino lo que "
+    "preguntó: el enlace va sólo si el vecino lo pide o pregunta por la fuente, si no pudiste "
+    "responder con lo que devuelve esta herramienta, o si es la fuente del texto que le estás "
+    "citando."
+)
+
 SIBOM_TOOL_NAME = "buscar_norma_publicada"
 
 SIBOM_TOOL_SPEC = {
@@ -748,8 +764,8 @@ SIBOM_TOOL_SPEC = {
         "Busca una norma del Partido de Bolívar en el Boletín Oficial Municipal (SIBOM), el registro "
         "oficial donde el municipio publica ordenanzas, decretos y resoluciones desde 2016. Usala "
         "cuando pregunten si una norma está publicada, en qué boletín o en qué fecha salió, o cuando "
-        "pidan el texto de una norma que no está en la información disponible. Devolvé siempre el "
-        "enlace oficial de lo que encuentres. No la uses para normas anteriores a 2016 ni para trámites."
+        "pidan el texto de una norma que no está en la información disponible. No la uses para "
+        "normas anteriores a 2016 ni para trámites." + REGLA_DE_ENLACES
     ),
     "parameters": {
         "type": "object",
@@ -775,7 +791,7 @@ FARMACIA_TOOL_SPEC = {
     "description": (
         "Devuelve las farmacias de turno de San Carlos de Bolívar según el sitio oficial del "
         "municipio, con dirección y teléfono. Llamala SIEMPRE que pregunten qué farmacia está de "
-        "turno, hoy o en los próximos días, aunque creas saber la respuesta."
+        "turno, hoy o en los próximos días, aunque creas saber la respuesta." + REGLA_DE_ENLACES
     ),
     "parameters": {
         "type": "object",
@@ -803,7 +819,7 @@ AUTORIDADES_TOOL_SPEC = {
         "Autoridades del sitio del municipio. Llamala SIEMPRE que pregunten quién es el intendente, "
         "un secretario, un director o un jefe de área, o que pidan el listado de funcionarios, "
         "aunque creas saber la respuesta. No incluye concejales: el Concejo Deliberante tiene su "
-        "propio sitio."
+        "propio sitio." + REGLA_DE_ENLACES
     ),
     "parameters": {
         "type": "object",
@@ -833,7 +849,7 @@ RESIDUOS_TOOL_SPEC = {
         "responsables. Llamala SIEMPRE que pregunten qué día o a qué hora pasa la recolección en una "
         "zona, dónde llevar un residuo o qué se recicla, aunque creas saber la respuesta: los días, "
         "horarios y puntos de recepción vigentes no están en las normas del HCD ni en la base de "
-        "conocimiento. Devolvé siempre el enlace oficial de la página."
+        "conocimiento." + REGLA_DE_ENLACES
     ),
     "parameters": {
         "type": "object",

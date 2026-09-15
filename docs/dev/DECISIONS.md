@@ -1262,3 +1262,88 @@ Opción 3, más las páginas estáticas del mismo dato para el SEO (patrón ADR-
   residuos especiales.
 - El mismo archivo `.md` vive fuera del repo (como el corpus del HCD): la fuente
   es la página oficial, no el archivo.
+
+---
+
+## ADR-021: El enlace oficial no cierra la respuesta en el chat de pachoteayuda
+
+**Estado:** Aceptado
+
+**Fecha:** 2026-09-14
+
+### Contexto
+
+Reporte del cliente sobre el chat de `pachoteayuda.ar`: ante una consulta por el
+horario de recolección de residuos que el asistente **ya había contestado** con
+la grilla, la respuesta cerraba igual con "Si querés consultar los horarios por
+tu zona o barrio puntual, podés llamar a Espacios Públicos o ver la grilla
+completa en https://www.bolivar.gob.ar/bolivarverde/". El vecino salía del chat
+con su pregunta resuelta: la derivación al sitio oficial es el paso 3 de
+`prioridad_de_respuesta` y corresponde cuando el chat **no** tiene el dato
+(ADR-018), no como cierre de una respuesta que ya lo trae.
+
+El enlace no era una ocurrencia del modelo: estaba pedido en tres lugares del
+contexto que arma el turno.
+
+1. Las descripciones de las tools (`public_sources_service.py`): "Devolvé
+   siempre el enlace oficial de lo que encuentres" (SIBOM) y "Devolvé siempre el
+   enlace oficial de la página" (residuos). Es el texto que el modelo lee **en el
+   momento** de decidir cómo responder.
+2. Las instrucciones del prompt que escribe el script idempotente:
+   `como_consultar_en_vivo` y `como_consultar_residuos` pedían "respondé con … el
+   enlace oficial que devuelva".
+3. `mapa_urls_por_tema` (bloque del `ius_config` que vive sólo en la base de
+   prod, no versionado): un mapa tema → URL.
+
+### Opciones consideradas
+
+1. **Post-procesar la respuesta en el backend** (recortar la última línea si
+   trae una URL del municipio) — rechazada: el texto de una norma y las páginas
+   internas de la landing (`/normas/…`, `/residuos/…`) son enlaces legítimos, y
+   cualquier heurística sobre la redacción se rompe con el primer cambio de
+   tono del modelo.
+2. **Editar sólo el prompt del bot** (`ius_config`) — insuficiente: las
+   descripciones de las tools siguen mandando lo contrario en cada turno, y el
+   prompt del bot no está versionado.
+3. **Una sola regla de cierre**, con la misma redacción en las descripciones de
+   las tools y en un bloque propio del `ius_config`.
+
+### Decisión
+
+Opción 3. `public_sources_service.REGLA_DE_ENLACES` es la única redacción: se
+concatena a las cuatro descripciones de tools y el script idempotente la carga
+como `ius_config.regla_de_enlaces` (mismo texto, importado del servicio para que
+no haya dos versiones de la regla). El enlace oficial va sólo si:
+
+- el vecino lo pide o pregunta por la fuente,
+- la tool no pudo responder con lo que tiene,
+- o es la fuente del texto que el asistente está citando (el caso de una norma:
+  el recorte de SIBOM avisa "disponible en el enlace oficial", y ADR-016/RUNBOOK
+  esperan que la respuesta de una norma traiga el enlace).
+
+`como_consultar_en_vivo` y `como_consultar_residuos` pasan a pedir el dato (boletín,
+fecha y texto; días, horarios, zonas y teléfonos), no el enlace. La derivación
+del paso 3 (`prioridad_de_respuesta`) y `regla_si_no_implementada` quedan
+intactas: cuando el chat no puede responder, el vecino sigue recibiendo el sitio
+oficial. El teléfono del área (Espacios Públicos, para un barrio puntual) también
+se mantiene: no es una salida del chat, es la escalación de un dato que la grilla
+no detalla.
+
+### Consecuencias
+
+- **Medido** con el modelo de producción (`deepseek-v4-flash`), el prompt
+  reconstruido con los fragmentos documentados del `ius_config` y las HTML
+  reales de las fuentes, 3 corridas por pregunta: las dos consultas de residuos
+  cerraban con el enlace 3/3 y 3/3 **antes** del cambio y 0/3 y 0/3 **después**,
+  sin perder el teléfono del barrio puntual; la consulta por el texto de la
+  ordenanza 2459 sigue trayendo el enlace de SIBOM (1/3 → 2/3, la variabilidad
+  del modelo con `tool_choice: auto`), que es el caso exceptuado.
+- La regla vive en dos superficies a propósito: la descripción de la tool (se
+  lee al decidir la respuesta del turno) y el bloque del prompt (se lee al
+  arrancar). Cambiar una sin la otra deja la contradicción visible para el
+  modelo y para el validador semántico del panel (`ius_validator`).
+- Si el chat volviera a cerrar con el enlace, el primer lugar a mirar es
+  `mapa_urls_por_tema` del bot: no está versionado y el script no lo toca (no se
+  puede reescribir a ciegas sin conocer su forma).
+- `CACHE_PREFIX` no cambia: lo modificado son las descripciones de las tools, no
+  los parsers — la caché de Redis guarda respuestas de las fuentes, no specs.

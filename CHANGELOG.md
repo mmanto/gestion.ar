@@ -54,6 +54,28 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   con la instrucción de la tool y las 3 decisiones de calificación.
 
 ### Corregido
+- **El chat de pachoteayuda no cierra la respuesta con el enlace oficial**
+  (`backend/app/services/public_sources_service.py`,
+  `backend/scripts/enable_pachoteayuda_public_sources.py`). Reportado por el
+  cliente: ante una consulta por el horario de recolección que el asistente ya
+  había contestado con la grilla, cerraba con "Si querés consultar los horarios
+  por tu zona o barrio puntual, podés llamar a Espacios Públicos o ver la grilla
+  completa en https://www.bolivar.gob.ar/bolivarverde/" — el vecino salía del
+  chat con la pregunta resuelta. El enlace estaba pedido en el propio contexto
+  del turno: las descripciones de las tools decían "Devolvé siempre el enlace
+  oficial" y las instrucciones del prompt (`como_consultar_residuos`,
+  `como_consultar_en_vivo`) pedían responder "con … el enlace oficial que
+  devuelva". Ahora hay una sola regla —`REGLA_DE_ENLACES`, el mismo texto en las
+  cuatro descripciones de tools y en el bloque nuevo
+  `ius_config.regla_de_enlaces`—: el enlace va sólo si el vecino lo pide o
+  pregunta por la fuente, si la tool no pudo responder, o si es la fuente del
+  texto que el asistente cita (el texto de una norma). La derivación al sitio
+  oficial cuando el chat no tiene el dato queda intacta, igual que el teléfono
+  del área para un barrio puntual. Medido con el modelo de producción
+  (`deepseek-v4-flash`) y el prompt reconstruido, 3 corridas por pregunta: las
+  dos consultas de residuos cerraban con el enlace 6/6 y ahora 0/6, y la
+  consulta por el texto de la ordenanza 2459 sigue trayendo el enlace de SIBOM.
+  Ver ADR-021.
 - **El agente consulta la grilla de residuos aunque el corpus hable del tema**
   (`backend/scripts/enable_pachoteayuda_public_sources.py`). Verificado en el
   chat de producción: ante "¿dónde llevo el aceite de cocina usado y las
