@@ -531,10 +531,20 @@
 
           <div class="plan-row">
             <div class="plan-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L3 13V3h10l7.59 7.59a2 2 0 0 1 0 2.82z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
+            </div>
+            <div>
+              <div class="plan-label">Meses 2, 3 y 4</div>
+              <div class="plan-value blue">Bonificados con descuento de Fundador</div>
+            </div>
+          </div>
+
+          <div class="plan-row">
+            <div class="plan-icon">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="9.5" rx="1.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>
             </div>
             <div>
-              <div class="plan-label">Próximos meses</div>
+              <div class="plan-label">Desde el mes 5</div>
               <div class="plan-value blue">Tarifa congelada de $699 MXN/mes</div>
             </div>
           </div>
@@ -549,7 +559,8 @@
         <p class="fine-print">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px;"><rect x="5" y="10.5" width="14" height="9.5" rx="1.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>
           Se requiere tarjeta para programar la renovación.<br>
-          <strong>Cargo de hoy: $0.00 MXN. Cancela cuando quieras.</strong>
+          <strong>Cargo de hoy: $0.00 MXN. Cancela cuando quieras.</strong><br>
+          Los meses 2, 3 y 4 se cobran con el descuento de Fundador.
         </p>
 
         <div class="hr"></div>
@@ -635,7 +646,8 @@
 </a>
 
 <script>
-  // ⚠️ Reemplazar por el link real de suscripción de Mercado Pago (plan Fundador, $0 el primer mes).
+  // ⚠️ Reemplazar por el link real de suscripción de Mercado Pago (plan Fundador:
+  // mes 1 $0, meses 2-4 con el descuento de Fundador, desde el mes 5 $699 MXN/mes).
   var MP_LINK_FUNDADORES = "https://www.mercadopago.com.mx/subscriptions/REEMPLAZAR-LINK-FUNDADORES";
 
   document.getElementById('mp-activate-btn').setAttribute('href', MP_LINK_FUNDADORES);

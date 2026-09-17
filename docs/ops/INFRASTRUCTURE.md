@@ -229,6 +229,15 @@ lista de `Path(...)` del router `landing-ius` — si se suman más assets no-htm
 `expires -1` sobre ese bundle porque su nombre es fijo entre redeploys
 (cache heurística del navegador podría servir una versión vieja).
 
+**Registro del Programa de Abogados Fundadores (`/fundadores.html`):** es una
+página **privada** — se comparte por URL a los abogados fundadores, no se enlaza
+desde ninguna página de la landing (solo se llega con la URL) y lleva
+`noindex, nofollow`. El funnel es `fundadores.html` (alta) →
+`fundadores-pago.html` (suscripción de Mercado Pago) → `exito-fundador.html`.
+No necesita nada en el router: la cubre el `PathRegexp` de `.html` de
+`landing-ius`; si esa URL devolviera el shell del SPA, el problema es que el
+`.html` no está en la imagen de la landing, no la regla.
+
 > **Caso footer.css (2026-09-07):** las páginas legales de la landing ius
 > (`terminos-condiciones.html`, `aviso-privacidad.html`, etc.) comparten
 > `footer.css`, que **no** estaba en la lista de `Path(...)` del router

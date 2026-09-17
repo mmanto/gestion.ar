@@ -95,6 +95,23 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   enlace oficial.
 
 ### Cambiado
+- **Promoción de los primeros cuatro meses en la página privada del Programa de
+  Abogados Fundadores** (`sites/ius-landing/fundadores.html`,
+  `sites/ius-landing/fundadores-pago.html`). La página de registro fundador —se
+  comparte por URL (`https://ius.intellify.pro/fundadores.html`), no se enlaza
+  desde ninguna página de la landing y va con `noindex, nofollow`— prometía "30
+  días gratis" sin mencionar ningún período bonificado. Ahora el mensaje es el de
+  la campaña: **primer mes gratis y los 3 meses siguientes bonificados con
+  descuento de Fundador**, con la tarifa congelada de $699 MXN/mes **desde el mes
+  5** (antes decía "a partir del segundo mes", que contradecía los meses
+  bonificados). Se sumó la tarjeta "3 meses bonificados con descuento" al pitch,
+  se corrigieron el subtítulo de la tarjeta de registro y el `meta description`, y
+  la caja del plan de la página de pago pasó de una fila "Próximos meses" a tres
+  (mes 1 / meses 2-4 / desde el mes 5) más la aclaración en la letra chica. El
+  **importe** del descuento no se escribe en las páginas: lo define el plan de
+  suscripción de Mercado Pago (el link sigue siendo el placeholder
+  `REEMPLAZAR-LINK-FUNDADORES`), así que ese plan tiene que replicar la misma
+  escalera — mes 1 $0, meses 2-4 con descuento, desde el mes 5 $699 MXN/mes.
 - **La calificación por semáforo necesita instrucción explícita de la tool en el
   prompt** (`docs/ius_legal_config.json`, `docs/ius_system_prompt.json`). Con
   DeepSeek/Claude, la descripción del schema de `registrar_calificacion_prospecto`
