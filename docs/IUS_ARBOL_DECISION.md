@@ -25,7 +25,7 @@ flowchart TD
   relacion_laboral{"1. ¿Existe relación de trabajo?"}:::pregunta
   honorarios_simulacion{"2. ¿Es contrato de servicios profesionales por honorarios?"}:::pregunta
   tipo_asunto{"3. ¿Qué tipo de problema laboral es?"}:::pregunta
-  regimen{"4. ¿Régimen de seguridad social?"}:::pregunta
+  regimen{"4. ¿En qué régimen de seguridad social estaba registrado: IMSS o ISSSTE?"}:::pregunta
   plazo{"5. ¿Está dentro del plazo legal?"}:::pregunta
   documentacion{"6. ¿Qué tan fuertes son las pruebas?"}:::pregunta
   senales{"7. ¿Qué señales de decisión presenta el caso?"}:::pregunta
@@ -37,7 +37,9 @@ flowchart TD
   honorarios_simulacion --> tipo_asunto
   honorarios_simulacion -- "NO" --> no_laboral
   tipo_asunto --> regimen
-  regimen --> plazo
+  regimen -- "IMSS (sector privado)" --> plazo
+  regimen -- "ISSSTE (sector público / gobierno)" --> plazo
+  regimen -- "Sin registro en ninguna" --> plazo
   plazo --> documentacion
   plazo -- "NO" --> prescrito
   documentacion --> senales
@@ -63,8 +65,8 @@ flowchart TD
 | 1 | ¿Existe relación de trabajo? | Trabajo personal + subordinación + salario (contrato escrito o acuerdo verbal). Cualquiera de los tres ausente = no laboral. | contrato (escrito \| verbal \| ninguno); funciones_confianza (si \| no \| indefinido) | validacion_tema, exploracion_tema | NO → 🔴 ROJO · No es materia laboral (casa, delito, divorcio, visitas u otro tema ajeno al trabajo) |
 | 2 | ¿Es contrato de servicios profesionales por honorarios? | Honorarios reales = medios propios, cédula profesional, objeto claro, sin horario fijo ni instrucciones → no laboral. Si hay subordinación real es simulación: se evalúa como relación de trabajo. | contrato_honorarios (si \| no \| indefinido); simulacion (si \| no \| no_aplica) | validacion_honorarios, validacion_simulacion_honorarios | NO → 🔴 ROJO · No es materia laboral (honorarios reales sin subordinación) |
 | 3 | ¿Qué tipo de problema laboral es? | 13 tipos: despido injustificado, firma de documento, reducción de sueldo, cambio de ubicación, accidente laboral, investigación, no renovación de contrato, acoso u hostigamiento, retiro de insumos, congelamiento de funciones, declaración de beneficiarios, prima de antigüedad (más de 15 años), problema de pensión. | tipo_problema (despido_injustificado \| firma_documento \| reduccion_sueldo \| cambio_ubicacion \| accidente_laboral \| investigacion \| no_renovacion \| acoso \| retiro_insumos \| congelamiento_funciones \| beneficiarios \| prima_antiguedad \| problemas_pension) | clasificacion_problema | → regimen |
-| 4 | ¿Régimen de seguridad social? | IMSS → LFT (Apartado A). ISSSTE → LFTSE (Apartado B). Sin registro en ninguna → se evalúa como informal registrado o no según documentación. | institucion (IMSS \| ISSSTE \| ninguna) | validacion_institucion | → plazo |
-| 5 | ¿Está dentro del plazo legal? | Días naturales desde la desvinculación: IMSS 0-40 favorable / 41-60 límite / 61+ prescripción; ISSSTE 0-90 / 91-120 / 121+. La solicitud de conciliación interrumpe el plazo y se retoma al día siguiente de la Constancia de No Conciliación. | fecha_desvinculacion (fecha (AAAA-MM-DD) o descripción relativa); tiempo_transcurrido (pocos_dias \| una_a_tres_semanas \| uno_a_dos_meses \| seis_siete_semanas \| catorce_quince_semanas \| mas_de_dos_meses \| mas_de_120_dias (ver priority.umbrales)); conciliacion (objeto {solicitud: fecha\|no, constancia_no_conciliacion: fecha\|no}) | validacion_urgencia, advertencia_plazo, advertencia_plazo_vencido | NO → 🔴 ROJO · Fuera de plazo (prescripción) (más de 60 días (IMSS) o más de 120 días (ISSSTE) sin interrupción) |
+| 4 | ¿En qué régimen de seguridad social estaba registrado: IMSS o ISSSTE? | Se pregunta por las dos opciones, nunca como un sí/no: cada respuesta abre un camino independiente con su propia ley y su propio plazo. IMSS → LFT (Apartado A). ISSSTE → LFTSE (Apartado B). Sin registro en ninguna → se evalúa como informal registrado o no según documentación, con el mismo plazo de 2 meses. No alcanza con saber que tuvo seguridad social: hay que saber en cuál. | institucion (IMSS \| ISSSTE \| ninguna) | validacion_institucion | IMSS (sector privado) → plazo (LFT (Apartado A del Art. 123) · 0-40 favorable / 41-60 límite / 61+ prescripción) · ISSSTE (sector público / gobierno) → plazo (LFTSE (Apartado B del Art. 123) · 0-90 favorable / 91-120 límite / 121+ prescripción) · Sin registro en ninguna → plazo (se evalúa como informal registrado o no según documentación · el plazo de 2 meses del Art. 518 LFT corre igual (0-40 / 41-60 / 61+): la informalidad no exime de la prescripción) |
+| 5 | ¿Está dentro del plazo legal? | Días naturales desde la desvinculación: IMSS 0-40 favorable / 41-60 límite / 61+ prescripción; ISSSTE 0-90 / 91-120 / 121+; sin registro en IMSS ni ISSSTE (informal) 0-40 / 41-60 / 61+ (Art. 518 LFT). La solicitud de conciliación interrumpe el plazo y se retoma al día siguiente de la Constancia de No Conciliación. | fecha_desvinculacion (fecha (AAAA-MM-DD) o descripción relativa); tiempo_transcurrido (pocos_dias \| una_a_tres_semanas \| uno_a_dos_meses \| seis_siete_semanas \| catorce_quince_semanas \| mas_de_dos_meses \| mas_de_120_dias (ver priority.umbrales)); conciliacion (objeto {solicitud: fecha\|no, constancia_no_conciliacion: fecha\|no}) | validacion_urgencia, advertencia_plazo, advertencia_plazo_vencido | NO → 🔴 ROJO · Fuera de plazo (prescripción) (más de 60 días (IMSS o sin registro patronal) o más de 120 días (ISSSTE), sin interrupción por conciliación) |
 | 6 | ¿Qué tan fuertes son las pruebas? | Bloque derivado de state_vars por matriz_documentacion: fuerte / media / débil / sin pruebas. Sin pruebas → rojo. | copia_contrato (si \| no); recibos_nomina (si \| parcial \| no); documentos_indicaciones (si \| no); grabacion (si \| no); testigos (0 \| 1_o_2 \| 3_o_mas); alta_imss_issste (si \| no \| no_sabe); documentacion (con_documentacion \| documentacion_parcial \| sin_documentacion); comprobantes_prestaciones (si \| no) | filtro_calidad, validacion_contrato, validacion_copia_contrato, validacion_recibos_nomina, validacion_comprobantes_prestaciones, validacion_documentos_indicaciones | NO → 🔴 ROJO · Salida elegante (sin pruebas: ningún elemento acredita la relación laboral (matriz_documentacion: SIN PRUEBAS)) |
 | 7 | ¿Qué señales de decisión presenta el caso? | Positivas (sin renuncia firmada, sin hojas en blanco, sin liquidación pagada, con recibos, con correos u oficios, con horario fijo), límite (sin contrato, sin motivo explicado, pago mixto, sin horario fijo) o negativas (firmó hojas en blanco, pago en efectivo, sin horario fijo, no quiere demandar). Las negativas empujan a rojo. | hojas_en_blanco (si \| no); liquidacion_pagada (si \| no \| no_aplica); motivo_explicado (si \| no); horario_fijo (si \| no \| indefinido); forma_pago (nomina \| efectivo \| mixto \| otro); renuncia_huella_voluntaria (si \| no); promesa_liquidacion_incumplida (si \| no \| no_aplica) | validacion_renuncia_huella, validacion_forma_pago, validacion_periodo, validacion_funciones_confianza, validacion_promesa_liquidacion | NO → 🔴 ROJO · Salida elegante (señales negativas: firmó hojas en blanco, pago en efectivo, sin horario fijo o no quiere demandar) |
 | 8 | ¿Cuál es la intención de pago de la asesoría? | Se evalúa por señales, nunca preguntando directamente. Alta / duda / rechazo. El rechazo persistente cierra en rojo. | intencion_pago (alta \| duda \| rechazo) | propuesta_conversion, mas_informacion | NO → 🔴 ROJO · Salida elegante (rechazo persistente a pagar la asesoría después de un intento de manejar la objeción) |
@@ -78,12 +80,15 @@ Conteo: días naturales (lunes a domingo).
 |---|---|---|---|---|---|
 | IMSS (sector privado) | LFT (Apartado A del Art. 123) | 60 días naturales | 0-40 | 41-60 | 61+ |
 | ISSSTE (sector público) | LFTSE (Apartado B del Art. 123) | 120 días naturales | 0-90 | 91-120 | 121+ |
+| Sin registro (informal) | LFT (Art. 518) — sin alta en IMSS ni ISSSTE | 60 días naturales | 0-40 | 41-60 | 61+ |
+
+**Sin registro patronal:** La falta de registro patronal no suspende ni amplía el plazo: la informalidad no exime de la prescripción de 2 meses.
 
 **Interrupción del plazo:** El plazo se interrumpe al ingresar la solicitud de conciliación ante el Centro Federal o Local de Conciliación Laboral y se retoma al día siguiente de la emisión de la Constancia de No Conciliación.
 
 **Otros plazos:** separacion_causa_justificada_meses = 1; riesgo_de_trabajo_anios = 2; declaracion_beneficiarios_anios = 2; prima_antiguedad_anios = 1
 
-**Instrucción de cómputo:** Convertí la fecha de desvinculación a días naturales transcurridos (hoy - fecha) y ubicá el caso en favorable / limite / prescripcion con la banda de la institución del usuario. Si la fecha no está, pedila antes de clasificar.
+**Instrucción de cómputo:** Convertí la fecha de desvinculación a días naturales transcurridos (hoy - fecha) y ubicá el caso en favorable / limite / prescripcion con la banda del régimen del usuario (imss / issste / sin_registro). Si la fecha no está, pedila antes de clasificar.
 
 ## Matriz de documentación
 

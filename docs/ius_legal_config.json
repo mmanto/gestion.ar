@@ -42,6 +42,14 @@
       "limite_hasta_dia": 120,
       "prescripcion_desde_dia": 121
     },
+    "sin_registro": {
+      "ley": "LFT (Art. 518) — sin alta en IMSS ni ISSSTE",
+      "total_dias": 60,
+      "favorable_hasta_dia": 40,
+      "limite_hasta_dia": 60,
+      "prescripcion_desde_dia": 61,
+      "nota": "La falta de registro patronal no suspende ni amplía el plazo: la informalidad no exime de la prescripción de 2 meses."
+    },
     "otros": {
       "separacion_causa_justificada_meses": 1,
       "riesgo_de_trabajo_anios": 2,
@@ -49,7 +57,7 @@
       "prima_antiguedad_anios": 1
     },
     "interrupcion": "El plazo se interrumpe al ingresar la solicitud de conciliación ante el Centro Federal o Local de Conciliación Laboral y se retoma al día siguiente de la emisión de la Constancia de No Conciliación.",
-    "instruccion": "Convertí la fecha de desvinculación a días naturales transcurridos (hoy - fecha) y ubicá el caso en favorable / limite / prescripcion con la banda de la institución del usuario. Si la fecha no está, pedila antes de clasificar."
+    "instruccion": "Convertí la fecha de desvinculación a días naturales transcurridos (hoy - fecha) y ubicá el caso en favorable / limite / prescripcion con la banda del régimen del usuario (imss / issste / sin_registro). Si la fecha no está, pedila antes de clasificar."
   },
   "arbol_decision": {
     "instruccion": "Evaluá en este orden. Cada paso alimenta state_vars; el resultado se decide en priority.reglas.",
@@ -151,13 +159,33 @@
       {
         "id": "regimen",
         "numero": 4,
-        "pregunta": "¿Régimen de seguridad social?",
-        "criterio": "IMSS → LFT (Apartado A). ISSSTE → LFTSE (Apartado B). Sin registro en ninguna → se evalúa como informal registrado o no según documentación.",
+        "pregunta": "¿En qué régimen de seguridad social estaba registrado: IMSS o ISSSTE?",
+        "criterio": "Se pregunta por las dos opciones, nunca como un sí/no: cada respuesta abre un camino independiente con su propia ley y su propio plazo. IMSS → LFT (Apartado A). ISSSTE → LFTSE (Apartado B). Sin registro en ninguna → se evalúa como informal registrado o no según documentación, con el mismo plazo de 2 meses. No alcanza con saber que tuvo seguridad social: hay que saber en cuál.",
         "datos": [
           "institucion"
         ],
         "siguiente": "plazo",
         "no": null,
+        "ramas": [
+          {
+            "etiqueta": "IMSS (sector privado)",
+            "valor": "IMSS",
+            "goto": "plazo",
+            "nota": "LFT (Apartado A del Art. 123) · 0-40 favorable / 41-60 límite / 61+ prescripción"
+          },
+          {
+            "etiqueta": "ISSSTE (sector público / gobierno)",
+            "valor": "ISSSTE",
+            "goto": "plazo",
+            "nota": "LFTSE (Apartado B del Art. 123) · 0-90 favorable / 91-120 límite / 121+ prescripción"
+          },
+          {
+            "etiqueta": "Sin registro en ninguna",
+            "valor": "ninguna",
+            "goto": "plazo",
+            "nota": "se evalúa como informal registrado o no según documentación · el plazo de 2 meses del Art. 518 LFT corre igual (0-40 / 41-60 / 61+): la informalidad no exime de la prescripción"
+          }
+        ],
         "nodos_flow": [
           "validacion_institucion"
         ]
@@ -166,7 +194,7 @@
         "id": "plazo",
         "numero": 5,
         "pregunta": "¿Está dentro del plazo legal?",
-        "criterio": "Días naturales desde la desvinculación: IMSS 0-40 favorable / 41-60 límite / 61+ prescripción; ISSSTE 0-90 / 91-120 / 121+. La solicitud de conciliación interrumpe el plazo y se retoma al día siguiente de la Constancia de No Conciliación.",
+        "criterio": "Días naturales desde la desvinculación: IMSS 0-40 favorable / 41-60 límite / 61+ prescripción; ISSSTE 0-90 / 91-120 / 121+; sin registro en IMSS ni ISSSTE (informal) 0-40 / 41-60 / 61+ (Art. 518 LFT). La solicitud de conciliación interrumpe el plazo y se retoma al día siguiente de la Constancia de No Conciliación.",
         "datos": [
           "fecha_desvinculacion",
           "tiempo_transcurrido",
@@ -175,7 +203,7 @@
         "siguiente": "documentacion",
         "no": {
           "goto": "prescrito",
-          "motivo": "más de 60 días (IMSS) o más de 120 días (ISSSTE) sin interrupción"
+          "motivo": "más de 60 días (IMSS o sin registro patronal) o más de 120 días (ISSSTE), sin interrupción por conciliación"
         },
         "nodos_flow": [
           "validacion_urgencia",
@@ -632,7 +660,7 @@
     },
     {
       "id": "validacion_institucion",
-      "msg": "Siento que estés pasando por esto. Vamos a avanzar para ver qué tan viable es tu caso.\n\n¿Sabes si tu patrón te tenía registrado en alguna de estas instituciones?",
+      "msg": "Siento que estés pasando por esto. Vamos a avanzar para ver qué tan viable es tu caso.\n\n¿Tu patrón te tenía registrado en el IMSS o en el ISSSTE? Necesito saber cuál de los dos, porque de eso dependen la ley y el plazo que aplican a tu caso.",
       "options": [
         {
           "set": {
@@ -702,7 +730,7 @@
     },
     {
       "id": "advertencia_plazo_vencido",
-      "msg": "⚠️ Te explico algo clave: en México hay un plazo de 2 meses para actuar en muchos casos laborales.\n\nPor lo que me dices, es posible que ya haya pasado ese tiempo… pero aún así hay casos donde se puede hacer algo.\n\nLo más recomendable aquí es que un especialista revise tu situación directamente.\n\n¿Quieres que te conecte con uno ahora?",
+      "msg": "⚠️ Te explico algo clave: en México el plazo para actuar en estos casos depende de tu régimen — 2 meses (60 días naturales) si tu patrón te registró en el IMSS, y 4 meses (120 días naturales) si fuiste trabajador del Estado en el ISSSTE.\n\nPor lo que me dices, es posible que ya haya pasado ese tiempo… pero aún así hay casos donde se puede hacer algo.\n\nLo más recomendable aquí es que un especialista revise tu situación directamente.\n\n¿Quieres que te conecte con uno ahora?",
       "options": [
         {
           "next": "captura_datos",
@@ -716,7 +744,7 @@
     },
     {
       "id": "advertencia_plazo",
-      "msg": "⏰ Ojo con esto: en México tienes hasta 2 meses para iniciar este tipo de proceso.\n\nSi se deja pasar más tiempo, puedes perder derechos importantes.\n\nLo mejor es revisarlo cuanto antes con un especialista.\n\n¿Quieres que te ayude a que lo vean contigo?",
+      "msg": "⏰ Ojo con esto: en México el plazo para iniciar este tipo de proceso depende de tu régimen — 2 meses (60 días naturales) si cotizaste al IMSS y 4 meses (120 días naturales) si fuiste trabajador del Estado en el ISSSTE.\n\nSi se deja pasar más tiempo, puedes perder derechos importantes.\n\nLo mejor es revisarlo cuanto antes con un especialista.\n\n¿Quieres que te ayude a que lo vean contigo?",
       "options": [
         {
           "next": "filtro_calidad",

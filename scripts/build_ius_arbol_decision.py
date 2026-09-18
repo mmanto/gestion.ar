@@ -121,7 +121,17 @@ def _filtros(regla: dict, umbrales: dict) -> str:
 
 
 def _salida_paso(paso: dict, model: dict) -> str:
-    """A dónde lleva el paso: al siguiente paso o a un terminal."""
+    """A dónde lleva el paso: a sus ramas, al siguiente paso o a un terminal."""
+    ramas = paso.get("ramas")
+    if isinstance(ramas, list) and ramas:
+        partes = []
+        for rama in ramas:
+            goto = rama.get("goto")
+            destino = model["terminal_por_id"].get(goto)
+            etiqueta = _etiqueta_terminal(destino) if destino else goto
+            nota = rama.get("nota")
+            partes.append(f"{rama.get('etiqueta') or rama.get('valor')} → {etiqueta}" + (f" ({nota})" if nota else ""))
+        return " · ".join(partes)
     rama_no = paso.get("no")
     if isinstance(rama_no, dict):
         destino = model["terminal_por_id"].get(rama_no.get("goto"))
@@ -167,6 +177,16 @@ def mermaid_diagram(model: dict) -> str:
     lineas.append("")
     for paso in model["pasos"]:
         origen = ids[paso["id"]]
+        ramas = paso.get("ramas")
+        if isinstance(ramas, list) and ramas:
+            for rama in ramas:
+                goto = rama.get("goto")
+                destino = ids.get(goto) or term_ids.get(goto)
+                if not destino:
+                    continue
+                etiqueta = rama.get("etiqueta") or rama.get("valor") or goto
+                lineas.append(f'  {origen} -- "{etiqueta}" --> {destino}')
+            continue
         if paso.get("siguiente") in ids:
             lineas.append(f"  {origen} --> {ids[paso['siguiente']]}")
         rama_no = paso.get("no")
@@ -206,8 +226,14 @@ def _md_tabla(encabezados, filas) -> str:
 def _md_plazos(model: dict) -> list:
     plazos = model["plazos"]
     filas = []
-    for clave, nombre in (("imss", "IMSS (sector privado)"), ("issste", "ISSSTE (sector público)")):
+    for clave, nombre in (
+        ("imss", "IMSS (sector privado)"),
+        ("issste", "ISSSTE (sector público)"),
+        ("sin_registro", "Sin registro (informal)"),
+    ):
         banda = plazos.get(clave) or {}
+        if not banda:
+            continue
         filas.append([
             nombre,
             banda.get("ley"),
@@ -268,6 +294,8 @@ def to_markdown(model: dict) -> str:
             ["Institución", "Ley", "Plazo total", "Favorable", "Límite", "Prescripción"],
             _md_plazos(model),
         ),
+        "",
+        f"**Sin registro patronal:** {_md_celda((model['plazos'].get('sin_registro') or {}).get('nota'))}",
         "",
         f"**Interrupción del plazo:** {_md_celda(model['plazos'].get('interrupcion'))}",
         "",
@@ -718,7 +746,7 @@ def to_html(model: dict) -> str:
     ]
     tabla_pasos = _tabla_html(
         ["Nº", "Pregunta", "Criterio", "Datos", "Nodos del flow", "Resultado"],
-        filas_pasos, anchos=["3%", "18%", "28%", "22%", "17%", "12%"],
+        filas_pasos, anchos=["3%", "16%", "24%", "19%", "14%", "24%"],
     )
 
     filas_plazos = [[_h(c) for c in fila] for fila in _md_plazos(model)]
@@ -729,6 +757,7 @@ def to_html(model: dict) -> str:
         )
         + f'<p class="nota"><strong>Conteo:</strong> {_h(model["plazos"].get("conteo"))}. '
         + f'<strong>Interrupción:</strong> {_h(model["plazos"].get("interrupcion"))}</p>'
+        + f'<p class="nota"><strong>Sin registro patronal:</strong> {_h((model["plazos"].get("sin_registro") or {}).get("nota"))}</p>'
         + "<p class=\"nota\"><strong>Otros plazos:</strong> "
         + "; ".join(f"{_h(k)} = {_h(v)}" for k, v in (model["plazos"].get("otros") or {}).items())
         + "</p>"

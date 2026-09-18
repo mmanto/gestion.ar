@@ -118,11 +118,11 @@ def _validate_ius_semaforo(config: Dict[str, Any]) -> List[ValidationIssue]:
             "error",
         ))
     else:
-        for institucion in ("imss", "issste"):
+        for institucion in ("imss", "issste", "sin_registro"):
             banda = plazos.get(institucion)
             path = f"plazos_legales.{institucion}"
             if not isinstance(banda, dict):
-                issues.append(_issue(path, "Falta la banda de plazos de esta institución.", "error"))
+                issues.append(_issue(path, "Falta la banda de plazos de este régimen (los pasos del árbol discriminan por régimen, no por 'tiene o no tiene seguridad social').", "error"))
                 continue
             limites = [banda.get(k) for k in ("favorable_hasta_dia", "limite_hasta_dia", "prescripcion_desde_dia")]
             if not all(isinstance(x, int) and not isinstance(x, bool) for x in limites):
@@ -332,6 +332,54 @@ def _validate_ius_semaforo(config: Dict[str, Any]) -> List[ValidationIssue]:
             goto = no_branch.get("goto")
             if goto not in terminal_ids and goto not in paso_ids:
                 issues.append(_issue(f"{path}.no.goto", f"'{goto}' no es un paso ni un terminal del árbol.", "error"))
+
+        ramas = paso.get("ramas")
+        if ramas is None:
+            continue
+        if not isinstance(ramas, list) or not ramas:
+            issues.append(_issue(
+                f"{path}.ramas",
+                "'ramas' debe ser una lista no vacía: un paso que discrimina por valores de una variable los "
+                "declara uno por uno, o sus casos quedan sin camino ni particularidad legal.",
+                "error",
+            ))
+            continue
+        # La variable que el paso captura: si declara una sola, sus valores admitidos
+        # son las ramas esperadas -- una por cada valor, sin dejar ninguna afuera.
+        datos = [d for d in (paso.get("datos") or []) if isinstance(state_vars.get(d), str)]
+        admitidos = (
+            {v.strip() for v in state_vars[datos[0]].split("|") if v.strip()}
+            if len(datos) == 1 else set()
+        )
+        declarados = set()
+        for k, rama in enumerate(ramas):
+            rpath = f"{path}.ramas[{k}]"
+            if not isinstance(rama, dict):
+                issues.append(_issue(rpath, "Cada rama debe ser un objeto con 'etiqueta', 'valor' y 'goto'.", "error"))
+                continue
+            goto = rama.get("goto")
+            if goto not in terminal_ids and goto not in paso_ids:
+                issues.append(_issue(f"{rpath}.goto", f"'{goto}' no es un paso ni un terminal del árbol.", "error"))
+            if not str(rama.get("etiqueta") or "").strip():
+                issues.append(_issue(f"{rpath}.etiqueta", "Falta 'etiqueta': es el texto de la rama en el diagrama y en la tabla.", "error"))
+            valor = rama.get("valor")
+            if not isinstance(valor, str) or not valor.strip():
+                issues.append(_issue(f"{rpath}.valor", "Falta 'valor': es el valor de la variable que activa la rama.", "error"))
+                continue
+            declarados.add(valor)
+            if admitidos and valor not in admitidos:
+                issues.append(_issue(
+                    f"{rpath}.valor",
+                    f"El valor {valor!r} no está entre los admitidos para '{datos[0]}' ({sorted(admitidos)}).",
+                    "error",
+                ))
+        if admitidos and admitidos - declarados:
+            issues.append(_issue(
+                f"{path}.ramas",
+                f"El paso discrimina por '{datos[0]}' pero no declara rama para {sorted(admitidos - declarados)}: "
+                "esos casos quedan sin camino documentado ni particularidad legal.",
+                "error",
+            ))
 
     acciones = config.get("acciones_por_color")
     if not isinstance(acciones, dict):

@@ -1493,3 +1493,79 @@ Opción 3, con estas reglas de construcción:
   verde / 4 amarillo en 12 corridas citando ambas), el orden no alcanza: hay que hacerlas
   mutuamente excluyentes con una variable capturada. Se hizo con
   `promesa_liquidacion_incumplida` para el par de renuncia.
+
+---
+
+## ADR-024: El paso de régimen de seguridad social declara una rama por institución
+
+**Estado:** Aceptado
+**Fecha:** 2026-09-18
+
+### Contexto
+
+El paso 4 del árbol de iUS (`regimen`, ¿en qué régimen de seguridad social estaba
+registrado?) declaraba una sola salida: `siguiente: "plazo"`, `no: null`. El flujo
+sí preguntaba por IMSS / ISSSTE / ninguna y todo el semáforo aguas abajo filtra por
+`institucion` (bandas de plazo de 60 y 120 días naturales, reglas de prescripción por
+institución, ventanas de 6-7 y 14-15 semanas), pero el documento del árbol —el
+artefacto que el equipo legal lee— dibujaba el rombo con una única arista sin
+etiqueta: el paso se leía como un sí/no sobre "tener o no tener seguridad social".
+
+Las dos instituciones no son un detalle del caso: cambian la ley aplicable (LFT,
+Apartado A del Art. 123 vs. LFTSE, Apartado B), el plazo de prescripción (60 vs. 120
+días naturales) y el resultado del caso en el mismo tramo temporal. Un caso de 100
+días es viable con ISSSTE y prescrito con IMSS. Tampoco la tercera opción es un
+descartado: sin registro patronal, la relación laboral se prueba por documentación y
+el plazo de 2 meses del Art. 518 LFT corre igual —la informalidad no exime de la
+prescripción—, pero `plazos_legales` no tenía banda para ese camino.
+
+### Opciones consideradas
+
+1. **Dejar el paso con una sola salida y explicar los tres caminos en prosa**, en el
+   `criterio` del paso o en una nota del diagrama. Es lo que había: la prosa convive
+   con un diagrama que dice otra cosa, y nada impide que un valor de `institucion`
+   quede sin camino documentado.
+2. **Replicar el paso 4 en tres pasos separados** (uno por institución), cada uno con
+   su `siguiente`. Duplica el mismo paso tres veces y hay que mantener los tres en
+   sincronía con `state_vars.institucion`.
+3. **Declarar las ramas como datos del paso** (`ramas`: valor → destino + nota con la
+   particularidad legal), renderizarlas en el diagrama y en la tabla, y validarlas.
+
+### Decisión
+
+Opción 3.
+
+1. `arbol_decision.pasos[regimen].ramas` declara una rama por cada valor admitido de
+   `institucion` (IMSS, ISSSTE, ninguna), con `etiqueta`, `valor`, `goto` y `nota` (la
+   particularidad legal del camino). `siguiente` se conserva como la continuación por
+   defecto del paso.
+2. El generador (`scripts/build_ius_arbol_decision.py`) dibuja una arista etiquetada
+   por rama en el Mermaid y las lista en la columna "Resultado" de la tabla de pasos.
+3. `plazos_legales` suma la banda `sin_registro` (60 días naturales, `prescripcion_desde_dia`
+   61, Art. 518 LFT) y su nota: la falta de registro patronal no suspende ni amplía el
+   plazo. La tabla de plazos del documento pasa a tener tres filas.
+4. El `flow` deja de ser ambiguo en el copy: `validacion_institucion` pregunta en cuál de
+   las dos instituciones estuvo registrado, y `advertencia_plazo` / `advertencia_plazo_vencido`
+   nombran los dos plazos en vez de asumir los 2 meses del IMSS para todos.
+5. El validador (`_validate_ius_semaforo`) falla si un paso con `datos` de una sola
+   variable declara `ramas` y no cubre alguno de sus valores admitidos, si un `goto` no
+   resuelve, si falta `etiqueta`/`valor`, o si falta la banda `sin_registro`; el test
+   offline (`backend/tests/test_ius_legal_config.py`) verifica lo mismo sobre el JSON
+   versionado.
+
+### Consecuencias
+
+- El árbol dice lo mismo que el flujo y que las reglas: el rombo discrimina por
+  institución y cada camino muestra su ley y su plazo. Agregar un valor a
+  `state_vars.institucion` sin declarar su rama rompe el test, no la conversación.
+- Los colores de los 23 casos del fixture no cambian: la decisión no toca
+  `priority.reglas`, sólo hace explícitos los caminos que ya existían
+  (`sin_institucion_mas_dos_meses`, `sin_institucion_documentado` siguen siendo las
+  reglas del camino informal).
+- La banda `sin_registro` replica los 60 días del IMSS pero con su propia ley: si el
+  equipo legal define otro plazo para las relaciones sin registro patronal, se cambia
+  en un solo lugar y el documento se regenera.
+- Queda abierto (decisión del cliente, no del agente) que la opción "No sé / ninguna de
+  las dos" del flujo escriba `institucion: ninguna`: hoy "no lo sé" y "no me registró"
+  siguen siendo el mismo valor de `state_vars`, y eso hace que un caso registrado del
+  que el usuario no tiene certeza se evalúe como informal.

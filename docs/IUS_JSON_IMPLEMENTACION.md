@@ -34,8 +34,8 @@ ius_legal_config.json
 ├── HOW_TO_USE                 → Índice: orden de ejecución y regla de prioridad
 ├── agent_identity             → Nombre, rol, objetivo, presentación y aclaración de rol
 ├── config                     → Precio de la asesoría (único campo de monto)
-├── plazos_legales             → Bandas en DÍAS NATURALES por institución + interrupción por conciliación
-├── arbol_decision             → Los 9 pasos de evaluación y las 5 salidas terminales
+├── plazos_legales             → Bandas en DÍAS NATURALES por régimen (IMSS / ISSSTE / sin registro) + interrupción por conciliación
+├── arbol_decision             → Los 9 pasos de evaluación, sus ramas por institución y las 5 salidas terminales
 ├── matriz_documentacion       → Bloque de pruebas: FUERTE / MEDIO / DÉBIL / SIN PRUEBAS
 ├── senales_decision           → Señales positivas, límite y negativas
 ├── intencion_pago             → ALTA / DUDA / RECHAZO, evaluado por señales
@@ -96,6 +96,7 @@ Los chequeos estructurales corren sólo para configs que declaran `arbol_decisio
 | `plazos_legales.conteo` | `días naturales (lunes a domingo)` | El plazo se computa en días, no en meses: 2 meses = 60 días y 4 meses = 120 días |
 | `plazos_legales.imss.total_dias` | `60` | Plazo total (LFT, Apartado A del Art. 123): 0-40 favorable / 41-60 límite / 61+ prescripción |
 | `plazos_legales.issste.total_dias` | `120` | Plazo total (LFTSE, Apartado B del Art. 123): 0-90 favorable / 91-120 límite / 121+ prescripción |
+| `plazos_legales.sin_registro.total_dias` | `60` | Plazo total sin alta en IMSS ni ISSSTE (informal, Art. 518 LFT): 0-40 favorable / 41-60 límite / 61+ prescripción. La falta de registro patronal no suspende ni amplía el plazo |
 | `plazos_legales.otros.separacion_causa_justificada_meses` | `1` | Separación por causa justificada |
 | `plazos_legales.otros.riesgo_de_trabajo_anios` | `2` | Riesgo de trabajo |
 | `plazos_legales.otros.declaracion_beneficiarios_anios` | `2` | Declaración de beneficiarios |
@@ -103,7 +104,7 @@ Los chequeos estructurales corren sólo para configs que declaran `arbol_decisio
 
 **Interrupción del plazo:** se interrumpe al ingresar la solicitud de conciliación ante el Centro Federal o Local de Conciliación Laboral y se retoma al día siguiente de la emisión de la Constancia de No Conciliación. Un convenio celebrado ante el Centro no cierra el caso por sí mismo: lo que lo cierra es que el plazo posterior a la Constancia ya esté vencido.
 
-**Plantilla (`docs/ius_system_prompt.json`).** Los mismos datos viven en su `config`, con los meses conservados además de los días: `precio_asesoria_mxn`, `plazos_legales` (meses y años), `conteo_plazos`, `imss_dias`, `issste_dias` e `interrupcion_conciliacion` (mismo texto que el canónico). No es una segunda fuente: se mantiene coherente.
+**Plantilla (`docs/ius_system_prompt.json`).** Los mismos datos viven en su `config`, con los meses conservados además de los días: `precio_asesoria_mxn`, `plazos_legales` (meses y años), `conteo_plazos`, `imss_dias`, `issste_dias`, `sin_registro_dias` e `interrupcion_conciliacion` (mismo texto que el canónico). No es una segunda fuente: se mantiene coherente.
 
 ---
 

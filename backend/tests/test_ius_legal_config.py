@@ -87,6 +87,9 @@ def test_arbol_decision_gotos_resolve():
             rotas.append(f"{paso['id']}.siguiente -> {paso['siguiente']}")
         if paso["no"] and paso["no"]["goto"] not in terminal_ids | paso_ids:
             rotas.append(f"{paso['id']}.no.goto -> {paso['no']['goto']}")
+        for rama in paso.get("ramas") or []:
+            if rama["goto"] not in terminal_ids | paso_ids:
+                rotas.append(f"{paso['id']}.ramas[{rama.get('valor')}].goto -> {rama['goto']}")
         for nodo in paso["nodos_flow"]:
             if nodo not in flow_ids:
                 rotas.append(f"{paso['id']}.nodos_flow -> {nodo}")
@@ -98,6 +101,23 @@ def test_arbol_decision_gotos_resolve():
     assert rotas == []
     assert len(paso_ids) == len(pasos)
     assert {t["color"] for t in arbol["terminales"]} <= set(COLORES)
+
+
+def test_regimen_tiene_una_rama_por_cada_valor_de_institucion():
+    """El paso de régimen discrimina por institución: IMSS e ISSSTE son caminos
+    independientes (ley y plazo propios), no un sí/no sobre tener seguridad social."""
+    arbol = CONFIG["arbol_decision"]
+    paso = next(p for p in arbol["pasos"] if p["id"] == "regimen")
+    admitidos = {v.strip() for v in CONFIG["state_vars"]["institucion"].split("|")}
+    ramas = {r["valor"]: r for r in paso["ramas"]}
+
+    assert set(ramas) == admitidos
+    assert all(r["etiqueta"] and r["goto"] for r in ramas.values())
+    # Cada camino declara su particularidad legal (ley y plazo), no una nota genérica.
+    for valor, rama in ramas.items():
+        assert rama["nota"].strip(), valor
+    assert "LFT" in ramas["IMSS"]["nota"] and "LFTSE" in ramas["ISSSTE"]["nota"]
+    assert ramas["IMSS"]["nota"] != ramas["ISSSTE"]["nota"]
 
 
 def test_validator_ignores_foreign_configs():

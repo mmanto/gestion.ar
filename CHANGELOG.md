@@ -134,6 +134,25 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   con la instrucción de la tool y las 3 decisiones de calificación.
 
 ### Corregido
+- **El paso de régimen de seguridad social del árbol de iUS no distinguía IMSS de
+  ISSSTE** (`docs/ius_legal_config.json`, `docs/IUS_ARBOL_DECISION.md`,
+  `docs/IUS_ARBOL_DECISION.html`, `scripts/build_ius_arbol_decision.py`,
+  `backend/app/services/ius_validator.py`). El paso 4 llevaba una sola salida
+  (`siguiente: plazo`): el árbol lo documentaba como un sí/no sobre "tener o no
+  tener seguridad social" y las dos instituciones quedaban colapsadas en el mismo
+  nodo, aunque su tratamiento es independiente —IMSS → LFT, Apartado A, 60 días
+  naturales; ISSSTE → LFTSE, Apartado B, 120 días naturales—. Ahora el paso declara
+  `ramas` (una por cada valor de `institucion`: IMSS, ISSSTE y sin registro) con la
+  particularidad legal de cada camino, se dibujan como aristas etiquetadas en el
+  diagrama y se listan en la tabla de pasos; el generador las renderiza y el
+  validador falla si un paso que discrimina por una variable no declara rama para
+  alguno de sus valores admitidos, si un `goto` no resuelve o si falta la banda de
+  plazos del régimen. El bloque `plazos_legales` suma la banda `sin_registro`
+  (informal: 2 meses del Art. 518 LFT, la falta de registro no suspende el plazo),
+  que se documenta como tercera fila de la tabla de plazos. El copy del flow deja de
+  asumir un plazo único de 2 meses: `validacion_institucion` pregunta explícitamente
+  en cuál de las dos instituciones estuvo registrado y `advertencia_plazo` /
+  `advertencia_plazo_vencido` nombran los dos plazos. Ver ADR-024.
 - **El conteo de reglas estaba hardcodeado en el prompt de iUS**
   (`docs/ius_legal_config.json`). `registro_automatico_calificacion` declaraba
   "25 reglas" sobre un array que ya tenía 27 (32 tras este cambio): el número se

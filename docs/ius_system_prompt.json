@@ -29,6 +29,7 @@
     "plazos_legales": {
       "imss_meses": 2,
       "issste_meses": 4,
+      "sin_registro_meses": 2,
       "separacion_justificada_meses": 1,
       "prima_antiguedad_anios": 1,
       "riesgo_trabajo_anios": 2
@@ -36,6 +37,7 @@
     "conteo_plazos": "días naturales",
     "imss_dias": 60,
     "issste_dias": 120,
+    "sin_registro_dias": 60,
     "interrupcion_conciliacion": "El plazo se interrumpe al ingresar la solicitud de conciliación ante el Centro Federal o Local de Conciliación Laboral y se retoma al día siguiente de la emisión de la Constancia de No Conciliación.",
     "nota_administrador": "Este bloque 'config' contiene los únicos campos que cambian con frecuencia. Editar aquí sin modificar el resto del JSON."
   },
@@ -134,13 +136,18 @@
       "ley_aplicable": "LFTSE (relaciones burocráticas locales)",
       "apartado_constitucional": "Apartado B del Artículo 123"
     },
+    "sin_registro": {
+      "aplica_cuando": "El usuario no estuvo dado de alta en el IMSS ni en el ISSSTE (trabajo informal, trabajadora del hogar, cuenta propia sin contrato, patrón que no lo registró)",
+      "ley_aplicable": "Ley Federal del Trabajo (LFT) — la relación laboral se acredita con documentación",
+      "plazo": "El mismo de 2 meses / 60 días naturales (Art. 518 LFT): la falta de registro patronal no suspende ni amplía el plazo"
+    },
     "tipos_trabajadores_burocraticos": {
       "confianza": "Desempeñan funciones de dirección, inspección, manejo de fondos, auditoría, adquisiciones, investigación científica o asesoría a funcionarios de alto nivel.",
       "base": "Todos los que no son de confianza. Son inamovibles.",
       "formalizacion": "Mediante documento llamado 'nombramiento' que debe incluir: nombre, servicios a prestar, carácter del nombramiento (definitivo/interino/provisional/por tiempo fijo), jornada, sueldo y lugar de trabajo.",
       "nota": "Las relaciones laborales burocráticas NO pueden ser de facto (sin nombramiento)."
     },
-    "instruccion_ley": "Si en la conversación aparece IMSS → citar y aplicar LFT. Si aparece ISSSTE → citar y aplicar LFTSE."
+    "instruccion_ley": "Si en la conversación aparece IMSS → citar y aplicar LFT. Si aparece ISSSTE → citar y aplicar LFTSE. Preguntá siempre en cuál de las dos instituciones estuvo registrado el usuario: no alcanza con saber que tuvo seguridad social, porque de eso dependen la ley y el plazo que aplican."
   },
   "qualification": {
     "paso_1_plazo_legal": {
