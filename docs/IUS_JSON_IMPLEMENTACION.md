@@ -4,6 +4,10 @@
 
 `ius_system_prompt.json` es el system prompt estructurado del agente conversacional **IUS**, diseñado para ser inyectado como contexto en un modelo de IA (Claude, GPT-4o, etc.) para operar un embudo de conversión de servicios legales laborales.
 
+> **Fuente de verdad del prompt:** `docs/ius_legal_config.json` es la fuente de verdad del prompt que el agente usa en producción (`build_effective_system_prompt` en `backend/app/claude_service.py` lo inyecta completo). La descripción del embudo —los 9 pasos del árbol de decisión, los plazos en días naturales y las 32 reglas de semáforo— se **genera** en `docs/IUS_ARBOL_DECISION.md` con `scripts/build_ius_arbol_decision.py`. No editar ese Markdown a mano.
+>
+> `docs/ius_system_prompt.json` es la **plantilla**: el JSON con el que el panel carga la config de un agente nuevo. Describe el mismo embudo con otras secciones (`universe`, `qualification`, `traffic_light`, `objection_handling`…) y debe mantenerse coherente con el canónico, sin duplicar la fuente.
+
 ---
 
 ## Enfoque elegido: JSON Monolítico con Meta-Navegación
@@ -20,6 +24,35 @@ Se eligió este enfoque porque:
 ---
 
 ## Estructura del JSON
+
+### Prompt canónico (`docs/ius_legal_config.json`)
+
+Es el JSON que el runtime inyecta completo como system prompt. Además del guion conversacional (`flow`, 37 nodos) y las reglas, declara de forma explícita lo que antes sólo estaba en prosa:
+
+```
+ius_legal_config.json
+├── HOW_TO_USE                 → Índice: orden de ejecución y regla de prioridad
+├── agent_identity             → Nombre, rol, objetivo, presentación y aclaración de rol
+├── config                     → Precio de la asesoría (único campo de monto)
+├── plazos_legales             → Bandas en DÍAS NATURALES por institución + interrupción por conciliación
+├── arbol_decision             → Los 9 pasos de evaluación y las 5 salidas terminales
+├── matriz_documentacion       → Bloque de pruebas: FUERTE / MEDIO / DÉBIL / SIN PRUEBAS
+├── senales_decision           → Señales positivas, límite y negativas
+├── intencion_pago             → ALTA / DUDA / RECHAZO, evaluado por señales
+├── descarte_inmediato         → Los 5 criterios que cierran el caso en rojo
+├── acciones_por_color         → Acción de cierre de verde / amarillo / rojo
+├── flow                       → Guion conversacional (nodos, opciones, rutas y campos)
+├── rules                      → Reglas de conducta del agente
+├── state_vars                 → Variables del caso y sus valores admitidos
+├── priority                   → 32 reglas de color, umbrales de tiempo y notas de aplicación
+├── triggers                   → Disparadores por palabra clave
+├── forbidden                  → Prohibiciones y frase base obligatoria
+└── registro_automatico_calificacion → Cuándo y cómo registrar el color (tool calling)
+```
+
+Cada paso del árbol declara su criterio, las variables que alimenta y los nodos del `flow` que lo implementan; cada regla de `priority.reglas` filtra por las mismas variables que el flujo captura, y esa correspondencia se verifica automáticamente (ver *Validación* más abajo).
+
+### Plantilla para configs nuevas (`docs/ius_system_prompt.json`)
 
 ```
 ius_system_prompt.json
@@ -39,18 +72,38 @@ ius_system_prompt.json
 
 ---
 
+## Validación
+
+Tres chequeos, en orden de cercanía al artefacto:
+
+| Chequeo | Comando | Qué detecta |
+|---|---|---|
+| Estructura del JSON canónico | `docker compose exec app pytest tests/test_ius_legal_config.py -v` | Deriva: reglas que filtran por variables que ningún nodo del flow escribe, valores fuera de los admitidos, ramas del árbol que no resuelven, plazos incoherentes |
+| Documento del árbol | `python3 scripts/build_ius_arbol_decision.py` | Que `docs/IUS_ARBOL_DECISION.md`/`.html` correspondan al JSON vigente |
+| Comportamiento del modelo | `python scripts/test_ius_casos_semaforo.py --enable-auto-colors` | Que el agente registre el color esperado en los 23 casos de `docs/qa/ius_casos_semaforo.txt` |
+
+Los chequeos estructurales corren sólo para configs que declaran `arbol_decision`: los `ius_config` libres de otros tenants (ERMA, pachoteayuda) no se validan contra el esquema de iUS.
+
+---
+
 ## Campos que cambian con frecuencia
 
-Todos en la sección `config`. **Editar solo aquí:**
+**Prompt canónico (`docs/ius_legal_config.json`).** Editar sólo acá y regenerar la documentación:
 
 | Campo | Valor actual | Descripción |
 |-------|-------------|-------------|
-| `precio_asesoria_mxn` | `2500` | Costo de la asesoría en pesos mexicanos |
-| `plazos_legales.imss_meses` | `2` | Meses para demandar (trabajador con IMSS) |
-| `plazos_legales.issste_meses` | `4` | Meses para demandar (trabajador con ISSSTE) |
-| `plazos_legales.separacion_justificada_meses` | `1` | Plazo cuando el trabajador se separa por causas justificadas |
-| `plazos_legales.prima_antiguedad_anios` | `1` | Plazo para reclamar prima de antigüedad |
-| `plazos_legales.riesgo_trabajo_anios` | `2` | Plazo para indemnizaciones por accidente de trabajo |
+| `config.precio_asesoria_mxn` | `2500` | Costo de la asesoría en pesos mexicanos. Único campo de monto: no duplicar el precio en otra sección |
+| `plazos_legales.conteo` | `días naturales (lunes a domingo)` | El plazo se computa en días, no en meses: 2 meses = 60 días y 4 meses = 120 días |
+| `plazos_legales.imss.total_dias` | `60` | Plazo total (LFT, Apartado A del Art. 123): 0-40 favorable / 41-60 límite / 61+ prescripción |
+| `plazos_legales.issste.total_dias` | `120` | Plazo total (LFTSE, Apartado B del Art. 123): 0-90 favorable / 91-120 límite / 121+ prescripción |
+| `plazos_legales.otros.separacion_causa_justificada_meses` | `1` | Separación por causa justificada |
+| `plazos_legales.otros.riesgo_de_trabajo_anios` | `2` | Riesgo de trabajo |
+| `plazos_legales.otros.declaracion_beneficiarios_anios` | `2` | Declaración de beneficiarios |
+| `plazos_legales.otros.prima_antiguedad_anios` | `1` | Prima de antigüedad |
+
+**Interrupción del plazo:** se interrumpe al ingresar la solicitud de conciliación ante el Centro Federal o Local de Conciliación Laboral y se retoma al día siguiente de la emisión de la Constancia de No Conciliación. Un convenio celebrado ante el Centro no cierra el caso por sí mismo: lo que lo cierra es que el plazo posterior a la Constancia ya esté vencido.
+
+**Plantilla (`docs/ius_system_prompt.json`).** Los mismos datos viven en su `config`, con los meses conservados además de los días: `precio_asesoria_mxn`, `plazos_legales` (meses y años), `conteo_plazos`, `imss_dias`, `issste_dias` e `interrupcion_conciliacion` (mismo texto que el canónico). No es una segunda fuente: se mantiene coherente.
 
 ---
 

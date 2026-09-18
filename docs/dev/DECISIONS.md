@@ -1347,3 +1347,149 @@ no detalla.
   puede reescribir a ciegas sin conocer su forma).
 - `CACHE_PREFIX` no cambia: lo modificado son las descripciones de las tools, no
   los parsers — la caché de Redis guarda respuestas de las fuentes, no specs.
+
+---
+
+## ADR-022: El árbol de decisión de iUS es la fuente del prompt y de su documentación
+
+**Estado:** Aceptado
+**Fecha:** 2026-09-18
+
+### Contexto
+
+El comportamiento del agente de calificación por semáforo de iUS vivía en dos
+lugares que no se conocían entre sí: el árbol de decisión del embudo legal
+laboral —9 pasos de evaluación, plazos en días naturales, matriz de
+documentación, señales de decisión, intención de pago, semáforo final con sus
+acciones y criterios de descarte inmediato— estaba sólo en un HTML fuera del
+repo, y el prompt del agente estaba sólo en `docs/ius_legal_config.json`
+(exportación de la config de producción). No había documentación derivada del
+prompt ni forma de detectar la deriva entre los dos: el repo ya había sufrido
+desajustes silenciosos —`registro_automatico_calificacion` declaraba "25 reglas"
+sobre un array de 27, y 27 reglas filtraban por
+`tiempo_desvinculacion`/`antiguedad_laboral`, variables que el `flow` nunca
+escribía, con lo que eran imposibles de cumplir—.
+
+### Opciones consideradas
+
+1. **Dejar el árbol sólo en el HTML externo y el prompt sólo en el JSON** —
+   cero trabajo, pero mantiene dos fuentes sin puente, sin documentación
+   entregable y sin detección de deriva.
+2. **Copiar el árbol a mano en un Markdown** — rápido, pero crea una segunda
+   fuente que se desincroniza al primer cambio de regla, que es exactamente el
+   problema que se quiere evitar.
+3. **El JSON del prompt como fuente única, con la documentación generada** por
+   un script, más un validador estructural y un test offline que fallan si el
+   JSON deja de ser coherente consigo mismo.
+
+### Decisión
+
+Opción 3, con este alcance (decisiones del usuario, no re-litigar):
+
+1. `docs/ius_legal_config.json` es la fuente de verdad; `docs/IUS_ARBOL_DECISION.md`
+   y `docs/IUS_ARBOL_DECISION.html` se generan con
+   `scripts/build_ius_arbol_decision.py`.
+2. Alcance del trabajo: prompt + validador estructural + fixture/suite LLM. No se
+   agrega una tool determinista de cómputo de plazos.
+3. Los dos conflictos detectados con el prompt vigente se incorporan **ya como
+   reglas activas**, marcadas `pendiente_validacion_legal: true` para el equipo
+   legal del cliente.
+4. Se versiona y se aplica al bot de dev/QA; **producción no se toca**.
+
+### Consecuencias
+
+- Las 5 reglas nuevas quedan activas y marcadas `pendiente_validacion_legal: true`
+  (32 reglas en total): `issste_mas_de_120_dias`, `hechos_no_veridicos`,
+  `usuario_conflictivo`, `rechazo_pago_persistente` y `sin_pruebas`.
+- El validador `_validate_ius_semaforo` (`backend/app/services/ius_validator.py`)
+  corre sólo para las configs que declaran el esquema IUS (`arbol_decision`), así
+  que no cambia el resultado de validación de ERMA ni de pachoteayuda.
+- `docs/IUS_ARBOL_DECISION.md`/`.html` no se editan a mano: se regeneran con
+  `python3 scripts/build_ius_arbol_decision.py` desde el JSON del prompt.
+- La deriva deja de ser silenciosa: `backend/tests/test_ius_legal_config.py`
+  valida el JSON versionado offline (estructura, campos y valores de regla contra
+  `state_vars`/`priority.umbrales`, gotos del árbol y nodos de `flow` citados) y
+  falla antes de aplicar una config incoherente.
+- La aplicación al bot de dev/QA (`backend/scripts/apply_ius_config.py`) es un
+  merge: el JSON versionado gana en las claves que declara y se preservan las
+  claves que sólo viven en la base de datos (`estado_de_herramientas`,
+  `regla_de_enlaces`, `datos_que_cambian_seguido`, `mapa_urls_por_tema`).
+- El fixture de casos (`docs/qa/ius_casos_semaforo.txt`) crece a 23 casos y su
+  invariante pasa a ser "al menos un caso por color": la suite mide al LLM, no a
+  las reglas, así que el número exacto por color no es un contrato.
+
+---
+
+## ADR-023: El orden de `priority.reglas` de iUS es explícito y define el color
+
+**Estado:** Aceptado
+**Fecha:** 2026-09-18
+
+### Contexto
+
+El semáforo de iUS se resolvía con 27 reglas que la sección `priority.note`
+describía como "la más específica tiene precedencia". Pero la mitad de las reglas
+sólo declaraba prosa: sus filtros estaban en `cualquiera` (o directamente en
+`null`), y la condición real vivía en el campo `texto`. Con dos reglas empatadas,
+el modelo elegía una distinta en cada conversación.
+
+Medido con `scripts/test_ius_casos_semaforo.py --repetitions 3` (mismo prompt,
+mismo fixture, mismo harness): **11 de los 23 casos del fixture no reprodujeron su
+color**, y el total osciló entre 15 y 18 de 23. Las notas que la tool escribe en
+`clients.notas` muestran la causa: el caso 13 (José) recibió cuatro reglas distintas
+en cuatro corridas ("ninguna regla rojo" → amarillo, `sin_pruebas` → rojo,
+`renuncia_voluntaria_firmada` → rojo, `imss_seis_siete_semanas_efectivo` → amarillo);
+el caso 3 (ASF) alterna `personal_confianza_sector_publico` (rojo) con
+`interinato_complejo_issste` (amarillo). Sin un orden operable no se puede evaluar
+ningún ajuste del prompt: el ruido tapa la señal.
+
+### Opciones consideradas
+
+1. **Dejarlo en prosa y pedirle al modelo que juzgue la especificidad** — es lo que
+   había: empates resueltos al azar.
+2. **Motor de reglas en código** — determinista por construcción, pero exige que el
+   LLM emita `state_vars` estructurados; es la tool determinista que se descartó en
+   ADR-022 y cambia la arquitectura del agente.
+3. **Orden explícito en el prompt**: cada regla declara su `precedencia` y el prompt
+   indica recorrerlas en orden ascendente quedándose con la primera que coincida.
+
+### Decisión
+
+Opción 3, con estas reglas de construcción:
+
+1. `precedencia` es obligatoria, única y contigua de 1 a N en las 32 reglas.
+2. `priority.instruccion_de_aplicacion` fija el procedimiento: recorrer por
+   `precedencia` ascendente, aplicar la **primera** regla cuyos filtros y `condicion`
+   se cumplan, y terminar sin recalcular con otra regla.
+3. Las reglas que no tenían filtros reales ganaron el filtro que su texto describía
+   (`firmo_renuncia`, `funciones_confianza`, `contrato`, `recibos_nomina`,
+   `documentacion`) o, si la condición no es expresable con `state_vars`, una
+   `condicion` declarada. Se agregó la variable `firmo_renuncia`, porque el nodo de
+   renuncia sólo escribía `renuncia_huella_voluntaria` y perdía el hecho de haber
+   firmado.
+4. Las excepciones nombradas en los textos van antes de la regla que exceptúan:
+   `issste_renuncia_impugnada_con_evidencia`, `renuncia_con_promesa_liquidacion_incumplida`
+   y las dos reglas de ventana con renuncia y huella preceden a
+   `renuncia_voluntaria_firmada`.
+5. El validador (`_validate_ius_semaforo`) exige la precedencia total, que ninguna
+   regla quede sin filtro ni condición, y que las excepciones estén antes; el test
+   offline lo verifica sobre el JSON versionado.
+
+### Consecuencias
+
+- La clasificación deja de depender de un juicio de especificidad del modelo: para
+  cada caso la primera regla que coincide es determinista.
+- **El orden pasa a ser un artefacto**: mover una regla cambia colores. Quien lo
+  haga debe correr `pytest tests/test_ius_legal_config.py` y la suite con
+  `--repetitions N` (no una corrida suelta).
+- El orden se derivó de los textos y notas del propio prompt (`priority.note`,
+  `notas_de_aplicacion`, las excepciones nombradas). Donde el texto del cliente no
+  dice cuál gana, se conservó el comportamiento previo y se deja la definición
+  abierta (D1–D4 de `docs/qa/IUS_CONSULTA_ABOGADO_SEMAFORO.md`), sin inventar
+  política legal.
+- Este orden no cambia por sí solo el color de los casos que ya eran inestables por
+  ambigüedad de definición: los vuelve medibles.
+- Cuando dos reglas se solapan y el modelo las evalúa a las dos (caso Comex: 4 rojo / 4
+  verde / 4 amarillo en 12 corridas citando ambas), el orden no alcanza: hay que hacerlas
+  mutuamente excluyentes con una variable capturada. Se hizo con
+  `promesa_liquidacion_incumplida` para el par de renuncia.

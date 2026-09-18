@@ -15,6 +15,8 @@ Verificar todos los ítems antes de hacer deploy a producción.
 - [ ] RAG: subir un documento y verificar que aparece en `/api/rag/stats`
 - [ ] RAG: hacer una búsqueda y obtener resultados relevantes
 - [ ] Chat con RAG: `/api/chat` devuelve respuesta coherente
+- [ ] Suite de semáforo de iUS pasa con el fixture vigente: `python scripts/test_ius_casos_semaforo.py --repetitions 3 --enable-auto-colors` (`docs/qa/ius_casos_semaforo.txt`, 23 casos). El código de salida mira el consenso por caso, no el total de una corrida: el modelo no es determinista (ver `docs/qa/TESTING.md`)
+- [ ] La config de iUS valida sin errores en el panel: `docker compose exec app python3 -m pytest tests/test_ius_legal_config.py`
 
 ## Canales de mensajería
 
@@ -50,3 +52,4 @@ Verificar todos los ítems antes de hacer deploy a producción.
 - [ ] Si se agregaron endpoints: `docs/dev/API.md` actualizado
 - [ ] Si se cambiaron modelos: `docs/dev/DATA_MODEL.md` actualizado
 - [ ] Si se cambiaron vars de entorno: `ENV.md` actualizado
+- [ ] `docs/IUS_ARBOL_DECISION.md` y `.html` están regenerados desde `docs/ius_legal_config.json`: `python3 scripts/build_ius_arbol_decision.py`

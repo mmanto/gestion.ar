@@ -7,6 +7,86 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **Árbol de decisión del semáforo legal de iUS en el prompt canónico**
+  (`docs/ius_legal_config.json`). El embudo —9 pasos de evaluación, plazos en
+  días naturales con interrupción por conciliación, matriz de documentación,
+  señales de decisión, intención de pago, semáforo final con acciones y criterios
+  de descarte inmediato— vivía sólo en un HTML fuera del repo, y el prompt no lo
+  describía. El JSON suma las secciones `HOW_TO_USE`, `agent_identity`, `config`
+  (precio de la asesoría), `plazos_legales` (IMSS 60 días / ISSSTE 120 días, en
+  días naturales y con la interrupción por solicitud de conciliación),
+  `arbol_decision` (los 9 pasos con sus nodos del `flow`), `matriz_documentacion`,
+  `senales_decision`, `intencion_pago`, `descarte_inmediato` y `acciones_por_color`.
+- **5 reglas nuevas del semáforo de iUS** (`docs/ius_legal_config.json`):
+  `issste_mas_de_120_dias`, `hechos_no_veridicos`, `usuario_conflictivo`,
+  `rechazo_pago_persistente` y `sin_pruebas` — 32 reglas en total. Quedan activas
+  y marcadas `pendiente_validacion_legal: true` para el equipo legal del cliente.
+  Ver ADR-022.
+- **Documentación generada del árbol de decisión**
+  (`scripts/build_ius_arbol_decision.py`, `docs/IUS_ARBOL_DECISION.md`,
+  `docs/IUS_ARBOL_DECISION.html`). El generador lee el JSON del prompt y emite el
+  diagrama Mermaid del árbol con los colores del semáforo, las tablas de plazos
+  (60/120 días naturales + conciliación), la matriz de documentación, las señales
+  de decisión, la intención de pago ($2,500 MXN), las acciones por color, el
+  descarte inmediato, las 32 reglas y las restricciones de la IA, en un HTML
+  autocontenido con descarga de SVG/PNG. Se corre con
+  `python3 scripts/build_ius_arbol_decision.py`.
+- **Validador estructural del semáforo de iUS y test offline**
+  (`backend/app/services/ius_validator.py`, `backend/tests/test_ius_legal_config.py`).
+  `_validate_ius_semaforo` corre sólo para las configs que declaran
+  `arbol_decision` (no afecta a ERMA ni a pachoteayuda): valida los plazos de cada
+  institución, las reglas (nombre, color, texto, unicidad), que cada campo y valor
+  de filtro de una regla exista en `state_vars` o en `priority.umbrales` (el
+  desajuste `tiempo_desvinculacion`/`tiempo_transcurrido` que el repo ya había
+  sufrido), que los gotos del árbol resuelvan y que los nodos del `flow` citados
+  existan. El test corre el validador y esas invariantes contra el JSON
+  versionado, sin stack de LLM.
+- **Fixture de 23 casos de semáforo y script de aplicación de la config**
+  (`docs/qa/ius_casos_semaforo.txt`, `scripts/test_ius_casos_semaforo.py`,
+  `backend/scripts/apply_ius_config.py`). El fixture suma 8 casos (honorarios
+  reales, ISSSTE fuera de plazo, rechazo de pago, hechos contradictorios, ISSSTE
+  14 semanas con pago en efectivo, IMSS 6 semanas sin documentos de indicaciones,
+  IMSS en tiempo con documentación completa y honorarios simulados) y el
+  invariante deja de exigir exactamente 5 por color. El script de aplicación
+  descubre el bot calificable, hace merge del JSON versionado sobre la config viva
+  (preserva las claves que sólo viven en la base de datos), elimina las claves que
+  el JSON renombró (`identity` → `agent_identity`) y tiene `--dry-run`/`--apply`.
+- **Precedencia explícita en las 32 reglas del semáforo de iUS**
+  (`docs/ius_legal_config.json`). `priority.reglas` tenía reglas que empataban en
+  especificidad (varias con todos sus filtros en `cualquiera` y la condición sólo en
+  prosa) y el modelo elegía una distinta en cada conversación: 11 de los 23 casos del
+  fixture no reproducían su color entre corridas idénticas. Ahora cada regla declara
+  `precedencia` (1 a 32), `priority.instruccion_de_aplicacion` indica recorrerlas en
+  orden ascendente y quedarse con la primera que coincida, y las reglas que sólo
+  tenían prosa pasaron a tener filtros reales (`firmo_renuncia`, `funciones_confianza`,
+  `documentacion`, `contrato`) o `condicion` declarada. Las excepciones nombradas
+  (renuncia impugnada, promesa de liquidación incumplida, ventanas con renuncia y
+  huella) quedaron antes de `renuncia_voluntaria_firmada`. Además
+  `renuncia_voluntaria_firmada` y `renuncia_con_promesa_liquidacion_incumplida` pasaron
+  a ser mutuamente excluyentes con una variable nueva (`promesa_liquidacion_incumplida`,
+  capturada por el nodo `validacion_promesa_liquidacion`): el modelo las citaba a las dos
+  en el mismo turno y el caso oscilaba entre rojo y verde. El validador exige que
+  `precedencia` sea única y contigua, que cada regla tenga filtro o condición, y que
+  las excepciones estén antes de la regla que exceptúan.
+- **Nuevo `--repetitions N` en la suite de semáforo** (`scripts/test_ius_casos_semaforo.py`).
+  El modelo no es determinista y el total de una corrida no era comparable (16, 18 y
+  15 de 23 con el mismo prompt). Con `--repetitions N` el script corre cada caso N
+  veces y reporta el consenso por caso, la estabilidad y el OK de cada corrida
+  individual; el código de salida mira el consenso. El "usuario" de prueba ahora
+  responde la fecha de desvinculación y la conciliación en vez de decir que no tiene
+  más datos (dejaba al bot sin poder cerrar la evaluación), y ya no pide "el color del
+  semáforo", que el prompt prohíbe y el modelo se negaba a dar.
+- **Antigüedad explícita en los dos casos verdes nuevos del fixture de iUS**
+  (`docs/qa/ius_casos_semaforo.txt`): sin ese dato el modelo podía inferir
+  `menos_de_un_año` y activar la regla amarilla de junior, con lo que el caso oscilaba
+  entre verde y amarillo entre corridas.
+- **Fechas relativas en dos casos del fixture de semáforo de iUS**
+  (`docs/qa/ius_casos_semaforo.txt`). Los casos de SEPOMEX y de la trabajadora
+  social conservaban fechas absolutas viejas ("el 01 de junio", "el 16 de junio"):
+  con la instrucción nueva de computar días naturales desde la fecha de
+  desvinculación se leían como desvinculaciones de hace meses y el caso de SEPOMEX
+  llegaba a clasificar por `issste_mas_de_120_dias` (rojo), contra los 3 semanas
+  que describen sus hechos. Ahora son relativas, como el resto del fixture.
 - **Preguntas sobre recolección de residuos en el chat de pachoteayuda.ar**
   (`backend/app/services/public_sources_service.py`,
   `backend/scripts/enable_pachoteayuda_public_sources.py`). El prompt del
@@ -54,6 +134,19 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   con la instrucción de la tool y las 3 decisiones de calificación.
 
 ### Corregido
+- **El conteo de reglas estaba hardcodeado en el prompt de iUS**
+  (`docs/ius_legal_config.json`). `registro_automatico_calificacion` declaraba
+  "25 reglas" sobre un array que ya tenía 27 (32 tras este cambio): el número se
+  sacó del texto y la instrucción ahora remite a `priority.reglas` ("la más
+  específica tiene precedencia"), para que no vuelva a desactualizarse.
+- **El template trataba el convenio de conciliación como cierre del plazo**
+  (`docs/ius_system_prompt.json`). `qualification.paso_3_viabilidad.caso_inviable`
+  listaba "celebró un convenio ante el Centro de Conciliación aunque no esté
+  conforme con el monto" como caso inviable, cuando la solicitud de conciliación
+  **interrumpe** el plazo y éste se retoma al día siguiente de la Constancia de No
+  Conciliación. Ahora el caso inviable es el convenio con el plazo posterior ya
+  vencido, y `config` del template declara los plazos en días naturales (IMSS 60,
+  ISSSTE 120) con la misma regla de interrupción del canónico.
 - **El chat de pachoteayuda no cierra la respuesta con el enlace oficial**
   (`backend/app/services/public_sources_service.py`,
   `backend/scripts/enable_pachoteayuda_public_sources.py`). Reportado por el
@@ -95,6 +188,29 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   enlace oficial.
 
 ### Cambiado
+- **`identity` → `agent_identity` en el prompt canónico de iUS**
+  (`docs/ius_legal_config.json`). El runtime lee
+  `agent_identity.{nombre,rol,presentacion}` y el validador del panel lo exige:
+  con la clave vieja el prompt efectivo caía al fallback genérico ("Eres un
+  asistente virtual de este negocio.") y el panel reportaba la config como
+  inválida. El saludo (`presentacion`) queda idéntico al texto de `flow[0].msg`.
+- **Unificación del vocabulario de variables del semáforo de iUS**
+  (`docs/ius_legal_config.json`). Las 27 reglas filtraban por
+  `tiempo_desvinculacion` y `antiguedad_laboral`, variables que ningún nodo del
+  `flow` escribía —el flujo captura `tiempo_transcurrido` y `periodo_trabajado`—,
+  así que eran imposibles de cumplir. El rename se aplicó en todo
+  `priority.reglas` y los valores `institucion: sin_institucion` pasaron a
+  `ninguna`, que es el que declara `state_vars`.
+- **`validacion_urgencia` captura la fecha exacta de desvinculación**
+  (`docs/ius_legal_config.json`). El nodo era un menú de 4 bandas que nunca
+  producía `seis_siete_semanas` (42-49 días) ni `catorce_quince_semanas` (98-105),
+  justo las bandas de las 6 reglas amarillas de ventana. Ahora pide la fecha del
+  último día de trabajo y rutea por días naturales según la institución
+  (IMSS/ISSSTE), con la pregunta de conciliación y su Constancia.
+- **El trigger de pensión ya no es terminal** (`docs/ius_legal_config.json`).
+  `manejo_tema_pensionario` cortaba la conversación (`terminal: true`) y el árbol
+  trata la pensión como un tipo de asunto más: el trigger pasa a no terminal y el
+  nodo suma la opción de que un especialista lo revise.
 - **Promoción de los primeros cuatro meses en la página privada del Programa de
   Abogados Fundadores** (`sites/ius-landing/fundadores.html`,
   `sites/ius-landing/fundadores-pago.html`). La página de registro fundador —se

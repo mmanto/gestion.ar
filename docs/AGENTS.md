@@ -29,6 +29,7 @@ Leer este archivo antes de realizar cualquier tarea.
 | Cambio en dependencias del frontend | `docs/dev/SETUP.md` (sección frontend) |
 | Nueva pantalla o flujo de usuario en el dashboard | `docs/design/SCREENS.md` |
 | Cambio en el sistema de diseño o componentes UI | `docs/design/DESIGN.md` |
+| Cambio en reglas de calificación, plazos o árbol de decisión de iUS | `docs/ius_legal_config.json` + `docs/IUS_ARBOL_DECISION.md` (regenerar con `scripts/build_ius_arbol_decision.py`) + `docs/qa/ius_casos_semaforo.txt` |
 
 ---
 
@@ -99,6 +100,9 @@ test: agregar o modificar tests
 Los archivos en `docs/` (nivel raíz, no en subdirectorios) son documentos de dominio:
 - `docs/IUS_JSON_IMPLEMENTACION.md` — Agente IUS (embudo legal laboral)
 - `docs/ius_system_prompt.json` — System prompt estructurado del agente IUS
+- `docs/ius_legal_config.json` — Fuente de verdad del prompt del agente IUS (flow, 32 reglas de semáforo, plazos legales y árbol de decisión)
+- `docs/IUS_ARBOL_DECISION.md` — Árbol de decisión generado desde ese JSON (no editar a mano)
+- `docs/IUS_SEMAFORO_INFORME_*.md` — Mediciones de la suite de semáforo
 - `docs/LeadFlow_Law_PWA_v2.docx` — Especificación del producto LeadFlow
 
 Estos documentos definen el QUÉ del negocio. No deben mezclarse con la documentación técnica.

@@ -1,6 +1,6 @@
 # iUS — Semáforo: consulta al abogado de referencia
 
-**Fecha:** 2026-09-14
+**Fecha:** 2026-09-14 · **Actualizado:** 2026-09-18 (definición D4 y fixture de 23 casos)
 
 **Qué es esto:** las definiciones jurídicas que quedaron abiertas al cerrar la suite de
 calificación por semáforo de iUS. No son fallas técnicas: los 6 casos que no coinciden son
@@ -8,10 +8,11 @@ desacuerdos de definición de las reglas.
 
 **Origen de la evidencia:** corrida de `scripts/test_ius_casos_semaforo.py` sobre los 15 casos de
 `docs/qa/ius_casos_semaforo.txt` (5 rojo / 5 amarillo / 5 verde), con el prompt de producción
-(27 reglas, canónico en `docs/ius_legal_config.json`). Resultado **9/15**: rojo 5/5, amarillo 3/5,
+(27 reglas entonces; **32 desde el 2026-09-18**, con precedencia explícita — ver el informe §9).
+Resultado **9/15**: rojo 5/5, amarillo 3/5,
 verde 1/5. Informe completo: `docs/IUS_SEMAFORO_INFORME_2026-09-11.md` §6.
 
-**Cómo usar este documento:** responder las tres definiciones **D1–D3** y la línea
+**Cómo usar este documento:** responder las definiciones **D1–D4** y la línea
 `Definición:` de cada caso. Con esa respuesta se ajusta el prompt de calificación
 (`docs/ius_legal_config.json`), o el texto del caso de prueba (únicamente si la definición
 confirma la regla vigente y el caso está incompleto).
@@ -85,6 +86,29 @@ fuente de trabajo. Hoy la regla más específica lo manda a amarillo
   ¿Cuál es la fecha de desvinculación que debe usarse?
 - **c)** Caso 7: si la persona dice "hoy me entregaron el Aviso de Rescisión", ¿la desvinculación
   es de ese día (0 días) y por lo tanto ventana "pocos días"?
+
+**Definición:**
+
+---
+
+## D4 — ISSSTE: ¿4 meses es el plazo de prescripción?
+
+La regla `issste_mas_de_120_dias` ya está **activa** en el prompt (`docs/ius_legal_config.json`),
+marcada `pendiente_validacion_legal: true`: un trabajador del sector público (ISSSTE) separado hace
+más de 120 días naturales se clasifica **rojo**, salvo que la solicitud de conciliación haya
+interrumpido el plazo. Es la regla que define el color de los casos ISSSTE de más de 120 días del
+fixture (`docs/qa/ius_casos_semaforo.txt`, ROJO 7). La misma marca llevan las otras cuatro reglas
+nuevas del 2026-09-18: `hechos_no_veridicos`, `usuario_conflictivo`, `rechazo_pago_persistente` y
+`sin_pruebas`.
+
+- **a)** ¿El plazo de prescripción del trabajador del ISSSTE (Apartado B del Art. 123
+  constitucional y su ley reglamentaria) es de 4 meses, computados como 120 días naturales desde
+  la separación?
+- **b)** ¿La solicitud de conciliación ante el Centro Federal o Local de Conciliación Laboral
+  **interrumpe** ese plazo, que se retoma al día siguiente de la emisión de la Constancia de No
+  Conciliación?
+- **c)** Si la respuesta a (a) o (b) es distinta, ¿qué banda y qué cómputo deben regir el rojo del
+  ISSSTE, y desde qué fecha corre?
 
 **Definición:**
 
@@ -277,7 +301,7 @@ prompt (regla verde) y este caso de prueba queda como está.*
 
 - **Esperado / bot:** verde / amarillo.
 - **Regla que se disparó:** `imss_rescision_causal_cuestionable` (amarillo), que aplica con
-  `tiempo_desvinculacion: cualquiera` y tiene precedencia sobre la ventana de tiempo del verde.
+  `tiempo_transcurrido: cualquiera` y tiene precedencia sobre la ventana de tiempo del verde.
 - **Pregunta:** ¿un despido con rescisión causal cuestionable, sin aviso a la Comisión Mixta
   Disciplinaria, es verde o amarillo?
 
@@ -405,5 +429,9 @@ desde el aviso de no renovación.*
 | D2 | Amarillo (revisable) | Re-etiquetar el caso 14 a AMARILLO en el fixture |
 | D2 | Verde (nulo) | Regla verde de nulidad por falta de aviso a la Comisión Mixta Disciplinaria |
 | D3 | Depende del caso | Corregir las fechas de los casos 7, 9 y 15 en el fixture |
+| D4 | El plazo del ISSSTE son 4 meses (120 días naturales) | Confirmar `issste_mas_de_120_dias` y quitarle la marca `pendiente_validacion_legal` |
+| D4 | El plazo es otro, o no lo interrumpe la conciliación | Corregir `plazos_legales.issste` y la regla `issste_mas_de_120_dias` en `docs/ius_legal_config.json` |
 
-Con las definiciones aplicadas, la expectativa de la suite es 15/15 (hoy: 9/15).
+Con las definiciones aplicadas, la expectativa de la suite es 23/23: el fixture pasó de 15 a 23 casos
+(9 rojo / 7 amarillo / 7 verde) el 2026-09-18 y la medición de esa corrida está en
+`docs/IUS_SEMAFORO_INFORME_2026-09-11.md` §9.

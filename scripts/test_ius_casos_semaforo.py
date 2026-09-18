@@ -2,8 +2,8 @@
 """
 Suite de integración LLM — casos de prueba del semáforo IUS (canal web/PWA).
 
-Toma los casos de `docs/qa/ius_casos_semaforo.txt` (15 historias: 5 esperadas
-ROJO, 5 AMARILLO, 5 VERDE, con fechas relativas), inicia una conversación de
+Toma los casos de `docs/qa/ius_casos_semaforo.txt` (23 historias: 9 esperadas
+ROJO, 7 AMARILLO, 7 VERDE, con fechas relativas), inicia una conversación de
 chat web nueva por caso contra el bot IUS que corre en el stack, y verifica que
 el agente termina registrando el color esperado vía la tool
 `registrar_calificacion_prospecto` (persistido en `clients.color_semaforo`).
@@ -16,9 +16,10 @@ con canal tipo web|pwa). No toca Telegram ni WhatsApp.
 
 Requisitos del entorno:
 - Stack levantado (postgres + redis + backend) — ej. `docker compose up -d`.
-- El bot debe tener `ius_config` moderno (con `traffic_light`) y
-  `auto_qualify_colors` no vacío; si falta, usar `--enable-auto-colors`
-  (solo en entornos de desarrollo/QA; muta la config del bot en la DB).
+- El bot debe tener `ius_config` IUS (canónico: `agent_identity` + `priority.reglas`
+  con el árbol de decisión) y `auto_qualify_colors` no vacío; si falta, usar
+  `--enable-auto-colors` (solo en entornos de desarrollo/QA; muta la config del bot
+  en la DB).
 - LLM configurado en el backend (env `LLM_PROVIDER` del proceso que corre
   la app: claude, deepseek u ollama).
 
@@ -66,14 +67,27 @@ CASE_NUM_RE = re.compile(r"^\s*\d+[.)]?\s+\S")
 def follow_up_messages(text: str, max_turns: int):
     """Mensajes de continuación cuando el bot no registró la calificación.
 
-    Un usuario real, ante un bot que vuelve a pedir datos que ya dio, repite
-    la información. El caso ya es completo en el primer mensaje, así que el
-    segundo turno lo reenvía; el tercero cierra explícitamente.
+    Un usuario real, ante un bot que vuelve a pedir datos que ya dio, repite la
+    información y cierra. El caso ya es completo en el primer mensaje, así que el
+    segundo turno lo reenvía (ahí van la fecha relativa de desvinculación y el
+    resto de los datos) y el tercero aporta lo único que el flujo pregunta aparte
+    y el caso no siempre explicita: que no hubo solicitud de conciliación.
+
+    Dos cosas que este texto NO hace, a propósito (medidas el 2026-09-18):
+
+    - No le pide al bot que diga el color ni la palabra "semáforo": el prompt se lo
+      prohíbe (`forbidden`, `registro_automatico_calificacion`) y el modelo se
+      negaba a responder en vez de registrar la calificación.
+    - No dice "no tengo más datos" a secas, que dejaba al bot pidiendo la fecha
+      exacta con un "usuario" que nunca contestaba.
     """
     nudge_repeat = f"Te repito toda la información que tengo sobre mi caso: {text}"
     nudge_close = (
-        "No tengo más datos ni documentación. Con lo que ya te di, determiná el "
-        "color del semáforo y registrá la calificación ahora."
+        "Mi último día de trabajo es el que te dije (hace el tiempo que te conté) y "
+        "nunca presenté solicitud de conciliación ante el Centro de Conciliación "
+        "Laboral, así que no hay Constancia de No Conciliación. No tengo más "
+        "documentación ni más datos. Aplicá las reglas del sistema con lo que ya te "
+        "di y dejá registrada la calificación ahora, sin pedirme más datos."
     )
     pool = [nudge_repeat, nudge_close]
     if max_turns - 1 > len(pool):
@@ -139,11 +153,11 @@ def parse_casos(path: Path):
     counts = {}
     for color, _ in out:
         counts[color] = counts.get(color, 0) + 1
-    expected = {"rojo": 5, "amarillo": 5, "verde": 5}
-    if counts != expected:
-        raise SystemExit(
-            f"El archivo de casos no tiene 5 por color: {counts} (esperado {expected})"
-        )
+    for color in ("rojo", "amarillo", "verde"):
+        if counts.get(color, 0) < 1:
+            raise SystemExit(
+                f"El archivo de casos no tiene casos en {color}: {counts}"
+            )
     return out
 
 
@@ -165,8 +179,8 @@ class DB:
         """Elige el bot IUS calificable; devuelve (bot_id, channel_id|None).
 
         Acepta los dos schemas de ius_config en uso: el de `traffic_light`
-        (prompt moderno) y el de `priority.reglas` (prompt de producción de 25
-        reglas), identificando la identidad IUS en `agent_identity` (nombre/rol)
+        (plantilla de configs nuevas) y el de `priority.reglas` (prompt canónico,
+        32 reglas), identificando la identidad IUS en `agent_identity` (nombre/rol)
         o en `identity` (name/role).
         """
         if args.bot_id:
@@ -298,6 +312,26 @@ def run_case(ws_url, bot_id, channel_id, session_id, text, db, max_turns, turn_t
     }
 
 
+COLOR_ORDEN = ("rojo", "amarillo", "verde")  # desempate estable del consenso
+
+
+def consensus(runs):
+    """Consenso de un caso a partir de sus corridas (colores o None).
+
+    Devuelve (color, estabilidad, conteo). `estabilidad` es la fracción de
+    corridas que dieron ese color. El desempate entre colores con la misma
+    cantidad sigue COLOR_ORDEN para que el reporte sea reproducible.
+    """
+    colores = [c for c in runs if c]
+    if not colores:
+        return None, 0.0, {}
+    conteo = {}
+    for c in colores:
+        conteo[c] = conteo.get(c, 0) + 1
+    color = sorted(conteo, key=lambda c: (-conteo[c], COLOR_ORDEN.index(c)))[0]
+    return color, conteo[color] / len(runs), conteo
+
+
 def main():
     ap = argparse.ArgumentParser(description="Suite LLM casos de semáforo IUS (canal web)")
     ap.add_argument("--casos", type=Path, default=DEFAULT_CASOS, help="Archivo de casos")
@@ -307,6 +341,9 @@ def main():
     ap.add_argument("--limit", type=int, default=None, help="Correr solo los primeros N casos")
     ap.add_argument("--max-turns", type=int, default=3)
     ap.add_argument("--turn-timeout", type=int, default=180)
+    ap.add_argument("--repetitions", type=int, default=1,
+                    help="Corridas por caso. Con >1 reporta el consenso y la estabilidad: "
+                         "el modelo no es determinista (ver docs/qa/TESTING.md)")
     ap.add_argument("--db-host", default="127.0.0.1")
     ap.add_argument("--db-port", type=int, default=5433)
     ap.add_argument("--enable-auto-colors", action="store_true", help="(dev/QA) habilita los 3 colores en el bot")
@@ -318,47 +355,71 @@ def main():
     casos = parse_casos(args.casos)
     if args.limit:
         casos = casos[: args.limit]
-    print(f"[casos] {len(casos)} cargados desde {args.casos}")
+    print(f"[casos] {len(casos)} cargados desde {args.casos}"
+          + (f" | {args.repetitions} corridas por caso" if args.repetitions > 1 else ""))
 
     db = DB(args)
     bot_id, channel_id = db.find_bot(args)
     print(f"[target] bot={bot_id} canal_web={'sí' if channel_id else 'no (ruta por bot)'}")
 
-    results = []
+    # por caso: dict con expected, corridas (colores), estados individuales
+    resultados = []
     for idx, (expected, text) in enumerate(casos, start=1):
-        session_id = f"ius-sem-{uuid.uuid4().hex[:10]}"
-        print(f"[{idx}/{len(casos)}] esperado={expected} … ", end="", flush=True)
-        try:
-            r = run_case(
-                args.ws_url, bot_id, channel_id, session_id, text,
-                db, args.max_turns, args.turn_timeout,
-            )
-            got = r["color"]
-            if got is None:
-                state = "SIN_CALIFICACIÓN" + (f" ({r['error']})" if r["error"] else "")
-            elif got == expected:
-                state = "OK"
-            else:
-                state = "MISMATCH"
-            tail = (r["last_reply"] or "").replace("\n", " ")[:110] or "(respuesta vacía)"
-            print(
-                f"{state}  obtenido={got or '—'}  turnos={r['turns']}  "
-                f"tokens={r['tokens_used']}"
-            )
-            print(f"      respuesta: {tail}")
-        except Exception as exc:  # noqa: BLE001 — un caso no debe tumbar la suite
-            got = None
-            state = f"ERROR: {exc}"
-            print(state)
-        results.append((expected, got, state))
+        corridas = []
+        estados = []
+        for _ in range(args.repetitions):
+            session_id = f"ius-sem-{uuid.uuid4().hex[:10]}"
+            try:
+                r = run_case(
+                    args.ws_url, bot_id, channel_id, session_id, text,
+                    db, args.max_turns, args.turn_timeout,
+                )
+                corridas.append(r["color"])
+                if r["color"] is None:
+                    estados.append("SIN_CALIFICACIÓN" + (f" ({r['error']})" if r["error"] else ""))
+                else:
+                    estados.append(r["color"])
+                ultima = (r["last_reply"] or "").replace("\n", " ")[:110] or "(respuesta vacía)"
+            except Exception as exc:  # noqa: BLE001 — un caso no debe tumbar la suite
+                corridas.append(None)
+                estados.append(f"ERROR: {exc}")
+                ultima = "(error)"
+        consenso, estabilidad, conteo = consensus(corridas)
+        if consenso is None:
+            estado = "SIN_CALIFICACIÓN"
+        elif consenso == expected:
+            estado = "OK"
+        else:
+            estado = "MISMATCH"
+        detalle = " ".join(f"{k}×{v}" for k, v in sorted(conteo.items(), key=lambda kv: -kv[1])) or "—"
+        print(f"[{idx}/{len(casos)}] esperado={expected} … {estado}  consenso={consenso or '—'}"
+              f"  ({detalle} de {len(corridas)})")
+        if args.repetitions == 1 or len(set(estados)) > 1:
+            print(f"      corridas: {' | '.join(estados)}")
+            if args.repetitions == 1:
+                print(f"      respuesta: {ultima}")
+        resultados.append({
+            "expected": expected, "consenso": consenso, "estado": estado,
+            "estabilidad": estabilidad, "corridas": corridas,
+        })
 
-    ok = sum(1 for _, _, s in results if s == "OK")
-    print("\n=== Resumen ===")
-    for i, (expected, got, state) in enumerate(results, start=1):
-        print(f"{i:>2}. esperado={expected:<8} obtenido={got or '—':<8} {state}")
-    print(f"\nOK {ok}/{len(results)}")
-    if ok < len(results):
-        print("Hubo casos no clasificados correctamente (ver arriba). "
+    ok = sum(1 for r in resultados if r["estado"] == "OK")
+    estables = sum(1 for r in resultados if len(set(r["corridas"])) == 1)
+    print("\n=== Consenso por caso ===")
+    for i, r in enumerate(resultados, start=1):
+        detalle = " ".join(f"{k}×{v}" for k, v in
+                           [(c, r["corridas"].count(c)) for c in sorted(set(r["corridas"]), key=lambda c: (c is None, c))])
+        print(f"{i:>2}. esperado={r['expected']:<8} consenso={r['consenso'] or '—':<8}"
+              f" ({detalle or '—'})  {r['estado']}")
+    print(f"\nOK por consenso {ok}/{len(resultados)}")
+    if args.repetitions > 1:
+        print(f"Casos con el mismo resultado en las {args.repetitions} corridas: {estables}/{len(resultados)}")
+        por_corrida = {i: sum(1 for r in resultados if r["corridas"][i] == r["expected"])
+                       for i in range(args.repetitions)}
+        print("OK por corrida individual (ruido del modelo): "
+              + ", ".join(f"corrida {i + 1}: {v}/{len(resultados)}" for i, v in por_corrida.items()))
+    if ok < len(resultados):
+        print("Hubo casos cuyo consenso no coincide con el color esperado (ver arriba). "
               "La clasificación depende del LLM configurado en el backend.")
         sys.exit(1)
 
