@@ -15,7 +15,26 @@ from pathlib import Path
 
 from app.services.ius_validator import validate_structure
 
-CONFIG_PATH = Path(__file__).resolve().parents[2] / "docs" / "ius_legal_config.json"
+
+def _config_path() -> Path:
+    """Ubica el JSON canónico en el repo o dentro del contenedor del backend.
+
+    En el repo el test vive en `backend/tests/`, así que la raíz es el segundo
+    ancestro y el JSON está en `docs/`. Dentro del contenedor el archivo se copia
+    en `/app/tests/`, donde esa raíz no existe: ahí el montaje `./docs ->
+    /app/documents` del compose es el que lo expone.
+    """
+    candidatos = [p / "docs" / "ius_legal_config.json" for p in Path(__file__).resolve().parents]
+    candidatos.append(Path("/app/documents/ius_legal_config.json"))
+    for candidato in candidatos:
+        if candidato.is_file():
+            return candidato
+    raise FileNotFoundError(
+        "No se encontró docs/ius_legal_config.json (buscado desde %s y en /app/documents)" % Path(__file__).resolve()
+    )
+
+
+CONFIG_PATH = _config_path()
 CONFIG = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
 
 COLORES = ("verde", "amarillo", "rojo")

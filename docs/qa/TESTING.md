@@ -14,20 +14,34 @@
 
 ## Tests del backend
 
-Los tests se ubican en `backend/app/tests/` (o a nivel de `backend/tests/`).
+Los tests se ubican en `backend/tests/` (el contenedor los copia en `/app/tests/`).
 
 ```bash
-# Ejecutar todos los tests
-docker compose exec backend pytest
+# Suite completa. Dentro del contenedor el pytest.ini del repo (raíz) no llega al
+# build context, así que sin `-o asyncio_mode=auto` los tests async se saltean en
+# silencio (24 skipped en vez de 89 passed).
+docker compose exec app python -m pytest -o asyncio_mode=auto
 
-# Con verbose
-docker compose exec backend pytest -v
+# Solo el validador del prompt de iUS (offline: no usa LLM ni red)
+docker compose exec app python -m pytest tests/test_ius_legal_config.py -q
 
-# Solo un módulo
-docker compose exec backend pytest tests/test_bots.py
+# Lo mismo, pero con el código del working tree (sin rebuild de la imagen)
+docker compose run --rm -v "$PWD/backend:/app" --entrypoint python app \
+  -m pytest tests/test_ius_legal_config.py -q -o asyncio_mode=auto
+```
 
-# Con coverage
-docker compose exec backend pytest --cov=app
+`docker compose exec` corre la copia de `app/` y `tests/` horneada en la imagen
+(`COPY . .` en `backend/Dockerfile`): después de editar el backend hay que
+`docker compose build app && docker compose up -d app`, o usar la forma con
+`-v "$PWD/backend:/app"`, que monta el working tree. El JSON canónico no necesita
+rebuild: el compose monta `./docs` en `/app/documents` y el test lo lee de ahí.
+
+### Deriva del documento del árbol (`docs/IUS_ARBOL_DECISION.md`)
+
+```bash
+# Regenerar y verificar que el documento corresponda al JSON vigente
+python3 scripts/build_ius_arbol_decision.py
+git diff --exit-code docs/IUS_ARBOL_DECISION.md docs/IUS_ARBOL_DECISION.html
 ```
 
 ### Convenciones
