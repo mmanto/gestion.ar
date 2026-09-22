@@ -7,6 +7,12 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **Regla de nulidad por falta de aviso a la Comisión Mixta Disciplinaria de iUS**
+  (`docs/ius_legal_config.json`). Nueva regla verde `rescision_sin_aviso_comision_mixta`
+  (precedencia 27, inmediatamente antes de `imss_rescision_causal_cuestionable`): la
+  rescisión del Art. 47 LFT sin notificación a la Comisión Mixta Disciplinaria —requisito
+  del CCT IMSS-SNTSS para personal sindicalizado de base— es nula. Marcada
+  `pendiente_validacion_legal: true`. Con esto el prompt pasa de 32 a 33 reglas. Ver ADR-025.
 - **Árbol de decisión del semáforo legal de iUS en el prompt canónico**
   (`docs/ius_legal_config.json`). El embudo —9 pasos de evaluación, plazos en
   días naturales con interrupción por conciliación, matriz de documentación,
@@ -207,6 +213,35 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   enlace oficial.
 
 ### Cambiado
+- **Regla verde `verde_cinco_condiciones` relajada por la definición D1**
+  (`docs/ius_legal_config.json`). Se quitó el filtro estricto `copia_contrato: "si"` y se
+  reemplazó por `documentacion: "con_documentacion"`: basta acreditar la relación laboral
+  por cualquier medio (contrato, nombramiento, Formato Único de Personal, recibos, oficios,
+  alta IMSS/ISSSTE). El texto aclara que la copia ilegible/parcial cuenta y que las
+  prestaciones desglosadas en nómina cuentan. `renuncia_con_promesa_liquidacion_incumplida`
+  aclara lo mismo en su texto (D1b).
+- **`issste_mas_de_120_dias` desmarcada de validación legal (D4)**
+  (`docs/ius_legal_config.json`). La definición confirma 4 meses = 120 días naturales con
+  interrupción por conciliación, así que se quitó `pendiente_validacion_legal: true`.
+- **Fixture del semáforo: fechas D3 de los casos 7 y 9** (`docs/qa/ius_casos_semaforo.txt`).
+  Samsung (AMARILLO 2) explicita desvinculación de 0 días (entrega del Aviso hoy); José
+  (AMARILLO 4) explicita rompimiento real de 35 días, no el COVID.
+- **`interinato_complejo_issste` acotada a interinatos de plaza vacante** (`docs/ius_legal_config.json`).
+  La regla amarilla declara "inició cubriendo el interinato de una plaza que quedó vacante",
+  pero el modelo la aplicaba a contrataciones directas como eventual/temporal (ej. la
+  trabajadora social de la Alcaldía con nombramientos mensuales renovados). Se agregó "NO
+  aplica a contratación directa como eventual o temporal" al texto y a la condición.
+- **Fixture del semáforo: aclaraciones D1/D3 de los casos 11 y 15** (`docs/qa/ius_casos_semaforo.txt`).
+  PGR→PROVICTIMA (VERDE 1) explicita que sus funciones eran operativas y de atención a
+  usuarios, sin mando (no de confianza); la trabajadora social (VERDE 5) explicita que la
+  desvinculación fue el día del aviso de no renovación (hace 4 días) y que la vacación corre
+  por separado.
+- **Mandato de registro de calificación reforzado** (`docs/ius_legal_config.json`). Para
+  reducir los casos en que el modelo responde sin registrar el color: la acción de `forbidden`
+  que prohibía "clasificar" ahora aclara que se refiere a la respuesta al usuario (no al
+  registro interno), y `registro_automatico_calificacion` agrega que el registro es OBLIGATORIO,
+  que una fecha relativa alcanza para computar el plazo y que no hay que bloquear la calificación
+  por un dato puntual.
 - **`identity` → `agent_identity` en el prompt canónico de iUS**
   (`docs/ius_legal_config.json`). El runtime lee
   `agent_identity.{nombre,rol,presentacion}` y el validador del panel lo exige:

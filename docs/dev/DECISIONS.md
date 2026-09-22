@@ -1569,3 +1569,57 @@ Opción 3.
   las dos" del flujo escriba `institucion: ninguna`: hoy "no lo sé" y "no me registró"
   siguen siendo el mismo valor de `state_vars`, y eso hace que un caso registrado del
   que el usuario no tiene certeza se evalúe como informal.
+
+## ADR-025: Las definiciones D1–D4 del semáforo se aplican como respuestas operativas
+
+**Estado:** Aceptado (pendiente validación legal del cliente)
+**Fecha:** 2026-09-22
+
+### Contexto
+
+La suite de calificación por semáforo dejó 6 casos que no coinciden con su color esperado
+porque dependían de cuatro definiciones jurídicas abiertas (D1–D4) que el abogado de
+referencia debía responder (`docs/qa/IUS_CONSULTA_ABOGADO_SEMAFORO.md`). Para desbloquear
+la suite se fijó una respuesta operativa por definición —la que hace coincidir cada caso
+con el color esperado— y se aplicó al prompt canónico y al fixture. No son dictámenes
+legales: son respuestas de trabajo, marcadas para revisión del equipo legal del cliente.
+
+### Opciones consideradas
+
+1. **No aplicar nada y esperar al abogado.** La suite queda en el resultado no
+   determinista actual y los 6 casos siguen abiertos; no se puede medir el efecto de un
+   cambio de prompt hasta que llegue la respuesta legal.
+2. **Cambiar el fixture para forzar el color esperado** (agregar hechos a los casos).
+   Hace pasar los casos sin tocar las reglas, pero falsea el caso real: la suite dejaría
+   de medir el prompt y mediría casos editados.
+3. **Aplicar las respuestas operativas al prompt y al fixture, marcando lo pendiente.**
+   El prompt y el fixture reflejan la definición elegida; lo no validado queda marcado
+   `pendiente_validacion_legal` y documentado para el cliente.
+
+### Decisión
+
+Opción 3, con alcance mínimo:
+
+1. D1 — `verde_cinco_condiciones` deja de exigir `copia_contrato: "si"` y filtra por
+   `documentacion: "con_documentacion"`; el texto aclara que la copia ilegible/parcial
+   cuenta y que las prestaciones desglosadas en nómina cuentan.
+   `renuncia_con_promesa_liquidacion_incumplida` aclara lo mismo en su texto.
+2. D2 — nueva regla `rescision_sin_aviso_comision_mixta` (verde, precedencia 27, antes de
+   `imss_rescision_causal_cuestionable`): la rescisión del Art. 47 LFT sin notificación a
+   la Comisión Mixta Disciplinaria es nula. Marcada `pendiente_validacion_legal: true`.
+3. D3 — fechas de los casos 7 y 9 del fixture explicitadas (0 días y 35 días,
+   respectivamente); el caso 15 ya estaba normalizado.
+4. D4 — `issste_mas_de_120_dias` pierde `pendiente_validacion_legal: true` (120 días
+   naturales + interrupción por conciliación confirmados).
+
+### Consecuencias
+
+- El prompt pasa de 32 a 33 reglas; `docs/IUS_ARBOL_DECISION.md`/`.html` se regeneran con
+  el script (`python3 scripts/build_ius_arbol_decision.py`).
+- El validador offline (`backend/tests/test_ius_legal_config.py`) sigue en verde: la regla
+  nueva y la relajada filtran por campos y valores declarados en `state_vars`/`priority.umbrales`.
+- D1 y D2 quedan como respuestas operativas pendientes de confirmación legal; si el abogado
+  define otra cosa, se revierte el cambio puntual (D1: volver a exigir copia; D2:
+  re-etiquetar el caso 14 a amarillo) sin tocar el resto.
+- La corrida LLM real (expectativa 23/23) no se verificó en este cierre: requiere stack
+  arriba (postgres/redis/backend) y un proveedor LLM con tool calling.

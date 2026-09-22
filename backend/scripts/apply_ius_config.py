@@ -52,7 +52,7 @@ IUS_CONFIG_JSON = DOCS_DIR / "ius_legal_config.json"
 
 # Claves de primer nivel que el JSON versionado declara: son las que el merge
 # sobrescribe. Todo lo demás que viva en ius_config (DB) se preserva.
-EXPECTED_RULES = 32
+EXPECTED_RULES = 33
 REQUIRED_KEYS = ("arbol_decision", "plazos_legales", "HOW_TO_USE")
 
 # Claves de primer nivel que el prompt canónico RENOMBRÓ: {vieja: nueva}. La

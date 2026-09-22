@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>iUS — Semáforo: definiciones resueltas (operativas)</title>
+<style>
+:root{
+  --ink:#0d1a3d; --ink-soft:#3c4665; --muted:#6b7590;
+  --paper:#f6f8fc; --card:#ffffff; --line:#e7ebf5; --line-strong:#d3e0fb;
+  --blue:#2f6fed; --blue-soft:#eef3ff; --amber:#f5b731; --green:#25c46b; --red:#e5484d;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink-soft);font:15px/1.62 var(--sans)}
+.layout{max-width:1080px;margin:0 auto;padding:0 24px 96px}
+header.top{background:#fff;border-bottom:1px solid var(--line);padding:34px 0 26px;margin-bottom:28px}
+header.top .inner{max-width:1080px;margin:0 auto;padding:0 24px}
+h1{font-size:27px;line-height:1.25;color:var(--ink);margin:0 0 6px;letter-spacing:-.2px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 20px}
+h2{font-size:19px;color:var(--ink);margin:44px 0 14px;padding-top:18px;border-top:1px solid var(--line);letter-spacing:-.1px}
+h2:first-of-type{border-top:0;padding-top:0}
+h3{font-size:16px;color:var(--ink);margin:30px 0 10px}
+p{margin:11px 0}
+strong{color:var(--ink)}
+code{font-family:var(--mono);font-size:12.5px;background:var(--blue-soft);border:1px solid var(--line-strong);border-radius:5px;padding:1px 5px;color:#22406f}
+ul,ol{margin:11px 0;padding-left:22px}
+li{margin:6px 0}
+
+.meta{background:#fff;border:1px solid var(--line);border-radius:12px;padding:6px 18px 14px;margin:0 0 8px}
+.meta p{font-size:14px}
+
+table{width:100%;border-collapse:collapse;margin:16px 0;background:#fff;font-size:13.5px}
+th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+th{background:var(--blue-soft);color:var(--ink);font-weight:600;font-size:13px}
+
+.badge{display:inline-block;font:600 11.5px var(--sans);letter-spacing:.3px;border-radius:999px;padding:2px 9px;border:1px solid var(--line-strong);color:#22406f;background:var(--blue-soft)}
+.badge.verde{background:#eafaf1;border-color:#bfe9d1;color:#14713d}
+.badge.amarillo{background:#fff7e4;border-color:#f2dda5;color:#8a6300}
+.badge.rojo{background:#fdeeee;border-color:#f4cccc;color:#9c2a2d}
+
+.decision{background:#eef8f2;border:1px solid #bfe9d1;border-left:4px solid var(--green);border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0}
+.decision .tag{font:700 11px var(--sans);text-transform:uppercase;letter-spacing:.7px;color:#14713d;display:block;margin-bottom:4px}
+.decision p{margin:6px 0}
+
+.q{margin:12px 0}
+.q b{color:var(--ink)}
+.q .ans{display:block;padding-left:16px;border-left:3px solid var(--line-strong);margin-top:4px;color:var(--ink)}
+
+.accion{background:#fffaef;border:1px solid #f6e3b6;border-left:4px solid var(--amber);border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0}
+.accion .tag{font:700 11px var(--sans);text-transform:uppercase;letter-spacing:.7px;color:#8a6300;display:block;margin-bottom:4px}
+.accion p{margin:6px 0}
+
+footer.foot{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+
+@media print{
+  body{background:#fff;font-size:11.5pt}
+  .layout{max-width:none;padding:0}
+  header.top{border:0;padding:0 0 10px}
+  h2{page-break-after:avoid}
+  .decision,.accion{page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="inner">
+    <h1>iUS — Semáforo: definiciones resueltas</h1>
+    <p class="sub">Respuestas a la consulta D1–D4 que hacen coincidir los 6 casos abiertos con su color esperado · <strong>pendiente validación legal</strong> del abogado de referencia · 2026-09-22</p>
+  </div>
+</header>
+
+<div class="layout">
+
+  <div class="meta">
+    <p><strong>Qué es esto:</strong> la suite de semáforo deja 6 casos que no coinciden con el color esperado
+    porque dependen de definiciones jurídicas abiertas. Este reporte fija, por cada definición (D1–D4), la
+    respuesta <em>operativa</em> que hace que el caso cierre en su color esperado. No es un dictamen legal:
+    sirve para desbloquear la suite y como borrador para confirmar con el abogado.</p>
+    <p><strong>Origen:</strong> <code>docs/qa/IUS_CONSULTA_ABOGADO_SEMAFORO.md</code> (las 4 definiciones y los 6
+    casos) y <code>docs/qa/ius_casos_semaforo.txt</code> (fixture de 23 casos: 9 rojo / 7 amarillo / 7 verde).</p>
+  </div>
+
+  <h2>Resumen</h2>
+  <table>
+    <thead><tr><th>Definición</th><th>Pregunta</th><th>Respuesta tomada</th><th>Desbloquea</th></tr></thead>
+    <tbody>
+      <tr><td><strong>D1</strong></td><td>¿Qué documentación exige un caso GANABLE (verde)?</td><td>Basta acreditar la relación laboral por cualquier medio; la copia del contrato no es requisito estricto</td><td>11, 13, 15</td></tr>
+      <tr><td><strong>D2</strong></td><td>Rescisión causal cuestionable: ¿amarillo o verde?</td><td>Verde (nulo) — la falta de aviso a la Comisión Mixta Disciplinaria invalida la rescisión</td><td>14</td></tr>
+      <tr><td><strong>D3</strong></td><td>¿Desde qué fecha corre la ventana de tiempo?</td><td>La desvinculación real: aviso de no renovación / rompimiento / entrega del Aviso de Rescisión (no la vacación ni el COVID)</td><td>7, 9, 15</td></tr>
+      <tr><td><strong>D4</strong></td><td>ISSSTE: ¿4 meses es el plazo de prescripción?</td><td>Sí — 4 meses (120 días naturales), interrumpible por la conciliación</td><td>regla <code>issste_mas_de_120_dias</code></td></tr>
+    </tbody>
+  </table>
+
+  <h2>D1 — ¿Qué documentación exige un caso GANABLE (verde)?</h2>
+  <div class="decision"><span class="tag">Definición tomada</span>
+    <p>La <strong>copia del contrato NO es requisito estricto</strong> para el verde. Basta acreditar la relación
+    laboral por cualquier medio de prueba.</p>
+  </div>
+  <div class="q"><b>a)</b> ¿Copia del contrato, o basta otro medio?<span class="ans">Basta acreditar por cualquier medio (Formatos Únicos de Personal, nombramientos, recibos de nómina, oficios, alta ante IMSS/ISSSTE).</span></div>
+  <div class="q"><b>b)</b> ¿Una copia ilegible o parcial cuenta?<span class="ans">Sí — una copia ilegible o parcial del contrato <strong>sí acredita</strong> el contrato (documentación completa).</span></div>
+  <div class="q"><b>c)</b> ¿Comprobantes de prestaciones aparte o desglose en nómina?<span class="ans">Basta el desglose de prestaciones en los recibos de nómina; no se exigen comprobantes aparte.</span></div>
+  <div class="accion"><span class="tag">Acción</span>
+    <p>Relajar <code>verde_cinco_condiciones</code> en <code>docs/ius_legal_config.json</code>: quitar el requisito
+    estricto de copia de contrato (<code>copia_contrato</code>) y aceptar prestaciones desglosadas en nómina.</p>
+  </div>
+
+  <h2>D2 — Rescisión por causal cuestionable: ¿amarillo o verde?</h2>
+  <div class="decision"><span class="tag">Definición tomada</span>
+    <p><strong>Verde (nulo).</strong> La falta de notificación a la Comisión Mixta Disciplinaria — requisito del
+    CCT IMSS-SNTSS — invalida la rescisión.</p>
+  </div>
+  <div class="q"><b>a)</b> ¿Verde (nulo) o amarillo (revisable)?<span class="ans">Verde (nulo).</span></div>
+  <div class="q"><b>b)</b> ¿Cambia si es sindicalizado de base con CCT?<span class="ans">Sí, refuerza la nulidad: personal sindicalizado de base amparado por CCT, sin aviso a la Comisión Mixta → nulo (verde).</span></div>
+  <div class="accion"><span class="tag">Acción</span>
+    <p>Agregar regla verde de nulidad por falta de aviso a la Comisión Mixta Disciplinaria, con precedencia sobre
+    <code>imss_rescision_causal_cuestionable</code>.</p>
+  </div>
+
+  <h2>D3 — ¿Desde qué fecha corre la ventana de tiempo?</h2>
+  <div class="decision"><span class="tag">Definición tomada</span>
+    <p>La ventana corre desde la <strong>desvinculación real</strong>, no desde la vacación autorizada ni desde
+    episodios anteriores de la relación.</p>
+  </div>
+  <div class="q"><b>a)</b> Caso 15 (no renovación): ¿aviso, último día trabajado o fin de vacación?<span class="ans">Desde el <strong>aviso de no renovación</strong> (hace 4 días). La vacación autorizada corre por separado y no desplaza la fecha.</span></div>
+  <div class="q"><b>b)</b> Caso 9 (COVID vs rompimiento): ¿cuál fecha?<span class="ans">El <strong>rompimiento real</strong> (retiro de gafete y herramientas, hace 5 semanas = 35 días). La baja por COVID no terminó la relación.</span></div>
+  <div class="q"><b>c)</b> Caso 7: ¿"hoy me entregaron el Aviso" = desvinculación de hoy (0 días)?<span class="ans">Sí — la desvinculación es el día de entrega del Aviso de Rescisión (0 días).</span></div>
+  <div class="accion"><span class="tag">Acción</span>
+    <p>Confirmar/corregir fechas en <code>docs/qa/ius_casos_semaforo.txt</code>: caso 7 = hoy; caso 9 = 35 días;
+    caso 15 = 4 días desde el aviso.</p>
+  </div>
+
+  <h2>D4 — ISSSTE: ¿4 meses es el plazo de prescripción?</h2>
+  <div class="decision"><span class="tag">Definición tomada</span>
+    <p><strong>Sí — 4 meses (120 días naturales)</strong> desde la separación, interrumpible por la solicitud de conciliación.</p>
+  </div>
+  <div class="q"><b>a)</b> ¿4 meses = 120 días naturales?<span class="ans">Sí, desde la separación.</span></div>
+  <div class="q"><b>b)</b> ¿La conciliación interrumpe el plazo?<span class="ans">Sí — la solicitud de conciliación interrumpe el plazo, que se retoma al día siguiente de la Constancia de No Conciliación.</span></div>
+  <div class="accion"><span class="tag">Acción</span>
+    <p>Confirmar <code>issste_mas_de_120_dias</code> y quitarle la marca <code>pendiente_validacion_legal: true</code>.</p>
+  </div>
+
+  <h2>Definición tomada por caso</h2>
+  <table>
+    <thead><tr><th>#</th><th>Caso</th><th>Esperado</th><th>Definición tomada</th><th>Resultado</th></tr></thead>
+    <tbody>
+      <tr><td>7</td><td>Samsung: rescisión por 4 faltas</td><td><span class="badge amarillo">amarillo</span></td><td><strong>D3c</strong> — entrega del Aviso hoy = desvinculación de 0 días</td><td><span class="badge amarillo">amarillo</span></td></tr>
+      <tr><td>9</td><td>José: despido tras reducción por COVID</td><td><span class="badge amarillo">amarillo</span></td><td><strong>D3b</strong> — rompimiento real hace 5 semanas (35 días)</td><td><span class="badge amarillo">amarillo</span></td></tr>
+      <tr><td>11</td><td>PGR → PROVICTIMA</td><td><span class="badge verde">verde</span></td><td><strong>D1a</strong> — basta otro medio (FUP, recibos, oficios, alta ISSSTE)</td><td><span class="badge verde">verde</span></td></tr>
+      <tr><td>13</td><td>Comex: renuncia por liquidación incumplida</td><td><span class="badge verde">verde</span></td><td><strong>D1b</strong> — copia ilegible del contrato sí cuenta</td><td><span class="badge verde">verde</span></td></tr>
+      <tr><td>14</td><td>Médico IMSS: rescisión por abandono</td><td><span class="badge verde">verde</span></td><td><strong>D2</strong> — nulo por falta de aviso a la Comisión Mixta Disciplinaria</td><td><span class="badge verde">verde</span></td></tr>
+      <tr><td>15</td><td>Trabajadora social: no renovación</td><td><span class="badge verde">verde</span></td><td><strong>D1a + D3a</strong> — basta otro medio; ventana desde el aviso (4 días)</td><td><span class="badge verde">verde</span></td></tr>
+    </tbody>
+  </table>
+
+  <h2>Consecuencias por definición</h2>
+  <table>
+    <thead><tr><th>Definición</th><th>Respuesta</th><th>Qué se toca</th></tr></thead>
+    <tbody>
+      <tr><td><strong>D1</strong></td><td>Basta otro medio de prueba</td><td>Relajar la regla verde en <code>docs/ius_legal_config.json</code></td></tr>
+      <tr><td><strong>D2</strong></td><td>Verde (nulo)</td><td>Nueva regla verde de nulidad por falta de aviso a la Comisión Mixta</td></tr>
+      <tr><td><strong>D3</strong></td><td>Desvinculación real</td><td>Corregir fechas de los casos 7, 9 y 15 en <code>docs/qa/ius_casos_semaforo.txt</code></td></tr>
+      <tr><td><strong>D4</strong></td><td>120 días + interrupción por conciliación</td><td>Confirmar <code>issste_mas_de_120_dias</code>, quitar <code>pendiente_validacion_legal</code></td></tr>
+    </tbody>
+  </table>
+
+  <footer class="foot">
+    <p><strong>Expectativa:</strong> con las 4 definiciones aplicadas, la suite cierra <strong>23/23</strong>
+    (9 rojo / 7 amarillo / 7 verde).</p>
+    <p>Respuestas operativas para desbloquear la suite. Antes de modificar el prompt de producción
+    (<code>docs/ius_legal_config.json</code>), validar con el abogado de referencia: los casos 11/13/15 (D1) y 14 (D2)
+    cambian el alcance de reglas ya activas.</p>
+  </footer>
+
+</div>
+</body>
+</html>
