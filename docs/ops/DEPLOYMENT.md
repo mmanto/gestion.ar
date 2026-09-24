@@ -295,3 +295,34 @@ docker compose --env-file .env.prod \
 curl -I https://openpadel.pro          # debe redirigir a HTTPS y devolver 200
 curl -I https://openpadel.pro/login    # debe llegar al SPA del tenant
 ```
+
+**urbanvoice.intellify.pro — landing (todavía sin tenant):**
+
+La landing de UrbanVoice (`sites/urbanvoice/`) vive en un subdominio de
+`intellify.pro`, así que el wildcard DNS `*.intellify.pro` ya la resuelve: no
+hay que tocar DNS (a diferencia de los dominios propios del cliente). Tampoco
+hay tenant que crear todavía, así que **no** hace falta ningún `TENANT_ID_*`: se
+levanta sólo el contenedor estático de la landing.
+
+```bash
+cd /opt/gestion.ar   # en el VPS, con el commit ya pulleado
+
+docker compose --env-file .env.prod \
+  -f docker-compose.yml \
+  -f docker-compose.prod.yml \
+  -f docker-compose.tenants.prod.yml \
+  up -d --build landing-urbanvoice
+
+# Verificar (la primera request HTTPS en el host dispara la emisión del
+# certificado TLS-ALPN-01 — puede tardar unos segundos):
+curl -sI https://urbanvoice.intellify.pro/ | head -1                  # 200 text/html
+curl -sI https://urbanvoice.intellify.pro/images/logo.png | head -1   # 200 image/png
+```
+
+`up -d --build landing-urbanvoice` toca **sólo** ese contenedor (el servicio no
+tiene `depends_on`), así que el resto del stack no se recrea.
+
+`/login`, `/dashboard`, `/assets/*`… devuelven 404 de nginx: son rutas del SPA
+del tenant, que todavía no existe. Cuando se implemente hay que agregar
+`frontend-tenant-urbanvoice` **y** restringir el rule de `landing-urbanvoice`
+(ver `docs/ops/INFRASTRUCTURE.md` § “Caso urbanvoice”).

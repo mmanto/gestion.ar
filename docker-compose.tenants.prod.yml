@@ -357,6 +357,39 @@ services:
       - "traefik.http.routers.landing-openpadel.priority=10"
       - "traefik.http.services.landing-openpadel.loadbalancer.server.port=80"
 
+  # ── UrbanVoice ───────────────────────────────────────────────────────────────
+  # Subdominio propio (cubierto por el wildcard DNS *.intellify.pro): no hay
+  # nada que dar de alta en DNS. Traefik emite el certificado TLS-ALPN-01 la
+  # primera vez que recibe tráfico HTTPS en ese Host().
+  #
+  # OJO: el tenant UrbanVoice todavía NO existe, así que este router matchea el
+  # host entero (sin regla de Path) y hoy todo el host es de la landing; las
+  # rutas que el SPA del tenant va a necesitar (/login, /dashboard, /api/*…)
+  # devuelven 404 de nginx hasta que ese tenant se implemente.
+  #
+  # Cuando se dé de alta (frontend-tenant-urbanvoice, priority=1), hay que
+  # restringir este router a las rutas de la landing, igual que landing-ius/
+  # laboralia/proptech:
+  #     Host(`urbanvoice.intellify.pro`) && (Path(`/`) ||
+  #       PathRegexp(`^/.*\.html$`) || PathPrefix(`/images/`))
+  # Sin ese cambio, el router de la landing (priority=10) se queda con todas
+  # las rutas y el SPA del tenant nunca recibe tráfico.
+  landing-urbanvoice:
+    build:
+      context: ./sites/urbanvoice
+    container_name: gestionar_landing_urbanvoice
+    restart: unless-stopped
+    networks:
+      - traefik_public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_public"
+      - "traefik.http.routers.landing-urbanvoice.rule=Host(`urbanvoice.intellify.pro`)"
+      - "traefik.http.routers.landing-urbanvoice.entrypoints=websecure"
+      - "traefik.http.routers.landing-urbanvoice.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.landing-urbanvoice.priority=10"
+      - "traefik.http.services.landing-urbanvoice.loadbalancer.server.port=80"
+
 networks:
   default:
     name: gestionar_network

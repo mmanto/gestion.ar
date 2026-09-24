@@ -7,6 +7,18 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **Landing pública de UrbanVoice en `urbanvoice.intellify.pro`**
+  (`sites/urbanvoice/`, service block `landing-urbanvoice`). El sitio —un
+  `index.html` con el CSS inline más la carpeta `images/`— se sirve con nginx
+  estático detrás de Traefik, igual que las demás landings (`Dockerfile` +
+  `nginx.conf` propios). Es la única landing **sin** `frontend-tenant-*`: el
+  tenant UrbanVoice todavía no existe, así que su router matchea el host entero
+  (sin regla de `Path`) y `/login`, `/dashboard`, `/assets/*`… devuelven 404 de
+  nginx hasta que el tenant se implemente — ahí hay que restringir el rule de
+  la landing a `(Path(/) || PathRegexp(^/.*\.html$) || PathPrefix(/images/))` y
+  agregar `frontend-tenant-urbanvoice` con `priority=1` (ver
+  `docs/ops/INFRASTRUCTURE.md` § "Caso urbanvoice"). **Requiere**
+  `up -d --build landing-urbanvoice` en el VPS.
 - **Regla de nulidad por falta de aviso a la Comisión Mixta Disciplinaria de iUS**
   (`docs/ius_legal_config.json`). Nueva regla verde `rescision_sin_aviso_comision_mixta`
   (precedencia 27, inmediatamente antes de `imss_rescision_causal_cuestionable`): la

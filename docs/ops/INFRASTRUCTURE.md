@@ -150,6 +150,7 @@ traefik:
 | erma | erma.com.ar | `sites/erma/` | `frontend-tenant-erma`, `landing-erma` |
 | pachoteayuda | pachoteayuda.ar | `sites/pachoteayuda-landing/` | `frontend-tenant-pachoteayuda`, `landing-pachoteayuda` |
 | openpadel | openpadel.pro | `sites/openpadel-landing/` | `frontend-tenant-openpadel`, `landing-openpadel` |
+| urbanvoice | urbanvoice.intellify.pro | `sites/urbanvoice/` | `landing-urbanvoice` (todavía sin tenant — ver abajo) |
 
 > DNS: para dominios propios del cliente (`erma.com.ar`, `pachoteayuda.ar`,
 > `openpadel.pro`), el cliente crea un registro A/CNAME apuntando a la IP de
@@ -183,6 +184,28 @@ sigue cayendo en el tenant. No listar cada `.html` a mano: si una página no se
 ve, primero verificar que el `.html` exista dentro del contenedor de la landing
 (`docker exec <landing> ls /usr/share/nginx/html`); si la ruta es correcta y el
 archivo existe, el `PathRegexp` ya la enruta al contenedor correcto.
+
+### Caso urbanvoice: landing sin tenant (por ahora)
+
+`urbanvoice.intellify.pro` es la única excepción al patrón de arriba: la
+landing existe (`sites/urbanvoice/`, service block `landing-urbanvoice` en
+`docker-compose.tenants.prod.yml`) pero el tenant UrbanVoice todavía no está
+implementado, así que **no hay SPA que comparta el host** y el router no lleva
+regla de `Path` — matchea el host entero con prioridad 10. Lo que antes caía en
+el SPA (`/login`, `/dashboard`, `/assets/*`…) hoy devuelve 404 de nginx, que es
+lo esperado mientras el tenant no exista.
+
+Cuando se dé de alta el tenant hay que hacer **dos** cosas, o el router de la
+landing (priority=10) se queda con todas las rutas y el SPA nunca recibe
+tráfico:
+
+1. agregar `frontend-tenant-urbanvoice` (`Host(...)`, `priority=1`, `TENANT_ID_URBANVOICE`);
+2. restringir el rule de `landing-urbanvoice` a las rutas de la landing —
+   `(Path(`/`) || PathRegexp(`^/.*\.html$`) || PathPrefix(`/images/`))`.
+
+La landing es un único `index.html` con el CSS inline y **una sola** carpeta de
+assets (`images/`), así que la lista es corta: no hay js/css propio que sumar al
+`Path(...)` (ver la regla práctica en el caso `footer.css`, abajo).
 
 ### Caso pachoteayuda: assets propios y páginas generadas
 
