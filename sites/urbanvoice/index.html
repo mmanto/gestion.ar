@@ -911,9 +911,9 @@ body{
 .team-copy{padding:42px 0}.team-eyebrow{color:#5577c5;font-size:11px;font-weight:800;letter-spacing:2.6px;margin-bottom:10px}
 .team-copy h2{margin:0;color:#071d70;font-size:34px;line-height:1.05;font-weight:850}.team-copy p{margin:15px 0 18px;max-width:590px;color:#385586;font-size:14px;line-height:1.48}
 .team-btn{display:inline-flex;height:48px;align-items:center;gap:28px;padding:0 24px;border-radius:8px;background:#087af3;color:#fff;font-size:13px;font-weight:750}
-.team-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.team-card{overflow:hidden;border:1px solid #d9eaf6;border-radius:11px;background:#fff}
+.team-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.team-card{overflow:hidden;border:1px solid #d9eaf6;border-radius:11px;background:#fff}
 .team-photo{height:158px;background:#edf8ff;overflow:hidden}.team-photo img,.team-photo svg{width:100%;height:100%;object-fit:cover;object-position:center top;display:block}
-.team-meta{height:63px;padding:9px 13px;position:relative}.team-meta strong{display:block;color:#0a2877;font-size:12px}.team-meta span{font-size:9px;color:#667da6}
+.team-meta{min-height:63px;padding:9px 13px 11px;position:relative}.team-meta .team-role{display:block;margin-top:3px;font-size:10px;font-weight:800;letter-spacing:.4px;color:#087cf5}.team-meta .team-title{display:block;margin-top:1px;font-size:10px;line-height:1.25;color:#667da6}.team-meta strong{display:block;color:#0a2877;font-size:12px}.team-meta span{font-size:9px;color:#667da6}
 .team-linkedin{position:absolute;right:10px;top:11px;width:22px;height:22px;border-radius:5px;background:#087af3;color:#fff;display:grid;place-items:center;font-size:11px;font-weight:850}
 
 
@@ -929,6 +929,7 @@ body{
 @media(max-width:800px){.footer-cta-inner,.footer-main,.footer-bottom-inner{width:calc(100% - 36px)}.footer-cta{min-height:360px;background-position:62% center}.footer-cta-inner{padding-top:50px}.footer-cta h2{font-size:29px;max-width:90%}.footer-cta p{max-width:80%}.footer-main{grid-template-columns:1fr 1fr}.footer-bottom-inner{gap:15px;flex-direction:column}.footer-actions{flex-wrap:wrap}}
 
 
+@media(max-width:1250px){.team-grid{grid-template-columns:repeat(2,1fr)}.team-inner{padding-top:32px;padding-bottom:32px}}
 /* ===== OPTIMIZACIÓN MÓVIL ===== */
 html,body{overflow-x:hidden}
 .menu-toggle{display:none;width:46px;height:46px;border:1px solid #cfe3f4;border-radius:10px;background:#fff;padding:0;cursor:pointer;align-items:center;justify-content:center;flex-direction:column;gap:5px;flex:none}
@@ -1057,9 +1058,10 @@ html,body{overflow-x:hidden}
  .team-grid{grid-template-columns:1fr!important;gap:12px!important}
  .team-card{display:grid;grid-template-columns:104px 1fr;align-items:center}
  .team-photo{height:104px!important}
- .team-meta{height:auto!important;padding:12px 44px 12px 16px!important}
+ .team-meta{height:auto!important;min-height:0!important;padding:12px 44px 12px 16px!important}
  .team-meta strong{font-size:16px!important}
  .team-meta span{font-size:13px!important}
+ .team-meta .team-role{font-size:12px!important;margin-top:2px}
 
  /* CTA + FOOTER */
  .footer-cta{min-height:0!important;background-image:linear-gradient(rgba(4,42,92,.68),rgba(4,42,92,.82)),url("images/footer.png")!important}
@@ -1266,9 +1268,10 @@ html,body{overflow-x:hidden}
 <section class="team-section" id="nosotros"><div class="team-inner">
 <div class="team-copy"><div class="team-eyebrow">UN EQUIPO CON PROPÓSITO</div><h2>Las personas detrás de UrbanVoice</h2><p>Somos un equipo de profesionales en tecnología, datos y gobierno local, convencidos de que la información puede generar comunidades más activas, participativas y mejor conectadas.</p><a class="team-btn" href="https://wa.me/5492212267836" target="_blank" rel="noopener">Conocé nuestro equipo　→</a></div>
 <div class="team-grid">
-<article class="team-card"><div class="team-photo"><svg class="team-avatar" viewBox="0 0 200 158" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Avatar"><defs><linearGradient id="tav1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#087cf5"/><stop offset="1" stop-color="#09bce9"/></linearGradient></defs><rect width="200" height="158" fill="#edf8ff"/><circle cx="100" cy="66" r="62" fill="#dff1fc"/><path d="M28 158c0-32 30-52 72-52s72 20 72 52z" fill="url(#tav1)"/><circle cx="100" cy="64" r="28" fill="url(#tav1)"/></svg></div><div class="team-meta"><strong>Martín Bruno</strong><span>CEO</span><i class="team-linkedin">in</i></div></article>
-<article class="team-card"><div class="team-photo"><svg class="team-avatar" viewBox="0 0 200 158" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Avatar"><defs><linearGradient id="tav2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#071c70"/><stop offset="1" stop-color="#087cf5"/></linearGradient></defs><rect width="200" height="158" fill="#edf8ff"/><circle cx="100" cy="66" r="62" fill="#dff1fc"/><path d="M28 158c0-32 30-52 72-52s72 20 72 52z" fill="url(#tav2)"/><circle cx="100" cy="64" r="28" fill="url(#tav2)"/></svg></div><div class="team-meta"><strong>Diego Giovannetti</strong><span>CIO</span><i class="team-linkedin">in</i></div></article>
-<article class="team-card"><div class="team-photo"><svg class="team-avatar" viewBox="0 0 200 158" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Avatar"><defs><linearGradient id="tav3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#09bce9"/><stop offset="1" stop-color="#087cf5"/></linearGradient></defs><rect width="200" height="158" fill="#edf8ff"/><circle cx="100" cy="66" r="62" fill="#dff1fc"/><path d="M28 158c0-32 30-52 72-52s72 20 72 52z" fill="url(#tav3)"/><circle cx="100" cy="64" r="28" fill="url(#tav3)"/></svg></div><div class="team-meta"><strong>Martín Mantovani</strong><span>CTO</span><i class="team-linkedin">in</i></div></article>
+<article class="team-card"><div class="team-photo"><svg class="team-avatar" viewBox="0 0 200 158" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Avatar"><defs><linearGradient id="tav2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#071c70"/><stop offset="1" stop-color="#087cf5"/></linearGradient></defs><rect width="200" height="158" fill="#edf8ff"/><circle cx="100" cy="66" r="62" fill="#dff1fc"/><path d="M28 158c0-32 30-52 72-52s72 20 72 52z" fill="url(#tav2)"/><circle cx="100" cy="64" r="28" fill="url(#tav2)"/></svg></div><div class="team-meta"><strong>Diego Giovannetti</strong><span class="team-role">CBO</span><span class="team-title">Director de Negocios</span><i class="team-linkedin">in</i></div></article>
+<article class="team-card"><div class="team-photo"><svg class="team-avatar" viewBox="0 0 200 158" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Avatar"><defs><linearGradient id="tav1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#087cf5"/><stop offset="1" stop-color="#09bce9"/></linearGradient></defs><rect width="200" height="158" fill="#edf8ff"/><circle cx="100" cy="66" r="62" fill="#dff1fc"/><path d="M28 158c0-32 30-52 72-52s72 20 72 52z" fill="url(#tav1)"/><circle cx="100" cy="64" r="28" fill="url(#tav1)"/></svg></div><div class="team-meta"><strong>Martín Bruno</strong><span class="team-role">CEO</span><span class="team-title">Director Ejecutivo</span><i class="team-linkedin">in</i></div></article>
+<article class="team-card"><div class="team-photo"><svg class="team-avatar" viewBox="0 0 200 158" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Avatar"><defs><linearGradient id="tav4" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0a5fd6"/><stop offset="1" stop-color="#09bce9"/></linearGradient></defs><rect width="200" height="158" fill="#edf8ff"/><circle cx="100" cy="66" r="62" fill="#dff1fc"/><path d="M28 158c0-32 30-52 72-52s72 20 72 52z" fill="url(#tav4)"/><circle cx="100" cy="64" r="28" fill="url(#tav4)"/></svg></div><div class="team-meta"><strong>Gabriel Suárez</strong><span class="team-role">CIO</span><span class="team-title">Director de Información</span><i class="team-linkedin">in</i></div></article>
+<article class="team-card"><div class="team-photo"><svg class="team-avatar" viewBox="0 0 200 158" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Avatar"><defs><linearGradient id="tav3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#09bce9"/><stop offset="1" stop-color="#087cf5"/></linearGradient></defs><rect width="200" height="158" fill="#edf8ff"/><circle cx="100" cy="66" r="62" fill="#dff1fc"/><path d="M28 158c0-32 30-52 72-52s72 20 72 52z" fill="url(#tav3)"/><circle cx="100" cy="64" r="28" fill="url(#tav3)"/></svg></div><div class="team-meta"><strong>Martín Mantovani</strong><span class="team-role">CTO</span><span class="team-title">Director de Tecnología</span><i class="team-linkedin">in</i></div></article>
 </div></div></section>
 
 
