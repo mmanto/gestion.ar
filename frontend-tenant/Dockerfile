@@ -44,8 +44,8 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Copiar archivos build desde la etapa anterior
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Genera tenant-config.js a partir de $TENANT_ID en cada arranque del
-# contenedor — la misma imagen sirve a cualquier tenant (ver docker-entrypoint.sh).
+# Entrypoint exec-only: el tenant se resuelve por Host (no por env por
+# contenedor); ver docker-entrypoint.sh y nginx.conf (map $tenant_icon_slug).
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 

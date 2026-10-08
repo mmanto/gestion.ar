@@ -54,6 +54,10 @@ class Tenant(Base):
     domain = Column(Text, nullable=True)
     status = Column(Text, nullable=False, default="active", server_default="active")
     branding = Column(JSONB, nullable=False, default=dict, server_default="{}")
+    # Flags de runtime por tenant (p. ej. {"stats_two_cols_mobile": true}).
+    # Antes se inyectaban por contenedor (TENANT_ID/STATS_TWO_COLS_MOBILE);
+    # ahora viven en la BD para servir a un único contenedor frontend-tenant.
+    settings = Column(JSONB, nullable=False, default=dict, server_default="{}")
     # Todo tenant está suscripto a un plan específico (ver estrategia de
     # facturación) — FK a plans, no nullable (se backfillea en la migración
     # que introduce esta columna).

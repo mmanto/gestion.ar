@@ -249,8 +249,11 @@ no en el tenant.
 | `domain` | `TEXT (opt)` | Dominio propio, único cuando no es null |
 | `status` | `TEXT NOT NULL` | `active` / `suspended` / `trial` |
 | `branding` | `JSONB` | Marca (logo, color, tagline) |
+| `settings` | `JSONB` | Flags de runtime por tenant (p. ej. `{"stats_two_cols_mobile": true}`). Antes se inyectaban por contenedor (`STATS_TWO_COLS_MOBILE`); ahora viajan en el response de `/api/public/tenants/current` |
 | `plan_id` | `TEXT` → FK `plans.plan_id` | Plan de suscripción al que está dado de alta el tenant |
 | `created_at` / `updated_at` | `TIMESTAMPTZ` | |
+
+Migración: `20261008_0000_add_tenant_settings.py`.
 
 ---
 

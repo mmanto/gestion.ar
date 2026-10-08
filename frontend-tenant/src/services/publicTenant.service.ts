@@ -11,6 +11,13 @@ const publicTenantService = {
     const res = await axios.get(`${BASE_URL}/public/tenants/${tenantId}`);
     return res.data;
   },
+
+  // Resuelve el tenant por el Host de la request (un único contenedor
+  // frontend-tenant sirve a todos los tenants; ver GET /api/public/tenants/current).
+  async getCurrentTenant(): Promise<TenantPublicInfo> {
+    const res = await axios.get(`${BASE_URL}/public/tenants/current`);
+    return res.data;
+  },
 };
 
 export default publicTenantService;

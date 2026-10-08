@@ -244,8 +244,7 @@ repo), por eso el nombre de marca tiene una clave por app.
 |---|---|---|---|
 | `REGISTRY_IMAGE` | ✅ | Registry + namespace de las imágenes | `registry.gitlab.com/NAMESPACE/PROJECT` |
 | `IMAGE_TAG` | ❌ | Tag a deployar (default `latest`) | `v1.2.3` |
-| `TENANT_ID_IUS` | ❌ | Tenant ID por cada tenant con dominio propio (`docker-compose.tenants.prod.yml`) | `tenant_78f507331c18` |
-| `TENANT_ID_PACHOTESAYUDA` | ❌ | Tenant ID del tenant pachoteayuda (dominio propio `pachoteayuda.ar`) | `tenant_2fc38a44e696` |
+| `TENANT_ID_<SLUG>` | ❌ | Tenant ID horneado en el APK nativo del tenant (`scripts/stack-*.sh build-android`). Ya NO se usa en el frontend web: un único contenedor `frontend-tenant` resuelve el tenant por Host contra `tenants.domain` | `tenant_78f507331c18` |
 | `TENANT_APPID_<SLUG>` | ❌ | `applicationId` Android del APK del tenant (build-android en `scripts/stack-*.sh`) | `ius.intellify.pro` |
 || `TENANT_APPNAME_<SLUG>` | ❌ | Nombre visible del APK del tenant | `"ius"` |
 | `TENANT_BRANDCOLOR_<SLUG>` | ❌ | Color de marca (splash + status bar) del APK del tenant | `#25357a` |

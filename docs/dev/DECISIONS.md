@@ -1623,3 +1623,59 @@ Opción 3, con alcance mínimo:
   re-etiquetar el caso 14 a amarillo) sin tocar el resto.
 - La corrida LLM real (expectativa 23/23) no se verificó en este cierre: requiere stack
   arriba (postgres/redis/backend) y un proveedor LLM con tool calling.
+
+## ADR-027: Colapso de contenedores por-tenant a 2 compartidos con resolución por dominio
+
+**Estado:** Aceptado
+**Fecha:** 2026-10-08
+
+### Contexto
+
+Cada tenant corría 2 contenedores propios: `frontend-tenant-<slug>` (nginx sirviendo el
+SPA, tenant inyectado en runtime por `docker-entrypoint.sh` vía `window.__TENANT_CONFIG__`)
+y `landing-<slug>` (sitio estático en `sites/<slug>`). Eran 13 contenedores (6 SPA + 7
+landings); dar de alta un tenant = copiar un service block de compose y levantar un
+contenedor nuevo. El `tenant_id` se diferenciaba por env var (`TENANT_ID`), no por build.
+
+### Opciones consideradas
+
+1. **Mantener un contenedor por tenant.** Escala lineal en contenedores; cada alta de
+   tenant toca compose + `.env.prod` y dispara una imagen nueva (aunque idéntica).
+2. **Colapsar solo el SPA, dejar una landing por sitio.** Reduce a 7 contenedores pero
+   mantiene el patrón por-sitio para landings; el problema de fondo (alta = contenedor
+   nuevo) persiste.
+3. **Colapsar SPA + landings a 2 contenedores fijos**, resolviendo tenant y sitio por el
+   `Host` de la request.
+
+### Decisión
+
+Opción 3:
+
+- **SPA**: un único `frontend-tenant`. El tenant se resuelve por Host contra
+  `tenants.domain` (nuevo endpoint `GET /api/public/tenants/current`); el cliente
+  (`TenantContext`) cae a `?tenant=<id>`/localStorage solo en dev local y a
+  `window.__TENANT_CONFIG__` (horneado) solo en los builds nativos Capacitor, que no
+  tienen Host. El flag de runtime `statsTwoColsMobile` se mueve de la env del contenedor a
+  `tenants.settings` (JSONB). El favicon/íconos PWA por tenant los sirve nginx con
+  `map $http_host $tenant_icon_slug`.
+- **Landings**: un único `landing`. Cada `sites/<slug>` se copia a
+  `/usr/share/nginx/html/<slug>/` y nginx elige la raíz con `map $http_host $landing_root`
+  (raíz variable + `try_files`). El ruteo landing-vs-SPA sigue en Traefik (priority 10 vs 1).
+- **Traefik**: los routers por dominio (tenant-`<slug>`, landing-`<slug>`) pasan a labels
+  sobre los 2 servicios compartidos — son solo labels, no contenedores nuevos.
+
+### Consecuencias
+
+- 13 contenedores → 2. Dar de alta un tenant = crear el tenant con `domain` en el panel
+  admin + (si tiene landing) agregar su directorio en `sites/Dockerfile`, su línea en el
+  `map` de `sites/nginx.conf` y sus labels `Host()` en compose. Sin contenedor ni imagen nueva.
+- `tenants.domain` pasa a ser la llave operativa de la resolución: debe setearse al host
+  real de cada tenant (`backend/scripts/backfill_tenant_domains.py`). La columna es única,
+  así que se soporta UN host canónico por tenant; dominios viejos/alternativos se cubren
+  con redirects Traefik.
+- `TENANT_ID_<SLUG>` ya no se consume en el frontend web, pero se mantiene en `.env`
+  porque `scripts/stack-*.sh build-android` (APK nativo) sigue horneándolo. `TENANT_SLUG` y
+  `STATS_TWO_COLS_MOBILE` de los contenedores web desaparecen.
+- Tradeoff aceptado: la resolución del tenant es una llamada HTTP extra en el arranque del
+  SPA (antes era un valor inyectado síncrono). El costo es despreciable frente a eliminar
+  N× la duplicación de infraestructura.

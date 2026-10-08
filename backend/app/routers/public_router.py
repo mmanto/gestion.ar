@@ -22,6 +22,31 @@ from app.models.tenant import TenantPublicInfo
 router = APIRouter(prefix="/api/public", tags=["public"])
 
 
+@router.get("/tenants/current", response_model=TenantPublicInfo)
+async def get_current_tenant(request: Request):
+    """
+    Resuelve el tenant por el Host de la request (sin PII).
+
+    Antes cada tenant tenía su propio contenedor frontend-tenant con el
+    tenant_id inyectado por entrypoint (window.__TENANT_CONFIG__). Con el
+    colapso a un único contenedor, el tenant se deriva del dominio
+    (tenants.domain) reenviado sin modificar por el nginx del frontend
+    (proxy_set_header Host $host) y Traefik.
+    """
+    host = (request.headers.get("host") or "").split(":")[0].lower()
+    tenant = await get_tenant_service().get_tenant_by_domain(host)
+    if not tenant:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant no encontrado para este dominio")
+
+    return TenantPublicInfo(
+        tenant_id=tenant.tenant_id,
+        name=tenant.name,
+        status=tenant.status,
+        branding=tenant.branding,
+        settings=tenant.settings,
+    )
+
+
 @router.get("/tenants/{tenant_id}", response_model=TenantPublicInfo)
 async def get_public_tenant_info(tenant_id: str):
     """
@@ -37,6 +62,7 @@ async def get_public_tenant_info(tenant_id: str):
         name=tenant.name,
         status=tenant.status,
         branding=tenant.branding,
+        settings=tenant.settings,
     )
 
 

@@ -1,8 +1,9 @@
 // Genera dist/tenant-config.js en tiempo de build para los builds nativos
-// (Capacitor). Es el mismo mecanismo que usa docker-entrypoint.sh para la
-// web (window.__TENANT_CONFIG__, leído por TenantContext.tsx) pero horneado
-// en el bundle en vez de generado al arrancar el contenedor, porque una app
-// nativa no tiene un "arranque de contenedor" que lo inyecte.
+// (Capacitor). En la web el tenant se resuelve por Host (GET
+// /api/public/tenants/current) y nginx sirve un /tenant-config.js vacío; la
+// app nativa no tiene Host, así que hornea el tenantId acá (window.__TENANT_CONFIG__,
+// leído por TenantContext.tsx como primera fuente). El campo statsTwoColsMobile
+// ya no lo consume TenantContext: se resuelve desde tenants.settings (DB).
 //
 // Importante: escribe solo en dist/ (output del build), nunca en public/ —
 // si tocara public/ se filtraría a `npm run dev` y a los builds Docker de

@@ -29,6 +29,7 @@ def _to_tenant(row: TenantModel) -> Tenant:
         domain=row.domain,
         status=row.status,
         branding=row.branding or {},
+        settings=row.settings or {},
         plan_id=row.plan_id,
         created_at=row.created_at.isoformat(),
         updated_at=row.updated_at.isoformat(),

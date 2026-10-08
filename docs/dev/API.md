@@ -544,6 +544,38 @@ Si el staff está offline, se envía push notification (FCM/APNs/VAPID).
 ---
 
 
+## Público — Tenants
+
+Endpoints sin autenticación, usados por `frontend-tenant` (un único contenedor
+para todos los tenants) para resolver el tenant y pintar landing/login con su
+marca.
+
+### GET `/api/public/tenants/current`
+
+Resuelve el tenant por el `Host` de la request (matchea `tenants.domain`).
+Es lo que permite servir a todos los tenants desde un único contenedor
+`frontend-tenant` (ver docs/dev/DECISIONS.md, ADR "Colapso de contenedores
+por-tenant"). **404** si el Host no corresponde a ningún tenant.
+
+**Response 200:**
+```json
+{
+  "tenant_id": "tenant_17d505040583",
+  "name": "ius",
+  "status": "active",
+  "branding": { "primary_color": "#25357a" },
+  "settings": { "stats_two_cols_mobile": true }
+}
+```
+
+### GET `/api/public/tenants/{tenant_id}`
+
+Info pública de un tenant por id (sin PII) — mismo shape que el de arriba.
+Usado por el fallback de desarrollo `?tenant=<id>` y por los builds nativos
+(Capacitor), donde no hay Host que matchee un dominio.
+
+---
+
 ## Administración general — Tenants
 
 CRUD de tenants para el `super_admin` (panel admin). Requieren JWT con rol

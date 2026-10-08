@@ -33,22 +33,17 @@ const proxyConfig = {
   },
 }
 
-// Sirve /tenant-config.js en el dev-server leyendo TENANT_ID/TENANT_SLUG del
-// entorno del proceso — el equivalente de docker-entrypoint.sh pero sin
-// escribir ningún archivo (bake-tenant-config.mjs ya advierte: nunca tocar
-// public/, se filtraría a todos los tenants y a `npm run build`). Habilita
-// hot-reload en docker-compose.tenants.dev.yml sin perder el tenant fijo por
-// contenedor; si TENANT_ID no está seteado (dev local sin Docker), sirve un
-// tenantId vacío y TenantContext cae al fallback ?tenant=<id> de siempre.
+// Sirve /tenant-config.js en el dev-server como objeto vacío — el <script> de
+// index.html lo pide siempre, pero en dev el tenant se resuelve por
+// ?tenant=<id> (ver TenantContext), no por un config horneado. Devuelve JS
+// válido para no romper el parseo del script.
 function tenantConfigDevMiddleware(): Plugin {
   return {
     name: 'tenant-config-dev-middleware',
     configureServer(server) {
       server.middlewares.use('/tenant-config.js', (_req, res) => {
-        const tenantId = process.env.TENANT_ID || ''
-        const statsTwoColsMobile = process.env.STATS_TWO_COLS_MOBILE === 'true'
         res.setHeader('Content-Type', 'application/javascript')
-        res.end(`window.__TENANT_CONFIG__ = { tenantId: ${JSON.stringify(tenantId)}, statsTwoColsMobile: ${statsTwoColsMobile} };\n`)
+        res.end('window.__TENANT_CONFIG__ = {};\n')
       })
     },
   }

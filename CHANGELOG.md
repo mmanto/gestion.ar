@@ -225,6 +225,17 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   enlace oficial.
 
 ### Cambiado
+- **Colapso de contenedores por-tenant a 2 compartidos** (breaking infra, ver
+  ADR-027). Los 13 contenedores `frontend-tenant-<slug>` + `landing-<slug>` pasan
+  a un único `frontend-tenant` (SPA de todos, tenant resuelto por Host contra
+  `tenants.domain` vía `GET /api/public/tenants/current`) y un único `landing`
+  (todas las landings, sitio elegido por `map $http_host $landing_root` en
+  `sites/nginx.conf`). El flag `statsTwoColsMobile` se mueve a la columna
+  `tenants.settings` (JSONB, migración `20261008_0000_add_tenant_settings.py`) y
+  el favicon PWA por tenant lo sirve nginx (`map $http_host $tenant_icon_slug`).
+  Alta de un tenant = crear el tenant con `domain` + labels Traefik (no un
+  contenedor). **Requiere** migración + `scripts/backfill_tenant_domains.py`
+  antes de levantar (ver `docs/ops/DEPLOYMENT.md`).
 - **Regla verde `verde_cinco_condiciones` relajada por la definición D1**
   (`docs/ius_legal_config.json`). Se quitó el filtro estricto `copia_contrato: "si"` y se
   reemplazó por `documentacion: "con_documentacion"`: basta acreditar la relación laboral

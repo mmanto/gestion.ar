@@ -44,6 +44,7 @@ class Tenant(BaseModel):
     domain: Optional[str] = None
     status: TenantStatus
     branding: Dict[str, Any] = Field(default_factory=dict)
+    settings: Dict[str, Any] = Field(default_factory=dict)
     plan_id: str
     created_at: str
     updated_at: str
@@ -55,6 +56,7 @@ class TenantPublicInfo(BaseModel):
     name: str
     status: TenantStatus
     branding: Dict[str, Any] = Field(default_factory=dict)
+    settings: Dict[str, Any] = Field(default_factory=dict)
 
 
 class TenantUserCreate(BaseModel):

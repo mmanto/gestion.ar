@@ -142,14 +142,18 @@ traefik:
 
 ## Tenants activos con dominio propio
 
-| Slug | Dominio | Landing | Service blocks |
+Todos los tenants corren en **2 contenedores fijos** (`frontend-tenant` y
+`landing`) — ver ADR-027. La columna "Routers" son **labels de Traefik** sobre
+esos 2 servicios (no service blocks ni contenedores por tenant).
+
+| Slug | Dominio | Landing | Routers Traefik (labels) |
 |---|---|---|---|
-| ius | ius.intellify.pro | `sites/ius-landing/` | `frontend-tenant-ius`, `landing-ius` |
-| laboralia | laboralia.intellify.pro | `sites/laboralia-landing/` | `frontend-tenant-laboralia`, `landing-laboralia` |
-| proptech | proptech.intellify.pro | `sites/proptech-landing/` | `frontend-tenant-proptech`, `landing-proptech` |
-| erma | erma.com.ar | `sites/erma/` | `frontend-tenant-erma`, `landing-erma` |
-| pachoteayuda | pachoteayuda.ar | `sites/pachoteayuda-landing/` | `frontend-tenant-pachoteayuda`, `landing-pachoteayuda` |
-| openpadel | openpadel.pro | `sites/openpadel-landing/` | `frontend-tenant-openpadel`, `landing-openpadel` |
+| ius | ius.intellify.pro | `sites/ius-landing/` | `tenant-ius`, `landing-ius` |
+| laboralia | laboralia.intellify.pro | `sites/laboralia-landing/` | `tenant-laboralia`, `landing-laboralia` |
+| proptech | proptech.intellify.pro | `sites/proptech-landing/` | `tenant-proptech`, `landing-proptech` |
+| erma | erma.com.ar | `sites/erma/` | `tenant-erma`, `landing-erma` |
+| pachoteayuda | pachoteayuda.ar | `sites/pachoteayuda-landing/` | `tenant-pachoteayuda`, `landing-pachoteayuda` |
+| openpadel | openpadel.pro | `sites/openpadel-landing/` | `tenant-openpadel`, `landing-openpadel` |
 | urbanvoice | urbanvoice.intellify.pro | `sites/urbanvoice/` | `landing-urbanvoice` (todavía sin tenant — ver abajo) |
 
 > DNS: para dominios propios del cliente (`erma.com.ar`, `pachoteayuda.ar`,
@@ -162,8 +166,9 @@ traefik:
 ## Ruteo de landings en dominio compartido con tenant
 
 Cada landing (ius, laboralia, proptech, erma, openpadel — ver `docker-compose.tenants.prod.yml`)
-comparte el dominio con el SPA de su tenant (`frontend-tenant-*`). El SPA es un
-app de una sola página cuyo nginx sirve `index.html` para casi cualquier ruta
+comparte el dominio con el SPA de su tenant (ambos en los 2 contenedores
+compartidos `frontend-tenant` y `landing`). El SPA es una app de una sola
+página cuyo nginx sirve `index.html` para casi cualquier ruta
 (`try_files $uri /index.html`), así que si una página estática de la landing
 cae en el router del tenant, "no se ve" (devuelve el index del SPA). Ese
 `index.html` se sirve con `Cache-Control: no-cache` (revalida en cada carga):
@@ -181,25 +186,27 @@ Por eso el router de la landing lleva prioridad explícita y matchea por path:
 
 Cualquier otra ruta (`/login`, `/dashboard`, `/assets/*`, `/api/*`, `/ws/*`)
 sigue cayendo en el tenant. No listar cada `.html` a mano: si una página no se
-ve, primero verificar que el `.html` exista dentro del contenedor de la landing
-(`docker exec <landing> ls /usr/share/nginx/html`); si la ruta es correcta y el
-archivo existe, el `PathRegexp` ya la enruta al contenedor correcto.
+ve, primero verificar que el `.html` exista dentro del contenedor `landing`
+(`docker exec gestionar_landing ls /usr/share/nginx/html/<slug>`); si la ruta es
+correcta y el archivo existe, el `PathRegexp` ya la enruta al contenedor
+correcto.
 
 ### Caso urbanvoice: landing sin tenant (por ahora)
 
 `urbanvoice.intellify.pro` es la única excepción al patrón de arriba: la
-landing existe (`sites/urbanvoice/`, service block `landing-urbanvoice` en
-`docker-compose.tenants.prod.yml`) pero el tenant UrbanVoice todavía no está
-implementado, así que **no hay SPA que comparta el host** y el router no lleva
-regla de `Path` — matchea el host entero con prioridad 10. Lo que antes caía en
-el SPA (`/login`, `/dashboard`, `/assets/*`…) hoy devuelve 404 de nginx, que es
-lo esperado mientras el tenant no exista.
+landing existe (`sites/urbanvoice/`, directorio + router `landing-urbanvoice`
+en el servicio `landing` de `docker-compose.tenants.prod.yml`) pero el tenant
+UrbanVoice todavía no está implementado, así que **no hay SPA que comparta el
+host** y el router no lleva regla de `Path` — matchea el host entero con
+prioridad 10. Lo que antes caía en el SPA (`/login`, `/dashboard`, `/assets/*`…)
+hoy devuelve 404 de nginx, que es lo esperado mientras el tenant no exista.
 
 Cuando se dé de alta el tenant hay que hacer **dos** cosas, o el router de la
 landing (priority=10) se queda con todas las rutas y el SPA nunca recibe
 tráfico:
 
-1. agregar `frontend-tenant-urbanvoice` (`Host(...)`, `priority=1`, `TENANT_ID_URBANVOICE`);
+1. agregar el router `tenant-urbanvoice` (label en `frontend-tenant`, `Host(...)`,
+   `priority=1`) y crear el tenant con `domain=urbanvoice.intellify.pro`;
 2. restringir el rule de `landing-urbanvoice` a las rutas de la landing —
    `(Path(`/`) || PathRegexp(`^/.*\.html$`) || PathPrefix(`/images/`))`.
 
@@ -240,8 +247,9 @@ lo que dispara la emisión por TLS-ALPN (diagnóstico paso a paso en
 > **Caso erma (2026-08-11):** la landing de `sites/erma/` se publicó primero en
 > un VPS externo (Hostinger) y el DNS de `erma.com.ar` quedó apuntando ahí —
 > servía la landing para **toda** ruta, incluido `/login`, que nunca llegaba al
-> tenant. El contenedor `landing-erma` (mismo patrón que las demás) + apuntar
-> el DNS al VPS de prod resolve el ruteo: `/` → landing, `/login` → app.
+> tenant. El router `landing-erma` (label del servicio `landing`, mismo patrón
+> que las demás) + apuntar el DNS al VPS de prod resuelve el ruteo:
+> `/` → landing, `/login` → app.
 
 **Micro-frontend de registro (ADR-011):** la landing ius sirve
 `/register-embed.js` (bundle IIFE del formulario de registro real, ver

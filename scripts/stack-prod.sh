@@ -143,7 +143,9 @@ menu() {
 
 
 # Resuelve un nombre corto de servicio al nombre de contenedor en compose.
-# Ej: "ius" → "frontend-tenant-ius", "ius-landing" → "landing-ius", "app" → "app".
+# Con el colapso (ADR-027) todos los tenants comparten UN contenedor
+# frontend-tenant y todas las landings comparten UN contenedor landing:
+#   "ius" → "frontend-tenant", "ius-landing" → "landing", "app" → "app".
 # Retorna 1 si el servicio no es válido.
 resolve_service() {
   local name="$1"
@@ -155,13 +157,13 @@ resolve_service() {
   done
   for tenant in "${TENANTS[@]}"; do
     if [[ "$name" == "$tenant" ]]; then
-      echo "frontend-tenant-$name"
+      echo "frontend-tenant"
       return 0
     fi
   done
   for site in "${SITES[@]}"; do
     if [[ "$name" == "$site" ]]; then
-      echo "landing-${name%-landing}"
+      echo "landing"
       return 0
     fi
   done
@@ -547,10 +549,10 @@ cmd_build_android() {
   patch_android_tenant "$slug" "$app_id" "$app_name" "$brand_color"
   trap restore_android_tenant RETURN
 
-  # STATS_TWO_COLS_MOBILE=true replica lo que docker-compose.tenants.*.yml ya
-  # setea para ius en la web (ver docker-entrypoint.sh) — sin esto el build
-  # nativo horneaba statsTwoColsMobile:false y el dashboard mostraba las
-  # stat cards en 1 columna en el celular en vez de 2 (StatsCards.tsx).
+  # statsTwoColsMobile ahora se resuelve desde tenants.settings (DB, vía
+  # /api/public/tenants/current); el valor horneado acá es un fallback legacy
+  # que TenantContext ya no consume. Se mantiene el hardcode de ius para no
+  # cambiar el APK nativo ante una migración todavía no aplicada.
   local stats_two_cols="false"
   [[ "$slug" == "ius" ]] && stats_two_cols="true"
 

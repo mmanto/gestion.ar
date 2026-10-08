@@ -31,8 +31,8 @@
 #   ./stack.dev up                      # levantar todo
 #   ./stack.dev logs app                # logs del backend
 #   ./stack.dev restart frontend        # restart del frontend
-#   ./stack.dev rebuild ius             # rebuild solo del tenant ius
-#   TENANT_HOT_RELOAD=1 ./stack.dev rebuild ius  # idem, con hot-reload
+#   ./stack.dev rebuild ius             # rebuild del contenedor compartido frontend-tenant (todos los tenants)
+#   TENANT_HOT_RELOAD=1 ./stack.dev rebuild ius  # idem, con hot-reload (dev-server Vite)
 #   ./stack.dev build-android ius emulator                          # APK de ius para emulador (10.0.2.2)
 #   ./stack.dev build-android erma device http://192.168.1.100:8000/api  # APK de erma en dispositivo fisico
 #   ./stack.dev clean                   # limpiar recursos
@@ -182,17 +182,19 @@ resolve_service() {
       return 0
     fi
   done
-  # Tenants: short name → compose service name (erma → frontend-tenant-erma)
+  # Tenants: short name → compose service name. Con el colapso (ADR-027) todos
+  # los tenants comparten UN contenedor frontend-tenant (erma → frontend-tenant).
   for tenant in "${TENANTS[@]}"; do
     if [[ "$name" == "$tenant" ]]; then
-      echo "frontend-tenant-${tenant}"
+      echo "frontend-tenant"
       return 0
     fi
   done
-  # Sites: short name → compose service name (ius-landing → landing-ius)
+  # Sites: short name → compose service name. Todas las landings comparten UN
+  # contenedor landing (ius-landing → landing).
   for site in "${SITES[@]}"; do
     if [[ "$name" == "$site" ]]; then
-      echo "landing-${name%-landing}"
+      echo "landing"
       return 0
     fi
   done
@@ -490,10 +492,10 @@ cmd_build_android() {
   patch_android_tenant "$slug" "$app_id" "$app_name" "$brand_color"
   trap restore_android_tenant RETURN
 
-  # STATS_TWO_COLS_MOBILE=true replica lo que docker-compose.tenants.*.yml ya
-  # setea para ius en la web (ver docker-entrypoint.sh) — sin esto el build
-  # nativo horneaba statsTwoColsMobile:false y el dashboard mostraba las
-  # stat cards en 1 columna en el celular en vez de 2 (StatsCards.tsx).
+  # statsTwoColsMobile ahora se resuelve desde tenants.settings (DB, vía
+  # /api/public/tenants/current); el valor horneado acá es un fallback legacy
+  # que TenantContext ya no consume. Se mantiene el hardcode de ius para no
+  # cambiar el APK nativo ante una migración todavía no aplicada.
   local stats_two_cols="false"
   [[ "$slug" == "ius" ]] && stats_two_cols="true"
 

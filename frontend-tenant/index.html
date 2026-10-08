@@ -9,10 +9,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Backoffice</title>
 
-    <!-- Config inyectada por el entrypoint del contenedor al arrancar (ver
-         docker-entrypoint.sh) — define window.__TENANT_CONFIG__.tenantId.
-         Si el archivo no existe (dev sin Docker), el request 404 sin romper
-         nada; TenantContext cae al fallback ?tenant=<id>. -->
+    <!-- Config del tenant. En la web (nginx) se sirve un objeto vacío y el
+         tenant se resuelve por Host (GET /api/public/tenants/current); en los
+         builds nativos (Capacitor) scripts/bake-tenant-config.mjs hornea acá
+         el tenantId fijo del APK, porque no hay Host que matchee un dominio.
+         TenantContext lee window.__TENANT_CONFIG__.tenantId como primera
+         fuente (solo nativo) y cae al fallback ?tenant=<id> en dev. -->
     <script src="/tenant-config.js"></script>
 
     <!-- PWA: capturar beforeinstallprompt lo antes absolutamente posible.
