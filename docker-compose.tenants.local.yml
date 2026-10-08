@@ -64,14 +64,17 @@ services:
       - "traefik.http.routers.tenant-erma.rule=Host(`erma.com.test`)"
       - "traefik.http.routers.tenant-erma.entrypoints=web"
       - "traefik.http.routers.tenant-erma.priority=1"
+      - "traefik.http.routers.tenant-erma.service=tenant-erma"
       - "traefik.http.services.tenant-erma.loadbalancer.server.port=80"
       - "traefik.http.routers.tenant-ius.rule=Host(`ius.mx.test`)"
       - "traefik.http.routers.tenant-ius.entrypoints=web"
       - "traefik.http.routers.tenant-ius.priority=1"
+      - "traefik.http.routers.tenant-ius.service=tenant-ius"
       - "traefik.http.services.tenant-ius.loadbalancer.server.port=80"
       - "traefik.http.routers.tenant-pachoteayuda.rule=Host(`pachoteayuda.ar`)"
       - "traefik.http.routers.tenant-pachoteayuda.entrypoints=web"
       - "traefik.http.routers.tenant-pachoteayuda.priority=1"
+      - "traefik.http.routers.tenant-pachoteayuda.service=tenant-pachoteayuda"
       - "traefik.http.services.tenant-pachoteayuda.loadbalancer.server.port=80"
 
   # landing comparte dominio con frontend-tenant: este router matchea "/",
@@ -91,8 +94,10 @@ services:
       - 'traefik.http.routers.landing-erma.rule=Host(`erma.com.test`) && (PathRegexp(`^/.*\.html$`) || Path(`/`) || Path(`/chat-widget.js`) || Path(`/scroll-fix.js`) || Path(`/assets/bundle.js`) || Path(`/assets/style-DsA80jQ7.css`) || Path(`/hero-video.mp4`) || Path(`/img-about.jpg`) || Path(`/img-gallery-1.jpg`) || Path(`/img-gallery-2.jpg`) || Path(`/img-gallery-3.jpg`) || Path(`/img-gallery-4.jpg`) || Path(`/img-gallery-5.jpg`) || Path(`/img-hero.jpg`) || Path(`/img-news-1.jpg`) || Path(`/img-news-2.jpg`) || Path(`/img-team-1.jpg`) || Path(`/img-team-2.jpg`) || Path(`/img-team-3.jpg`) || Path(`/img-team-barbara.jpg`) || Path(`/img-team-camila.jpg`) || Path(`/img-team-delfina.jpg`) || Path(`/img-team-micaela.jpg`) || Path(`/img-team-valeria.jpg`))'
       - "traefik.http.routers.landing-erma.entrypoints=web"
       - "traefik.http.routers.landing-erma.priority=10"
+      - "traefik.http.routers.landing-erma.service=landing-erma"
       - "traefik.http.services.landing-erma.loadbalancer.server.port=80"
       - 'traefik.http.routers.landing-ius.rule=Host(`ius.mx.test`) && (PathRegexp(`^/.*\.html$`) || Path(`/`) || Path(`/register-embed.js`) || Path(`/footer.css`) || Path(`/favicon.svg`) || Path(`/favicon-32.png`) || Path(`/apple-touch-icon.png`) || Path(`/logo-horizontal.svg`) || Path(`/logo-horizontal-blanco.svg`) || Path(`/logo-vertical-blanco.svg`) || Path(`/despacho-hero.jpg`) || Path(`/estudio.jpg`) || Path(`/testimonios-bg.jpg`) || Path(`/eduardo-sandoval.webp`) || Path(`/og-image.png`))'
       - "traefik.http.routers.landing-ius.entrypoints=web"
       - "traefik.http.routers.landing-ius.priority=10"
+      - "traefik.http.routers.landing-ius.service=landing-ius"
       - "traefik.http.services.landing-ius.loadbalancer.server.port=80"

@@ -55,6 +55,7 @@ services:
       - "traefik.http.routers.tenant-ius.entrypoints=websecure"
       - "traefik.http.routers.tenant-ius.tls.certresolver=letsencrypt"
       - "traefik.http.routers.tenant-ius.priority=1"
+      - "traefik.http.routers.tenant-ius.service=tenant-ius"
       - "traefik.http.services.tenant-ius.loadbalancer.server.port=80"
 
       # ── erma ────────────────────────────────────────────────────────────
@@ -62,6 +63,7 @@ services:
       - "traefik.http.routers.tenant-erma.entrypoints=websecure"
       - "traefik.http.routers.tenant-erma.tls.certresolver=letsencrypt"
       - "traefik.http.routers.tenant-erma.priority=1"
+      - "traefik.http.routers.tenant-erma.service=tenant-erma"
       - "traefik.http.services.tenant-erma.loadbalancer.server.port=80"
       # --- Redirect temporal del dominio viejo (quitar cuando el cliente
       # termine de migrar bookmarks/enlaces externos a erma.com.ar) ---
@@ -73,6 +75,7 @@ services:
       - "traefik.http.routers.tenant-pachoteayuda.entrypoints=websecure"
       - "traefik.http.routers.tenant-pachoteayuda.tls.certresolver=letsencrypt"
       - "traefik.http.routers.tenant-pachoteayuda.priority=1"
+      - "traefik.http.routers.tenant-pachoteayuda.service=tenant-pachoteayuda"
       - "traefik.http.services.tenant-pachoteayuda.loadbalancer.server.port=80"
       # --- www.pachoteayuda.ar: el dominio canónico es el apex (ahí viven la
       # landing y el chat, y así lo declara el <link rel="canonical">), así que
@@ -94,6 +97,7 @@ services:
       - "traefik.http.routers.tenant-laboralia.entrypoints=websecure"
       - "traefik.http.routers.tenant-laboralia.tls.certresolver=letsencrypt"
       - "traefik.http.routers.tenant-laboralia.priority=1"
+      - "traefik.http.routers.tenant-laboralia.service=tenant-laboralia"
       - "traefik.http.services.tenant-laboralia.loadbalancer.server.port=80"
 
       # ── proptech ────────────────────────────────────────────────────────
@@ -101,6 +105,7 @@ services:
       - "traefik.http.routers.tenant-proptech.entrypoints=websecure"
       - "traefik.http.routers.tenant-proptech.tls.certresolver=letsencrypt"
       - "traefik.http.routers.tenant-proptech.priority=1"
+      - "traefik.http.routers.tenant-proptech.service=tenant-proptech"
       - "traefik.http.services.tenant-proptech.loadbalancer.server.port=80"
 
       # ── openpadel ───────────────────────────────────────────────────────
@@ -108,6 +113,7 @@ services:
       - "traefik.http.routers.tenant-openpadel.entrypoints=websecure"
       - "traefik.http.routers.tenant-openpadel.tls.certresolver=letsencrypt"
       - "traefik.http.routers.tenant-openpadel.priority=1"
+      - "traefik.http.routers.tenant-openpadel.service=tenant-openpadel"
       - "traefik.http.services.tenant-openpadel.loadbalancer.server.port=80"
 
   # Un único contenedor sirve todas las landings: el sitio se elige por Host
@@ -115,7 +121,8 @@ services:
   # de abajo matchea "/", las páginas .html y los assets propios de ESA landing
   # con priority=10 (mayor que el priority=1 de frontend-tenant), así que todo
   # lo demás (/login, /dashboard, /assets/*, /api/*...) cae en el SPA del
-  # tenant. Ver los comentarios originales en el historial de este archivo.
+  # tenant. Cada router apunta a su service explícito (Traefik no puede
+  # auto-linkear routers a services cuando hay varios en el mismo contenedor).
   landing:
     build:
       context: ./sites
@@ -132,6 +139,7 @@ services:
       - "traefik.http.routers.landing-pachoteayuda.entrypoints=websecure"
       - "traefik.http.routers.landing-pachoteayuda.tls.certresolver=letsencrypt"
       - "traefik.http.routers.landing-pachoteayuda.priority=10"
+      - "traefik.http.routers.landing-pachoteayuda.service=landing-pachoteayuda"
       - "traefik.http.services.landing-pachoteayuda.loadbalancer.server.port=80"
 
       # ── erma ────────────────────────────────────────────────────────────
@@ -139,6 +147,7 @@ services:
       - "traefik.http.routers.landing-erma.entrypoints=websecure"
       - "traefik.http.routers.landing-erma.tls.certresolver=letsencrypt"
       - "traefik.http.routers.landing-erma.priority=10"
+      - "traefik.http.routers.landing-erma.service=landing-erma"
       - "traefik.http.services.landing-erma.loadbalancer.server.port=80"
 
       # ── ius ─────────────────────────────────────────────────────────────
@@ -146,6 +155,7 @@ services:
       - "traefik.http.routers.landing-ius.entrypoints=websecure"
       - "traefik.http.routers.landing-ius.tls.certresolver=letsencrypt"
       - "traefik.http.routers.landing-ius.priority=10"
+      - "traefik.http.routers.landing-ius.service=landing-ius"
       - "traefik.http.services.landing-ius.loadbalancer.server.port=80"
 
       # ── laboralia ───────────────────────────────────────────────────────
@@ -153,6 +163,7 @@ services:
       - "traefik.http.routers.landing-laboralia.entrypoints=websecure"
       - "traefik.http.routers.landing-laboralia.tls.certresolver=letsencrypt"
       - "traefik.http.routers.landing-laboralia.priority=10"
+      - "traefik.http.routers.landing-laboralia.service=landing-laboralia"
       - "traefik.http.services.landing-laboralia.loadbalancer.server.port=80"
 
       # ── proptech ────────────────────────────────────────────────────────
@@ -160,6 +171,7 @@ services:
       - "traefik.http.routers.landing-proptech.entrypoints=websecure"
       - "traefik.http.routers.landing-proptech.tls.certresolver=letsencrypt"
       - "traefik.http.routers.landing-proptech.priority=10"
+      - "traefik.http.routers.landing-proptech.service=landing-proptech"
       - "traefik.http.services.landing-proptech.loadbalancer.server.port=80"
 
       # ── openpadel ───────────────────────────────────────────────────────
@@ -167,6 +179,7 @@ services:
       - "traefik.http.routers.landing-openpadel.entrypoints=websecure"
       - "traefik.http.routers.landing-openpadel.tls.certresolver=letsencrypt"
       - "traefik.http.routers.landing-openpadel.priority=10"
+      - "traefik.http.routers.landing-openpadel.service=landing-openpadel"
       - "traefik.http.services.landing-openpadel.loadbalancer.server.port=80"
 
       # ── urbanvoice ──────────────────────────────────────────────────────
@@ -180,6 +193,7 @@ services:
       - "traefik.http.routers.landing-urbanvoice.entrypoints=websecure"
       - "traefik.http.routers.landing-urbanvoice.tls.certresolver=letsencrypt"
       - "traefik.http.routers.landing-urbanvoice.priority=10"
+      - "traefik.http.routers.landing-urbanvoice.service=landing-urbanvoice"
       - "traefik.http.services.landing-urbanvoice.loadbalancer.server.port=80"
 
 networks:
