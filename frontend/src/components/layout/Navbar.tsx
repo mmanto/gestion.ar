@@ -64,7 +64,7 @@ export const Navbar: React.FC = () => {
 
   return (
     <nav
-      className={`${isAuthenticated ? 'sticky shadow-sm border-b border-white/10' : 'fixed'} top-0 left-0 right-0 z-50 transition-all duration-300`}
+      className={`${isAuthenticated ? 'sticky shadow-xs border-b border-white/10' : 'fixed'} top-0 left-0 right-0 z-50 transition-all duration-300`}
       style={navStyle}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

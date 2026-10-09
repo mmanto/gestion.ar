@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '../../lib/utils';
 
 export type AlertVariant = 'error' | 'success' | 'info';
 
@@ -9,14 +10,14 @@ interface AlertProps {
 }
 
 const variantStyles: Record<AlertVariant, string> = {
-  error: 'bg-red-50 border-red-200 text-red-800',
-  success: 'bg-green-50 border-green-200 text-green-800',
-  info: 'bg-blue-50 border-blue-200 text-blue-800',
+  error: 'border-destructive/30 bg-destructive/10 text-destructive',
+  success: 'border-success/30 bg-success/10 text-success',
+  info: 'border-info/30 bg-info/10 text-info',
 };
 
 export const Alert: React.FC<AlertProps> = ({ variant = 'error', children, className = '' }) => {
   return (
-    <div className={`border rounded-lg p-4 text-sm ${variantStyles[variant]} ${className}`}>
+    <div className={cn('border rounded-lg p-3 text-xs/relaxed', variantStyles[variant], className)}>
       {children}
     </div>
   );

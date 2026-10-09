@@ -8,7 +8,6 @@ import { Alert } from '../components/common/Alert';
 import { EmptyState } from '../components/common/EmptyState';
 import { Button } from '../components/common/Button';
 import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '../components/common/Table';
-import { useAccentTheme } from '../hooks/useAccentTheme';
 import { useClients } from '../hooks/useClients';
 import botsService from '../services/bots.service';
 import clientsService from '../services/clients.service';
@@ -37,7 +36,6 @@ const ScoreBadge = ({ score }: { score: number }) => {
 };
 
 export const BotClients = () => {
-  const { accent } = useAccentTheme();
   const { botId } = useParams<{ botId: string }>();
   const [bot, setBot] = useState<Bot | null>(null);
   const [botLoading, setBotLoading] = useState(true);
@@ -95,18 +93,18 @@ export const BotClients = () => {
 
   return (
     <AppLayout>
-        <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
+        <div className="flex flex-col gap-4">
           {/* Breadcrumb */}
           <nav className="mb-4">
             <ol className="flex items-center space-x-2 text-base text-gray-900">
               <li>
-                <Link to="/bots" className="hover:underline" style={{ color: accent }}>
+                <Link to="/bots" className="hover:underline text-foreground">
                   Agentes
                 </Link>
               </li>
               <li>/</li>
               <li>
-                <Link to={`/bots/${botId}`} className="hover:underline" style={{ color: accent }}>
+                <Link to={`/bots/${botId}`} className="hover:underline text-foreground">
                   {bot?.name || 'Agente'}
                 </Link>
               </li>
@@ -118,8 +116,6 @@ export const BotClients = () => {
           <PageHeader
             title="Clientes"
             description={`${total} cliente${total !== 1 ? 's' : ''} de ${bot?.name}`}
-            titleClassName="font-semibold uppercase tracking-[0.08em]"
-            descriptionClassName="text-gray-800"
           />
 
           {/* Search */}
@@ -130,7 +126,7 @@ export const BotClients = () => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar por nombre, teléfono o email..."
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ring focus:border-ring outline-hidden"
               />
               <Button type="submit" variant="primary">
                 Buscar

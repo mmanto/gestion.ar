@@ -266,7 +266,7 @@ export const Landing: React.FC = () => {
                 ),
               },
             ].map((item) => (
-              <div key={item.title} className="rounded-3xl p-10 bg-white shadow-sm">
+              <div key={item.title} className="rounded-3xl p-10 bg-white shadow-xs">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6" style={{ backgroundColor: '#D6E4F8' }}>
                   <span style={{ color: '#1a3a6e' }}>{item.icon}</span>
                 </div>
@@ -379,8 +379,8 @@ export const Landing: React.FC = () => {
                   ),
                 },
               ].map((channel) => (
-                <div key={channel.name} className="flex items-start gap-5 rounded-3xl p-8 bg-white shadow-sm">
-                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: channel.bgColor, color: channel.iconColor }}>
+                <div key={channel.name} className="flex items-start gap-5 rounded-3xl p-8 bg-white shadow-xs">
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={{ backgroundColor: channel.bgColor, color: channel.iconColor }}>
                     {channel.icon}
                   </div>
                   <div>
@@ -442,7 +442,7 @@ export const Landing: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Sin el agente */}
-            <div className="rounded-3xl p-10 bg-white shadow-sm">
+            <div className="rounded-3xl p-10 bg-white shadow-xs">
               <p className="text-label text-gray-400 mb-8">Sin el agente</p>
               <ul className="space-y-5">
                 {[
@@ -453,7 +453,7 @@ export const Landing: React.FC = () => {
                   'Conversaciones dispersas en distintos canales',
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-4 text-body-small text-gray-700">
-                    <span className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center shrink-0 mt-0.5">
                       <XIcon className="w-3.5 h-3.5 text-gray-400" />
                     </span>
                     {item}
@@ -463,7 +463,7 @@ export const Landing: React.FC = () => {
             </div>
 
             {/* Con el agente */}
-            <div className="rounded-3xl p-10 shadow-sm" style={{ backgroundColor: '#D6E4F8' }}>
+            <div className="rounded-3xl p-10 shadow-xs" style={{ backgroundColor: '#D6E4F8' }}>
               <p className="text-label text-gray-800 mb-8">Con el agente</p>
               <ul className="space-y-5">
                 {[
@@ -474,7 +474,7 @@ export const Landing: React.FC = () => {
                   'Todo unificado en un solo panel',
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-4 text-body-small text-gray-900">
-                    <span className="w-6 h-6 rounded-full bg-white/70 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="w-6 h-6 rounded-full bg-white/70 flex items-center justify-center shrink-0 mt-0.5">
                       <CheckIcon className="w-3.5 h-3.5 text-gray-900" />
                     </span>
                     {item}
@@ -520,7 +520,7 @@ export const Landing: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Plan Mensual */}
-            <div className="rounded-3xl p-10 bg-white shadow-sm">
+            <div className="rounded-3xl p-10 bg-white shadow-xs">
               <p className="text-label text-gray-400 mb-6">Plan Mensual</p>
               <p className="text-h2 text-gray-900 mb-1">
                 $999
@@ -529,7 +529,7 @@ export const Landing: React.FC = () => {
               <ul className="mt-8 space-y-4 mb-10">
                 {planFeatures.map((f) => (
                   <li key={f} className="flex items-center gap-3 text-body-small text-gray-800">
-                    <CheckIcon className="w-4 h-4 flex-shrink-0" style={{ color: '#2793b4' }} />
+                    <CheckIcon className="w-4 h-4 shrink-0" style={{ color: '#2793b4' }} />
                     {f}
                   </li>
                 ))}
@@ -540,7 +540,7 @@ export const Landing: React.FC = () => {
             </div>
 
             {/* Plan Anual */}
-            <div className="rounded-3xl p-10 bg-white shadow-sm relative overflow-hidden">
+            <div className="rounded-3xl p-10 bg-white shadow-xs relative overflow-hidden">
               <div className="absolute top-5 right-5 text-cta px-3 py-1.5 rounded-full text-white" style={{ backgroundColor: '#37c88e' }}>
                 Ahorrá 2 meses
               </div>
@@ -552,7 +552,7 @@ export const Landing: React.FC = () => {
               <ul className="mt-8 space-y-4 mb-10">
                 {planFeatures.map((f) => (
                   <li key={f} className="flex items-center gap-3 text-body-small text-gray-800">
-                    <CheckIcon className="w-4 h-4 flex-shrink-0" style={{ color: '#2793b4' }} />
+                    <CheckIcon className="w-4 h-4 shrink-0" style={{ color: '#2793b4' }} />
                     {f}
                   </li>
                 ))}

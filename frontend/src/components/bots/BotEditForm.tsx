@@ -232,7 +232,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Informacion Basica */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Informacion Basica</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -306,7 +306,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
       </div>
 
       {/* Configuracion de Mensajes */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
           Configuracion de Mensajes
         </h2>
@@ -357,7 +357,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
       </div>
 
       {/* Configuracion del Modelo */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
           Configuracion del Modelo
         </h2>
@@ -411,7 +411,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
             id="llm_thinking"
             checked={formData.config.llm_thinking ?? false}
             onChange={(e) => updateConfig('llm_thinking', e.target.checked)}
-            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded-sm"
           />
           <label htmlFor="llm_thinking" className="ml-2 text-sm text-gray-900">
             Habilitar modo "thinking" (razonamiento) — solo aplica con DeepSeek. Útil para
@@ -422,7 +422,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
       </div>
 
       {/* Configuracion RAG */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Configuracion RAG</h2>
 
         <div className="space-y-4">
@@ -432,7 +432,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
               id="use_rag"
               checked={formData.config.use_rag}
               onChange={(e) => updateConfig('use_rag', e.target.checked)}
-              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded-sm"
             />
             <label htmlFor="use_rag" className="ml-2 text-sm text-gray-900">
               Habilitar RAG (Retrieval Augmented Generation)
@@ -465,7 +465,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
       </div>
 
       {/* Rate Limiting */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Rate Limiting</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -518,7 +518,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
       </div>
 
       {/* Flujo de Captura de Datos */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-1">
           Flujo de Captura de Datos
         </h2>
@@ -550,7 +550,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
               id="flow_enabled"
               checked={formData.config.flow?.enabled ?? false}
               onChange={(e) => updateFlow({ enabled: e.target.checked })}
-              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded-sm"
             />
             <label htmlFor="flow_enabled" className="ml-2 text-sm text-gray-900">
               Habilitar flujo conversacional de captura de datos
@@ -565,7 +565,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
                   id="skip_if_known"
                   checked={formData.config.flow?.skip_if_known ?? true}
                   onChange={(e) => updateFlow({ skip_if_known: e.target.checked })}
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded-sm"
                 />
                 <label htmlFor="skip_if_known" className="ml-2 text-sm text-gray-900">
                   Omitir preguntas si el dato ya se conoce (clientes recurrentes)
@@ -612,7 +612,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
                 {showFlowJson && (
                   <div className="mb-4 space-y-2 bg-gray-50 border border-gray-300 rounded-lg p-3">
                     <p className="text-xs text-gray-700">
-                      Pegá un JSON con la forma de <code className="bg-gray-100 px-1 rounded">FlowConfig</code> (steps,
+                      Pegá un JSON con la forma de <code className="bg-gray-100 px-1 rounded-sm">FlowConfig</code> (steps,
                       completion_message, skip_if_known) y aplicalo, o copiá el actual para reutilizarlo en otro
                       agente.
                     </p>
@@ -750,7 +750,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
                             id={`step_req_${index}`}
                             checked={step.required ?? true}
                             onChange={(e) => updateFlowStep(index, { required: e.target.checked })}
-                            className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                            className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded-sm"
                           />
                           <label htmlFor={`step_req_${index}`} className="ml-1.5 text-xs text-gray-800">
                             Requerido
@@ -768,7 +768,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
       </div>
 
       {/* Archivo de configuración avanzada del agente (ius_config) */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow-sm p-6">
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-xl font-semibold text-gray-900">Archivo de configuración</h2>
           {formData.config.ius_config ? (
@@ -785,7 +785,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
         </div>
         <p className="text-sm text-gray-700 mb-4">
           Cargá un JSON de configuración avanzada, propio de este negocio (identidad, reglas de
-          calificación, tono, restricciones, etc. — ver <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">agent_identity</code> para
+          calificación, tono, restricciones, etc. — ver <code className="text-xs bg-gray-100 px-1 py-0.5 rounded-sm">agent_identity</code> para
           declarar quién es este agente). Si está configurado, reemplaza por completo el System
           Prompt y el Flujo de Captura de Datos como instrucción principal del agente.
         </p>
@@ -875,7 +875,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
                         ? 'bg-amber-50 border-amber-200 text-amber-700'
                         : 'bg-blue-50 border-blue-200 text-blue-700';
                     return (
-                      <div key={i} className={`text-xs border rounded p-2 ${color}`}>
+                      <div key={i} className={`text-xs border rounded-sm p-2 ${color}`}>
                         <span className="font-mono font-medium">{issue.field}</span>: {issue.message}
                       </div>
                     );
@@ -907,7 +907,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-sm font-medium text-gray-900 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-sm font-medium text-gray-900 rounded-lg hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />

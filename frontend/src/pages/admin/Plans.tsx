@@ -101,12 +101,10 @@ export const Plans = () => {
 
   return (
     <AppLayout>
-      <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
+      <div className="flex flex-col gap-4">
         <PageHeader
           title="Planes"
           description={`${plans.length} plan${plans.length !== 1 ? 'es' : ''} en total`}
-          titleClassName="font-semibold uppercase tracking-[0.08em]"
-          descriptionClassName="text-gray-800"
           actions={
             <Button variant="primary" onClick={openCreateModal}>
               + Nuevo Plan
@@ -162,7 +160,7 @@ export const Plans = () => {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
             <h2 className="text-xl font-bold text-gray-900 mb-4">
               {editingPlan ? 'Editar Plan' : 'Nuevo Plan'}

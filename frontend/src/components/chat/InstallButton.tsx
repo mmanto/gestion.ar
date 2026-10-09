@@ -53,7 +53,7 @@ export function InstallButton() {
     <div className="fixed bottom-32 right-4 z-40">
       <button
         onClick={handleClick}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg text-sm font-medium bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        className="flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg text-sm font-medium bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 transition-all focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         title="Instalar Asistente"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

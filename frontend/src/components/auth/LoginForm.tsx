@@ -60,7 +60,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   };
 
   const inputClass =
-    'h-9 w-full rounded-lg border px-3 py-1.5 text-sm outline-none transition-colors ' +
+    'h-9 w-full rounded-lg border px-3 py-1.5 text-sm outline-hidden transition-colors ' +
     'placeholder:text-slate-400 focus:border-[#25357a] focus:ring-2 focus:ring-[#25357a]/20 ' +
     'disabled:opacity-50 disabled:cursor-not-allowed';
 

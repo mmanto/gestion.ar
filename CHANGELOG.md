@@ -225,6 +225,45 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   enlace oficial.
 
 ### Cambiado
+- **Rediseño del template «Clásico» del admin (`frontend/`)** según el sistema de
+  diseño de `devbout-ui/base` (estilo shadcn *base-mira*). El template `default`
+  pasa de navbar+sidebar navy propio a un shell con sidebar colapsable a iconos
+  (16rem ↔ 3rem, cookie `sidebar_state`), header de `h-16` con breadcrumb y
+  contenido en un inset sobre `bg-background`; se elimina el chrome de tarjeta
+  hardcodeado (`rounded-[1.4rem] shadow-[…] p-6 sm:p-8`) de 14 páginas. Para eso
+  el frontend migra a **Tailwind CSS 4 (CSS-first)**: se borran
+  `tailwind.config.js` y `postcss.config.js`, entra `@tailwindcss/vite` y todos
+  los tokens viven en `src/index.css` (`@theme inline` + `:root`/`.dark` en
+  oklch, `--radius: 0.625rem`). Se portan las primitivas de base
+  (`src/components/ui/*`: sidebar, dialog, sheet, select, dropdown-menu, badge,
+  table-adjacent, tooltip, etc.) y las compartidas de
+  `src/components/common/*` (Button con variantes/tamaños de caja, Card, Table,
+  PageHeader, Alert, EmptyState, Spinner, Toast) se reescriben con esos tokens.
+  `ButtonProps` conserva los alias `primary`/`danger` y `md` porque es contrato
+  del remoto Module Federation `appointments`. Se elimina el eje de acento por
+  template (`styles/accentTheme.ts`, `hooks/useAccentTheme.ts`) y el
+  `SidebarContext` propio (`context/SidebarContext.tsx`, `hooks/useSidebar.ts`,
+  `types/sidebar.types.ts`, `components/layout/Sidebar.tsx`). Ver
+  `docs/design/DESIGN.md`.
+- **Sistema de temas con pantalla `Apariencia` (`/apariencia`)**. Nuevo catálogo
+  de 9 presets vendoreado (`src/lib/theme-presets/*`, generado con
+  `scripts/generate-theme-presets.mjs`), más selector de **modo de color**
+  (Claro / Oscuro / Sistema, que sigue la preferencia del SO; la clase `.dark`
+  va en `<html>` y la tecla `d` sigue alternando), tonos de bloque y tamaño de
+  títulos. La elección se persiste en `localStorage['theme-preset']` /
+  `['gestionar-theme']` y se aplica **antes del primer render**
+  (`bootstrapThemePreset()`/`bootstrapColorScheme()` en `src/main.tsx`),
+  emitiendo CSS `html:root` / `html:root.dark`. Es global a toda la app (afecta
+  también a `kero` y a las páginas públicas).
+- **El listado de tenants pasó de tarjetas a la grilla de `@mmanto/devbout-ui`**
+  (`frontend/src/pages/admin/Tenants.tsx`). La pantalla usa el `DataTable`
+  declarativo del paquete: buscador por nombre, orden, selector de columnas y
+  paginación, y el detalle navega por el adapter de router (`EntityNavigateProvider`
+  con el `navigate` de react-router). Las columnas muestran lo mismo que las
+  tarjetas (tenant, dominio, estado) y el estado pasó a chips con tokens
+  semánticos (`--success`/`--warning`/`--destructive`). El alta sigue en el modal
+  de siempre. El paquete se consume desde npm (Apache-2.0) y sus clases se
+  escanean con `@import "@mmanto/devbout-ui/tailwind.css"` en `frontend/src/index.css`.
 - **Colapso de contenedores por-tenant a 2 compartidos** (breaking infra, ver
   ADR-027). Los 13 contenedores `frontend-tenant-<slug>` + `landing-<slug>` pasan
   a un único `frontend-tenant` (SPA de todos, tenant resuelto por Host contra

@@ -1,54 +1,50 @@
 import React, { useId } from 'react';
+import { Input as InputControl } from '../ui/input';
 
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface InputProps
+  extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   helperText?: string;
   fullWidth?: boolean;
 }
 
+/**
+ * Envoltorio de formulario de gestion.ar: conserva la API histórica
+ * (`label`/`error`/`helperText`/`fullWidth`) y delega el control en la
+ * primitiva `components/ui/input` portada de devbout-ui/base.
+ */
 export const Input: React.FC<InputProps> = ({
   label,
   error,
   helperText,
   fullWidth = false,
-  className = '',
+  className,
   id,
   ...props
 }) => {
   const generatedId = useId();
   const inputId = id || generatedId;
-  const widthStyles = fullWidth ? 'w-full' : '';
 
   return (
-    <div className={`${widthStyles}`}>
+    <div className={fullWidth ? 'w-full' : undefined}>
       {label && (
         <label
           htmlFor={inputId}
-          className="block text-sm font-medium text-gray-900 mb-1"
+          className="block text-xs font-medium text-foreground mb-1"
         >
           {label}
         </label>
       )}
-      <input
+      <InputControl
         id={inputId}
-        className={`
-          block w-full px-4 py-2 text-gray-900 border rounded-lg
-          focus:outline-none focus:ring-2 focus:ring-offset-0 transition-all duration-200
-          ${error
-            ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-            : 'border-gray-300 focus:ring-primary focus:border-primary'
-          }
-          disabled:bg-gray-100 disabled:cursor-not-allowed
-          ${className}
-        `}
+        aria-invalid={error ? true : undefined}
+        className={className}
         {...props}
       />
-      {error && (
-        <p className="mt-1 text-sm text-red-600">{error}</p>
-      )}
+      {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
       {helperText && !error && (
-        <p className="mt-1 text-sm text-gray-700">{helperText}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{helperText}</p>
       )}
     </div>
   );

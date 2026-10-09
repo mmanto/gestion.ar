@@ -93,7 +93,7 @@ const ConversationFilters = ({ onFiltersChange, totalResults }: ConversationFilt
               <select
                 value={platform}
                 onChange={(e) => handlePlatformChange(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
               >
                 <option value="">Todas</option>
                 <option value="whatsapp">WhatsApp</option>
@@ -107,7 +107,7 @@ const ConversationFilters = ({ onFiltersChange, totalResults }: ConversationFilt
               <select
                 value={sortBy}
                 onChange={(e) => handleSortChange(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
               >
                 <option value="updated_at">Última actualización</option>
                 <option value="created_at">Fecha de creación</option>
@@ -122,7 +122,7 @@ const ConversationFilters = ({ onFiltersChange, totalResults }: ConversationFilt
               <select
                 value={order}
                 onChange={(e) => handleOrderChange(e.target.value as 'asc' | 'desc')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
               >
                 <option value="desc">Descendente</option>
                 <option value="asc">Ascendente</option>

@@ -109,7 +109,7 @@ export function UserLandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white flex flex-col items-center justify-center p-6 gap-8">
+    <div className="min-h-screen bg-linear-to-br from-indigo-50 to-white flex flex-col items-center justify-center p-6 gap-8">
       {activeBots.length > 1 && (
         <div className="text-center mb-2">
           <h1 className="text-2xl font-bold text-gray-800">{`Servicios de @${username}`}</h1>

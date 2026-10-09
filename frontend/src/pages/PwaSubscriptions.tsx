@@ -22,10 +22,8 @@ import { Alert } from '../components/common/Alert';
 import { EmptyState } from '../components/common/EmptyState';
 import { Spinner } from '../components/common/Spinner';
 import { Button } from '../components/common/Button';
-import { useAccentTheme } from '../hooks/useAccentTheme';
 
 export default function PwaSubscriptions() {
-  const { accent } = useAccentTheme();
   const { botId, channelId } = useParams<{ botId: string; channelId: string }>();
   const navigate = useNavigate();
 
@@ -92,7 +90,7 @@ export default function PwaSubscriptions() {
 
   return (
     <AppLayout>
-      <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
+      <div className="flex flex-col gap-4">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <button
@@ -107,8 +105,6 @@ export default function PwaSubscriptions() {
           <PageHeader
             title="Suscripciones Push"
             description="Canal PWA — Notificaciones push (VAPID)"
-            titleClassName="font-semibold uppercase tracking-[0.08em] text-2xl"
-            descriptionClassName="text-gray-800"
           />
         </div>
 
@@ -118,11 +114,11 @@ export default function PwaSubscriptions() {
           {/* Estadísticas */}
           {stats && (
             <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4">
+              <div className="bg-white rounded-lg shadow-xs border border-gray-300 p-4">
                 <p className="text-sm text-gray-900 uppercase tracking-wide">Suscriptores activos</p>
-                <p className="text-3xl font-normal mt-1" style={{ color: accent }}>{stats.active_subscriptions}</p>
+                <p className="text-3xl font-normal mt-1 text-foreground">{stats.active_subscriptions}</p>
               </div>
-              <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4">
+              <div className="bg-white rounded-lg shadow-xs border border-gray-300 p-4">
                 <p className="text-sm text-gray-900 uppercase tracking-wide">Total histórico</p>
                 <p className="text-3xl font-normal text-gray-800 mt-1">{stats.total_subscriptions}</p>
               </div>
@@ -131,7 +127,7 @@ export default function PwaSubscriptions() {
 
           {/* Formulario de envío */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-5">
+            <div className="bg-white rounded-lg shadow-xs border border-gray-300 p-5">
               <h2 className="text-lg font-normal text-gray-900 mb-4">Enviar notificación</h2>
               <form onSubmit={handleSendNotification} className="space-y-3">
                 <div>
@@ -140,7 +136,7 @@ export default function PwaSubscriptions() {
                     type="text"
                     value={notifForm.title}
                     onChange={(e) => setNotifForm((f) => ({ ...f, title: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-hidden focus:ring-2 focus:ring-ring/30"
                     required
                   />
                 </div>
@@ -150,7 +146,7 @@ export default function PwaSubscriptions() {
                     value={notifForm.body}
                     onChange={(e) => setNotifForm((f) => ({ ...f, body: e.target.value }))}
                     rows={3}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-hidden focus:ring-2 focus:ring-ring/30 resize-none"
                     placeholder="Texto de la notificación..."
                     required
                   />
@@ -161,7 +157,7 @@ export default function PwaSubscriptions() {
                     type="text"
                     value={notifForm.url ?? ''}
                     onChange={(e) => setNotifForm((f) => ({ ...f, url: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-hidden focus:ring-2 focus:ring-ring/30"
                     placeholder="/chat/c/channel_xxx"
                   />
                 </div>
@@ -187,7 +183,7 @@ export default function PwaSubscriptions() {
 
           {/* Lista de suscripciones */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
+            <div className="bg-white rounded-lg shadow-xs border border-gray-300 overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-300">
                 <h2 className="text-lg font-normal text-gray-900">
                   Suscriptores activos ({subscriptions.length})
@@ -216,7 +212,7 @@ export default function PwaSubscriptions() {
                         </p>
                         <div className="flex items-center gap-3 mt-1">
                           {sub.client_id && (
-                            <span className="text-sm" style={{ color: accent }}>
+                            <span className="text-sm text-foreground">
                               Cliente vinculado
                             </span>
                           )}
@@ -230,7 +226,7 @@ export default function PwaSubscriptions() {
                       </div>
                       <button
                         onClick={() => handleDelete(sub.subscription_id)}
-                        className="ml-3 flex-shrink-0 text-gray-400 hover:text-red-600 transition-colors"
+                        className="ml-3 shrink-0 text-gray-400 hover:text-red-600 transition-colors"
                         aria-label="Eliminar suscripción"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

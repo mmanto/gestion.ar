@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { useAccentTheme } from '../../hooks/useAccentTheme';
 // import { publicService } from '../../services/public.service';
 import { TemplatePicker } from './TemplatePicker';
 
@@ -12,7 +11,7 @@ interface UserMenuProps {
 
 export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
   const { user, logout } = useAuth();
-  const { accent } = useAccentTheme();
+  const accent = 'var(--primary)';
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -52,12 +51,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
   const isLight = variant === 'light';
 
   const triggerClass = isLight
-    ? 'flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200'
-    : 'flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-white/30';
+    ? 'flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors focus:outline-hidden focus:ring-2 focus:ring-gray-200'
+    : 'flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors focus:outline-hidden focus:ring-2 focus:ring-white/30';
 
   const avatarWrapClass = isLight
-    ? 'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0'
-    : 'w-8 h-8 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0';
+    ? 'w-8 h-8 rounded-full flex items-center justify-center shrink-0'
+    : 'w-8 h-8 bg-white/20 rounded-full flex items-center justify-center shrink-0';
 
   const avatarTextClass = isLight
     ? 'font-editorial font-semibold text-lg tracking-[0.08em] text-gray-900'
@@ -68,8 +67,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
     : 'hidden sm:block text-sm font-medium text-white/90 max-w-[120px] truncate';
 
   const chevronClass = isLight
-    ? `w-3.5 h-3.5 text-gray-400 flex-shrink-0 transition-transform duration-150 ${menuOpen ? 'rotate-180' : ''}`
-    : `w-3.5 h-3.5 text-white/50 flex-shrink-0 transition-transform duration-150 ${menuOpen ? 'rotate-180' : ''}`;
+    ? `w-3.5 h-3.5 text-gray-400 shrink-0 transition-transform duration-150 ${menuOpen ? 'rotate-180' : ''}`
+    : `w-3.5 h-3.5 text-white/50 shrink-0 transition-transform duration-150 ${menuOpen ? 'rotate-180' : ''}`;
 
   return (
     <div className="relative" ref={menuRef}>
@@ -96,7 +95,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
           <div className="relative px-4 pt-4 pb-5" style={{ backgroundColor: accent }}>
           
             <div className="flex items-center gap-3 pr-16">
-              <div className="w-12 h-12 bg-white/20 ring-2 ring-white/30 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+              <div className="w-12 h-12 bg-white/20 ring-2 ring-white/30 rounded-full flex items-center justify-center shrink-0 overflow-hidden">
                 {user?.avatar_url ? (
                   <img src={user.avatar_url} alt={fullName} className="w-full h-full object-cover" />
                 ) : (
@@ -120,7 +119,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
               to="/settings"
               className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-900 hover:bg-gray-50 transition-colors"
             >
-              <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
@@ -138,7 +137,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
               className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-900 hover:bg-gray-50 transition-colors"
             >
               <svg
-                className="w-3 h-3 flex-shrink-0"
+                className="w-3 h-3 shrink-0"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"

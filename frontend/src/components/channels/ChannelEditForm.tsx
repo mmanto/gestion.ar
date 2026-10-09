@@ -172,7 +172,7 @@ export const ChannelEditForm = ({ channel, tenantUsers, onSave, onCancel, saving
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Informacion Basica */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Informacion Basica</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -275,7 +275,7 @@ export const ChannelEditForm = ({ channel, tenantUsers, onSave, onCancel, saving
 
       {/* Configuracion de WhatsApp */}
       {channel.channel_type === 'whatsapp' && formData.whatsapp_config && (
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow-sm p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Configuracion de WhatsApp
             {formData.whatsapp_config.provider && (
@@ -457,7 +457,7 @@ export const ChannelEditForm = ({ channel, tenantUsers, onSave, onCancel, saving
 
       {/* Configuracion de Telegram */}
       {channel.channel_type === 'telegram' && formData.telegram_config && (
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow-sm p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Configuracion de Telegram
           </h2>

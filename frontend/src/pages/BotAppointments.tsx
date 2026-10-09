@@ -5,7 +5,6 @@ import { PageHeader } from '../components/common/PageHeader';
 import { Input } from '../components/common/Input';
 import { Button } from '../components/common/Button';
 import { Card } from '../components/common/Card';
-import { useAccentTheme } from '../hooks/useAccentTheme';
 import api from '../services/api';
 import tenantAdminService from '../services/tenantAdmin.service';
 import type { BotModuleInfo } from '../types/tenant.types';
@@ -30,7 +29,7 @@ const ModuleUnavailablePanel = () => (
 );
 
 export const BotAppointments = () => {
-  const { accent } = useAccentTheme();
+  const accent = 'var(--primary)';
   const { botId } = useParams<{ botId: string }>();
   const [moduleInfo, setModuleInfo] = useState<BotModuleInfo | null>(null);
   const [moduleLoading, setModuleLoading] = useState(true);
@@ -49,17 +48,17 @@ export const BotAppointments = () => {
 
   return (
     <AppLayout>
-      <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
+      <div className="flex flex-col gap-4">
         <nav className="mb-4">
           <ol className="flex items-center space-x-2 text-base text-gray-900">
             <li>
-              <Link to="/bots" className="hover:underline" style={{ color: accent }}>
+              <Link to="/bots" className="hover:underline text-foreground">
                 Agentes
               </Link>
             </li>
             <li>/</li>
             <li>
-              <Link to={`/bots/${botId}`} className="hover:underline" style={{ color: accent }}>
+              <Link to={`/bots/${botId}`} className="hover:underline text-foreground">
                 Agente
               </Link>
             </li>
@@ -71,8 +70,6 @@ export const BotAppointments = () => {
         <PageHeader
           title="Turnos"
           description="Gestión de recursos, servicios, disponibilidad y turnos reservados"
-          titleClassName="font-semibold uppercase tracking-[0.08em]"
-          descriptionClassName="text-gray-800"
         />
 
         {moduleLoading ? (

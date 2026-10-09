@@ -20,7 +20,7 @@ export const Conversations = () => {
   if (error) {
     return (
       <AppLayout>
-        <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
+        <div className="flex flex-col gap-4">
           <Alert variant="error">Error: {error}</Alert>
         </div>
       </AppLayout>
@@ -29,12 +29,10 @@ export const Conversations = () => {
 
   return (
     <AppLayout>
-        <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
+        <div className="flex flex-col gap-4">
           <PageHeader
             title="Conversaciones"
             description="Administra y revisa todas las conversaciones de tus clientes"
-            titleClassName="font-semibold uppercase tracking-[0.08em]"
-            descriptionClassName="text-gray-800"
           />
 
           {/* Filters */}

@@ -17,6 +17,7 @@
 | Knowledge Base | `/knowledge-base` | Gestión de documentos RAG |
 | Chat Web | `/chat/:botId` | Chat público embebible para canal web |
 | Chat Canal | `/chat/c/:channelId` | Chat público de un canal específico |
+| Apariencia | `/apariencia` | Tema global del panel: preset de diseño (9 presets + predeterminado), modo claro/oscuro, tonos de bloque y tamaño de títulos. Solo `super_admin` |
 
 **Frontend de tenant (`frontend-tenant/`, un panel por tenant):**
 

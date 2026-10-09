@@ -45,13 +45,13 @@ export function ChatInputBar({ onSend, disabled = false }: ChatInputBarProps) {
         disabled={disabled}
         placeholder="Escribe un mensaje..."
         rows={1}
-        className="flex-1 resize-none rounded-xl border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:bg-gray-50 disabled:text-gray-400 leading-5"
+        className="flex-1 resize-none rounded-xl border border-gray-300 px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-400 disabled:bg-gray-50 disabled:text-gray-400 leading-5"
         style={{ minHeight: '40px', maxHeight: '120px' }}
       />
       <button
         onClick={handleSend}
         disabled={disabled || !text.trim()}
-        className="flex-shrink-0 w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        className="shrink-0 w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         aria-label="Enviar mensaje"
       >
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

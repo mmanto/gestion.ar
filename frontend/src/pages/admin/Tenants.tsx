@@ -1,6 +1,13 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Building2 } from 'lucide-react';
+import {
+  DataTable,
+  defineTableDTO,
+  EntityNavigateProvider,
+  EntityViewProvider,
+  type TableDTO,
+} from '@mmanto/devbout-ui';
 import { AppLayout } from '../../components/layout/AppLayout';
 import { LoadingPage } from '../../components/common/Spinner';
 import { PageHeader } from '../../components/common/PageHeader';
@@ -11,19 +18,24 @@ import { Button } from '../../components/common/Button';
 import tenantAdminService from '../../services/tenantAdmin.service';
 import type { Plan, Tenant, TenantStatus } from '../../types/tenant.types';
 
-const statusColors: Record<TenantStatus, string> = {
-  active: 'bg-green-200 text-green-950',
-  suspended: 'bg-red-200 text-red-950',
-  trial: 'bg-yellow-200 text-yellow-950',
-};
-
 const statusLabels: Record<TenantStatus, string> = {
   active: 'Activo',
   suspended: 'Suspendido',
   trial: 'Prueba',
 };
 
+/**
+ * Chip de estado con tokens (equivalente a un `<Badge variant="success|warning|
+ * destructive">`; el componente Badge del paquete llega con la próxima versión).
+ */
+const statusClasses: Record<TenantStatus, string> = {
+  active: 'bg-success/15 text-success',
+  suspended: 'bg-destructive/15 text-destructive',
+  trial: 'bg-warning/15 text-warning',
+};
+
 export const Tenants = () => {
+  const navigate = useNavigate();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -78,18 +90,62 @@ export const Tenants = () => {
     }
   };
 
+  /**
+   * DTO de la grilla: la tabla se encarga del buscador, el orden, la
+   * visibilidad de columnas y la paginación. El alta sigue en el modal de la
+   * página (crea contra la API y recarga la lista).
+   */
+  const dto = useMemo<TableDTO<Tenant>>(
+    () =>
+      defineTableDTO<Tenant>({
+        rowId: (tenant) => tenant.tenant_id,
+        search: { columnId: 'name', placeholder: 'Buscar tenant' },
+        columnLabels: {
+          name: 'Tenant',
+          domain: 'Dominio',
+          status: 'Estado',
+        },
+        columns: [
+          { id: 'name', accessorKey: 'name', header: 'Tenant' },
+          {
+            id: 'domain',
+            header: 'Dominio',
+            cell: ({ row }) =>
+              row.original.domain || (
+                <span className="italic text-muted-foreground">sin dominio asignado</span>
+              ),
+          },
+          {
+            id: 'status',
+            header: 'Estado',
+            cell: ({ row }) => (
+              <span
+                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusClasses[row.original.status]}`}
+              >
+                {statusLabels[row.original.status]}
+              </span>
+            ),
+          },
+        ],
+        detail: {
+          label: 'Ver detalle',
+          title: (tenant) => tenant.name,
+          href: (tenant) => `/admin/tenants/${tenant.tenant_id}`,
+        },
+      }),
+    []
+  );
+
   if (loading) {
     return <LoadingPage />;
   }
 
   return (
     <AppLayout>
-      <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
+      <div className="flex flex-col gap-4">
         <PageHeader
           title="Tenants"
           description={`${total} tenant${total !== 1 ? 's' : ''} en total`}
-          titleClassName="font-semibold uppercase tracking-[0.08em]"
-          descriptionClassName="text-gray-800"
           actions={
             <Button variant="primary" onClick={() => setShowCreateModal(true)}>
               + Nuevo Tenant
@@ -97,16 +153,14 @@ export const Tenants = () => {
           }
         />
 
-        {error && <Alert variant="error" className="mb-6">Error: {error}</Alert>}
+        {error && <Alert variant="error">Error: {error}</Alert>}
 
         {tenants.length === 0 ? (
           <Card shadow="none">
             <EmptyState
-              icon={<Building2 className="w-8 h-8 text-gray-800" />}
+              icon={<Building2 className="w-8 h-8" />}
               title="Todavía no hay tenants"
               description="Creá el primer tenant para empezar a dar de alta un cliente"
-              titleClassName="text-gray-900 text-xl"
-              descriptionClassName="text-gray-900 text-base"
               action={
                 <Button variant="primary" onClick={() => setShowCreateModal(true)}>
                   Crear el primer tenant
@@ -115,61 +169,49 @@ export const Tenants = () => {
             />
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tenants.map((tenant) => (
-              <Link key={tenant.tenant_id} to={`/admin/tenants/${tenant.tenant_id}`}>
-                <Card shadow="none">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-lg font-normal text-gray-900">{tenant.name}</h3>
-                    <span className={`px-2 py-1 text-base font-medium rounded-full ${statusColors[tenant.status]}`}>
-                      {statusLabels[tenant.status]}
-                    </span>
-                  </div>
-                  <p className="text-gray-800 text-base">
-                    {tenant.domain || <span className="text-gray-400 italic">sin dominio asignado</span>}
-                  </p>
-                </Card>
-              </Link>
-            ))}
-          </div>
+          <EntityNavigateProvider navigate={navigate}>
+            <EntityViewProvider>
+              <DataTable dto={dto} data={tenants} />
+            </EntityViewProvider>
+          </EntityNavigateProvider>
         )}
       </div>
 
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Nuevo Tenant</h2>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-card text-card-foreground rounded-xl border border-border shadow-md p-6 w-full max-w-md">
+            <h2 className="text-base font-medium text-foreground mb-4">Nuevo Tenant</h2>
             <form onSubmit={handleCreateTenant}>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-900 mb-1">Nombre *</label>
+                <label className="block text-xs font-medium text-foreground mb-1">Nombre *</label>
                 <input
                   type="text"
                   value={newTenant.name}
                   onChange={(e) => setNewTenant({ ...newTenant, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full rounded-md border border-input bg-input/20 px-2 py-1.5 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
                   placeholder="Ej: IUS Legal"
                   required
                 />
               </div>
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-900 mb-1">Dominio propio</label>
+                <label className="block text-xs font-medium text-foreground mb-1">Dominio propio</label>
                 <input
                   type="text"
                   value={newTenant.domain}
                   onChange={(e) => setNewTenant({ ...newTenant, domain: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full rounded-md border border-input bg-input/20 px-2 py-1.5 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
                   placeholder="Ej: ius.com.mx"
                 />
-                <p className="text-xs text-gray-700 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Se puede completar más adelante, antes de dar de alta el contenedor del tenant.
                 </p>
               </div>
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-900 mb-1">Plan *</label>
+                <label className="block text-xs font-medium text-foreground mb-1">Plan *</label>
                 <select
                   value={newTenant.plan_id}
                   onChange={(e) => setNewTenant({ ...newTenant, plan_id: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full rounded-md border border-input bg-input/20 px-2 py-1.5 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
                   required
                 >
                   {plans.length === 0 && <option value="">No hay planes creados</option>}

@@ -75,10 +75,10 @@ export function ChatInterface({ botId, channelId }: ChatInterfaceProps) {
             >
               <div className={`flex flex-col gap-2 ${widget ? 'max-w-[92%] w-full sm:max-w-[340px]' : 'max-w-[78%]'}`}>
                 <div
-                  className={`rounded-2xl px-4 py-2.5 text-sm shadow-sm whitespace-pre-wrap break-words ${
+                  className={`rounded-2xl px-4 py-2.5 text-sm shadow-xs whitespace-pre-wrap break-words ${
                     isUser
-                      ? 'bg-indigo-600 text-white rounded-br-sm'
-                      : 'bg-white text-gray-800 border border-gray-300 rounded-bl-sm'
+                      ? 'bg-indigo-600 text-white rounded-br-xs'
+                      : 'bg-white text-gray-800 border border-gray-300 rounded-bl-xs'
                   }`}
                 >
                   {msg.content}

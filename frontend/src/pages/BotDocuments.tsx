@@ -8,7 +8,6 @@ import { EmptyState } from '../components/common/EmptyState';
 import { Spinner } from '../components/common/Spinner';
 import { Button } from '../components/common/Button';
 import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '../components/common/Table';
-import { useAccentTheme } from '../hooks/useAccentTheme';
 import botsService from '../services/bots.service';
 import documentsService, { type RAGDocument, type RAGStats } from '../services/documents.service';
 import tenantAdminService from '../services/tenantAdmin.service';
@@ -56,7 +55,6 @@ const ModuleUnavailablePanel = () => (
 // fetches contra document_router, que devuelve 403 si el módulo no está
 // disponible (ver BotDocuments más abajo).
 const DocumentsWorkspace = ({ botId }: { botId: string }) => {
-  const { accent } = useAccentTheme();
   const [bot, setBot] = useState<Bot | null>(null);
   const [documents, setDocuments] = useState<RAGDocument[]>([]);
   const [stats, setStats] = useState<RAGStats | null>(null);
@@ -173,19 +171,19 @@ const DocumentsWorkspace = ({ botId }: { botId: string }) => {
 
   return (
     <AppLayout>
-      <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
+      <div className="flex flex-col gap-4">
 
         {/* Breadcrumb */}
         <nav className="mb-4">
           <ol className="flex items-center space-x-2 text-base text-gray-900">
             <li>
-              <Link to="/bots" className="hover:underline" style={{ color: accent }}>
+              <Link to="/bots" className="hover:underline text-foreground">
                 Agentes
               </Link>
             </li>
             <li>/</li>
             <li>
-              <Link to={`/bots/${botId}`} className="hover:underline" style={{ color: accent }}>
+              <Link to={`/bots/${botId}`} className="hover:underline text-foreground">
                 {bot?.name || 'Agente'}
               </Link>
             </li>
@@ -198,13 +196,11 @@ const DocumentsWorkspace = ({ botId }: { botId: string }) => {
         <PageHeader
           title="Base de conocimiento"
           description="Documentos usados por el RAG de este agente para responder consultas"
-          titleClassName="font-semibold uppercase tracking-[0.08em]"
-          descriptionClassName="text-gray-800"
           actions={
             stats ? (
               <div className="hidden sm:flex gap-6 text-center">
                 <div>
-                  <p className="text-2xl font-normal" style={{ color: accent }}>{documents.length}</p>
+                  <p className="text-2xl font-normal text-foreground">{documents.length}</p>
                   <p className="text-sm text-gray-900 mt-0.5">documentos</p>
                 </div>
                 <div className="border-l border-gray-300 pl-6">
@@ -219,7 +215,7 @@ const DocumentsWorkspace = ({ botId }: { botId: string }) => {
         <div className="space-y-6">
 
           {/* Upload zone */}
-          <div className="bg-white rounded-lg border border-gray-300 shadow-sm p-6">
+          <div className="bg-white rounded-lg border border-gray-300 shadow-xs p-6">
             <h2 className="text-base font-semibold text-gray-800 mb-4">Subir documento</h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
@@ -230,7 +226,7 @@ const DocumentsWorkspace = ({ botId }: { botId: string }) => {
                   value={uploadTitle}
                   onChange={(e) => setUploadTitle(e.target.value)}
                   placeholder="Se usa el nombre del archivo si no se completa"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-hidden focus:ring-2 focus:ring-ring/30 focus:border-ring"
                 />
               </div>
               <div>
@@ -238,7 +234,7 @@ const DocumentsWorkspace = ({ botId }: { botId: string }) => {
                 <select
                   value={uploadCategory}
                   onChange={(e) => setUploadCategory(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-hidden focus:ring-2 focus:ring-ring/30 focus:border-ring"
                 >
                   {CATEGORIES.map((c) => (
                     <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
@@ -254,7 +250,7 @@ const DocumentsWorkspace = ({ botId }: { botId: string }) => {
               onClick={() => !uploading && fileInputRef.current?.click()}
               className={`
                 border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer
-                ${isDragging ? 'border-primary bg-primary/5' : 'border-gray-300 hover:border-primary/50 hover:bg-gray-50'}
+                ${isDragging ? 'border-ring bg-primary/5' : 'border-gray-300 hover:border-ring/50 hover:bg-gray-50'}
                 ${uploading ? 'pointer-events-none opacity-60' : ''}
               `}
             >
@@ -282,7 +278,7 @@ const DocumentsWorkspace = ({ botId }: { botId: string }) => {
                       d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
                   <p className="text-base font-medium text-gray-800">
-                    Arrastrá un archivo o <span style={{ color: accent }}>hacé click para seleccionar</span>
+                    Arrastrá un archivo o <span className="text-foreground">hacé click para seleccionar</span>
                   </p>
                   <p className="text-sm text-gray-800 mt-1">PDF, DOCX, TXT · Sin límite de tamaño</p>
                 </>
@@ -403,7 +399,6 @@ const DocumentsWorkspace = ({ botId }: { botId: string }) => {
 };
 
 export const BotDocuments = () => {
-  const { accent } = useAccentTheme();
   const { botId } = useParams<{ botId: string }>();
   const [moduleInfo, setModuleInfo] = useState<BotModuleInfo | null>(null);
   const [moduleLoading, setModuleLoading] = useState(true);
@@ -433,17 +428,17 @@ export const BotDocuments = () => {
   if (!moduleInfo?.available) {
     return (
       <AppLayout>
-        <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
+        <div className="flex flex-col gap-4">
           <nav className="mb-4">
             <ol className="flex items-center space-x-2 text-base text-gray-900">
               <li>
-                <Link to="/bots" className="hover:underline" style={{ color: accent }}>
+                <Link to="/bots" className="hover:underline text-foreground">
                   Agentes
                 </Link>
               </li>
               <li>/</li>
               <li>
-                <Link to={`/bots/${botId}`} className="hover:underline" style={{ color: accent }}>
+                <Link to={`/bots/${botId}`} className="hover:underline text-foreground">
                   Agente
                 </Link>
               </li>
@@ -455,8 +450,6 @@ export const BotDocuments = () => {
           <PageHeader
             title="Base de conocimiento"
             description="Documentos usados por el RAG de este agente para responder consultas"
-            titleClassName="font-semibold uppercase tracking-[0.08em]"
-            descriptionClassName="text-gray-800"
           />
 
           <ModuleUnavailablePanel />

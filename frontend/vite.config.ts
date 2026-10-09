@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import { federation } from '@module-federation/vite'
 
 // Remote de turnos servido por devbout-appointments (ver ADR-009 en
@@ -34,6 +35,7 @@ const proxyConfig = {
 export default defineConfig({
   plugins: [
     react(),
+    tailwindcss(),
     federation({
       name: 'gestionar-frontend',
       remotes: {

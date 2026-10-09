@@ -88,7 +88,7 @@ const ConversationDetail = ({ conversation, showMetadata = true }: ConversationD
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="p-3">
             <div className="flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-primary" />
+              <MessageSquare className="w-4 h-4 text-foreground" />
               <div>
                 <p className="text-xs text-gray-800">Mensajes</p>
                 <p className="text-lg font-semibold">{formatNumber(messages.length)}</p>
@@ -97,7 +97,7 @@ const ConversationDetail = ({ conversation, showMetadata = true }: ConversationD
           </Card>
           <Card className="p-3">
             <div className="flex items-center gap-2">
-              <Cpu className="w-4 h-4 text-accent" />
+              <Cpu className="w-4 h-4 text-muted-foreground" />
               <div>
                 <p className="text-xs text-gray-800">Tokens</p>
                 <p className="text-lg font-semibold">{formatNumber(conversation.total_tokens_used)}</p>
@@ -115,7 +115,7 @@ const ConversationDetail = ({ conversation, showMetadata = true }: ConversationD
           </Card>
           <Card className="p-3">
             <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-secondary" />
+              <Calendar className="w-4 h-4 text-muted-foreground" />
               <div>
                 <p className="text-xs text-gray-800">Actualizado</p>
                 <p className="text-xs font-semibold">{formatDate(conversation.updated_at)}</p>
@@ -141,13 +141,13 @@ const ConversationDetail = ({ conversation, showMetadata = true }: ConversationD
             onKeyDown={handleKeyDown}
             placeholder="Responder como agente… (Enter para enviar, Shift+Enter nueva línea)"
             disabled={sending}
-            className="flex-1 resize-none rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="flex-1 resize-none rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-ring focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
             style={{ minHeight: '40px', maxHeight: '120px' }}
           />
           <button
             onClick={handleSend}
             disabled={!inputText.trim() || sending}
-            className="flex-shrink-0 w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white hover:bg-primary/90 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="shrink-0 w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white hover:bg-primary/90 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             <Send className="w-4 h-4" />
           </button>

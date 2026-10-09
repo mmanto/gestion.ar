@@ -1,107 +1,273 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@mmanto/devbout-ui/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Tokens de runtime propios. En Tailwind 4 `--text-*` es el namespace de
+   font-size y `--font-*` el de font-family, así que las variables que antes se
+   llamaban `--text-*`/`--font-*` pasan a `--fs-*`/`--fw-*` (evita la
+   auto-referencia y el choque con los pesos). `--font-sans` es Montserrat:
+   identidad de gestion.ar; un preset de Apariencia la pisa con `html:root`. */
+:root {
+  --fs-xs: 0.75rem;   --fs-sm: 0.875rem;  --fs-base: 1rem;    --fs-lg: 1.125rem;
+  --fs-xl: 1.25rem;   --fs-2xl: 1.5rem;   --fs-3xl: 1.875rem; --fs-4xl: 2.25rem;
+  --fs-5xl: 3rem;     --fs-6xl: 3.75rem;  --fs-7xl: 4.5rem;
+  --fw-normal: 400;   --fw-medium: 500;   --fw-semibold: 600; --fw-bold: 700;
+  --leading-text: 1.5;
+  --leading-title: 1.2;
+  /* font-size multiplies against this root size; Montserrat stays the app font. */
+  --font-sans: Montserrat, system-ui, sans-serif;
+  --font-editorial: Montserrat, system-ui, sans-serif;
+  --font-body: var(--font-sans);
+
+  /* ── Tokens base-mira: copiados tal cual devbout-ui/base/app/globals.css ── */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --success: oklch(0.58 0.13 152);
+  --warning: oklch(0.64 0.14 72);
+  --info: oklch(0.56 0.15 250);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  /* Headings inherit the body font unless a design preset overrides it.
+     Kept as a variable because `@theme inline` inlines the value into the
+     `font-heading` utility. */
+  --font-heading-font: var(--font-sans);
+  /* Base heading size; a preset and the choice in Apariencia override it with
+     `html:root`, which has higher specificity. */
+  --title-size: 1.125rem;
+  --title-leading: 1.75rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+/* ── Tokens base-mira en oscuro: copiados tal cual globals.css ── */
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --success: oklch(0.78 0.15 155);
+  --warning: oklch(0.82 0.14 80);
+  --info: oklch(0.76 0.12 250);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@theme inline {
+  /* Escala tipográfica propia (ex tailwind.config.js). `initial` reproduce el
+     reemplazo completo que hacía v3 y borra los companions --text-*--line-height. */
+  --text-*: initial;
+  --text-xs: var(--fs-xs);
+  --text-sm: var(--fs-sm);
+  --text-base: var(--fs-base);
+  --text-lg: var(--fs-lg);
+  --text-xl: var(--fs-xl);
+  --text-2xl: var(--fs-2xl);
+  --text-3xl: var(--fs-3xl);
+  --text-4xl: var(--fs-4xl);
+  --text-5xl: var(--fs-5xl);
+  --text-6xl: var(--fs-6xl);
+  --text-7xl: var(--fs-7xl);
+
+  /* Los pesos viven en `--font-weight-*`, NO en `--font-*` (que es font-family). */
+  --font-weight-*: initial;
+  --font-weight-normal: var(--fw-normal);
+  --font-weight-medium: var(--fw-medium);
+  --font-weight-semibold: var(--fw-semibold);
+  --font-weight-bold: var(--fw-bold);
+
+  --font-sans: var(--font-sans);
+  --font-editorial: var(--font-editorial);
+
+  /* ── Mapeo semántico base-mira: copiado tal cual globals.css ── */
+  --font-heading: var(--font-heading-font, var(--font-sans));
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* NO se portan los mapas de color de marca `primary-50..900`, `secondary-*`,
+     `accent-light/dark` ni `gradient-*`: los usa el template shell, no la
+     identidad global. Sus usos se migran en la Fase 6 (tabla de mapeo). */
+}
+
+/* Heading sizes, one per level: the screen title and everything under it
+   (sections, dialog and sheet titles), scaled proportionally from the same two
+   variables. Declared as `@utility` rather than a `--text-*` scale on purpose:
+   `cn` resolves conflicts with tailwind-merge semantics, where a `--text-*`
+   utility that is not a known size reads as a text *color* and gets dropped
+   next to `text-foreground`. The fractions are exact: with the `:root` values
+   they resolve to 0.875rem/1.25rem, today's section look. */
+@utility heading-screen {
+  font-size: var(--title-size);
+  line-height: var(--title-leading);
+}
+
+@utility heading-section {
+  font-size: calc(var(--title-size) * 7 / 9);
+  line-height: calc(var(--title-leading) * 5 / 7);
+}
 
 @layer base {
-  :root {
-    --font-editorial: 'Montserrat', system-ui, sans-serif;
-    --font-body: 'Montserrat', system-ui, sans-serif;
-
-    /* Escala tipográfica — espeja la escala rem estándar de Tailwind.
-       Único lugar a tocar para cambiar el look & feel de toda la app;
-       tailwind.config.js referencia estas mismas variables. */
-    --text-xs: 0.75rem;    /* 12px — solo metadatos no críticos */
-    --text-sm: 0.875rem;   /* 14px — mínimo para texto que el usuario debe leer */
-    --text-base: 1rem;     /* 16px */
-    --text-lg: 1.125rem;   /* 18px */
-    --text-xl: 1.25rem;    /* 20px */
-    --text-2xl: 1.5rem;    /* 24px */
-    --text-3xl: 1.875rem;  /* 30px */
-    --text-4xl: 2.25rem;   /* 36px */
-    --text-5xl: 3rem;      /* 48px */
-    --text-6xl: 3.75rem;   /* 60px */
-    --text-7xl: 4.5rem;    /* 72px */
-
-    /* Paleta de pesos limitada a 4 — ver tailwind.config.js fontWeight */
-    --font-normal: 400;
-    --font-medium: 500;
-    --font-semibold: 600;
-    --font-bold: 700;
-
-    --leading-text: 1.5;
-    --leading-title: 1.2;
-
-    font-family: var(--font-body);
-    font-size: var(--text-base);
-    line-height: var(--leading-text);
-    font-weight: var(--font-normal);
+  * {
+    @apply border-border outline-ring/50;
   }
-
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply bg-background text-foreground;
     margin: 0;
     min-height: 100vh;
   }
-
+  html {
+    @apply font-sans;
+    /* Escalado proporcional: 16px @1920px de viewport → 28px @3360px (tope 1.75x). */
+    font-size: clamp(1rem, calc(100vw / 120), 1.75rem);
+  }
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-editorial);
-    font-weight: var(--font-semibold);
+    font-family: var(--font-heading-font, var(--font-sans));
+    font-weight: var(--fw-semibold);
     line-height: var(--leading-title);
+  }
+  /* Preflight de v4 pone `cursor: default` en <button>. */
+  button:not(:disabled), [role="button"]:not(:disabled) {
+    cursor: pointer;
   }
 }
 
+/* Clases heredadas que siguen usando las páginas públicas (Landing/Login). */
 @layer components {
-  .font-editorial {
-    font-family: var(--font-editorial);
-  }
-
-  .container {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
-  }
-
   .text-h1 {
     font-family: var(--font-editorial);
-    font-size: clamp(var(--text-4xl), 6vw, var(--text-7xl));
-    font-weight: var(--font-bold);
+    font-size: clamp(var(--fs-4xl), 6vw, var(--fs-7xl));
+    font-weight: var(--fw-bold);
     letter-spacing: 0.01em;
     line-height: var(--leading-title);
   }
 
   .text-h2 {
     font-family: var(--font-editorial);
-    font-size: clamp(var(--text-3xl), 4vw, var(--text-6xl));
-    font-weight: var(--font-semibold);
+    font-size: clamp(var(--fs-3xl), 4vw, var(--fs-6xl));
+    font-weight: var(--fw-semibold);
     letter-spacing: 0.01em;
     line-height: var(--leading-title);
   }
 
   .text-h3 {
     font-family: var(--font-editorial);
-    font-size: clamp(var(--text-xl), 2.5vw, var(--text-3xl));
-    font-weight: var(--font-semibold);
+    font-size: clamp(var(--fs-xl), 2.5vw, var(--fs-3xl));
+    font-weight: var(--fw-semibold);
     letter-spacing: 0.01em;
     line-height: var(--leading-title);
   }
 
   .text-body {
     font-family: var(--font-body);
-    font-size: var(--text-lg);
-    font-weight: var(--font-normal);
+    font-size: var(--fs-lg);
+    font-weight: var(--fw-normal);
     line-height: var(--leading-text);
   }
 
   .text-body-small {
     font-family: var(--font-body);
-    font-size: var(--text-sm);
-    font-weight: var(--font-normal);
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-normal);
     letter-spacing: 0.02em;
     line-height: var(--leading-text);
   }
 
   .text-nav {
     font-family: var(--font-body);
-    font-size: var(--text-sm);
-    font-weight: var(--font-normal);
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-normal);
     letter-spacing: 0.06em;
     line-height: var(--leading-text);
     text-transform: uppercase;
@@ -109,8 +275,8 @@
 
   .text-label {
     font-family: var(--font-body);
-    font-size: var(--text-xs);
-    font-weight: var(--font-medium);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-medium);
     letter-spacing: 0.12em;
     line-height: var(--leading-text);
     text-transform: uppercase;
@@ -118,8 +284,8 @@
 
   .text-cta {
     font-family: var(--font-body);
-    font-size: var(--text-sm);
-    font-weight: var(--font-medium);
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-medium);
     letter-spacing: 0.08em;
     line-height: var(--leading-text);
     text-transform: uppercase;
@@ -133,13 +299,13 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100;
+  @apply bg-muted;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 rounded;
+  @apply bg-border rounded-sm;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400;
+  @apply bg-muted-foreground/40;
 }

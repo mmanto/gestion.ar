@@ -257,12 +257,10 @@ export const TenantDetail = () => {
 
   return (
     <AppLayout>
-      <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
+      <div className="flex flex-col gap-4">
         <PageHeader
           title={tenant.name}
           description={tenant.domain || 'Sin dominio asignado'}
-          titleClassName="font-semibold uppercase tracking-[0.08em]"
-          descriptionClassName="text-gray-800"
           actions={
             <Link to="/admin/tenants" className="text-sm text-gray-800 hover:underline">
               ← Volver a Tenants
@@ -286,7 +284,7 @@ export const TenantDetail = () => {
                 minLength={2}
                 maxLength={100}
                 required
-                className="w-full max-w-sm px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full max-w-sm px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-ring focus:border-transparent"
               />
             </div>
             <div>
@@ -297,7 +295,7 @@ export const TenantDetail = () => {
                 value={generalDomain}
                 onChange={(e) => setGeneralDomain(e.target.value)}
                 placeholder="ej. pachoteayuda.ar"
-                className="w-full max-w-sm px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full max-w-sm px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-ring focus:border-transparent"
               />
               <p className="text-xs text-gray-500 mt-0.5">
                 Dominio propio del tenant (ej. pachoteayuda.ar) — no un subdominio de intellify.pro.
@@ -376,7 +374,7 @@ export const TenantDetail = () => {
                   type="color"
                   value={brandingColor}
                   onChange={(e) => setBrandingColor(e.target.value)}
-                  className="w-10 h-10 rounded border border-gray-300 cursor-pointer p-0.5"
+                  className="w-10 h-10 rounded-sm border border-gray-300 cursor-pointer p-0.5"
                 />
                 <span className="text-sm text-gray-700">{brandingColor}</span>
               </div>
@@ -391,7 +389,7 @@ export const TenantDetail = () => {
                 onChange={(e) => setBrandingTagline(e.target.value)}
                 maxLength={200}
                 placeholder="Ej: Abogados de confianza"
-                className="w-full max-w-sm px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full max-w-sm px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-ring focus:border-transparent"
               />
             </div>
 
@@ -432,9 +430,9 @@ export const TenantDetail = () => {
                   <td className="px-4 py-2 font-medium text-gray-900">
                     <div className="flex items-center gap-2">
                       {u.avatar_url ? (
-                        <img src={u.avatar_url} alt="" className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
+                        <img src={u.avatar_url} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
                       ) : (
-                        <span className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-700 flex-shrink-0">
+                        <span className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-700 shrink-0">
                           {(u.nombre || u.username).charAt(0).toUpperCase()}
                         </span>
                       )}
@@ -506,7 +504,7 @@ export const TenantDetail = () => {
                 <div>
                   <span className="font-medium text-gray-900">{bot.name}</span>
                   <span className="ml-2 text-xs text-gray-700">{bot.business_type}</span>
-                  <Link to={`/bots/${bot.bot_id}`} className="ml-2 text-xs text-primary-700 hover:underline">
+                  <Link to={`/bots/${bot.bot_id}`} className="ml-2 text-xs text-foreground hover:underline">
                     Ver agente
                   </Link>
                 </div>
@@ -564,7 +562,7 @@ export const TenantDetail = () => {
       </div>
 
       {showUserModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Nuevo usuario</h2>
             <form onSubmit={handleCreateUser}>
@@ -651,7 +649,7 @@ export const TenantDetail = () => {
       )}
 
       {editingUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Editar {editingUser.username}</h2>
             <form onSubmit={handleSaveEdit}>

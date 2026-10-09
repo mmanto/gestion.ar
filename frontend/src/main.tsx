@@ -3,6 +3,15 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { setPwaInstallPrompt } from './hooks/pwaInstallPrompt';
+import { bootstrapColorScheme } from './lib/colorScheme';
+import { bootstrapThemePreset } from './lib/theme-presets/script';
+
+// ── Tema persistido antes del primer render ────────────────────────────────
+// La clase `.dark` y los tokens del preset de Apariencia se aplican a <html>
+// antes de que React monte, para que la primera pintura ya salga con el tema
+// elegido (sin flash del tema base).
+bootstrapColorScheme();
+bootstrapThemePreset();
 
 // ── PWA: capturar beforeinstallprompt lo antes posible ──────────────────────
 // Chrome puede disparar este evento antes de que los componentes React monten.

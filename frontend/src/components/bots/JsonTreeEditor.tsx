@@ -41,7 +41,7 @@ const TypeSelect = ({ value, onChange }: { value: JsonType; onChange: (t: JsonTy
   <select
     value={value}
     onChange={(e) => onChange(e.target.value as JsonType)}
-    className="shrink-0 px-1 py-1 border border-gray-200 rounded text-xs bg-white text-gray-600"
+    className="shrink-0 px-1 py-1 border border-gray-200 rounded-sm text-xs bg-white text-gray-600"
   >
     {(Object.keys(typeLabels) as JsonType[]).map((t) => (
       <option key={t} value={t}>
@@ -68,7 +68,7 @@ const PrimitiveEditor = ({
       <select
         value={String(value)}
         onChange={(e) => onChange(e.target.value === 'true')}
-        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+        className="w-full px-2 py-1 border border-gray-300 rounded-sm text-sm"
       >
         <option value="true">true</option>
         <option value="false">false</option>
@@ -81,7 +81,7 @@ const PrimitiveEditor = ({
         type="number"
         value={value as number}
         onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-        className="w-full px-2 py-1 border border-gray-300 rounded text-sm font-mono"
+        className="w-full px-2 py-1 border border-gray-300 rounded-sm text-sm font-mono"
       />
     );
   }
@@ -94,7 +94,7 @@ const PrimitiveEditor = ({
         value={str}
         onChange={(e) => onChange(e.target.value)}
         rows={Math.min(10, Math.max(2, str.split('\n').length))}
-        className="w-full px-2 py-1 border border-gray-300 rounded text-sm font-mono"
+        className="w-full px-2 py-1 border border-gray-300 rounded-sm text-sm font-mono"
       />
     );
   }
@@ -103,7 +103,7 @@ const PrimitiveEditor = ({
       type="text"
       value={str}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full px-2 py-1 border border-gray-300 rounded text-sm font-mono"
+      className="w-full px-2 py-1 border border-gray-300 rounded-sm text-sm font-mono"
     />
   );
 };
@@ -140,7 +140,7 @@ const AddControl = ({
   };
 
   return (
-    <div className="mt-1 flex items-center gap-2 flex-wrap bg-gray-50 border border-gray-200 rounded p-2">
+    <div className="mt-1 flex items-center gap-2 flex-wrap bg-gray-50 border border-gray-200 rounded-sm p-2">
       {kind === 'object' && (
         <input
           type="text"
@@ -149,14 +149,14 @@ const AddControl = ({
           onKeyDown={(e) => e.key === 'Enter' && commit()}
           placeholder="nombre_del_campo"
           autoFocus
-          className="px-2 py-1 border border-gray-300 rounded text-sm font-mono"
+          className="px-2 py-1 border border-gray-300 rounded-sm text-sm font-mono"
         />
       )}
       <TypeSelect value={type} onChange={setType} />
       <button
         type="button"
         onClick={commit}
-        className="px-2 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700"
+        className="px-2 py-1 text-xs bg-indigo-600 text-white rounded-sm hover:bg-indigo-700"
       >
         Agregar
       </button>
@@ -235,7 +235,7 @@ const JsonEntryRow = ({
             onChange={(e) => setDraftKey(e.target.value)}
             onBlur={commitKeyRename}
             onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-            className="w-40 shrink-0 px-1.5 py-1 border border-gray-200 rounded text-xs font-mono font-medium text-gray-700 bg-gray-50"
+            className="w-40 shrink-0 px-1.5 py-1 border border-gray-200 rounded-sm text-xs font-mono font-medium text-gray-700 bg-gray-50"
           />
         ) : (
           <span className="w-10 shrink-0 px-1.5 py-1 text-xs font-mono text-gray-400">[{index}]</span>

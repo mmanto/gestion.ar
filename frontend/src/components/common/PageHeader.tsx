@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '../../lib/utils';
 
 interface PageHeaderProps {
   title: string;
@@ -14,16 +15,22 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   title,
   description,
   actions,
-  titleClassName = 'font-bold',
-  descriptionClassName = 'text-gray-800',
+  titleClassName = '',
+  descriptionClassName = '',
 }) => {
   return (
-    <div className="flex items-start justify-between mb-8">
-      <div>
-        <h1 className={`text-3xl text-gray-900 ${titleClassName}`}>{title}</h1>
-        {description && <p className={`mt-1 ${descriptionClassName}`}>{description}</p>}
+    <div className="flex items-start justify-between gap-4">
+      <div className="min-w-0">
+        <h1 className={cn('font-heading heading-screen font-medium text-foreground', titleClassName)}>
+          {title}
+        </h1>
+        {description && (
+          <p className={cn('text-xs/relaxed text-muted-foreground', descriptionClassName)}>
+            {description}
+          </p>
+        )}
       </div>
-      {actions && <div className="flex-shrink-0">{actions}</div>}
+      {actions && <div className="shrink-0">{actions}</div>}
     </div>
   );
 };

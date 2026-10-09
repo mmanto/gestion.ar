@@ -8,7 +8,6 @@ import { Alert } from '../components/common/Alert';
 import { EmptyState } from '../components/common/EmptyState';
 import { Button } from '../components/common/Button';
 import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '../components/common/Table';
-import { useAccentTheme } from '../hooks/useAccentTheme';
 import clientsService from '../services/clients.service';
 import botsService from '../services/bots.service';
 import type { Client, ClientStatus, ClientFilters } from '../types/client.types';
@@ -36,7 +35,6 @@ const sourceColors: Record<string, string> = {
 };
 
 export const Clients = () => {
-  const { accent } = useAccentTheme();
   const [clients, setClients] = useState<Client[]>([]);
   const [botsMap, setBotsMap] = useState<Record<string, Bot>>({});
   const [loading, setLoading] = useState(true);
@@ -116,12 +114,10 @@ export const Clients = () => {
 
   return (
     <AppLayout>
-        <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
+        <div className="flex flex-col gap-4">
           <PageHeader
             title="Contactos"
             description={`${total} contacto${total !== 1 ? 's' : ''} en total`}
-            titleClassName="font-semibold uppercase tracking-[0.08em]"
-            descriptionClassName="text-gray-800"
           />
 
           {/* Filtros */}
@@ -132,7 +128,7 @@ export const Clients = () => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar por nombre, teléfono o email..."
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ring focus:border-ring outline-hidden"
               />
               <Button type="submit" variant="primary">
                 Buscar
@@ -142,7 +138,7 @@ export const Clients = () => {
             <select
               value={filters.status || ''}
               onChange={(e) => handleStatusFilter(e.target.value as ClientStatus | '')}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-white"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ring focus:border-ring outline-hidden bg-white"
             >
               <option value="">Todos los estados</option>
               <option value="active">Activo</option>
@@ -209,8 +205,7 @@ export const Clients = () => {
                       {botsMap[client.bot_id] ? (
                         <Link
                           to={`/bots/${client.bot_id}/clients`}
-                          className="text-base font-medium hover:underline"
-                          style={{ color: accent }}
+                          className="text-base font-medium hover:underline text-foreground"
                         >
                           {botsMap[client.bot_id].name}
                         </Link>

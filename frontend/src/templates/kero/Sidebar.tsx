@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { NAV_LINKS } from '../../config/navLinks';
-import { useSidebar } from '../../hooks/useSidebar';
+import { useSidebar } from '../../components/ui/sidebar-context';
 
 export const KeroSidebar: React.FC = () => {
   const location = useLocation();
-  const { collapsed, toggleCollapsed } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
+  const collapsed = state === 'collapsed';
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
@@ -27,9 +28,7 @@ export const KeroSidebar: React.FC = () => {
               : 'text-gray-900 hover:text-[#da624a] hover:bg-[#da624a]/5'
           }`}
         >
-          <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            {icon}
-          </svg>
+          {icon}
           {label}
         </Link>
       ))}
@@ -51,9 +50,7 @@ export const KeroSidebar: React.FC = () => {
               : 'text-gray-900 hover:text-[#da624a] hover:bg-[#da624a]/5'
           }`}
         >
-          <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            {icon}
-          </svg>
+          {icon}
           {!collapsed && label}
         </Link>
       ))}
@@ -89,7 +86,7 @@ export const KeroSidebar: React.FC = () => {
         }`}
       >
         <div
-          className={`flex items-center justify-center gap-2 h-20 border-b border-gray-200 flex-shrink-0 transition-all duration-300 ${
+          className={`flex items-center justify-center gap-2 h-20 border-b border-gray-200 shrink-0 transition-all duration-300 ${
             collapsed ? 'px-2' : 'px-5'
           }`}
         >
@@ -100,9 +97,9 @@ export const KeroSidebar: React.FC = () => {
           </Link>
         </div>
         {desktopNavItems}
-        <div className="border-t border-gray-200 flex-shrink-0 px-4 py-3">
+        <div className="border-t border-gray-200 shrink-0 px-4 py-3">
           <button
-            onClick={toggleCollapsed}
+            onClick={toggleSidebar}
             aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
             title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
             className={`w-full flex items-center gap-3 rounded-full text-sm font-medium text-gray-900 hover:text-[#da624a] hover:bg-[#da624a]/5 transition-colors ${
@@ -110,7 +107,7 @@ export const KeroSidebar: React.FC = () => {
             }`}
           >
             <svg
-              className={`w-5 h-5 flex-shrink-0 transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`}
+              className={`w-5 h-5 shrink-0 transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -128,7 +125,7 @@ export const KeroSidebar: React.FC = () => {
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-center gap-2 px-5 h-20 border-b border-gray-200 flex-shrink-0">
+        <div className="flex items-center justify-center gap-2 px-5 h-20 border-b border-gray-200 shrink-0">
           <Link to="/admin/tenants">
             <span className="font-editorial text-2xl font-semibold uppercase tracking-[0.08em] text-gray-800 select-none">
               GESTIONA

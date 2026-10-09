@@ -1,0 +1,228 @@
+// Regenerates lib/theme-presets/catalog.ts.
+//
+//   node scripts/generate-theme-presets.mjs
+//
+// Needs network access: it encodes each curated definition with
+// `shadcn/preset` and asks ui.shadcn.com for the resulting tokens. The app
+// itself never fetches — it ships the generated file.
+import { writeFile } from "node:fs/promises"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
+
+import { encodePreset } from "shadcn/preset"
+
+const OUTPUT = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "lib",
+  "theme-presets",
+  "catalog.ts"
+)
+
+const COMMON = {
+  style: "mira",
+  iconLibrary: "hugeicons",
+  menuAccent: "subtle",
+  menuColor: "default",
+}
+
+const DEFINITIONS = [
+  {
+    name: "Mist",
+    description: "Neutro frío, radio medio y tipografía serif",
+    baseColor: "mist",
+    theme: "mist",
+    chartColor: "mist",
+    radius: "medium",
+    font: "noto-serif",
+    fontHeading: "public-sans",
+  },
+  {
+    name: "Azul",
+    description: "Acento azul sobre neutro",
+    baseColor: "neutral",
+    theme: "blue",
+    chartColor: "blue",
+    radius: "default",
+    font: "inter",
+    fontHeading: "inherit",
+  },
+  {
+    name: "Esmeralda",
+    description: "Verde esmeralda, radio chico",
+    baseColor: "stone",
+    theme: "emerald",
+    chartColor: "emerald",
+    radius: "small",
+    font: "inter",
+    fontHeading: "inherit",
+  },
+  {
+    name: "Violeta",
+    description: "Violeta, radio grande",
+    baseColor: "zinc",
+    theme: "violet",
+    chartColor: "violet",
+    radius: "large",
+    font: "inter",
+    fontHeading: "inherit",
+  },
+  {
+    name: "Ámbar",
+    description: "Ámbar sobre neutro, radio chico",
+    baseColor: "neutral",
+    theme: "amber",
+    chartColor: "amber",
+    radius: "small",
+    font: "inter",
+    fontHeading: "inherit",
+  },
+  {
+    name: "Rosa",
+    description: "Rosa sobre malva",
+    baseColor: "mauve",
+    theme: "rose",
+    chartColor: "rose",
+    radius: "default",
+    font: "inter",
+    fontHeading: "inherit",
+  },
+  {
+    name: "Cian",
+    description: "Cian frío sobre mist",
+    baseColor: "mist",
+    theme: "cyan",
+    chartColor: "cyan",
+    radius: "small",
+    font: "inter",
+    fontHeading: "inherit",
+  },
+  {
+    name: "Índigo",
+    description: "Índigo sobre taupe, radio grande",
+    baseColor: "taupe",
+    theme: "indigo",
+    chartColor: "indigo",
+    radius: "large",
+    font: "inter",
+    fontHeading: "inherit",
+  },
+  {
+    name: "Lima",
+    description: "Lima sobre oliva",
+    baseColor: "olive",
+    theme: "lime",
+    chartColor: "lime",
+    radius: "default",
+    font: "inter",
+    fontHeading: "inherit",
+  },
+]
+
+const IDENTIFIER = /^[A-Za-z_$][A-Za-z0-9_$]*$/
+
+/** Object literal source (unquoted keys where valid, so the output reads as TS). */
+function tsLiteral(value, indent) {
+  const pad = "  ".repeat(indent)
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return "[]"
+    }
+    const items = value
+      .map((item) => `${pad}  ${tsLiteral(item, indent + 1)},`)
+      .join("\n")
+    return `[\n${items}\n${pad}]`
+  }
+
+  if (value && typeof value === "object") {
+    const keys = Object.keys(value)
+    if (keys.length === 0) {
+      return "{}"
+    }
+    const entries = keys
+      .map((key) => {
+        const name = IDENTIFIER.test(key) ? key : JSON.stringify(key)
+        return `${pad}  ${name}: ${tsLiteral(value[key], indent + 1)},`
+      })
+      .join("\n")
+    return `{\n${entries}\n${pad}}`
+  }
+
+  return JSON.stringify(value)
+}
+
+function configFor(definition) {
+  return {
+    style: COMMON.style,
+    baseColor: definition.baseColor,
+    theme: definition.theme,
+    chartColor: definition.chartColor,
+    iconLibrary: COMMON.iconLibrary,
+    font: definition.font,
+    fontHeading: definition.fontHeading,
+    radius: definition.radius,
+    menuAccent: COMMON.menuAccent,
+    menuColor: COMMON.menuColor,
+  }
+}
+
+const errors = []
+const entries = []
+
+for (const definition of DEFINITIONS) {
+  const config = configFor(definition)
+  const code = encodePreset(config)
+  let res
+
+  try {
+    res = await fetch(`https://ui.shadcn.com/init?preset=${code}`)
+  } catch (error) {
+    errors.push(`${definition.name}: ${error.message}`)
+    continue
+  }
+
+  if (!res.ok) {
+    const body = await res.text()
+    errors.push(`${definition.name}: HTTP ${res.status} ${body.slice(0, 120)}`)
+    continue
+  }
+
+  const payload = await res.json()
+  if (!payload?.cssVars?.light || !payload?.cssVars?.dark) {
+    errors.push(
+      `${definition.name}: HTTP ${res.status} missing cssVars.light/dark in response`
+    )
+    continue
+  }
+
+  entries.push({
+    code,
+    name: definition.name,
+    description: definition.description,
+    config,
+    light: payload.cssVars.light,
+    dark: payload.cssVars.dark,
+  })
+}
+
+if (errors.length > 0) {
+  console.error("No catalog written — failed presets:")
+  for (const error of errors) {
+    console.error(`  ${error}`)
+  }
+  process.exit(1)
+}
+
+const file = `// Generated by scripts/generate-theme-presets.mjs — do not edit by hand.
+// Source: https://ui.shadcn.com/init?preset=<code>
+import type { ThemePreset } from "./types"
+
+export const PRESET_CATALOG: ThemePreset[] = ${tsLiteral(entries, 0)}
+`
+
+await writeFile(OUTPUT, file, "utf8")
+
+for (const entry of entries) {
+  console.log(`${entry.name} ${entry.code} ok`)
+}

@@ -8,7 +8,6 @@ import { Alert } from '../components/common/Alert';
 import { EmptyState } from '../components/common/EmptyState';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { useAccentTheme } from '../hooks/useAccentTheme';
 import { ChannelEditForm } from '../components/channels/ChannelEditForm';
 import useChannels from '../hooks/useChannels';
 import channelsService from '../services/channels.service';
@@ -62,7 +61,6 @@ interface CreateChannelForm {
 }
 
 export const BotChannels = () => {
-  const { accent } = useAccentTheme();
   const { botId } = useParams<{ botId: string }>();
   const { channels, loading, error, refetch } = useChannels(botId || '');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -254,18 +252,18 @@ export const BotChannels = () => {
 
   return (
     <AppLayout>
-      <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
+      <div className="flex flex-col gap-4">
           {/* Breadcrumb */}
           <nav className="mb-4">
             <ol className="flex items-center space-x-2 text-base text-gray-900">
               <li>
-                <Link to="/bots" className="hover:underline" style={{ color: accent }}>
+                <Link to="/bots" className="hover:underline text-foreground">
                   Agentes
                 </Link>
               </li>
               <li>/</li>
               <li>
-                <Link to={`/bots/${botId}`} className="hover:underline" style={{ color: accent }}>
+                <Link to={`/bots/${botId}`} className="hover:underline text-foreground">
                   Agente
                 </Link>
               </li>
@@ -277,8 +275,6 @@ export const BotChannels = () => {
           <PageHeader
             title="Canales"
             description="Gestiona los canales de comunicacion del agente"
-            titleClassName="font-semibold uppercase tracking-[0.08em]"
-            descriptionClassName="text-gray-800"
             actions={
               <Button variant="primary" onClick={() => setShowCreateModal(true)}>
                 Nuevo Canal
@@ -324,7 +320,7 @@ export const BotChannels = () => {
 
       {/* Create Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">Nuevo Canal</h2>
             <form onSubmit={handleCreate}>
@@ -696,7 +692,7 @@ export const BotChannels = () => {
 
       {/* QR Modal */}
       {qrChannel && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
             <h2 className="text-xl font-bold mb-1 text-center">QR - {qrChannel.name}</h2>
             <p className="text-sm text-gray-700 mb-4 text-center">Escanea para abrir el chat web</p>
@@ -711,13 +707,13 @@ export const BotChannels = () => {
                   type="text"
                   value={qrBaseUrl}
                   onChange={(e) => setQrBaseUrl(e.target.value)}
-                  className="flex-1 text-xs border border-gray-300 rounded px-2 py-1.5"
+                  className="flex-1 text-xs border border-gray-300 rounded-sm px-2 py-1.5"
                   placeholder="https://xxxx.ngrok.io"
                 />
                 <button
                   onClick={() => handleGenerateQr(qrChannel, qrBaseUrl)}
                   disabled={qrLoading}
-                  className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 whitespace-nowrap"
+                  className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-sm hover:bg-indigo-700 disabled:opacity-50 whitespace-nowrap"
                 >
                   {qrLoading ? '...' : 'Regenerar'}
                 </button>
@@ -770,7 +766,7 @@ export const BotChannels = () => {
 
       {/* Edit Modal */}
       {showEditModal && editingChannel && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-gray-50 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <h2 className="text-xl font-bold mb-4">Editar Canal</h2>
@@ -817,7 +813,7 @@ const ChannelCard = ({ channel, botId, tenantUsers, onActivate, onDeactivate, on
   const isPwaChannel = channel.channel_type === 'pwa';
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white rounded-lg shadow-sm p-6">
       <div className="flex justify-between items-start">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -883,18 +879,18 @@ const ChannelCard = ({ channel, botId, tenantUsers, onActivate, onDeactivate, on
               type="url"
               value={webhookUrl}
               onChange={(e) => setWebhookUrl(e.target.value)}
-              className="flex-1 text-xs border border-gray-300 rounded px-2 py-1"
+              className="flex-1 text-xs border border-gray-300 rounded-sm px-2 py-1"
               placeholder="https://tu-dominio.com/webhook"
             />
             <button
               onClick={handleSaveWebhook}
-              className="px-2 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700"
+              className="px-2 py-1 text-xs bg-indigo-600 text-white rounded-sm hover:bg-indigo-700"
             >
               Guardar
             </button>
           </div>
         ) : (
-          <code className="block text-xs bg-gray-100 p-2 rounded overflow-x-auto">
+          <code className="block text-xs bg-gray-100 p-2 rounded-sm overflow-x-auto">
             {channel.webhook_url || 'No configurado'}
           </code>
         )}
@@ -924,14 +920,14 @@ const ChannelCard = ({ channel, botId, tenantUsers, onActivate, onDeactivate, on
       <div className="mt-4 flex gap-2 flex-wrap">
         <button
           onClick={() => onEdit(channel)}
-          className="px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700"
+          className="px-3 py-1 text-sm bg-indigo-600 text-white rounded-sm hover:bg-indigo-700"
         >
           Editar
         </button>
         {(isWebChannel || isPwaChannel) && channel.status === 'active' && (
           <button
             onClick={() => onGenerateQr(channel)}
-            className="px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700"
+            className="px-3 py-1 text-sm bg-purple-600 text-white rounded-sm hover:bg-purple-700"
           >
             Ver QR
           </button>
@@ -941,7 +937,7 @@ const ChannelCard = ({ channel, botId, tenantUsers, onActivate, onDeactivate, on
             href={`/u/${channel.owner_username}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3 py-1 text-sm border border-indigo-400 text-indigo-600 rounded hover:bg-indigo-50"
+            className="px-3 py-1 text-sm border border-indigo-400 text-indigo-600 rounded-sm hover:bg-indigo-50"
           >
             Ver página pública
           </a>
@@ -949,7 +945,7 @@ const ChannelCard = ({ channel, botId, tenantUsers, onActivate, onDeactivate, on
         {isPwaChannel && channel.status === 'active' && (
           <Link
             to={`/bots/${botId}/pwa/${channel.channel_id}`}
-            className="px-3 py-1 text-sm bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200"
+            className="px-3 py-1 text-sm bg-indigo-100 text-indigo-700 rounded-sm hover:bg-indigo-200"
           >
             Suscriptores
           </Link>
@@ -957,21 +953,21 @@ const ChannelCard = ({ channel, botId, tenantUsers, onActivate, onDeactivate, on
         {channel.status === 'active' ? (
           <button
             onClick={() => onDeactivate(channel.channel_id)}
-            className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
+            className="px-3 py-1 text-sm border border-gray-300 rounded-sm hover:bg-gray-50"
           >
             Desactivar
           </button>
         ) : (
           <button
             onClick={() => onActivate(channel.channel_id)}
-            className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+            className="px-3 py-1 text-sm bg-green-600 text-white rounded-sm hover:bg-green-700"
           >
             Activar
           </button>
         )}
         <button
           onClick={() => onDelete(channel.channel_id)}
-          className="px-3 py-1 text-sm border border-red-300 text-red-600 rounded hover:bg-red-50"
+          className="px-3 py-1 text-sm border border-red-300 text-red-600 rounded-sm hover:bg-red-50"
         >
           Eliminar
         </button>

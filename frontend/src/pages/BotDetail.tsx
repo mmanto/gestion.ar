@@ -5,7 +5,6 @@ import { LoadingPage } from '../components/common/Spinner';
 import { Alert } from '../components/common/Alert';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { useAccentTheme } from '../hooks/useAccentTheme';
 import { BotEditForm } from '../components/bots/BotEditForm';
 import botsService from '../services/bots.service';
 import tenantAdminService from '../services/tenantAdmin.service';
@@ -27,7 +26,6 @@ const statusLabels: Record<BotStatus, string> = {
 };
 
 export const BotDetail = () => {
-  const { accent } = useAccentTheme();
   const { botId } = useParams<{ botId: string }>();
   const navigate = useNavigate();
   const [bot, setBot] = useState<Bot | null>(null);
@@ -137,10 +135,10 @@ export const BotDetail = () => {
   if (error || !bot) {
     return (
       <AppLayout>
-        <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
+        <div className="flex flex-col gap-4">
           <Alert variant="error">
             <p>Error: {error || 'Agente no encontrado'}</p>
-            <Link to="/bots" className="mt-2 inline-block hover:underline" style={{ color: accent }}>
+            <Link to="/bots" className="mt-2 inline-block hover:underline text-foreground">
               Volver a Agentes
             </Link>
           </Alert>
@@ -156,12 +154,12 @@ export const BotDetail = () => {
 
   return (
     <AppLayout>
-      <div className="font-editorial bg-white rounded-[1.4rem] shadow-[0_0.5rem_2rem_rgba(0,0,0,0.08)] p-6 sm:p-8">
+      <div className="flex flex-col gap-4">
           {/* Breadcrumb */}
           <nav className="mb-4">
             <ol className="flex items-center space-x-2 text-base text-gray-900">
               <li>
-                <Link to="/bots" className="hover:underline" style={{ color: accent }}>
+                <Link to="/bots" className="hover:underline text-foreground">
                   Agentes
                 </Link>
               </li>
@@ -170,7 +168,7 @@ export const BotDetail = () => {
               {isEditing && (
                 <>
                   <li>/</li>
-                  <li style={{ color: accent }}>Editar</li>
+                  <li className="text-foreground">Editar</li>
                 </>
               )}
             </ol>
@@ -262,8 +260,7 @@ export const BotDetail = () => {
                   </h2>
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="text-base hover:underline"
-                    style={{ color: accent }}
+                    className="text-base hover:underline text-foreground"
                   >
                     Editar configuración
                   </button>

@@ -3,9 +3,9 @@ import type { ToastVariant } from '../../types/toast.types';
 import { useToast } from '../../hooks/useToast';
 
 const variantStyles: Record<ToastVariant, string> = {
-  error: 'bg-red-600 text-white',
-  success: 'bg-green-600 text-white',
-  info: 'bg-gray-800 text-white',
+  error: 'bg-destructive text-primary-foreground',
+  success: 'bg-success text-primary-foreground',
+  info: 'bg-foreground text-background',
 };
 
 export const ToastContainer: React.FC = () => {
@@ -19,7 +19,7 @@ export const ToastContainer: React.FC = () => {
         <div
           key={toast.id}
           role="alert"
-          className={`pointer-events-auto flex items-start justify-between gap-3 rounded-lg shadow-lg px-4 py-3 text-sm ${variantStyles[toast.variant]}`}
+          className={`pointer-events-auto flex items-start justify-between gap-3 rounded-lg shadow-md px-3 py-2 text-xs/relaxed ${variantStyles[toast.variant]}`}
         >
           <span className="flex-1">{toast.message}</span>
           <button

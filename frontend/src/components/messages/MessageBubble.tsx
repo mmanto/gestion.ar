@@ -12,13 +12,13 @@ const MessageBubble = ({ message, showMetadata = false }: MessageBubbleProps) =>
   const isAgent = !isUser && message.metadata?.source === 'agent';
 
   const avatarClass = isUser
-    ? 'bg-gradient-to-br from-primary to-secondary'
+    ? 'bg-linear-to-br from-primary to-primary/70'
     : isAgent
     ? 'bg-teal-600'
     : 'bg-gray-600';
 
   const bubbleClass = isUser
-    ? 'bg-gradient-to-r from-primary to-secondary text-white rounded-tr-none'
+    ? 'bg-linear-to-r from-primary to-primary/70 text-white rounded-tr-none'
     : isAgent
     ? 'bg-teal-50 border border-teal-200 text-gray-900 rounded-tl-none'
     : 'bg-gray-200 text-gray-900 rounded-tl-none';
@@ -28,7 +28,7 @@ const MessageBubble = ({ message, showMetadata = false }: MessageBubbleProps) =>
       <div className={`flex gap-2 max-w-[75%] ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
         {/* Avatar */}
         <div
-          className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${avatarClass}`}
+          className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${avatarClass}`}
         >
           {isUser ? (
             <User className="w-5 h-5 text-white" />
