@@ -4,18 +4,22 @@ import { useAuth } from '../hooks/useAuth';
 import { useTenant } from '../hooks/useTenant';
 import { LoginForm } from '../components/auth/LoginForm';
 import { resolveAssetUrl } from '../utils/assetUrl';
+import { goToHome } from '../utils/homePath';
 
 export const Login: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { tenant } = useTenant();
   const navigate = useNavigate();
   const logo = resolveAssetUrl(tenant?.branding.logo_url);
 
   useEffect(() => {
+    // Misma pantalla de inicio que después de loguearse: el tenant puede
+    // mandar a un rol a una landing (p. ej. operarios de pachoteayuda a
+    // /reclamos), ver utils/homePath.
     if (isAuthenticated) {
-      navigate('/dashboard');
+      goToHome(user, tenant, navigate);
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, user, tenant, navigate]);
 
   const primaryColor = tenant?.branding.primary_color || '#25357a';
   const tenantName = tenant?.name || 'Tu cuenta';

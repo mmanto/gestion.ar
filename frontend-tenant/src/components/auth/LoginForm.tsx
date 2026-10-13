@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { KeyRound, UserPlus } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTenant } from '../../hooks/useTenant';
+import { goToHome } from '../../utils/homePath';
 import { biometricService } from '../../services/biometric.service';
 import { isPasskeySupported, PasskeyCancelled } from '../../services/passkey.service';
 import { Spinner } from '../common/Spinner';
@@ -48,7 +49,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const passkeyInFlight = useRef(false);
 
   const { login, loginWithProvider, loginWithPasskey, signupWithPasskey, loginWithBiometric } = useAuth();
-  const { tenantId } = useTenant();
+  const { tenantId, tenant } = useTenant();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -65,11 +66,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     setError('');
     setBiometricLoading(true);
     try {
-      await loginWithBiometric();
+      const loggedUser = await loginWithBiometric();
       if (onSuccess) {
         onSuccess();
       } else {
-        navigate('/dashboard');
+        goToHome(loggedUser, tenant, navigate);
       }
     } catch (err: unknown) {
       const e = err as { message?: string; response?: { data?: { detail?: string } } };
@@ -85,11 +86,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     setError('');
     setOauthLoading(provider);
     try {
-      await loginWithProvider(provider, tenantId);
+      const loggedUser = await loginWithProvider(provider, tenantId);
       if (onSuccess) {
         onSuccess();
       } else {
-        navigate('/dashboard');
+        goToHome(loggedUser, tenant, navigate);
       }
     } catch (err: unknown) {
       const e = err as { message?: string; response?: { data?: { detail?: string } } };
@@ -114,11 +115,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       // credenciales que ofrece el navegador); si no, el navegador ofrece
       // cualquier passkey registrada (credencial descubrible) y el backend
       // resuelve la cuenta.
-      await loginWithPasskey(tenantId, username.trim() || undefined);
+      const loggedUser = await loginWithPasskey(tenantId, username.trim() || undefined);
       if (onSuccess) {
         onSuccess();
       } else {
-        navigate('/dashboard');
+        goToHome(loggedUser, tenant, navigate);
       }
     } catch (err: unknown) {
       // El navegador no distingue "cancelaste el prompt" de "este dispositivo no
@@ -159,11 +160,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     setPasskeyHint(null);
     setSignupLoading(true);
     try {
-      await signupWithPasskey(tenantId, { nombre: signupNombre.trim() });
+      const loggedUser = await signupWithPasskey(tenantId, { nombre: signupNombre.trim() });
       if (onSuccess) {
         onSuccess();
       } else {
-        navigate('/dashboard');
+        goToHome(loggedUser, tenant, navigate);
       }
     } catch (err: unknown) {
       if (!(err instanceof PasskeyCancelled)) {
@@ -189,11 +190,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     setLoading(true);
 
     try {
-      await login({ username, password });
+      const loggedUser = await login({ username, password });
       if (onSuccess) {
         onSuccess();
       } else {
-        navigate('/dashboard');
+        goToHome(loggedUser, tenant, navigate);
       }
     } catch (err: unknown) {
       type AxiosLike = { response?: { status: number; data?: { detail?: string } }; request?: unknown };

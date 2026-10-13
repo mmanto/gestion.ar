@@ -82,6 +82,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setToken(response.access_token);
       setUser(fullUser);
       setIsAuthenticated(true);
+      // El usuario recién autenticado: el caller decide a qué pantalla mandarlo
+      // según su rol (ver utils/homePath).
+      return fullUser;
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -114,6 +117,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setToken(appToken);
       setUser(verifiedUser);
       setIsAuthenticated(true);
+      return verifiedUser;
     } catch (error) {
       console.error('Login with provider error:', error);
       throw error;
@@ -123,9 +127,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   /**
    * Guarda el token de un flujo que ya autenticó y rehidrata el usuario.
    * Los flujos de passkey (login y alta) no devuelven el usuario completo, así
-   * que se trae de /auth/me igual que en loginWithProvider.
+   * que se trae de /auth/me igual que en loginWithProvider. Devuelve el usuario
+   * para que el caller resuelva la pantalla de inicio según su rol.
    */
-  const applySession = async (appToken: string) => {
+  const applySession = async (appToken: string): Promise<User> => {
     await authService.saveToken(appToken);
     const verifiedUser = await authService.verifyToken();
     await authService.saveUser(verifiedUser);
@@ -133,12 +138,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setToken(appToken);
     setUser(verifiedUser);
     setIsAuthenticated(true);
+    return verifiedUser;
   };
 
   const loginWithPasskey = async (tenantId: string, username?: string) => {
     try {
       const { token: appToken } = await passkeyLogin(tenantId, username);
-      await applySession(appToken);
+      return await applySession(appToken);
     } catch (error) {
       console.error('Login with passkey error:', error);
       throw error;
@@ -151,7 +157,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   ) => {
     try {
       const { token: appToken } = await passkeySignup(tenantId, options);
-      await applySession(appToken);
+      return await applySession(appToken);
     } catch (error) {
       console.error('Signup with passkey error:', error);
       throw error;
@@ -176,6 +182,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setToken(data.access_token);
       setUser(data.user);
       setIsAuthenticated(true);
+      return data.user;
     } catch (error) {
       console.error('Biometric login error:', error);
       throw error;

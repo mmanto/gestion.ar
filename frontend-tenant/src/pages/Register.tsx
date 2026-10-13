@@ -47,8 +47,14 @@ export const Register: React.FC = () => {
           branding={{ tenantName, primaryColor, logoUrl: logo }}
           freeSignup={tenant?.settings?.free_signup ?? false}
           submit={async (payload) => (await register(payload)).payment?.url ?? null}
-          google={(t, plan) => loginWithProvider('google', t, plan)}
-          passkey={(t, plan, nombre) => signupWithPasskey(t, { nombre, plan })}
+          google={async (t, plan) => {
+            // El alta no usa la pantalla de inicio por rol: el token y el
+            // usuario ya quedaron en el contexto, así que se descarta el valor.
+            await loginWithProvider('google', t, plan);
+          }}
+          passkey={async (t, plan, nombre) => {
+            await signupWithPasskey(t, { nombre, plan });
+          }}
         />
       </div>
     </div>

@@ -11,8 +11,12 @@ dist-apk/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+# Solo el lib/ de Python en la raíz: sin la barra inicial, `lib/` matcheaba
+# cualquier carpeta llamada lib a cualquier profundidad y se estaba comiendo
+# `frontend/src/lib/` (helpers del panel) y `scripts/lib/` (helpers de shell),
+# que nunca llegaron a git — el build desde el checkout fallaba con TS2307.
+/lib/
+/lib64/
 parts/
 sdist/
 var/
