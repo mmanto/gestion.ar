@@ -1,5 +1,7 @@
 import React, { useRef, useState } from 'react';
+import { KeyRound } from 'lucide-react';
 import type { AuthProvider, RegisterPayload, RegisterPlan } from '../../types/auth.types';
+import { isPasskeySupported, PasskeyCancelled } from '../../services/passkey.service';
 import { Spinner } from '../common/Spinner';
 
 /**
@@ -24,10 +26,21 @@ interface RegisterFormProps {
   branding: RegisterBranding;
   /** Plan preseleccionado (p.ej. desde `?plan=anual` de la landing). Null → mensual. */
   initialPlan?: RegisterPlan | null;
-  /** Ejecuta el autoregistro y resuelve con la URL de pago del plan. */
-  submit: (payload: RegisterPayload) => Promise<string>;
+  /**
+   * Alta gratuita (tenant con `settings.free_signup`, p. ej. pachoteayuda): no
+   * se elige plan ni se pasa por el pago — la cuenta queda vigente. El backend
+   * es el que manda; acá solo se oculta la UI de plan y el redirect al pago.
+   */
+  freeSignup?: boolean;
+  /** Ejecuta el autoregistro y resuelve con la URL de pago del plan (null si el alta es gratuita). */
+  submit: (payload: RegisterPayload) => Promise<string | null>;
   /** Conecta el OAuth de Google (login previo al registro) y resuelve al autenticar. */
-  google: (tenantId: string, plan: RegisterPlan) => Promise<void>;
+  google: (tenantId: string, plan?: RegisterPlan) => Promise<void>;
+  /**
+   * Alta con passkey (WebAuthn): crea la cuenta nueva + la passkey y resuelve
+   * ya autenticado. Opcional: si no se pasa, el botón no se muestra.
+   */
+  passkey?: (tenantId: string, plan: RegisterPlan | undefined, nombre: string) => Promise<void>;
 }
 
 const PRIMARY = '#25357a';
@@ -37,7 +50,7 @@ const PLANES: Record<RegisterPlan, { label: string; price: string; suffix: strin
   anual: { label: 'Plan anual', price: '$5,490.00 MXN', suffix: '/año', note: '¡Ahorra 2 meses!' },
 };
 
-export const RegisterForm: React.FC<RegisterFormProps> = ({ tenantId, branding, initialPlan, submit, google }) => {
+export const RegisterForm: React.FC<RegisterFormProps> = ({ tenantId, branding, initialPlan, submit, google, passkey, freeSignup = false }) => {
   const primaryColor = branding.primaryColor || PRIMARY;
   const logo = branding.logoUrl;
   const tenantName = branding.tenantName || 'Tu cuenta';
@@ -54,6 +67,39 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ tenantId, branding, 
   const [oauthLoading, setOauthLoading] = useState<AuthProvider | null>(null);
   // Guard anti-reintento del OAuth con Google (misma razón que en LoginForm).
   const oauthInFlight = useRef(false);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
+  const passkeyInFlight = useRef(false);
+
+  /**
+   * Alta con passkey: no pide correo ni contraseña (la cuenta queda sin datos
+   * de contacto, los completa administración) pero sí el plan elegido y los
+   * términos, como el resto del alta.
+   */
+  const handlePasskey = async () => {
+    if (!tenantId || !passkey || passkeyInFlight.current) return;
+    if (!nombre.trim()) {
+      setError('Completá tu nombre para crear la cuenta.');
+      return;
+    }
+    if (!aceptaTerminos || !aceptaPrivacidad) {
+      setError('Debes aceptar los Términos y el Aviso de Privacidad.');
+      return;
+    }
+    passkeyInFlight.current = true;
+    setError('');
+    setPasskeyLoading(true);
+    try {
+      await passkey(tenantId, freeSignup ? undefined : plan, nombre.trim());
+      window.location.href = '/dashboard';
+    } catch (err: unknown) {
+      if (!(err instanceof PasskeyCancelled)) {
+        setError(err instanceof Error && err.message ? err.message : 'No se pudo crear la cuenta con passkey.');
+      }
+    } finally {
+      passkeyInFlight.current = false;
+      setPasskeyLoading(false);
+    }
+  };
 
   const handleGoogle = async () => {
     if (!tenantId || oauthInFlight.current) return;
@@ -61,7 +107,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ tenantId, branding, 
     setError('');
     setOauthLoading('google');
     try {
-      await google(tenantId, plan);
+      await google(tenantId, freeSignup ? undefined : plan);
       window.location.href = '/dashboard';
     } catch (err: unknown) {
       const message = err instanceof Error && err.message !== 'cancelled' ? err.message : 'No se pudo completar el registro con Google.';
@@ -75,7 +121,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ tenantId, branding, 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
     if (!nombre.trim() || !email.trim() || !password) {
       setError('Completa nombre, correo y contraseña.');
       return;
@@ -98,9 +143,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ tenantId, branding, 
         password,
         plan,
       });
-      // Cuenta creada + sesión iniciada → pasar al pago de Mercado Pago del
-      // plan elegido (paridad con la landing ius).
-      window.location.href = paymentUrl;
+      // Alta gratuita (sin plan) → directo al panel; si hay plan, al pago de
+      // Mercado Pago del plan elegido (paridad con la landing ius).
+      window.location.href = paymentUrl || '/dashboard';
     } catch (err: unknown) {
       let detail: string | undefined;
       if (err && typeof err === 'object' && 'response' in err) {
@@ -153,39 +198,41 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ tenantId, branding, 
         </div>
       ) : (
         <>
-      <div className="px-8 pt-7">
-        <div className="text-center mb-6">
-          <h2 className="text-xl font-extrabold text-gray-900 mb-1">Elige tu plan</h2>
-          <p className="text-gray-500 text-sm">Podrás confirmarlo en el siguiente paso.</p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-1 bg-gray-100 rounded-xl p-1 mb-6">
-          <button
-            type="button"
-            onClick={() => setPlan('mensual')}
-            className={`rounded-lg py-2.5 text-sm font-semibold transition-all ${plan === 'mensual' ? 'bg-white text-[#1d4ed8] shadow' : 'text-gray-500'}`}
-          >
-            Plan Mensual
-          </button>
-          <button
-            type="button"
-            onClick={() => setPlan('anual')}
-            className={`rounded-lg py-2.5 text-sm font-semibold transition-all ${plan === 'anual' ? 'bg-white text-[#1d4ed8] shadow' : 'text-gray-500'}`}
-          >
-            Plan Anual <span className="text-[10px] font-bold text-green-600">-2 meses</span>
-          </button>
-        </div>
-
-        <div className="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-7">
-          <div>
-            <div className="text-xs font-semibold text-blue-700 uppercase tracking-wide">{PLANES[plan].label}</div>
-            <div className="text-lg font-extrabold text-gray-900">
-              {PLANES[plan].price} <span className="text-xs font-medium text-gray-500">{PLANES[plan].suffix}</span>
-            </div>
+      {!freeSignup && (
+        <div className="px-8 pt-7">
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-extrabold text-gray-900 mb-1">Elige tu plan</h2>
+            <p className="text-gray-500 text-sm">Podrás confirmarlo en el siguiente paso.</p>
           </div>
-          <span className="text-xs text-gray-500">{PLANES[plan].note}</span>
+
+          <div className="grid grid-cols-2 gap-1 bg-gray-100 rounded-xl p-1 mb-6">
+            <button
+              type="button"
+              onClick={() => setPlan('mensual')}
+              className={`rounded-lg py-2.5 text-sm font-semibold transition-all ${plan === 'mensual' ? 'bg-white text-[#1d4ed8] shadow' : 'text-gray-500'}`}
+            >
+              Plan Mensual
+            </button>
+            <button
+              type="button"
+              onClick={() => setPlan('anual')}
+              className={`rounded-lg py-2.5 text-sm font-semibold transition-all ${plan === 'anual' ? 'bg-white text-[#1d4ed8] shadow' : 'text-gray-500'}`}
+            >
+              Plan Anual <span className="text-[10px] font-bold text-green-600">-2 meses</span>
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-7">
+            <div>
+              <div className="text-xs font-semibold text-blue-700 uppercase tracking-wide">{PLANES[plan].label}</div>
+              <div className="text-lg font-extrabold text-gray-900">
+                {PLANES[plan].price} <span className="text-xs font-medium text-gray-500">{PLANES[plan].suffix}</span>
+              </div>
+            </div>
+            <span className="text-xs text-gray-500">{PLANES[plan].note}</span>
+          </div>
         </div>
-      </div>
+      )}
 
       <form className="px-8 pb-8" onSubmit={handleSubmit}>
         <button
@@ -202,6 +249,19 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ tenantId, branding, 
           </svg>
           {oauthLoading === 'google' ? 'Conectando…' : 'Registrarme con Google'}
         </button>
+
+        {/* Alta con passkey: misma cuenta que el alta con Google (sin correo) */}
+        {passkey && isPasskeySupported() && (
+          <button
+            type="button"
+            onClick={handlePasskey}
+            disabled={passkeyLoading || oauthLoading !== null}
+            className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl py-3.5 mb-6 font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-60"
+          >
+            <KeyRound className="w-5 h-5" />
+            {passkeyLoading ? 'Creando cuenta…' : 'Registrarme con passkey'}
+          </button>
+        )}
 
         <div className="flex items-center gap-3 mb-6">
           <div className="h-px bg-gray-200 flex-1" />
@@ -280,7 +340,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ tenantId, branding, 
           className="w-full flex items-center justify-center gap-2 text-white font-semibold py-3.5 rounded-xl hover:opacity-90 transition-all hover:scale-[1.01] shadow-lg disabled:opacity-60"
           style={{ background: `linear-gradient(135deg, ${primaryColor}, #3b82f6)` }}
         >
-          {loading ? 'Creando cuenta…' : 'Registrarme y Proceder al Pago'}
+          {loading ? 'Creando cuenta…' : freeSignup ? 'Crear mi cuenta' : 'Registrarme y Proceder al Pago'}
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M5 12h14M13 6l6 6-6 6" />
           </svg>

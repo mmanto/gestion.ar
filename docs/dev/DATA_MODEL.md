@@ -255,6 +255,23 @@ no en el tenant.
 
 Migración: `20261008_0000_add_tenant_settings.py`.
 
+### Módulos (entitlement): `modules`, `bot_modules`, `plan_modules`, `tenant_modules`
+
+Catálogo de módulos conectables y su otorgamiento (ver ADR-008 / ADR-028 / ADR-029).
+En `bot_modules` y `tenant_modules` la **existencia de la fila = otorgado** (revocar la
+borra); `enabled` es lo que el tenant puede apagar.
+
+| Tabla | Clave | Campos | Para qué |
+|---|---|---|---|
+| `modules` | `module_key TEXT PK` | `name`, `description` | Catálogo (semilla por migración: `rag`, `lead_funnel`, `appointments`) |
+| `bot_modules` | `(bot_id, module_key)` | `granted`, `enabled`, `granted_by`, `granted_at`, `updated_at` + CHECK `NOT enabled OR granted` | Otorgamiento/habilitación **por bot** (dentro del agente) |
+| `plan_modules` | `(plan_id, module_key)` | — | Baseline que un plan incluye |
+| `tenant_modules` | `(tenant_id, module_key)` | `enabled` (default `true`), `granted_by`, `granted_at`, `updated_at` | Otorgamiento **por tenant**, sin depender de que haya agente (permite tenants con módulos autónomos) |
+
+`is_available(bot_id, module_key)` = otorgado al bot **o** habilitado para su tenant **o**
+incluido en el plan del tenant. Migración de `tenant_modules`:
+`20261009_1200_add_tenant_modules.py`.
+
 ---
 
 ## ChromaDB (Knowledge Base)

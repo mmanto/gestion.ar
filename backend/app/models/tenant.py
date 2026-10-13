@@ -49,6 +49,15 @@ class Tenant(BaseModel):
     created_at: str
     updated_at: str
 
+    @property
+    def free_signup(self) -> bool:
+        """¿El alta de usuarios de este tenant es gratuita?
+
+        Flag en `settings` (`{"free_signup": true}`): el alta no pide plan ni
+        manda a pagar y la cuenta queda vigente sin plan solicitado (p. ej.
+        pachoteayuda, que no vende suscripciones por usuario como ius)."""
+        return bool(self.settings.get("free_signup"))
+
 
 class TenantPublicInfo(BaseModel):
     """Info pública de un tenant (sin PII) — para landing/login del frontend-tenant."""
@@ -136,6 +145,19 @@ class BotModuleOut(BaseModel):
     # O incluido en el plan del tenant, ver ADR-008), aunque no exista
     # todavía una fila BotModule para este bot. La UI de autoservicio debe
     # usar esto, no `granted`, para decidir si el toggle es accionable.
+    available: bool = False
+    module_name: Optional[str] = None
+    module_description: Optional[str] = None
+
+
+class TenantModuleOut(BaseModel):
+    tenant_id: str
+    module_key: str
+    granted: bool
+    enabled: bool
+    # Distinto de `granted`: True si el módulo puede habilitarse (otorgado
+    # al tenant O incluido en su plan, ver ADR-008), aunque no exista
+    # todavía una fila TenantModule. Mismo criterio que BotModuleOut.available.
     available: bool = False
     module_name: Optional[str] = None
     module_description: Optional[str] = None

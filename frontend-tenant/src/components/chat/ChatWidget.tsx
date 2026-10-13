@@ -1,61 +1,22 @@
-import { lazy, Suspense, Component, type ReactNode } from 'react';
+import { Suspense } from 'react';
 import type { AppointmentWidget } from '../../types/chat.types';
+import { CHAT_WIDGETS, WidgetErrorBoundary, type ChatWidgetHandlers } from '../../modules/chatWidgets';
 
-// Servidos por devbout-appointments vía Module Federation — ver ADR-009,
-// docs/dev/DECISIONS.md. El contrato de props vive en
-// ../../types/federation-remotes.d.ts.
-const AppointmentCalendarWidget = lazy(() => import('appointments/AppointmentCalendarWidget'));
-const AppointmentTimesWidget = lazy(() => import('appointments/AppointmentTimesWidget'));
-const AppointmentConfirmWidget = lazy(() => import('appointments/AppointmentConfirmWidget'));
-const AppointmentOptionsWidget = lazy(() => import('appointments/AppointmentOptionsWidget'));
+// Los widgets disponibles salen del registry (../../modules/chatWidgets) en vez
+// de estar hardcodeados acá: un módulo que aporte widgets de chat sólo tiene
+// que registrarlos ahí (y anunciar sus widget_types en su manifiesto del
+// backend).
 
-// React.lazy no tenía antes ningún punto de falla real (todo bundleado) —
-// un chunk que no baja (red, ad-blocker) ahora puede tirar el render.
-// Boundary acotado solo al widget, no a todo el chat.
-class WidgetErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
-  state = { failed: false };
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-  render() {
-    return this.state.failed ? null : this.props.children;
-  }
-}
+export type ChatWidgetProps = { widget: AppointmentWidget } & ChatWidgetHandlers;
 
-interface ChatWidgetProps {
-  widget: AppointmentWidget;
-  onSelectDay: (dateISO: string) => void;
-  onSelectTime: (startAtISO: string) => void;
-  onSelectOption: (value: string) => void;
-  onBack: () => void;
-  onConfirm: () => void;
-  onDecline: () => void;
-}
+export function ChatWidget({ widget, ...handlers }: ChatWidgetProps) {
+  const Widget = CHAT_WIDGETS[widget.widget_type];
+  if (!Widget) return null;
 
-export function ChatWidget({
-  widget,
-  onSelectDay,
-  onSelectTime,
-  onSelectOption,
-  onBack,
-  onConfirm,
-  onDecline,
-}: ChatWidgetProps) {
   return (
     <WidgetErrorBoundary>
       <Suspense fallback={<div className="h-24 rounded-xl bg-gray-100 animate-pulse" />}>
-        {widget.widget_type === 'appointment_options' && (
-          <AppointmentOptionsWidget widget={widget} onSelectOption={onSelectOption} />
-        )}
-        {widget.widget_type === 'appointment_calendar' && (
-          <AppointmentCalendarWidget widget={widget} onSelectDay={onSelectDay} />
-        )}
-        {widget.widget_type === 'appointment_times' && (
-          <AppointmentTimesWidget widget={widget} onSelectTime={onSelectTime} onBack={onBack} />
-        )}
-        {widget.widget_type === 'appointment_confirm' && (
-          <AppointmentConfirmWidget widget={widget} onConfirm={onConfirm} onDecline={onDecline} />
-        )}
+        <Widget widget={widget} {...handlers} />
       </Suspense>
     </WidgetErrorBoundary>
   );

@@ -50,9 +50,6 @@ from app.integrations.appointments_client import AppointmentsClient, SlotUnavail
 from app.models.bot import Bot
 from app.models.client import ClientUpdate
 from app.services.client_service import get_client_service
-from app.services.module_service import get_module_service
-
-MODULE_KEY = "appointments"
 
 CANCEL_WORDS = ("cancelar", "cancela", "/cancelar")
 BACK_WORDS = ("volver", "atras", "atrás", "back")
@@ -751,17 +748,19 @@ def build_booking_tool_executor(
     prospect_auto_qualify_service.py).
 
     A diferencia de la tool de calificación, esta necesita exportar el
-    BookingState resultante hacia el router (para que los próximos mensajes
-    del usuario se enruten por booking_state.process_answer en vez de volver
-    a pasar por el LLM) — por eso escribe en `output`, un dict mutable provisto
-    por el caller, en vez de solo devolver el tool_result para Claude.
+    BookingState resultante hacia la extensión de chat del módulo (para que los
+    próximos mensajes del usuario los conduzca app/modules/appointments_ext.py
+    en vez de volver a pasar por el LLM) — por eso escribe en `output`, un dict
+    mutable provisto por el caller (el namespace del módulo en la sesión), en
+    vez de solo devolver el tool_result para Claude.
     """
 
     # _executor corre dentro de un thread aparte (asyncio.to_thread, ver
     # DeepSeekService/ClaudeService.sync_generate) para no bloquear el loop
     # principal mientras se llama al LLM. Capturamos ACÁ el loop principal
-    # -- build_booking_tool_executor se llama desde _build_llm_tools, que es
-    # async y corre en el loop principal -- porque start_booking() usa el
+    # -- build_booking_tool_executor se llama desde provide_tools
+    # (app/modules/appointments_ext.py), que es async y corre en el loop
+    # principal -- porque start_booking() usa el
     # engine de Postgres compartido de toda la app (AsyncSessionLocal), cuyas
     # conexiones quedan atadas al loop en el que se usan. Antes acá se hacía
     # asyncio.run(start_booking(...)), que crea un loop NUEVO en el thread:
@@ -790,8 +789,9 @@ async def start_booking(bot: Bot, client_id: Optional[str]) -> tuple[Optional["B
     resource_ids = config.get("resource_ids") or []
     service_id = config.get("default_service_id")
 
-    module_enabled = await get_module_service().is_enabled(bot.bot_id, MODULE_KEY)
-    if not module_enabled or not resource_ids:
+    # El módulo ya lo verifica AgentService antes de ofrecer la tool: acá sólo
+    # se chequea que el bot tenga calendario configurado.
+    if not resource_ids:
         return None, {
             "message": "Por el momento no ofrecemos reserva de turnos por este medio. Contactanos directamente para coordinar.",
             "done": True,

@@ -9,6 +9,7 @@ import { BotEditForm } from '../components/bots/BotEditForm';
 import botsService from '../services/bots.service';
 import tenantAdminService from '../services/tenantAdmin.service';
 import { ModuleCard, type ModuleConfigLink } from '../components/bots/ModuleCard';
+import { useModules } from '../modules/ModulesProvider';
 import { formatNumber } from '../utils/formatters';
 import type { Bot, BotStats, BotStatus, BotUpdate } from '../types/bot.types';
 import type { BotModuleInfo } from '../types/tenant.types';
@@ -28,6 +29,7 @@ const statusLabels: Record<BotStatus, string> = {
 export const BotDetail = () => {
   const { botId } = useParams<{ botId: string }>();
   const navigate = useNavigate();
+  const moduleManifests = useModules();
   const [bot, setBot] = useState<Bot | null>(null);
   const [stats, setStats] = useState<BotStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -147,10 +149,18 @@ export const BotDetail = () => {
     );
   }
 
-  const moduleConfigLinks: Record<string, ModuleConfigLink> = {
-    appointments: { path: `/bots/${bot.bot_id}/appointments`, label: 'Configurar' },
-    lead_funnel: { label: 'Configurar', onClick: () => setIsEditing(true) },
-  };
+  // Acceso a la pantalla propia de cada módulo, según los `bot_tabs` que
+  // declara su manifiesto (ver src/modules). Un módulo sin pantalla (p. ej.
+  // lead_funnel, cuya interfaz es el chat) no muestra botón.
+  const moduleConfigLinks: Record<string, ModuleConfigLink> = {};
+  for (const manifest of moduleManifests) {
+    const tab = manifest.admin?.bot_tabs?.[0];
+    if (!tab) continue;
+    moduleConfigLinks[manifest.module_key] = {
+      path: tab.path.replace(':botId', bot.bot_id),
+      label: tab.label,
+    };
+  }
 
   return (
     <AppLayout>

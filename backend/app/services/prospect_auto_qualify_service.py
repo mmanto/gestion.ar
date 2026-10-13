@@ -78,7 +78,7 @@ def build_qualification_tool_executor(
     (sin event loop propio) — por eso puentea al método async de
     ClientService vía run_coroutine_threadsafe sobre el loop principal
     (capturado acá, en build_qualification_tool_executor, que se llama desde
-    _build_llm_tools -- async, corre en el loop principal). Antes se usaba
+    AgentService.build_tools -- async, corre en el loop principal). Antes se usaba
     asyncio.run(), que crea un loop NUEVO en el thread: como ClientService
     usa el engine de Postgres compartido de toda la app (AsyncSessionLocal),
     cuyas conexiones quedan atadas al loop en el que se usan, eso corrompía

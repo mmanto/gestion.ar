@@ -12,6 +12,7 @@ import type {
   PlanUpdate,
   Tenant,
   TenantCreate,
+  TenantModuleInfo,
   TenantsResponse,
   TenantUpdate,
   TenantUser,
@@ -122,6 +123,28 @@ const tenantAdminService = {
 
   async revokeModule(botId: string, moduleKey: string): Promise<void> {
     await api.delete(`/admin/bots/${botId}/modules/${moduleKey}/grant`);
+  },
+
+  /**
+   * Módulos del catálogo con su estado para el tenant (no por bot): un tenant
+   * sin agente puede tener módulos con pantallas propias (p. ej. turnos).
+   */
+  async getTenantModules(tenantId: string): Promise<TenantModuleInfo[]> {
+    const response = await api.get<{ success: boolean; modules: TenantModuleInfo[] }>(
+      `/admin/tenants/${tenantId}/modules`
+    );
+    return response.data.modules;
+  },
+
+  async grantTenantModule(tenantId: string, moduleKey: string): Promise<TenantModuleInfo> {
+    const response = await api.post<{ success: boolean; module: TenantModuleInfo }>(
+      `/admin/tenants/${tenantId}/modules/${moduleKey}/grant`
+    );
+    return response.data.module;
+  },
+
+  async revokeTenantModule(tenantId: string, moduleKey: string): Promise<void> {
+    await api.delete(`/admin/tenants/${tenantId}/modules/${moduleKey}/grant`);
   },
 };
 

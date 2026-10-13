@@ -183,6 +183,29 @@ README), como **instancia compartida** entre las apps que consumen
 
 ---
 
+## Passkeys (WebAuthn) — rostro/huella como método de ingreso
+
+Alternativa al login por password y por Google, sobre las **mismas** cuentas
+(`users.username`): el usuario registra una passkey ya logueado (Face ID,
+huella, Windows Hello, llave de seguridad) y después ingresa con eso. Lo sirve
+`devbout-oauth` en `/api/auth/oauth/passkey/*`; el backend guarda solo la clave
+pública y el contador de firmas (`passkey_credentials`).
+
+| Variable | Requerida | Descripción | Ejemplo |
+|---|---|---|---|
+| `WEBAUTHN_RP_ID` | ❌ | Dominio de registro de las passkeys (el host de `FRONTEND_URL` si se omite) | `tudominio.com` (dev: `localhost`) |
+| `WEBAUTHN_RP_NAME` | ❌ | Nombre que muestra el navegador/OS al crear la passkey | `Gestion.ar` |
+| `WEBAUTHN_ORIGINS` | ❌ | Origins extra autorizados, separados por coma (`[FRONTEND_URL]` si se omite) | `https://tudominio.com,https://tenant.tudominio.com` |
+| `WEBAUTHN_USER_VERIFICATION` | ❌ | `preferred` (default) o `required` (exige autenticador que verifique al usuario) | `preferred` |
+
+> El RP ID **no se puede cambiar** después sin invalidar las passkeys ya
+> registradas, y WebAuthn no acepta IPs: en dev el frontend tiene que estar en
+> `http://localhost:5173` (RP ID `localhost`) y en prod es `https://`. Un
+> origin que no coincida con el que ve el navegador no falla al arrancar: se ve
+> como 401 en `/passkey/*/verify`.
+
+---
+
 ## Mercado Pago (autoregistro "Crea tu cuenta")
 
 | Variable | Requerida | Descripción | Ejemplo |
@@ -249,6 +272,14 @@ repo), por eso el nombre de marca tiene una clave por app.
 || `TENANT_APPNAME_<SLUG>` | ❌ | Nombre visible del APK del tenant | `"ius"` |
 | `TENANT_BRANDCOLOR_<SLUG>` | ❌ | Color de marca (splash + status bar) del APK del tenant | `#25357a` |
 | `TENANT_PUBLIC_URL_<SLUG>` | ❌* | Dominio público del frontend web del tenant, horneado en el APK como `VITE_TENANT_PUBLIC_URL`. En la app nativa las llamadas van directo al backend (`VITE_API_URL`, ej. `api.intellify.pro`), así que `getPublicUrl()` no puede derivar el dominio del tenant del Host de la request — sin esto el link de chat ("Compartir", "Mi link de chat") apunta al dominio del API en vez del frontend del tenant. *Sin valor, el APK queda con la derivación por Host (rota en nativo; web no lo usa) | `https://ius.intellify.pro` |
+
+---
+
+# Módulos — instalación en el deploy
+
+| Variable | Requerida | Descripción | Ejemplo |
+|---|---|---|---|
+| `ENABLED_MODULES` | ❌ | Lista CSV de `module_key` instalados en este deploy (ver `backend/app/modules/manifest.py` y ADR-028). Ausente o vacía = todos (`agent`, `rag`, `appointments`, `lead_funnel`). Un módulo cuyos `requires` no estén instalados corta el arranque, y sus routers no se montan. | `agent,rag,appointments` |
 
 ---
 

@@ -219,9 +219,12 @@ assets (`images/`), así que la lista es corta: no hay js/css propio que sumar a
 El router de `landing-pachoteayuda` matchea, además de `/` y los `.html`,
 `/robots.txt`, `/sitemap.xml`, el prefijo `/landing/` (assets propios: logo, foto
 del hero, `og-image.png`, favicon y `seo.css`) y los prefijos `/normas/`,
-`/tramites/` y `/residuos/` — las páginas que genera
-`scripts/generate_pachoteayuda_pages.py` (ver ADR-019, ADR-020 y el paso de build
-en DEPLOYMENT.md).
+`/tramites/`, `/residuos/` y `/reclamos/` — los tres primeros los genera
+`scripts/generate_pachoteayuda_pages.py` (ver ADR-019, ADR-020 y el paso
+de build en DEPLOYMENT.md); `/reclamos/` es una página escrita a mano y
+versionada (`sites/pachoteayuda-landing/reclamos/index.html`: mapa Leaflet sobre
+teselas de OpenStreetMap, con reclamos de ejemplo), que mientras los datos sean
+de ejemplo va con `noindex, nofollow` y sin enlazar desde la landing.
 
 Antes de esa regla, `robots.txt` y `sitemap.xml` los servía el SPA del tenant
 (`200 text/html` con `<title>Backoffice</title>`), así que el robots.txt no tenía
@@ -250,6 +253,32 @@ lo que dispara la emisión por TLS-ALPN (diagnóstico paso a paso en
 > tenant. El router `landing-erma` (label del servicio `landing`, mismo patrón
 > que las demás) + apuntar el DNS al VPS de prod resuelve el ruteo:
 > `/` → landing, `/login` → app.
+
+### Dev local: hosts `*.test` y `<dominio>.localhost`
+
+El stack local (`docker-compose.tenants.local.yml`) levanta los mismos 2
+contenedores que prod, con dos convenciones de host:
+
+- **Tenants sin dominio real** (erma, ius): dominio simulado `*.test`
+  (`erma.com.test`, `ius.mx.test`) resuelto a 127.0.0.1 por `/etc/hosts`. No
+  coincide con `tenants.domain` de la BD, así que el SPA fuerza el tenant con
+  `?tenant=<id>` (persistido en localStorage por `TenantContext`).
+- **Tenants con dominio propio** (pachoteayuda): `<dominio>.localhost`
+  (`pachoteayuda.ar.localhost`). Cualquier `*.localhost` resuelve a loopback por
+  RFC 6761, así que **no** necesita `/etc/hosts`, y
+  `GET /api/public/tenants/current` reintenta la búsqueda del tenant sin el
+  sufijo (ver `docs/dev/API.md`), por lo que el SPA lo resuelve por Host igual
+  que en prod. Abrir `pachoteayuda.ar` a secas en la máquina de desarrollo
+  resuelve al sitio de **producción**: el host local es siempre el `*.localhost`.
+
+En local el router `landing-pachoteayuda` replica el reparto de paths de prod
+(ver "Caso pachoteayuda", abajo), así que `/`, los `.html`, `/landing/`,
+`/normas/`, `/tramites/` y `/residuos/` los sirve la landing, y `/login`,
+`/chat/c/<channel>`, `/api/*` y `/ws/*` el SPA del tenant. `sites/nginx.conf`
+mapea el host nuevo a la raíz de la landing (el `map $http_host` es el mismo en
+dev y prod: `pachoteayuda.ar` sigue mapeado para prod) y `scripts/stack-dev.sh`
+conoce ambos mundos (`TENANT_DOMAINS`): exige los `.test` en `/etc/hosts` y
+omite los `.localhost`.
 
 **Micro-frontend de registro (ADR-011):** la landing ius sirve
 `/register-embed.js` (bundle IIFE del formulario de registro real, ver

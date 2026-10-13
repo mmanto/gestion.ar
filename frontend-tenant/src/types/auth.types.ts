@@ -47,7 +47,8 @@ export interface RegisterResponse {
   access_token: string;
   token_type: string;
   user: User;
-  payment: RegisterPayment;
+  /** Null en tenants con alta gratuita (`settings.free_signup`). */
+  payment: RegisterPayment | null;
 }
 
 export interface AuthState {
@@ -60,6 +61,11 @@ export interface AuthState {
 export interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
   loginWithProvider: (provider: AuthProvider, tenantId: string, plan?: RegisterPlan) => Promise<void>;
+  loginWithPasskey: (tenantId: string, username?: string) => Promise<void>;
+  signupWithPasskey: (
+    tenantId: string,
+    options: { nombre: string; plan?: RegisterPlan },
+  ) => Promise<void>;
   loginWithBiometric: () => Promise<void>;
   register: (payload: RegisterPayload) => Promise<RegisterResponse>;
   logout: () => Promise<void>;

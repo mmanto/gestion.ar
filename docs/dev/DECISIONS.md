@@ -1679,3 +1679,246 @@ Opción 3:
 - Tradeoff aceptado: la resolución del tenant es una llamada HTTP extra en el arranque del
   SPA (antes era un valor inyectado síncrono). El costo es despreciable frente a eliminar
   N× la duplicación de infraestructura.
+
+---
+
+## ADR-028: El manifiesto de módulos es la fuente de verdad, y `agent` es un módulo más
+
+**Estado:** Aceptado
+**Fecha:** 2026-10-09
+
+### Contexto
+ADR-008 definió "módulo = entitlement" y dejó la modularización real como trabajo futuro:
+`MODULE_REGISTRY` (`app/module_registry.py`) era una lista de 3 routers, el gating estaba
+sólo en 2 routers y el resto repartido a mano (`tenant_appointments_router` gateaba con
+`is_available`, `web_chat_router` con `is_enabled` + tools hardcodeadas en
+`_build_llm_tools`). La entidad "agente" no existía como tal: era la fila `Bot` más una
+pipeline de turno LLM **duplicada** en 4 entradas de canal (los 2 WebSockets de
+`web_chat_router`, el webhook de WhatsApp y los handlers de Telegram). El frontend
+también tenía los widgets de chat de `appointments` hardcodeados en `ChatWidget.tsx`
+(x2, una por SPA) y la navegación/rutas de módulo a mano.
+
+### Opciones consideradas
+1. Seguir con el entitlement en BD y dejar el código como está — no resuelve la
+   duplicación del turno ni el hardwiring del frontend.
+2. Módulos como *plugins* out-of-process (routers montados dinámicamente por módulo,
+   cada uno con su proceso) — isla de aislamiento que hoy no se necesita: FastAPI
+   registra los routers una vez para toda la app y las rutas se comparten entre tenants
+   vía path params (ya señalado en ADR-008).
+3. **Manifiesto + registry in-process**: un único manifiesto declara qué módulos existen,
+   de qué dependen, qué routers aportan y qué superficies exponen (nav, pantallas del
+   agente, extension points del chat); el resto del sistema (boot, gating, frontend) se
+   deriva de ahí.
+
+### Decisión
+Opción 3, extendiendo ADR-008 en vez de reemplazarlo:
+
+- `backend/app/modules/manifest.py` es la fuente de verdad: `ModuleManifest(module_key,
+  name, description, version, scope, requires, routers, chat, admin, tenant)` con los
+  4 módulos reales — `agent` (`scope="platform"`: aporta `/bots`, canales y es el host del
+  chat), y `rag` / `appointments` / `lead_funnel` (`scope="entitled"`, sin `requires`: cada
+  uno aporta sus extension points de chat y/o pantallas propias — el entitlement por tenant
+  y el uso autónomo, sin agente, quedaron en **ADR-029**).
+- `ENABLED_MODULES` (env, CSV) es el *install list* del deploy. Ausente = todos. Un módulo
+  instalado cuyos `requires` no lo estén corta el arranque con `RuntimeError`, y
+  `require_module_available` responde 403 si el módulo no está instalado.
+- `app/modules/registry.py` reemplaza `MODULE_REGISTRY`: importa los routers declarados en
+  el manifiesto (`app.routers.x:router`). `tenant_appointments_router` deja de estar fuera
+  del registry y `module_registry.py` desaparece.
+- **`AgentService`** (`app/services/agent_service.py`) unifica el turno del agente
+  (`run_turn`: intercept de módulos → RAG → tools → LLM) y es el único consumidor de las
+  extensiones de chat. Las contribuciones que no son de un módulo (calificación por
+  semáforo, fuentes públicas) siguen siendo del agente.
+- Las extensiones de chat de un módulo son tres funciones declaradas en su manifiesto
+  (`startup`, `interceptor`, `tools_provider`), con estado por conexión en un namespace
+  propio (`session[module_key]`) que el canal crea y pasa en cada turno. `appointments`
+  posee el booking (tool + continuación del calendario) y `lead_funnel` el embudo, en vez
+  de estar inline en el router. Un canal sin sesión persistente (WhatsApp/Telegram) recibe
+  sólo las contribuciones sin estado.
+- **Frontend** (ambas SPAs): `GET /api/public/modules/manifest` (proyección pública, sin
+  rutas dotted internas) + `ModulesProvider`/`useModules`; la navegación se construye con
+  los `admin.nav` de los módulos instalados, las rutas de módulo con la intersección
+  manifiesto∩registry de componentes (`MODULE_SCREENS`) montadas detrás de `ModuleGate`, y
+  los widgets de chat con el registry `CHAT_WIDGETS` por `widget_type`.
+
+### Consecuencias
+- Agregar un módulo con pantallas = una entrada en el manifiesto + una en `MODULE_SCREENS`;
+  con sólo extensiones de chat = una entrada en el manifiesto + las 3 funciones.
+- `lead_funnel` deja de tener "Configurar" en el detalle del agente: su interfaz es el
+  chat, no una pantalla (coherente con la regla "dependiente del agente ⇒ interfaz = chat").
+- El frontend depende de un `GET` público para armar rutas y nav: mientras carga, la ruta
+  comodín muestra un loader en vez de redirigir (un deep link a `/bots/:id/documents` en
+  carga fría quedaría sin ruta de módulo y redirigiría a la landing).
+- WhatsApp y Telegram pasan a compartir el turno del agente (antes tenían su propia
+  secuencia RAG→LLM con `generate_rag_response`); siguen sin extensiones de módulo porque
+  no tienen sesión de chat, y ganan las fuentes públicas si el bot las tiene configuradas.
+- El chat de WhatsApp/Web ya no depende de que el router conozca `appointment_booking_service`
+  ni `conversation_flow_service`: la verificación de `is_enabled` queda en `AgentService`
+  (se elimina la redundante de `start_booking`).
+- Sigue pendiente para terceros (`trust_tier`/`base_url`/`remote_entry`): el manifiesto ya
+  tiene los campos reservados, sin loader out-of-process.
+
+---
+
+## ADR-029: Los módulos se otorgan por tenant (el agente es opcional)
+
+**Estado:** Aceptado
+**Fecha:** 2026-10-09
+
+### Contexto
+ADR-008/ADR-028 dejaron el entitlement en `bot_modules` (por bot) + `plan_modules` (baseline
+por plan), y el manifiesto declaraba `requires=("agent",)` en los tres módulos. Eso ata los
+módulos a la existencia de un agente: un tenant sin bots no puede tener ningún módulo, y un
+módulo con pantallas propias (p. ej. turnos) no se puede instalar en un deploy sin agente.
+
+### Decisión
+- **Entitlement por tenant**: tabla `tenant_modules` (`tenant_id`, `module_key`, `enabled`,
+  `granted_by`, `granted_at`, `updated_at`). La fila implica otorgado; revocar la borra.
+  `is_available(bot_id, module_key)` = otorgado al bot **o** habilitado para su tenant **o**
+  incluido en el plan del tenant.
+- API de administración general: `GET/POST/DELETE
+  /api/admin/tenants/{tenant_id}/modules[/{module_key}/grant]`.
+- El manifiesto deja de declarar la dependencia del agente (`requires` vacío) y el `scope`
+  de esos módulos pasa de `bot` a **`entitled`**: un módulo declara contribuciones de chat
+  (`chat`) para funcionar **con** un agente —la interfaz es el chat— y pantallas propias
+  (`admin`/`tenant`) para funcionar **de manera autónoma**.
+- En la consola, el bloque «Agente» de `/admin/tenants/:id` se reemplaza por un selector de
+  **módulos disponibles del tenant**, que avisa cuando un módulo otorgado queda sin interfaz
+  por no haber agente. La grilla de usuarios de esa pantalla pasa a ser el `DataTable` del
+  paquete (`@mmanto/devbout-ui`), como la lista de tenants, y la zona de peligro arranca
+  oculta con un botón para mostrarla.
+
+### Consecuencias
+- Un tenant sin agente puede tener módulos; el chat (extension points) simplemente no corre
+  si no hay agente y el módulo se usa por sus pantallas.
+- Queda pendiente por módulo: las pantallas que hoy viven dentro del agente
+  (`admin.bot_tabs`, p. ej. `/bots/:botId/appointments`) y los datos que cuelgan del bot
+  (`bot.metadata.appointments`) todavía requieren un agente. Para que `appointments` funcione
+  autónomo hace falta una pantalla de tenant sin `bot_id` y desacoplar su configuración del
+  bot (hoy `tenant_appointments_router._get_my_bot` responde 404 si el tenant no tiene bot).
+- `bot_modules` sigue vigente: permite otorgar un módulo a un bot puntual del tenant.
+- El selector usa el catálogo de la DB (`modules`), no el manifiesto: el manifiesto dice qué
+  está instalado en el deploy; el catálogo, qué se puede otorgar.
+
+---
+
+## ADR-030: El sitio del club de pádel es un rubro del SPA del tenant, con su CSS aislado
+
+**Estado:** Reemplazado por ADR-031
+**Fecha:** 2026-10-10
+
+### Contexto
+
+Se da de alta el tenant **eltunel** (El Tunel Padel Club, club de pádel en La Plata) con
+dominio `eltunel.com.test`. El producto ya existe como **prototipo estático** en
+`~/tmp/tunel`: 15 páginas HTML, un stylesheet propio de 2.691 líneas y 3 scripts compartidos
+(sitio público + cuenta de jugador + panel del club + panel de profesores), todo con
+`localStorage`, sin backend y sin build.
+
+El SPA `frontend-tenant` es **único para todos los tenants** (ADR-027: dos contenedores fijos
+y resolución por `Host`) y hoy sólo sabe pintar el backoffice (con variantes de contenido por
+`branding.industry`) y landings estáticas servidas por el contenedor `landing`. Se pidió
+explícitamente que las pantallas del club sean **páginas React dentro del SPA**, no un sitio
+estático nuevo.
+
+### Opciones consideradas
+
+1. **Sitio estático del club en `sites/eltunel/`** (como openpadel) — es el camino más barato y
+   reusa el prototipo tal cual, pero deja al club fuera del SPA: sin ruteo de React, sin
+   compartir la resolución de tenant ni el login, y con un segundo lugar donde viven las
+   pantallas. Descartado por pedido del cliente.
+2. **Fork del SPA por tenant** — un contenedor `frontend-tenant-eltunel` con su propio bundle.
+   Contradice ADR-027 y reintroduce el costo por-tenant que ese ADR eliminó. Descartado.
+3. **Portar las pantallas al SPA como un *rubro*** — un valor nuevo de `branding.industry`
+   (`'padel'`) enciende un árbol de rutas propio, cargado en un chunk aparte. Es la opción
+   elegida.
+
+### Decisión
+
+- **Gate por rubro**: `frontend-tenant/src/club/ClubGate.tsx` se monta en la ruta comodín de
+  `App.tsx`. Resuelve el tenant (ya lo tiene `TenantContext`) y, si
+  `branding.industry === 'padel'`, carga por `React.lazy` el sitio del club; en cualquier otro
+  caso redirige a `/`, sin descargar nunca el chunk del club.
+- **El sitio del club vive en `frontend-tenant/src/club/`**: `data/` (port a TypeScript del
+  modelo del prototipo — canchas, tarifas, torneos, clientes, caja, tienda, cuenta — con las
+  **mismas claves de `localStorage`** `tunel-*`/`tunel-cms-*`), `chrome/` (header, footer,
+  carrito, modal, toast, sprite de iconos), `layout/ClubLayout.tsx`, `pages/` (una por
+  pantalla) y `routes.ts` (rutas y navegación).
+- **El CSS del prototipo se conserva verbatim** en `src/club/styles/club.css` y se **aísla en
+  build** a `.club-app` con un plugin PostCSS local
+  (`frontend-tenant/postcss-plugins/scope-club-css.mjs`). El prototipo usa selectores globales
+  (`:root`, `html`, `body`, `*`, `.wrap`, `.btn`, `.card`) que pisarían el backoffice de todos
+  los tenants; prefijarlos a mano haría imposible comparar el archivo contra el original.
+- **Assets** del prototipo (`img/`, 3 MB) se sirven desde `frontend-tenant/public/club/img/`.
+- **La landing del dominio queda vacía a propósito**: `/` sólo tiene el botón que lleva al
+  inicio de sesión del tenant (`pages/Landing.tsx`, rama `industry === 'padel'`). El sitio del
+  club arranca en `/inicio`.
+- Alta del tenant: `backend/scripts/create_eltunel_tenant.py` (tenant + branding + admin + bot
+  + canal web), idempotente por dominio.
+
+### Consecuencias
+
+- Un tenant de rubro `padel` tiene, además del sitio del club, las rutas genéricas del
+  backoffice (`/login`, `/dashboard`, …): el botón de la landing entra ahí. Unificar el
+  post-login con el panel del club es una decisión de producto pendiente, no un defecto.
+- El chunk del club (≈200 KB de CSS + JS + 3 MB de imágenes) sólo lo descarga un tenant
+  `padel`: el resto de los tenants no lo ve.
+- El aislamiento depende del plugin PostCSS: cualquier CSS nuevo del club debe escribirse en
+  `src/club/styles/` (o con selectores ya prefijados a mano) para no filtrarse al backoffice.
+- Los datos del club siguen siendo **locales al navegador**, igual que el prototipo
+  (reservas, pedidos, caja, clientes). Cuando se quiera persistencia real y multi-dispositivo,
+  el port de `data/` ya tiene las costuras para reemplazar `store`/`cms` por llamadas a la API
+  sin tocar las pantallas.
+- El prototipo traía dos back-offices demo (`panel.html`, `profe.html`). Se portan como
+  pantallas del sitio (`/panel`, `/panel-profesores`) porque el cliente los pidió como parte de
+  "las pantallas"; su login sigue siendo local a la demo, no el JWT del tenant.
+
+### Reemplazo
+
+El sitio del club dejó de vivir en la plataforma: ahora es una **app Next.js standalone**,
+con deploy propio y fuera de este repo. Por eso se retiraron el rubro `padel`, sus pantallas,
+su CSS aislado y el ruteo por dominio (ver ADR-031).
+
+## ADR-031: El sitio de un cliente puede vivir fuera de la plataforma
+
+**Estado:** Aceptado
+**Fecha:** 2026-10-10
+
+### Contexto
+
+Un cliente puede pedir un sitio que en realidad es un **producto aparte**: una app propia
+(por ejemplo Next.js) con su propio deploy, su propio dominio y su propia cadencia de
+desarrollo, sin compartir la resolución de tenant por `Host` ni el backoffice del SPA. Meter
+ese sitio adentro de `gestion.ar` como un rubro de `branding.industry` (ver ADR-030) obliga a
+arrastrar dentro del SPA un árbol de rutas, un stylesheet aislado por plugin PostCSS, assets y
+datos locales que no tienen nada que ver con el backoffice.
+
+### Opciones consideradas
+
+1. **Mantener el sitio como rubro del SPA** — reusa la resolución de tenant y el login, pero
+   acopla dos productos con ciclos de vida distintos, suma CSS aislado y un chunk pesado que
+   sólo un tenant descarga, y sigue sin darle al sitio un deploy independiente. Descartado.
+2. **Fork del SPA por tenant** — un contenedor con su propio bundle. Contradice la unicidad
+   del SPA (ADR-027) y reintroduce el costo por-tenant. Descartado.
+3. **App propia fuera de `gestion.ar`** — el sitio se desarrolla como proyecto independiente,
+   con su propio repo, deploy y dominio; la plataforma no lo sirve. Es la opción elegida.
+
+### Decisión
+
+Los sitios que **no comparten la resolución de tenant ni el backoffice** se desarrollan como
+**app propia** y se sacan de `gestion.ar`. La plataforma deja de servir ese dominio
+operativamente. `branding.industry` queda disponible para variaciones de **contenido del
+backoffice** (vocabulario, secciones), no para montar productos enteros.
+
+Ese es el caso de **El Tunel**: el sitio del club se mudó a una app Next.js standalone fuera
+del repo, y de `gestion.ar` se retiraron el rubro `padel`, sus pantallas, su CSS aislado, el
+plugin PostCSS, el script de alta del tenant y el ruteo por dominio.
+
+### Consecuencias
+
+- La plataforma deja de servir el dominio del sitio (no hay routers ni landing para él).
+- Un tenant cuyo sitio se muda puede quedar **sin sitio** servido por `gestion.ar`: el SPA del
+  tenant vuelve a ser sólo el backoffice.
+- Un sitio standalone debe resolver por su cuenta lo que antes venía del SPA (resolución de
+  tenant, login, assets, deploy), a cambio de independencia y de no cargar a la plataforma con
+  código de un solo cliente.

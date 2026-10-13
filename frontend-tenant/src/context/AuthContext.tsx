@@ -5,6 +5,7 @@ import authService from '../services/auth.service';
 import api from '../services/api';
 import { tokenStorage } from '../services/tokenStorage';
 import { biometricService } from '../services/biometric.service';
+import { loginWithPasskey as passkeyLogin, signupWithPasskey as passkeySignup } from '../services/passkey.service';
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -119,6 +120,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  /**
+   * Guarda el token de un flujo que ya autenticó y rehidrata el usuario.
+   * Los flujos de passkey (login y alta) no devuelven el usuario completo, así
+   * que se trae de /auth/me igual que en loginWithProvider.
+   */
+  const applySession = async (appToken: string) => {
+    await authService.saveToken(appToken);
+    const verifiedUser = await authService.verifyToken();
+    await authService.saveUser(verifiedUser);
+    await tokenStorage.setItem('lastUsername', verifiedUser.username);
+    setToken(appToken);
+    setUser(verifiedUser);
+    setIsAuthenticated(true);
+  };
+
+  const loginWithPasskey = async (tenantId: string, username?: string) => {
+    try {
+      const { token: appToken } = await passkeyLogin(tenantId, username);
+      await applySession(appToken);
+    } catch (error) {
+      console.error('Login with passkey error:', error);
+      throw error;
+    }
+  };
+
+  const signupWithPasskey = async (
+    tenantId: string,
+    options: { nombre: string; plan?: RegisterPlan },
+  ) => {
+    try {
+      const { token: appToken } = await passkeySignup(tenantId, options);
+      await applySession(appToken);
+    } catch (error) {
+      console.error('Signup with passkey error:', error);
+      throw error;
+    }
+  };
+
   const loginWithBiometric = async () => {
     try {
       // El plugin solo devuelve el secret tras validar la huella en el Keystore.
@@ -157,6 +196,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     login,
     loginWithProvider,
+    loginWithPasskey,
+    signupWithPasskey,
     loginWithBiometric,
     register,
     logout,

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BrandingSection } from '../components/settings/BrandingSection';
 import { BiometricSection } from '../components/settings/BiometricSection';
+import { PasskeySection } from '../components/settings/PasskeySection';
 import { AppLayout } from '../components/layout/AppLayout';
 import { PageHeader } from '../components/common/PageHeader';
 import { Alert } from '../components/common/Alert';
@@ -111,6 +112,8 @@ export const Settings = () => {
           {user?.role === 'admin' && <BrandingSection />}
 
           <BiometricSection />
+
+          <PasskeySection />
         </div>
       </div>
     </AppLayout>

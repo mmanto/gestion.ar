@@ -1,25 +1,76 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { AppLayout } from '../../components/layout/AppLayout';
 import { LoadingPage } from '../../components/common/Spinner';
 import { PageHeader } from '../../components/common/PageHeader';
 import { Alert } from '../../components/common/Alert';
-import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
+import { Field, FORM_CLASSES, ROW_2 } from '../../components/common/FormField';
+import { useModules } from '../../modules/ModulesProvider';
+import type { ModuleManifest } from '../../modules/manifest';
+import { Input } from '../../components/ui/input';
 import { AvatarPicker } from '../../components/common/AvatarPicker';
+import { DataTable, defineTableDTO, type TableDTO } from '@mmanto/devbout-ui';
+import { Badge } from '../../components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../../components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
+import { cn } from '../../lib/utils';
 import tenantAdminService from '../../services/tenantAdmin.service';
 import botsService from '../../services/bots.service';
-import type { Plan, Tenant, TenantStatus, TenantUser, TenantUserRole, BotModuleInfo, ModuleInfo } from '../../types/tenant.types';
+import type {
+  Plan,
+  Tenant,
+  TenantModuleInfo,
+  TenantUser,
+  TenantUserRole,
+} from '../../types/tenant.types';
 import type { Bot } from '../../types/bot.types';
 
-const statusLabels: Record<TenantStatus, string> = {
-  active: 'Activo',
-  suspended: 'Suspendido',
-  trial: 'Prueba',
+const roleLabels: Record<TenantUserRole, string> = {
+  admin: 'UsuarioAdmin',
+  operativo: 'Usuario',
+  broker: 'Broker',
 };
+
+const roleOptions: { value: TenantUserRole; label: string }[] = [
+  { value: 'admin', label: 'UsuarioAdmin' },
+  { value: 'operativo', label: 'Usuario (operativo)' },
+  { value: 'broker', label: 'Broker' },
+];
+
+const emptyUserForm = {
+  username: '',
+  password: '',
+  email: '',
+  nombre: '',
+  apellido: '',
+  avatar_url: '',
+  role: 'operativo' as TenantUserRole,
+};
+
+/**
+ * Título de sección: mismo criterio que los títulos de los formularios de
+ * entidad del paquete (`heading-section` + `font-heading`, ver
+ * docs/design/DESIGN.md).
+ */
+const sectionTitle = 'font-heading heading-section font-medium text-foreground';
 
 export const TenantDetail = () => {
   const { tenantId } = useParams<{ tenantId: string }>();
+  const moduleManifests = useModules();
 
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [users, setUsers] = useState<TenantUser[]>([]);
@@ -29,31 +80,30 @@ export const TenantDetail = () => {
 
   const [showUserModal, setShowUserModal] = useState(false);
   const [creatingUser, setCreatingUser] = useState(false);
-  const [newUser, setNewUser] = useState<{
-    username: string; password: string; email: string; nombre: string; apellido: string; avatar_url: string; role: TenantUserRole;
-  }>({
-    username: '', password: '', email: '', nombre: '', apellido: '', avatar_url: '', role: 'operativo',
-  });
+  const [newUser, setNewUser] = useState(emptyUserForm);
 
   const [editingUser, setEditingUser] = useState<TenantUser | null>(null);
-  const [editForm, setEditForm] = useState<{ email: string; nombre: string; apellido: string; avatar_url: string; role: TenantUserRole }>({
-    email: '', nombre: '', apellido: '', avatar_url: '', role: 'operativo',
+  const [editForm, setEditForm] = useState<{
+    email: string;
+    nombre: string;
+    apellido: string;
+    avatar_url: string;
+    role: TenantUserRole;
+  }>({
+    email: '',
+    nombre: '',
+    apellido: '',
+    avatar_url: '',
+    role: 'operativo',
   });
   const [savingEdit, setSavingEdit] = useState(false);
 
-  const [expandedBotId, setExpandedBotId] = useState<string | null>(null);
-  const [botModules, setBotModules] = useState<Record<string, BotModuleInfo[]>>({});
-  const [allModules, setAllModules] = useState<ModuleInfo[]>([]);
+  const [tenantModules, setTenantModules] = useState<TenantModuleInfo[]>([]);
+  const [modulesUpdating, setModulesUpdating] = useState<string | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
-  const [brandingLogoH, setBrandingLogoH] = useState<string | undefined>();
-  const [brandingLogoV, setBrandingLogoV] = useState<string | undefined>();
-  const [brandingColor, setBrandingColor] = useState('#25357a');
-  const [brandingTagline, setBrandingTagline] = useState('');
-  const [savingBranding, setSavingBranding] = useState(false);
-  const [generalName, setGeneralName] = useState('');
-  const [generalDomain, setGeneralDomain] = useState('');
-  const [savingGeneral, setSavingGeneral] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // La zona de peligro arranca oculta: se muestra sólo si el admin la pide.
+  const [showDanger, setShowDanger] = useState(false);
 
   const load = useCallback(async () => {
     if (!tenantId) return;
@@ -63,18 +113,13 @@ export const TenantDetail = () => {
         tenantAdminService.getTenant(tenantId),
         tenantAdminService.listUsers(tenantId, 1, 100),
         botsService.getBots({ tenant_id: tenantId, limit: 100 }),
-        tenantAdminService.listModules(),
+        tenantAdminService.getTenantModules(tenantId),
         tenantAdminService.listPlans(),
       ]);
       setTenant(tenantData);
-      setGeneralName(tenantData.name);
-      setGeneralDomain(tenantData.domain || '');
-      setBrandingLogoH(tenantData.branding?.logo_url_horizontal || tenantData.branding?.logo_url || undefined);
-      setBrandingLogoV(tenantData.branding?.logo_url_vertical || undefined);
-      setBrandingColor(tenantData.branding?.primary_color || '#25357a');
       setUsers(usersData.users);
       setBots(botsData.bots);
-      setAllModules(modulesData);
+      setTenantModules(modulesData);
       setPlans(plansData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error cargando el tenant');
@@ -86,59 +131,6 @@ export const TenantDetail = () => {
   useEffect(() => {
     load();
   }, [load]);
-
-  const handleStatusChange = async (status: TenantStatus) => {
-    if (!tenantId) return;
-    const updated = await tenantAdminService.updateTenant(tenantId, { status });
-    setTenant(updated);
-  };
-
-  const handlePlanChange = async (planId: string) => {
-    if (!tenantId) return;
-    const updated = await tenantAdminService.updateTenant(tenantId, { plan_id: planId });
-    setTenant(updated);
-  };
-
-  const handleSaveBranding = async () => {
-    if (!tenantId) return;
-    setSavingBranding(true);
-    try {
-      const updated = await tenantAdminService.updateTenant(tenantId, {
-        branding: {
-          logo_url_horizontal: brandingLogoH || undefined,
-          logo_url_vertical: brandingLogoV || undefined,
-          primary_color: brandingColor,
-          tagline: brandingTagline || undefined,
-        },
-      });
-      setTenant(updated);
-      setBrandingLogoH(updated.branding?.logo_url_horizontal || updated.branding?.logo_url || undefined);
-      setBrandingLogoV(updated.branding?.logo_url_vertical || undefined);
-      setBrandingColor(updated.branding?.primary_color || '#25357a');
-      setBrandingTagline(updated.branding?.tagline || '');
-    } finally {
-      setSavingBranding(false);
-    }
-  };
-
-  const handleSaveGeneral = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!tenantId) return;
-    setSavingGeneral(true);
-    try {
-      const updated = await tenantAdminService.updateTenant(tenantId, {
-        name: generalName.trim(),
-        domain: generalDomain.trim() || undefined,
-      });
-      setTenant(updated);
-      setGeneralName(updated.name);
-      setGeneralDomain(updated.domain || '');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error guardando el tenant');
-    } finally {
-      setSavingGeneral(false);
-    }
-  };
 
   const handleDeleteTenant = async () => {
     if (!tenantId) return;
@@ -153,7 +145,7 @@ export const TenantDetail = () => {
     }
   };
 
-  const handleCreateUser = async (e: React.FormEvent) => {
+  const handleCreateUser = async (e: FormEvent) => {
     e.preventDefault();
     if (!tenantId || !newUser.username || !newUser.password) return;
     try {
@@ -167,7 +159,7 @@ export const TenantDetail = () => {
         avatar_url: newUser.avatar_url || undefined,
       });
       setShowUserModal(false);
-      setNewUser({ username: '', password: '', email: '', nombre: '', apellido: '', avatar_url: '', role: 'operativo' });
+      setNewUser(emptyUserForm);
       load();
     } catch (err) {
       console.error('Error creating user:', err);
@@ -176,19 +168,28 @@ export const TenantDetail = () => {
     }
   };
 
-  const handleToggleDisabled = async (user: TenantUser) => {
-    await tenantAdminService.updateUser(user.username, { disabled: !user.disabled });
-    load();
-  };
+  // Estables (`useCallback`) porque alimentan el DTO de la grilla: si cambiaran
+  // en cada render, el `useMemo` del DTO se recrearía y la tabla perdería su
+  // estado (orden, columnas visibles).
+  const handleToggleDisabled = useCallback(
+    async (user: TenantUser) => {
+      await tenantAdminService.updateUser(user.username, { disabled: !user.disabled });
+      load();
+    },
+    [load],
+  );
 
   // Aprueba (manual) el plan que un usuario pidió al darse de alta por
   // autoregistro/gmail (pending → approved/active). Ver ADR-013.
-  const handleApproveUserPlan = async (username: string, status: 'approved' | 'active') => {
-    await tenantAdminService.approveUserPlanRequest(username, status);
-    load();
-  };
+  const handleApproveUserPlan = useCallback(
+    async (username: string, status: 'approved' | 'active') => {
+      await tenantAdminService.approveUserPlanRequest(username, status);
+      load();
+    },
+    [load],
+  );
 
-  const openEditUser = (user: TenantUser) => {
+  const openEditUser = useCallback((user: TenantUser) => {
     setEditingUser(user);
     setEditForm({
       email: user.email || '',
@@ -197,9 +198,9 @@ export const TenantDetail = () => {
       avatar_url: user.avatar_url || '',
       role: (user.role as TenantUserRole) || 'operativo',
     });
-  };
+  }, []);
 
-  const handleSaveEdit = async (e: React.FormEvent) => {
+  const handleSaveEdit = async (e: FormEvent) => {
     e.preventDefault();
     if (!editingUser) return;
     try {
@@ -220,499 +221,514 @@ export const TenantDetail = () => {
     }
   };
 
-  const handleDeleteUser = async (username: string) => {
-    if (!confirm(`¿Eliminar al usuario ${username}?`)) return;
-    try {
-      await tenantAdminService.deleteUser(username);
-      load();
-    } catch {
-      alert('No se pudo eliminar: puede tener bots asociados.');
-    }
-  };
+  // La confirmación la hace la grilla (variante destructiva del DTO).
+  const handleDeleteUser = useCallback(
+    async (user: TenantUser) => {
+      try {
+        await tenantAdminService.deleteUser(user.username);
+        load();
+      } catch {
+        // El interceptor de la API ya muestra el motivo (p. ej. bots asociados).
+      }
+    },
+    [load],
+  );
 
-  const toggleBotModules = async (botId: string) => {
-    if (expandedBotId === botId) {
-      setExpandedBotId(null);
-      return;
-    }
-    setExpandedBotId(botId);
-    if (!botModules[botId]) {
-      const modules = await tenantAdminService.getBotModules(botId);
-      setBotModules((prev) => ({ ...prev, [botId]: modules }));
-    }
-  };
+  // Módulos del tenant (no por bot): `granted` es lo que administración general
+  // otorga; un módulo sin pantallas propias sólo funciona a través del chat, así
+  // que un tenant sin agente no lo puede usar todavía.
+  const handleGrantTenantModule = useCallback(
+    async (moduleKey: string) => {
+      if (!tenantId || !moduleKey) return;
+      setModulesUpdating(moduleKey);
+      try {
+        await tenantAdminService.grantTenantModule(tenantId, moduleKey);
+        setTenantModules(await tenantAdminService.getTenantModules(tenantId));
+      } finally {
+        setModulesUpdating(null);
+      }
+    },
+    [tenantId],
+  );
 
-  const handleGrantToggle = async (botId: string, moduleKey: string, currentlyGranted: boolean) => {
-    if (currentlyGranted) {
-      await tenantAdminService.revokeModule(botId, moduleKey);
-    } else {
-      await tenantAdminService.grantModule(botId, moduleKey);
-    }
-    const modules = await tenantAdminService.getBotModules(botId);
-    setBotModules((prev) => ({ ...prev, [botId]: modules }));
-  };
+  const handleRevokeTenantModule = useCallback(
+    async (moduleKey: string) => {
+      if (!tenantId) return;
+      setModulesUpdating(moduleKey);
+      try {
+        await tenantAdminService.revokeTenantModule(tenantId, moduleKey);
+        setTenantModules(await tenantAdminService.getTenantModules(tenantId));
+      } finally {
+        setModulesUpdating(null);
+      }
+    },
+    [tenantId],
+  );
+
+  // Alta de usuario: sigue en un `Dialog` propio (el schema del paquete no
+  // renderiza la contraseña ni el `AvatarPicker`), pero el botón va en el
+  // toolbar de la grilla, al lado del buscador.
+  const toolbarButton = useMemo(
+    () => (
+      <Button variant="primary" onClick={() => setShowUserModal(true)}>
+        + Nuevo usuario
+      </Button>
+    ),
+    [],
+  );
+
+  const modulesByKey = useMemo(() => {
+    const map: Record<string, ModuleManifest> = {};
+    for (const manifest of moduleManifests) map[manifest.module_key] = manifest;
+    return map;
+  }, [moduleManifests]);
+
+  const grantableModules = useMemo(
+    () =>
+      tenantModules
+        .filter((module) => !module.granted)
+        .map((module) => ({
+          value: module.module_key,
+          label: module.module_name || module.module_key,
+        })),
+    [tenantModules],
+  );
+
+  const grantedModules = useMemo(
+    () => tenantModules.filter((module) => module.granted),
+    [tenantModules],
+  );
+
+  // Grilla del paquete (mismo `DataTable` que la lista de tenants). Sin
+  // `entity`: el alta/edición de usuario las manejan los diálogos de esta
+  // pantalla (el schema del paquete no renderiza el `AvatarPicker` ni un campo
+  // de contraseña). Los handlers del DTO son estables (`useCallback`).
+  const usersDto = useMemo<TableDTO<TenantUser>>(
+    () =>
+      defineTableDTO<TenantUser>({
+        // `toolbarActions` es de @mmanto/devbout-ui 0.4 (changeset
+        // `data-table-toolbar-actions`): el 0.3.0 publicado todavía no lo tipa, así
+        // que va por un cast. Se cae al actualizar la dependencia
+        // (`npm install @mmanto/devbout-ui@^0.4.0`).
+        ...({ toolbarActions: toolbarButton } as Partial<TableDTO<TenantUser>>),
+        selectable: false,
+        onDataChange: setUsers,
+        search: { columnId: 'username', placeholder: 'Buscar usuario' },
+        confirm: {
+          title: 'Eliminar usuario',
+          message: () => 'El usuario se elimina definitivamente. No se puede deshacer.',
+          confirmLabel: 'Eliminar',
+          cancelLabel: 'Cancelar',
+        },
+        columnLabels: {
+          username: 'Usuario',
+          name: 'Nombre',
+          email: 'Email',
+          role: 'Rol',
+          status: 'Estado',
+          plan: 'Plan',
+        },
+        labels: {
+          searchAction: 'Buscar',
+          rowsPerPage: 'Filas por página',
+          columns: 'Columnas',
+          noResults: 'Sin usuarios todavía.',
+          previous: 'Anterior',
+          next: 'Siguiente',
+          openRowMenu: 'Abrir acciones de la fila',
+        },
+        columns: [
+          {
+            id: 'username',
+            accessorKey: 'username',
+            header: 'Usuario',
+            cell: ({ row }) => (
+              <div className="flex items-center gap-2">
+                {row.original.avatar_url ? (
+                  <img
+                    src={row.original.avatar_url}
+                    alt=""
+                    className="size-6 shrink-0 rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs text-muted-foreground">
+                    {(row.original.nombre || row.original.username).charAt(0).toUpperCase()}
+                  </span>
+                )}
+                {row.original.username}
+              </div>
+            ),
+          },
+          {
+            id: 'name',
+            header: 'Nombre',
+            accessorFn: (u) => [u.nombre, u.apellido].filter(Boolean).join(' '),
+            cell: ({ row }) =>
+              [row.original.nombre, row.original.apellido].filter(Boolean).join(' ') || '—',
+          },
+          {
+            id: 'email',
+            accessorKey: 'email',
+            header: 'Email',
+            cell: ({ row }) => row.original.email || '—',
+          },
+          {
+            id: 'role',
+            header: 'Rol',
+            accessorKey: 'role',
+            cell: ({ row }) =>
+              roleLabels[(row.original.role as TenantUserRole) ?? 'operativo'] ?? row.original.role,
+          },
+          {
+            id: 'status',
+            header: 'Estado',
+            accessorFn: (u) => (u.disabled ? 'Deshabilitado' : 'Activo'),
+            cell: ({ row }) => (
+              <Badge variant={row.original.disabled ? 'destructive' : 'success'}>
+                {row.original.disabled ? 'Deshabilitado' : 'Activo'}
+              </Badge>
+            ),
+          },
+          {
+            id: 'plan',
+            header: 'Plan',
+            accessorFn: (u) =>
+              plans.find((p) => p.plan_id === u.requested_plan_id)?.name ?? '',
+            cell: ({ row }) => {
+              const u = row.original;
+              if (!u.requested_plan_id) {
+                return <span className="text-muted-foreground">—</span>;
+              }
+              return (
+                <div className="flex items-center gap-2">
+                  {plans.find((p) => p.plan_id === u.requested_plan_id)?.name ?? 'Plan'}
+                  {u.subscription_status === 'pending' && (
+                    <>
+                      <Badge variant="warning">Pendiente</Badge>
+                      <Button
+                        variant="link"
+                        size="xs"
+                        onClick={() => handleApproveUserPlan(u.username, 'active')}
+                      >
+                        Aprobar
+                      </Button>
+                    </>
+                  )}
+                </div>
+              );
+            },
+          },
+        ],
+        rowActions: [
+          { id: 'edit', label: 'Editar', run: openEditUser },
+          { id: 'toggle', label: 'Habilitar / deshabilitar', run: handleToggleDisabled },
+          { id: 'delete', label: 'Eliminar', variant: 'destructive', run: handleDeleteUser },
+        ],
+      }),
+    [plans, handleApproveUserPlan, handleDeleteUser, handleToggleDisabled, openEditUser, toolbarButton],
+  );
 
   if (loading) return <LoadingPage />;
-  if (!tenant) return <AppLayout><Alert variant="error">Tenant no encontrado</Alert></AppLayout>;
+  if (!tenant)
+    return (
+      <AppLayout>
+        <Alert variant="error">Tenant no encontrado</Alert>
+      </AppLayout>
+    );
 
   return (
     <AppLayout>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-6">
         <PageHeader
           title={tenant.name}
           description={tenant.domain || 'Sin dominio asignado'}
           actions={
-            <Link to="/admin/tenants" className="text-sm text-gray-800 hover:underline">
+            <Link to="/admin/tenants" className="text-xs text-muted-foreground hover:text-foreground">
               ← Volver a Tenants
             </Link>
           }
         />
 
-        {error && <Alert variant="error" className="mb-6">Error: {error}</Alert>}
-
-        {/* Datos generales */}
-        <Card shadow="none" className="mb-8">
-          <h3 className="text-base font-semibold text-gray-900 mb-3">Datos generales</h3>
-          <form onSubmit={handleSaveGeneral} className="space-y-4">
-            <div>
-              <label htmlFor="tenant-name" className="block text-xs font-medium text-gray-700 mb-1">Nombre</label>
-              <input
-                id="tenant-name"
-                type="text"
-                value={generalName}
-                onChange={(e) => setGeneralName(e.target.value)}
-                minLength={2}
-                maxLength={100}
-                required
-                className="w-full max-w-sm px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-ring focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label htmlFor="tenant-domain" className="block text-xs font-medium text-gray-700 mb-1">Dominio propio</label>
-              <input
-                id="tenant-domain"
-                type="text"
-                value={generalDomain}
-                onChange={(e) => setGeneralDomain(e.target.value)}
-                placeholder="ej. pachoteayuda.ar"
-                className="w-full max-w-sm px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-ring focus:border-transparent"
-              />
-              <p className="text-xs text-gray-500 mt-0.5">
-                Dominio propio del tenant (ej. pachoteayuda.ar) — no un subdominio de intellify.pro.
-              </p>
-            </div>
-            <Button variant="primary" size="sm" type="submit" loading={savingGeneral}>
-              {savingGeneral ? 'Guardando...' : 'Guardar datos'}
-            </Button>
-          </form>
-        </Card>
-
-        {/* Estado del tenant */}
-        <Card shadow="none" className="mb-8">
-          <h3 className="text-base font-semibold text-gray-900 mb-3">Estado</h3>
-          <div className="flex gap-2">
-            {(['active', 'trial', 'suspended'] as TenantStatus[]).map((s) => (
-              <button
-                key={s}
-                onClick={() => handleStatusChange(s)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium border ${
-                  tenant.status === s
-                    ? 'bg-gray-900 text-white border-gray-900'
-                    : 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                {statusLabels[s]}
-              </button>
-            ))}
-          </div>
-        </Card>
-
-        {/* Plan */}
-        <Card shadow="none" className="mb-8">
-          <h3 className="text-base font-semibold text-gray-900 mb-3">Plan</h3>
-          <select
-            value={tenant.plan_id}
-            onChange={(e) => handlePlanChange(e.target.value)}
-            className="w-full max-w-sm px-3 py-2 border border-gray-300 rounded-lg"
-          >
-            {plans.map((p) => (
-              <option key={p.plan_id} value={p.plan_id}>
-                {p.name} — ${p.amount.toLocaleString('es-AR')}/{p.periodicity === 'monthly' ? 'mes' : 'año'}
-              </option>
-            ))}
-          </select>
-        </Card>
-
-        {/* Branding */}
-        <Card shadow="none" className="mb-8">
-          <h3 className="text-base font-semibold text-gray-900 mb-3">Marca</h3>
-          <div className="space-y-4">
-            <div>
-              <p className="text-xs font-medium text-gray-700 mb-2">Logo horizontal</p>
-              <AvatarPicker
-                value={brandingLogoH}
-                onChange={setBrandingLogoH}
-                fallbackLabel={tenant.name?.charAt(0) || '?'}
-              />
-            </div>
-
-            {/* Logo vertical */}
-            <div>
-              <p className="text-xs font-medium text-gray-700 mb-2">Logo vertical</p>
-              <AvatarPicker
-                value={brandingLogoV}
-                onChange={setBrandingLogoV}
-                fallbackLabel={tenant.name?.charAt(0) || '?'}
-              />
-            </div>
-
-            {/* Primary color */}
-            <div>
-              <p className="text-xs font-medium text-gray-700 mb-2">Color principal</p>
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={brandingColor}
-                  onChange={(e) => setBrandingColor(e.target.value)}
-                  className="w-10 h-10 rounded-sm border border-gray-300 cursor-pointer p-0.5"
-                />
-                <span className="text-sm text-gray-700">{brandingColor}</span>
-              </div>
-            </div>
-
-            {/* Tagline */}
-            <div>
-              <p className="text-xs font-medium text-gray-700 mb-2">Tagline</p>
-              <input
-                type="text"
-                value={brandingTagline}
-                onChange={(e) => setBrandingTagline(e.target.value)}
-                maxLength={200}
-                placeholder="Ej: Abogados de confianza"
-                className="w-full max-w-sm px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-ring focus:border-transparent"
-              />
-            </div>
-
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleSaveBranding}
-              disabled={savingBranding}
-            >
-              {savingBranding ? 'Guardando...' : 'Guardar marca'}
-            </Button>
-          </div>
-        </Card>
+        {error && <Alert variant="error">Error: {error}</Alert>}
 
         {/* Usuarios */}
-        <div className="flex items-center justify-between mb-3 mt-8">
-          <h3 className="text-base font-semibold text-gray-900">Usuarios ({users.length})</h3>
-          <Button variant="outline" size="sm" onClick={() => setShowUserModal(true)}>
-            + Nuevo usuario
-          </Button>
-        </div>
-        <Card shadow="none" padding="none" className="mb-8 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-800 text-left">
-              <tr>
-                <th className="px-4 py-2">Usuario</th>
-                <th className="px-4 py-2">Nombre</th>
-                <th className="px-4 py-2">Email</th>
-                <th className="px-4 py-2">Rol</th>
-                <th className="px-4 py-2">Estado</th>
-                <th className="px-4 py-2">Plan</th>
-                <th className="px-4 py-2"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.username} className="border-t border-gray-200">
-                  <td className="px-4 py-2 font-medium text-gray-900">
-                    <div className="flex items-center gap-2">
-                      {u.avatar_url ? (
-                        <img src={u.avatar_url} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
-                      ) : (
-                        <span className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-700 shrink-0">
-                          {(u.nombre || u.username).charAt(0).toUpperCase()}
+        <section className="grid gap-3">
+          <h3 className={sectionTitle}>Usuarios ({users.length})</h3>
+          <DataTable dto={usersDto} data={users} />
+        </section>
+
+        {/* Módulos del tenant (independientes del agente) */}
+        <section className="grid gap-4">
+          <h3 className={sectionTitle}>Módulos</h3>
+          <div className={FORM_CLASSES}>
+            <div className={ROW_2}>
+              <Field label="Agregar módulo" htmlFor="tenant-module">
+                <Select
+                  items={grantableModules}
+                  value=""
+                  onValueChange={(next) => {
+                    if (next) void handleGrantTenantModule(next);
+                  }}
+                >
+                  <SelectTrigger id="tenant-module" className="w-full">
+                    <SelectValue placeholder="Elegí un módulo disponible" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {grantableModules.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+
+            <div className="grid gap-4">
+              {grantedModules.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Este tenant no tiene módulos otorgados.
+                </p>
+              ) : (
+                grantedModules.map((module) => (
+                  <div
+                    key={module.module_key}
+                    className="flex items-start justify-between gap-3"
+                  >
+                    <div className="grid gap-1">
+                      <span className="font-medium text-foreground">
+                        {module.module_name || module.module_key}
+                      </span>
+                      {module.module_description && (
+                        <span className="text-xs text-muted-foreground">
+                          {module.module_description}
                         </span>
                       )}
-                      {u.username}
+                      {bots.length === 0 &&
+                        (modulesByKey[module.module_key]?.tenant?.nav?.length ?? 0) === 0 && (
+                          <span className="text-xs text-warning">
+                            Sin agente queda sin interfaz: este módulo sólo se usa por el chat o
+                            dentro de un agente.
+                          </span>
+                        )}
                     </div>
-                  </td>
-                  <td className="px-4 py-2 text-gray-900">
-                    {[u.nombre, u.apellido].filter(Boolean).join(' ') || '—'}
-                  </td>
-                  <td className="px-4 py-2 text-gray-900">{u.email || '—'}</td>
-                  <td className="px-4 py-2 text-gray-900 capitalize">
-                    {u.role === 'admin' ? 'UsuarioAdmin' : 'Usuario'}
-                  </td>
-                  <td className="px-4 py-2">
-                    <span className={`px-2 py-0.5 rounded-full text-xs ${u.disabled ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
-                      {u.disabled ? 'Deshabilitado' : 'Activo'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2">
-                    {u.requested_plan_id ? (
-                      <div className="flex items-center gap-2">
-                        {plans.find((p) => p.plan_id === u.requested_plan_id)?.name ?? 'Plan'}
-                        {u.subscription_status === 'pending' && (
-                          <span className="px-2 py-0.5 rounded-full text-xs bg-orange-100 text-orange-800">Pendiente</span>
-                        )}
-                        {u.subscription_status === 'pending' && (
-                          <button
-                            onClick={() => handleApproveUserPlan(u.username, 'active')}
-                            className="text-xs text-blue-700 hover:underline"
-                          >
-                            Aprobar
-                          </button>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-gray-400">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-2 text-right whitespace-nowrap">
-                    <button onClick={() => openEditUser(u)} className="text-xs text-gray-800 hover:underline mr-3">
-                      Editar
-                    </button>
-                    <button onClick={() => handleToggleDisabled(u)} className="text-xs text-gray-800 hover:underline mr-3">
-                      {u.disabled ? 'Habilitar' : 'Deshabilitar'}
-                    </button>
-                    <button onClick={() => handleDeleteUser(u.username)} className="text-xs text-red-600 hover:underline">
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {users.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-4 py-6 text-center text-gray-400">
-                    Sin usuarios todavía
-                  </td>
-                </tr>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      disabled={modulesUpdating === module.module_key}
+                      onClick={() => void handleRevokeTenantModule(module.module_key)}
+                    >
+                      Revocar
+                    </Button>
+                  </div>
+                ))
               )}
-            </tbody>
-          </table>
-        </Card>
+            </div>
+          </div>
+        </section>
 
-        {/* Agente + módulos */}
-        <h3 className="text-base font-semibold text-gray-900 mb-3 mt-8">Agente</h3>
-        <div className="space-y-3">
-          {bots.map((bot) => (
-            <Card key={bot.bot_id} shadow="none">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="font-medium text-gray-900">{bot.name}</span>
-                  <span className="ml-2 text-xs text-gray-700">{bot.business_type}</span>
-                  <Link to={`/bots/${bot.bot_id}`} className="ml-2 text-xs text-foreground hover:underline">
-                    Ver agente
-                  </Link>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => toggleBotModules(bot.bot_id)}>
-                  {expandedBotId === bot.bot_id ? 'Ocultar módulos' : 'Módulos'}
+        {/* Zona de peligro — oculta hasta que se pida verla */}
+        <section className="grid gap-3 border-t border-border pt-6">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className={cn(sectionTitle, 'text-destructive')}>Zona de peligro</h3>
+            <Button variant="outline" size="sm" onClick={() => setShowDanger((shown) => !shown)}>
+              {showDanger ? 'Ocultar' : 'Mostrar'}
+            </Button>
+          </div>
+          {showDanger && (
+            <>
+              <p className="text-xs text-muted-foreground">
+                Elimina permanentemente el tenant. Requiere que no tenga bots, usuarios, canales,
+                clientes ni conversaciones asociados.
+              </p>
+              <div className="flex">
+                <Button variant="destructive" onClick={handleDeleteTenant} loading={deleting}>
+                  {deleting ? 'Eliminando...' : 'Eliminar tenant'}
                 </Button>
               </div>
-
-              {expandedBotId === bot.bot_id && (
-                <div className="mt-4 border-t border-gray-200 pt-4 space-y-2">
-                  {(botModules[bot.bot_id] || allModules.map((m) => ({
-                    bot_id: bot.bot_id, module_key: m.module_key, granted: false, enabled: false,
-                    module_name: m.name, module_description: m.description,
-                  }))).map((mod) => (
-                    <div key={mod.module_key} className="flex items-center justify-between text-sm">
-                      <div>
-                        <p className="font-medium text-gray-900">{mod.module_name || mod.module_key}</p>
-                        {mod.module_description && <p className="text-gray-700 text-xs">{mod.module_description}</p>}
-                        {mod.enabled && <span className="text-xs text-green-700">habilitado por el tenant</span>}
-                      </div>
-                      <Button
-                        variant={mod.granted ? 'danger' : 'primary'}
-                        size="sm"
-                        onClick={() => handleGrantToggle(bot.bot_id, mod.module_key, mod.granted)}
-                      >
-                        {mod.granted ? 'Revocar' : 'Otorgar'}
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
-          ))}
-          {bots.length === 0 && (
-            <Card shadow="none">
-              <p className="text-center text-gray-400 py-6">
-                Este tenant todavía no tiene un agente asociado. Creá uno desde{' '}
-                <Link to="/bots" className="underline">Agentes</Link>.
-              </p>
-            </Card>
+            </>
           )}
-        </div>
-
-        {/* Zona de peligro */}
-        <Card shadow="none" className="mt-8 border border-red-200">
-          <h3 className="text-base font-semibold text-red-800 mb-1">Zona de peligro</h3>
-          <p className="text-sm text-gray-600 mb-3">
-            Elimina permanentemente el tenant. Requiere que no tenga bots, usuarios, canales, clientes
-            ni conversaciones asociados.
-          </p>
-          <Button variant="danger" onClick={handleDeleteTenant} loading={deleting}>
-            {deleting ? 'Eliminando...' : 'Eliminar tenant'}
-          </Button>
-        </Card>
+        </section>
       </div>
 
-      {showUserModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Nuevo usuario</h2>
-            <form onSubmit={handleCreateUser}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-900 mb-1">Usuario *</label>
-                <input
-                  type="text"
+      <Dialog open={showUserModal} onOpenChange={setShowUserModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Nuevo usuario</DialogTitle>
+            <DialogDescription>
+              Crea un usuario del tenant. El acceso se hace con usuario y contraseña.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateUser} className={cn(FORM_CLASSES, 'overflow-y-auto')}>
+            <div className={ROW_2}>
+              <Field label="Usuario" htmlFor="new-user-username">
+                <Input
+                  id="new-user-username"
                   value={newUser.username}
                   onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   required
+                  autoComplete="off"
                 />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-900 mb-1">Contraseña *</label>
-                <input
+              </Field>
+              <Field label="Contraseña" htmlFor="new-user-password">
+                <Input
+                  id="new-user-password"
                   type="password"
                   value={newUser.password}
                   onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   required
                   minLength={6}
+                  autoComplete="new-password"
                 />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-900 mb-1">Email</label>
-                <input
+              </Field>
+            </div>
+
+            <div className={ROW_2}>
+              <Field label="Email" htmlFor="new-user-email">
+                <Input
+                  id="new-user-email"
                   type="email"
                   value={newUser.email}
                   onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 />
-              </div>
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1">Nombre</label>
-                  <input
-                    type="text"
-                    value={newUser.nombre}
-                    onChange={(e) => setNewUser({ ...newUser, nombre: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1">Apellido</label>
-                  <input
-                    type="text"
-                    value={newUser.apellido}
-                    onChange={(e) => setNewUser({ ...newUser, apellido: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  />
-                </div>
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-900 mb-1">Avatar</label>
-                <AvatarPicker
-                  value={newUser.avatar_url}
-                  onChange={(url) => setNewUser({ ...newUser, avatar_url: url })}
-                  fallbackLabel={newUser.nombre || newUser.username}
-                />
-              </div>
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-900 mb-1">Rol *</label>
-                <select
+              </Field>
+              <Field label="Rol" htmlFor="new-user-role">
+                <Select
+                  items={roleOptions}
                   value={newUser.role}
-                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value as TenantUserRole })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  onValueChange={(next) =>
+                    setNewUser({ ...newUser, role: (next as TenantUserRole) ?? 'operativo' })
+                  }
                 >
-                  <option value="admin">UsuarioAdmin</option>
-                  <option value="operativo">Usuario (operativo)</option>
-                </select>
-              </div>
-              <div className="flex justify-end gap-3">
-                <Button type="button" variant="outline" onClick={() => setShowUserModal(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit" variant="primary" loading={creatingUser}>
-                  Crear usuario
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                  <SelectTrigger id="new-user-role" className="w-full">
+                    <SelectValue placeholder="Elegí un rol" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roleOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
 
-      {editingUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Editar {editingUser.username}</h2>
-            <form onSubmit={handleSaveEdit}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-900 mb-1">Email</label>
-                <input
+            <div className={ROW_2}>
+              <Field label="Nombre" htmlFor="new-user-nombre">
+                <Input
+                  id="new-user-nombre"
+                  value={newUser.nombre}
+                  onChange={(e) => setNewUser({ ...newUser, nombre: e.target.value })}
+                />
+              </Field>
+              <Field label="Apellido" htmlFor="new-user-apellido">
+                <Input
+                  id="new-user-apellido"
+                  value={newUser.apellido}
+                  onChange={(e) => setNewUser({ ...newUser, apellido: e.target.value })}
+                />
+              </Field>
+            </div>
+
+            <Field label="Avatar">
+              <AvatarPicker
+                value={newUser.avatar_url}
+                onChange={(url) => setNewUser({ ...newUser, avatar_url: url })}
+                fallbackLabel={newUser.nombre || newUser.username}
+              />
+            </Field>
+
+            <DialogFooter className="flex-row justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setShowUserModal(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" loading={creatingUser}>
+                Crear usuario
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editingUser !== null} onOpenChange={(open) => !open && setEditingUser(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Editar {editingUser?.username}</DialogTitle>
+            <DialogDescription>
+              Actualiza los datos del usuario. La contraseña no se cambia desde acá.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveEdit} className={cn(FORM_CLASSES, 'overflow-y-auto')}>
+            <div className={ROW_2}>
+              <Field label="Email" htmlFor="edit-user-email">
+                <Input
+                  id="edit-user-email"
                   type="email"
                   value={editForm.email}
                   onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 />
-              </div>
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1">Nombre</label>
-                  <input
-                    type="text"
-                    value={editForm.nombre}
-                    onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1">Apellido</label>
-                  <input
-                    type="text"
-                    value={editForm.apellido}
-                    onChange={(e) => setEditForm({ ...editForm, apellido: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  />
-                </div>
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-900 mb-1">Avatar</label>
-                <AvatarPicker
-                  value={editForm.avatar_url}
-                  onChange={(url) => setEditForm({ ...editForm, avatar_url: url })}
-                  fallbackLabel={editForm.nombre || editingUser?.username || ''}
-                />
-              </div>
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-900 mb-1">Rol</label>
-                <select
+              </Field>
+              <Field label="Rol" htmlFor="edit-user-role">
+                <Select
+                  items={roleOptions}
                   value={editForm.role}
-                  onChange={(e) => setEditForm({ ...editForm, role: e.target.value as TenantUserRole })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  onValueChange={(next) =>
+                    setEditForm({ ...editForm, role: (next as TenantUserRole) ?? 'operativo' })
+                  }
                 >
-                  <option value="admin">UsuarioAdmin</option>
-                  <option value="operativo">Usuario (operativo)</option>
-                </select>
-              </div>
-              <div className="flex justify-end gap-3">
-                <Button type="button" variant="outline" onClick={() => setEditingUser(null)}>
-                  Cancelar
-                </Button>
-                <Button type="submit" variant="primary" loading={savingEdit}>
-                  Guardar cambios
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                  <SelectTrigger id="edit-user-role" className="w-full">
+                    <SelectValue placeholder="Elegí un rol" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roleOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+
+            <div className={ROW_2}>
+              <Field label="Nombre" htmlFor="edit-user-nombre">
+                <Input
+                  id="edit-user-nombre"
+                  value={editForm.nombre}
+                  onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
+                />
+              </Field>
+              <Field label="Apellido" htmlFor="edit-user-apellido">
+                <Input
+                  id="edit-user-apellido"
+                  value={editForm.apellido}
+                  onChange={(e) => setEditForm({ ...editForm, apellido: e.target.value })}
+                />
+              </Field>
+            </div>
+
+            <Field label="Avatar">
+              <AvatarPicker
+                value={editForm.avatar_url}
+                onChange={(url) => setEditForm({ ...editForm, avatar_url: url })}
+                fallbackLabel={editForm.nombre || editingUser?.username || ''}
+              />
+            </Field>
+
+            <DialogFooter className="flex-row justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setEditingUser(null)}>
+                Cancelar
+              </Button>
+              <Button type="submit" loading={savingEdit}>
+                Guardar cambios
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 };

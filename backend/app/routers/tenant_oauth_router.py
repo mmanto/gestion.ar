@@ -29,7 +29,6 @@ from pydantic import BaseModel
 
 from app.services.oauth_config import build_nango_config
 from app.services.oauth_login_store import get_oauth_login_store
-from app.services.plan_service import get_plan_service
 from app.services.tenant_service import get_tenant_service
 from app.services.user_service import get_user_service
 from devbout_oauth import NangoClient, NangoError
@@ -229,23 +228,8 @@ async def tenant_login_finalize(body: _FinalizeRequest):
     # El pase a aprobado/vigente es manual (super_admin, ver ADR-013). El
     # login normal de usuarios ya existentes no manda plan y no toca nada.
     if body.plan and result.get("username"):
-        await _record_pending_plan(result["username"], body.plan)
+        await get_user_service().record_pending_plan(result["username"], body.plan)
     return result
-
-
-async def _record_pending_plan(username: str, plan: str) -> None:
-    """Resuelve el plan del catálogo por periodicidad y lo deja pendiente en
-    el usuario que acaba de darse de alta vía el login OAuth del tenant.
-
-    Solo hay dos planes para el tenant ius (Pro Mensual/Pro Anual): se elige
-    el plan pagado de la periodicidad (no el Plan Básico por defecto, amount=0).
-    """
-    plan_period = "monthly" if plan == "mensual" else "annual"
-    catalog_plans = await get_plan_service().list_plans()
-    candidates = [p for p in catalog_plans if p.periodicity.value == plan_period]
-    catalog_plan = max(candidates, key=lambda p: p.amount, default=None)
-    if catalog_plan:
-        await get_user_service().set_requested_plan(username, catalog_plan.plan_id)
 
 
 @router.post("/webhook/nango")

@@ -61,12 +61,12 @@ services:
       - "traefik.http.routers.tenant-ius-hmr.service=tenant-ius"
 
       - "traefik.http.services.tenant-pachoteayuda.loadbalancer.server.port=5174"
-      # pachoteayuda.ar comparte dominio con la app del tenant — el websocket
-      # de HMR de Vite siempre conecta contra "/" en el mismo host:puerto de la
-      # página, así que sin este router aparte cae en la app servida (nginx, sin
-      # upgrade) en vez del dev-server. Prioridad 20 y solo matchea el upgrade
-      # de websocket, así no le quita tráfico normal a la app.
-      - "traefik.http.routers.tenant-pachoteayuda-hmr.rule=Host(`pachoteayuda.ar`) && Header(`Upgrade`, `websocket`)"
+      # pachoteayuda.ar.localhost comparte dominio con la app del tenant — el
+      # websocket de HMR de Vite siempre conecta contra "/" en el mismo
+      # host:puerto de la página, así que sin este router aparte cae en la app
+      # servida (nginx, sin upgrade) en vez del dev-server. Prioridad 20 y solo
+      # matchea el upgrade de websocket, así no le quita tráfico normal a la app.
+      - "traefik.http.routers.tenant-pachoteayuda-hmr.rule=Host(`pachoteayuda.ar.localhost`) && Header(`Upgrade`, `websocket`)"
       - "traefik.http.routers.tenant-pachoteayuda-hmr.entrypoints=web"
       - "traefik.http.routers.tenant-pachoteayuda-hmr.priority=20"
       - "traefik.http.routers.tenant-pachoteayuda-hmr.service=tenant-pachoteayuda"

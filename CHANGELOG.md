@@ -7,6 +7,75 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **Página de reclamos en la landing de pachoteayuda (`/reclamos/`), con los reclamos simulados
+  del mapa de maparg**. Página estática versionada
+  (`sites/pachoteayuda-landing/reclamos/index.html`): mapa Leaflet 1.9.4 (CDN con SRI) sobre las
+  teselas de OpenStreetMap, un pin por reclamo del color de su tipo (acumulación de basura /
+  pérdida de agua), leyenda con los conteos y una tarjeta por reclamo —id, estado, zona, fecha y
+  descripción— con "Ver en el mapa" que centra el pin y abre su ficha. Los 4 reclamos son **de
+  ejemplo** (los del mapa de `maparg`, con la forma que va a tener la respuesta de la API:
+  id, tipo, descripcion, lugar, fecha, estado, lat, lon) y la página va con
+  `noindex, nofollow` y sin enlazar desde la landing: cuando exista el registro de reclamos hay
+  que sacar el noindex, sumar `/reclamos/` al nav de las páginas (template del generador) y a
+  `sitemap.xml`. Ruteo: `/reclamos` y `/reclamos/` sumados al rule del router
+  `landing-pachoteayuda` en prod y local (la landing no necesita nada en nginx: el location
+  genérico sirve el `index.html` del directorio con `no-cache`). **Requiere** rebuild +
+  redeploy del servicio `landing`.
+- **Host local `<dominio>.localhost` para los tenants con dominio propio, con su landing**.
+  En `docker-compose.tenants.local.yml` el tenant ya no se prueba con su dominio real
+  (`pachoteayuda.ar`, que en un navegador local apunta al sitio de producción) sino con
+  `pachoteayuda.ar.localhost`: cualquier `*.localhost` resuelve a loopback por RFC 6761, así
+  que **no** requiere entrada en `/etc/hosts` (los tenants simulados erma/ius siguen con
+  `erma.com.test` / `ius.mx.test`). Además se agregó el router `landing-pachoteayuda` local
+  —que replica el reparto de paths de prod— por lo que `/`, los `.html`, `/landing/`,
+  `/normas/`, `/tramites/` y `/residuos/` los sirve la landing y `/login`, `/chat/c/<channel>`,
+  `/api/*` y `/ws/*` el SPA del tenant; antes la landing de pachoteayuda no estaba ruteada en
+  local y todo caía en el SPA. `GET /api/public/tenants/current` reintenta la búsqueda del
+  tenant sin el sufijo `.localhost` (ver docs/dev/API.md), así que el SPA lo resuelve por Host
+  como en prod (sin `?tenant=`), y `sites/nginx.conf` mapea el host nuevo a la raíz de la
+  landing. El router de hot-reload (`docker-compose.tenants.dev.yml`) y `scripts/stack-dev.sh`
+  (`TENANT_DOMAINS`: los `.localhost` no se exigen en `/etc/hosts`) quedan alineados. **Prod no
+  cambia**: `docker-compose.tenants.prod.yml` sigue con `pachoteayuda.ar` como único host.
+- **Tenant `eltunel` (El Tunel Padel Club): el sitio del club no vive en la plataforma (ADR-031)**.
+  El sitio se desarrolló como **app Next.js standalone**, con deploy propio y fuera de este
+  repo, y se retiró de `gestion.ar`: se eliminó el rubro `branding.industry = 'padel'` y sus
+  pantallas React (`frontend-tenant/src/club/`), su CSS aislado y el plugin PostCSS local que
+  lo prefijaba a `.club-app` (`postcss-plugins/scope-club-css.mjs`), el ruteo por dominio
+  (routers Traefik `tenant-eltunel` / `tenant-eltunel-hmr` en los compose de tenants local/dev)
+  y el script de alta del tenant (`backend/scripts/create_eltunel_tenant.py`). El SPA del
+  tenant vuelve a ser sólo el backoffice.
+- **Módulos por tenant: el entitlement deja de depender del agente (ADR-029)**. Nueva tabla
+  `tenant_modules` (misma forma que `bot_modules`: la fila implica otorgado, revocar la
+  borra) con su migración, tres endpoints de administración general
+  (`GET/POST/DELETE /api/admin/tenants/{tenant_id}/modules[/{module_key}/grant]`) y
+  `is_available(bot_id, module_key)` ampliado a «otorgado al bot **o** habilitado para su
+  tenant **o** incluido en el plan». El manifiesto deja de declarar `requires=("agent",)`
+  (los módulos se conectan con agente por el chat **o** funcionan autónomos con sus propias
+  pantallas) y el `scope` de esos módulos pasa de `bot` a `entitled`.
+- **Manifiesto de módulos + `AgentService` (ADR-028)**. `backend/app/modules/manifest.py`
+  pasa a ser la fuente de verdad de qué módulos existen, de qué dependen, qué routers
+  montan y qué superficies exponen (`agent` como módulo de plataforma que hospeda el chat,
+  y `rag` / `appointments` / `lead_funnel` como módulos por bot con `requires=("agent",)`).
+  `app/module_registry.py` desaparece en favor de `app/modules/registry.py` (los routers
+  salen del manifiesto; `tenant_appointments_router` deja de estar fuera del registry).
+  Nuevo env `ENABLED_MODULES` (install list del deploy; un módulo cuyas dependencias no
+  estén instaladas corta el arranque) y `GET /api/public/modules/manifest` (proyección
+  pública que consumen las dos SPAs para derivar nav, rutas y widgets de chat).
+  Nuevo `app/services/agent_service.py`: un único `run_turn` (intercept de módulos → RAG →
+  tools → LLM) que reemplaza la pipeline duplicada en los 2 WebSockets de
+  `web_chat_router`, el webhook de WhatsApp y los handlers de Telegram; las extensiones de
+  chat de cada módulo (`startup`/`interceptor`/`tools_provider`) se declaran en su
+  manifiesto y mantienen su estado por conexión en un namespace propio. En el frontend,
+  `ModulesProvider` + `MODULE_SCREENS` + `ModuleGate` + `CHAT_WIDGETS` reemplazan la
+  navegación, las rutas de módulo y los 4 `lazy(import('appointments/*'))` hardcodeados en
+  `ChatWidget.tsx` de ambas SPAs.
+- **El detalle de un tenant vuelve a mostrar «Alta»** (`created_at`, `formHidden` en
+  alta/edición). El campo es un timestamp ISO y `formatDate` del paquete sólo aceptaba
+  fechas civiles, así que salía crudo: el fix (`@mmanto/devbout-ui` 0.3.1, changeset
+  `format-date-iso-datetime`) hace que el detalle formatee timestamps ISO (`Z`/`+00:00`) en
+  la zona del runtime, sin corrimiento para las fechas civiles. Requiere `npm install
+  @mmanto/devbout-ui@^0.4.0` después del release (esa versión trae el fix de `formatDate` y
+  el slot `toolbarActions` que usa la grilla de usuarios).
 - **Landing pública de UrbanVoice en `urbanvoice.intellify.pro`**
   (`sites/urbanvoice/`, service block `landing-urbanvoice`). El sitio —un
   `index.html` con el CSS inline más la carpeta `images/`— se sirve con nginx
@@ -225,6 +294,41 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   enlace oficial.
 
 ### Cambiado
+- **«Gestionar usuarios y módulos» usa el `DataTable` del paquete**: la grilla de usuarios
+  pasa de la tabla propia a `defineTableDTO` + `DataTable` (`@mmanto/devbout-ui`, como la
+  lista de tenants) — buscador, columnas visibles y menú de acciones de fila
+  (Editar / Habilitar-deshabilitar / Eliminar, con la confirmación del paquete) —; el alta y
+  la edición siguen en los diálogos propios, con el botón «+ Nuevo usuario» en el **toolbar
+  de la grilla** (slot `toolbarActions`, al lado del buscador tras la barra separadora), y el
+  bloque «Agente» se reemplaza por el selector de módulos del tenant. La **zona de peligro
+  arranca oculta**, con un botón «Mostrar»/«Ocultar».
+- **Rediseño de «Gestionar usuarios y módulos» (`/admin/tenants/:id`)** con el diseño de
+  los formularios del tenant: la pantalla deja las utilidades grises (`bg-white`,
+  `text-gray-900`, `border-gray-300`, que en modo oscuro quedaban ilegibles) y pasa a
+  tokens; las secciones van planas, sin tarjetas contenedoras y sin título (los bloques del
+  tenant —dominio, estado, marca— se identifican sólo por la etiqueta de cada campo) y los
+  alta/edición de usuario van en un `Dialog` con los campos en filas de dos
+  (`Input`/`Select`, label arriba, pie cancelar/enviar a la derecha) —la misma receta que
+  los formularios de entidad del paquete (`@container` + `@md:grid-cols-2`)—, la tabla de
+  usuarios usa el `Table` del sistema y los estados/pendientes pasan
+  a `Badge`. Se agrega además el rol `broker` (válido en el backend, `UserRole` en
+  `app/models/tenant.py`) al tipo `TenantUserRole` y a las opciones del formulario: antes
+  se mostraba como «Usuario» y no se podía elegir. Ver `docs/design/DESIGN.md`.
+- **La marca del tenant se edita en `/admin/tenants/:id/editar`** (nueva pantalla
+  `TenantEdit`): los logos (con el uploader de la app), el color principal y la tagline se
+  movieron desde «Gestionar usuarios y módulos», que ahora es sólo usuarios, módulos del
+  agente y zona de peligro. La edición del tenant pasa a ser pantalla propia
+  (`edit.href` del DTO) en lugar del formulario del paquete, porque el schema del paquete no
+  puede renderizar el uploader de logos; el alta sigue con el formulario del paquete. El
+  `PATCH` reenvía las claves de `branding` que la pantalla no edita (`logo_url` legacy,
+  `sidebar_visible`, `industry`) porque el backend reemplaza el dict completo.
+- **El detalle del agente y la navegación del admin se derivan del manifiesto de módulos**:
+  los botones de módulo (`Turnos`, `Documentos`) salen de los `bot_tabs` declarados por
+  cada módulo, así que `lead_funnel` —cuya interfaz es el chat— ya no muestra el botón
+  "Configurar", y los widgets de chat que no estén registrados dejan de renderizar en vez
+  de romper. WhatsApp y Telegram comparten ahora el turno del agente (mismo RAG, mismas
+  herramientas de calificación; suman las fuentes públicas si el bot las tiene
+  configuradas) — ver ADR-028.
 - **Rediseño del template «Clásico» del admin (`frontend/`)** según el sistema de
   diseño de `devbout-ui/base` (estilo shadcn *base-mira*). El template `default`
   pasa de navbar+sidebar navy propio a un shell con sidebar colapsable a iconos
@@ -258,12 +362,32 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 - **El listado de tenants pasó de tarjetas a la grilla de `@mmanto/devbout-ui`**
   (`frontend/src/pages/admin/Tenants.tsx`). La pantalla usa el `DataTable`
   declarativo del paquete: buscador por nombre, orden, selector de columnas y
-  paginación, y el detalle navega por el adapter de router (`EntityNavigateProvider`
-  con el `navigate` de react-router). Las columnas muestran lo mismo que las
+  paginación, y la navegación a la pantalla de gestión usa el adapter de router
+  (`EntityNavigateProvider` con el `navigate` de react-router). Las columnas muestran lo mismo que las
   tarjetas (tenant, dominio, estado) y el estado pasó a chips con tokens
-  semánticos (`--success`/`--warning`/`--destructive`). El alta sigue en el modal
-  de siempre. El paquete se consume desde npm (Apache-2.0) y sus clases se
-  escanean con `@import "@mmanto/devbout-ui/tailwind.css"` en `frontend/src/index.css`.
+  semánticos (`--success`/`--warning`/`--destructive`). El paquete se consume desde
+  npm (Apache-2.0) y sus clases se escanean con
+  `@import "@mmanto/devbout-ui/tailwind.css"` en `frontend/src/index.css`.
+- **`@mmanto/devbout-ui` 0.3.0: entidad declarativa por schema** (ver
+  `docs/design/DESIGN.md` y el README del paquete). El paquete reemplaza
+  `CreateDTO`/`EditDTO`/`DetailDTO` por una sola declaración por entidad —
+  `defineEntity({ schema, ... })` sobre `TableDTO.entity`: el schema (campos +
+  labels, JSON puro) define el alta, la edición **y el detalle** de una vez (el
+  cuerpo del detalle se deriva de los mismos campos, con `display: "badge"` para los
+  `select` y label de la opción para el plan; `detail.sections`/`detail.surface` son
+  el escape hatch). Suma validación en el paquete (`required`, `minLength`,
+  `maxLength`, `pattern`, `min`, `max`) y `EntityViewProvider` acepta
+  `locale`/`dateFormat`/`numberFormat` (acá `locale="es-AR"`). La superficie global
+  (panel lateral / modal / página) se elige en **Ajustes › Vistas de entidad**
+  (`frontend/src/pages/Settings.tsx`) y el `EntityViewProvider` vive en la raíz
+  (`frontend/src/App.tsx`). La entidad tenant migró a este schema: el alta salió del
+  modal propio de la página y ahora la grilla deriva alta/edición/detalle de una sola
+  declaración, con `onSubmit` contra la API (`POST`/`PATCH /api/admin/tenants`) y
+  refetch silencioso; el botón de alta queda al lado del buscador (barra del
+  componente), los checks de fila ocultos (`selectable: false`), `Badge` del paquete
+  como chip de estado y una `rowAction` «Gestionar usuarios y módulos» a
+  `/admin/tenants/:id`. Requiere `npm install @mmanto/devbout-ui@^0.3.0` en
+  `frontend/`.
 - **Colapso de contenedores por-tenant a 2 compartidos** (breaking infra, ver
   ADR-027). Los 13 contenedores `frontend-tenant-<slug>` + `landing-<slug>` pasan
   a un único `frontend-tenant` (SPA de todos, tenant resuelto por Host contra

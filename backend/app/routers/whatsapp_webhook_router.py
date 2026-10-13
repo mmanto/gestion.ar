@@ -16,11 +16,9 @@ from app.services.client_service import get_client_service
 from app.models.client import Client
 from app.models.channel import ChannelType, WhatsAppProvider
 from app.providers import get_whatsapp_provider, ParsedMessage
-from app.rag_service import get_rag_service
-from app.claude_service import get_llm_service, build_effective_system_prompt
 from app.conversation_service import get_conversation_service
+from app.services.agent_service import get_agent_service
 from app.services.bot_service import get_bot_service
-from app.services.prospect_auto_qualify_service import QUALIFICATION_TOOL_SPEC, build_qualification_tool_executor
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +45,6 @@ async def process_whatsapp_message(
     """
     try:
         # Obtener servicios
-        claude = get_llm_service()
-        rag = get_rag_service()
         channel_service = get_channel_service()
 
         # Registrar o recuperar cliente
@@ -70,34 +66,15 @@ async def process_whatsapp_message(
         # Cargar el bot para aplicar su system_prompt/ius_config y su RAG propio
         bot = await get_bot_service().get_bot(bot_id) if bot_id else None
 
-        # Obtener contexto RAG, exclusivo de este bot
-        rag_context = ""
-        if parsed_message.text and bot and bot.config.use_rag:
-            rag_context = rag.get_context(
-                parsed_message.text, bot_id=bot_id, n_results=bot.config.rag_results_count
-            )
-
-        # Tool calling de calificación por semáforo (ver
-        # prospect_auto_qualify_service.py) — solo si el bot tiene al menos
-        # un color habilitado para conversión automática.
-        qualify_tools, qualify_executor = (None, None)
-        if bot and bot.config.auto_qualify_colors and client:
-            qualify_tools = [QUALIFICATION_TOOL_SPEC]
-            qualify_executor = build_qualification_tool_executor(
-                client=client,
-                canal="whatsapp",
-                allowed_colors=bot.config.auto_qualify_colors,
-            )
-
-        # Generar respuesta con Claude, usando el entrenamiento propio del bot
-        response = await claude.generate_rag_response(
-            user_message=parsed_message.text or "[Mensaje no textual]",
-            rag_context=rag_context,
-            system_prompt=build_effective_system_prompt(bot.config) if bot else None,
-            max_tokens=(bot.config.max_tokens if bot else 1024),
-            thinking=(bot.config.llm_thinking or None) if bot else None,
-            tools=qualify_tools,
-            tool_executor=qualify_executor,
+        # Turno del agente (RAG + tools + LLM) — ver AgentService. WhatsApp no
+        # tiene sesión de chat persistente, así que recibe sólo las
+        # contribuciones sin estado del agente.
+        turn = await get_agent_service().run_turn(
+            bot,
+            client=client,
+            client_id=client_id,
+            user_text=parsed_message.text or "[Mensaje no textual]",
+            canal="whatsapp",
         )
 
         # Guardar conversación
@@ -106,22 +83,16 @@ async def process_whatsapp_message(
             log_result = await conv_service.log_chat_interaction(
                 user_id=parsed_message.from_number,
                 user_message=parsed_message.text or "[Mensaje no textual]",
-                assistant_response=response.response,
+                assistant_response=turn.message,
                 bot_id=bot_id,
                 client_id=client_id,
                 channel="whatsapp",
                 metadata={
-                    "model": response.model,
-                    "tokens_used": response.tokens_used,
-                    "input_tokens": response.input_tokens,
-                    "output_tokens": response.output_tokens,
-                    "estimated_cost_usd": response.estimated_cost_usd,
-                    "rag_used": bool(rag_context),
-                    "context_length": len(rag_context),
                     "whatsapp_message_id": parsed_message.message_id,
                     "source": "whatsapp",
                     "provider": provider_name,
-                    "channel_id": channel_id
+                    "channel_id": channel_id,
+                    **turn.metadata,
                 }
             )
             if bot_id:
@@ -151,9 +122,9 @@ async def process_whatsapp_message(
             logger.warning(f"Error actualizando contadores: {e}")
 
         return {
-            "response_text": response.response,
-            "tokens_used": response.tokens_used,
-            "cost_usd": response.estimated_cost_usd
+            "response_text": turn.message,
+            "tokens_used": turn.metadata.get("tokens_used"),
+            "cost_usd": turn.metadata.get("estimated_cost_usd"),
         }
 
     except Exception as e:

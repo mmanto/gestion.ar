@@ -10,7 +10,7 @@ const TEXT = '#0f172a';
 
 export const Register: React.FC = () => {
   const { tenantId, tenant, isLoading } = useTenant();
-  const { register, loginWithProvider } = useAuth();
+  const { register, loginWithProvider, signupWithPasskey } = useAuth();
   const brand = tenant?.branding;
   const primaryColor = brand?.primary_color || PRIMARY;
   const logo = resolveAssetUrl(brand?.logo_url_vertical || brand?.logo_url);
@@ -45,8 +45,10 @@ export const Register: React.FC = () => {
         <RegisterForm
           tenantId={tenantId}
           branding={{ tenantName, primaryColor, logoUrl: logo }}
-          submit={async (payload) => (await register(payload)).payment.url}
+          freeSignup={tenant?.settings?.free_signup ?? false}
+          submit={async (payload) => (await register(payload)).payment?.url ?? null}
           google={(t, plan) => loginWithProvider('google', t, plan)}
+          passkey={(t, plan, nombre) => signupWithPasskey(t, { nombre, plan })}
         />
       </div>
     </div>

@@ -7,18 +7,18 @@ import {
 } from '../../components/ui/breadcrumb';
 import { Separator } from '../../components/ui/separator';
 import { SidebarTrigger } from '../../components/ui/sidebar';
-import { NAV_LINKS } from '../../config/navLinks';
+import { useNavLinks, type NavLink } from '../../config/navLinks';
 
 /**
  * Header de las páginas del template `default`: trigger del sidebar,
  * separador vertical y breadcrumb con la sección actual. Portado de
  * `app/projects/page.tsx` de devbout-ui/base.
  */
-function sectionLabel(pathname: string): string {
-  const exact = NAV_LINKS.find((link) => link.to === pathname);
+function sectionLabel(pathname: string, navLinks: NavLink[]): string {
+  const exact = navLinks.find((link) => link.to === pathname);
   if (exact) return exact.label;
 
-  const parent = NAV_LINKS.find((link) => pathname.startsWith(`${link.to}/`));
+  const parent = navLinks.find((link) => pathname.startsWith(`${link.to}/`));
   if (parent) return parent.label;
 
   const segment = pathname.split('/').filter(Boolean)[0];
@@ -27,6 +27,7 @@ function sectionLabel(pathname: string): string {
 
 export function AdminHeader() {
   const { pathname } = useLocation();
+  const navLinks = useNavLinks();
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
@@ -39,7 +40,7 @@ export function AdminHeader() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbPage>{sectionLabel(pathname)}</BreadcrumbPage>
+              <BreadcrumbPage>{sectionLabel(pathname, navLinks)}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>

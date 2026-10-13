@@ -42,12 +42,12 @@ from app.routers.pwa_router import router as pwa_router
 from app.routers.public_router import router as public_router
 from app.routers.google_oauth_router import router as google_oauth_router
 from app.routers.tenant_oauth_router import router as tenant_oauth_router
-from app.module_registry import MODULE_REGISTRY
+from app.modules.registry import module_routers
 from app.routers.tenant_admin_router import router as tenant_admin_router
 from app.routers.tenant_router import router as tenant_router
-from app.routers.tenant_appointments_router import router as tenant_appointments_router
 from app.routers.upload_router import router as upload_router, UPLOADS_DIR
 from app.routers.biometric_router import router as biometric_router
+from app.routers.tenant_passkey_router import router as tenant_passkey_router
 from app.telegram_handlers import (
     handle_telegram_command,
     handle_telegram_text_message,
@@ -87,16 +87,16 @@ app.include_router(google_oauth_router)      # Login/conexión OAuth (Google/Mic
 app.include_router(tenant_oauth_router)      # Login/alta self-service OAuth de usuarios de tenant
 
 # Routers de módulos first-party (ver ADR-008, docs/dev/DECISIONS.md y
-# app/module_registry.py) — el gating por entitlement pasa a nivel de
+# app/modules/manifest.py) — el gating por entitlement pasa a nivel de
 # request (require_module_available), no acá.
-for _module_def in MODULE_REGISTRY:
-    app.include_router(_module_def.router)
+for _module_key, _module_router in module_routers():
+    app.include_router(_module_router)
 
 app.include_router(tenant_admin_router)      # Administración general: tenants, usuarios, módulos
 app.include_router(tenant_router)            # Backoffice de tenant: bots (read-only), módulos, entrenamiento
-app.include_router(tenant_appointments_router)  # Backoffice de tenant: calendario de turnos (scoped por tenant, ver docstring)
 app.include_router(upload_router)            # Subida de archivos (avatares)
 app.include_router(biometric_router)         # Login biométrico con huella (dispositivos)
+app.include_router(tenant_passkey_router)    # Login con passkeys WebAuthn (rostro/huella/llave) de usuarios de tenant
 
 # Sirve los archivos subidos (avatares) bajo /api/uploads/* — mismo prefijo
 # /api que ya proxean nginx (frontend/frontend-tenant) y Traefik en prod, así
@@ -357,12 +357,16 @@ async def register(data: RegisterRequest):
     # a aprobado/vigente es manual (super_admin, ADR-013). Solo hay dos planes
     # para el tenant ius (Pro Mensual/Pro Anual): se resuelve por periodicidad
     # y se elige el plan pagado (no el Plan Básico por defecto, amount=0).
-    plan_period = "monthly" if data.plan == "mensual" else "annual"
-    catalog_plans = await get_plan_service().list_plans()
-    candidates = [p for p in catalog_plans if p.periodicity.value == plan_period]
-    catalog_plan = max(candidates, key=lambda p: p.amount, default=None)
-    if catalog_plan:
-        await get_user_service().set_requested_plan(user.username, catalog_plan.plan_id)
+    #
+    # Tenants con `free_signup` (p. ej. pachoteayuda) no venden suscripciones
+    # por usuario: la cuenta queda vigente, sin plan solicitado y sin pago.
+    if not tenant.free_signup:
+        plan_period = "monthly" if data.plan == "mensual" else "annual"
+        catalog_plans = await get_plan_service().list_plans()
+        candidates = [p for p in catalog_plans if p.periodicity.value == plan_period]
+        catalog_plan = max(candidates, key=lambda p: p.amount, default=None)
+        if catalog_plan:
+            await get_user_service().set_requested_plan(user.username, catalog_plan.plan_id)
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
@@ -382,7 +386,9 @@ async def register(data: RegisterRequest):
             "tenant_id": user.tenant_id,
             "role": user.role,
         },
-        "payment": {
+        "payment": None
+        if tenant.free_signup
+        else {
             "plan": data.plan,
             "amount": PLAN_PRECIOS[data.plan]["amount"],
             "price_label": PLAN_PRECIOS[data.plan]["price_label"],

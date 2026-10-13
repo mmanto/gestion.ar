@@ -4,12 +4,16 @@ Login + integraciones (Google/Microsoft) para gestion.ar, vía Nango.
 Usa devbout_oauth.create_router con un GestionConnectionStorage que delega en
 UserService (SQLAlchemy async, sesión por operación).
 Nango custodia y refresca los tokens del proveedor.
+
+Además cuelga el login con passkeys (`/api/auth/oauth/passkey/*`): el storage
+de passkeys es directamente UserService, que implementa el protocolo
+PasskeyStorage — ver ENV.md (WEBAUTHN_*).
 """
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from app.auth_service import verify_token
-from app.services.oauth_config import build_nango_config
+from app.services.oauth_config import build_nango_config, build_passkey_config
 from app.services.user_service import get_user_service
 from devbout_oauth import ConnectionStorage, create_router
 
@@ -64,4 +68,6 @@ router = create_router(
     storage=GestionConnectionStorage(),
     get_current_user_id=_get_current_user_id,
     prefix="/api/auth/oauth",
+    passkeys=build_passkey_config(),
+    passkey_storage=get_user_service(),
 )

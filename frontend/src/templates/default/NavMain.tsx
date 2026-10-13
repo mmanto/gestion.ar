@@ -5,20 +5,22 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '../../components/ui/sidebar';
-import { NAV_LINKS } from '../../config/navLinks';
+import { useNavLinks } from '../../config/navLinks';
 
 /**
  * Nav principal del template `default`. Es la rama sin submenús de
- * `components/nav-main.tsx` de devbout-ui/base: los ítems salen de `NAV_LINKS`
- * y cada uno es un `Link` de react-router vía el prop `render`.
+ * `components/nav-main.tsx` de devbout-ui/base: los ítems salen del manifiesto
+ * de módulos (+ los links core), y cada uno es un `Link` de react-router vía
+ * el prop `render`.
  */
 export function NavMain() {
   const { pathname } = useLocation();
+  const navLinks = useNavLinks();
 
   return (
     <SidebarGroup>
       <SidebarMenu>
-        {NAV_LINKS.map(({ to, label, icon }) => (
+        {navLinks.map(({ to, label, icon }) => (
           <SidebarMenuItem key={to}>
             <SidebarMenuButton
               isActive={pathname === to || pathname.startsWith(`${to}/`)}

@@ -24,7 +24,7 @@ COPY requirements.txt .
 # Copiar dependencias de Python; devbout-oauth es repo público
 RUN pip install --no-cache-dir --no-input \
       -r requirements.txt \
-      "devbout-oauth @ git+https://github.com/mmanto/devbout-oauth.git@v0.2.0"
+      "devbout-oauth @ git+https://github.com/mmanto/devbout-oauth.git@v0.3.0"
 
 # Modelo de embeddings de RAG: se intenta descargar de huggingface.co en BUILD
 # para bakearlo en la imagen y que el runtime no dependa de la red. El paso es

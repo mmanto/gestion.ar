@@ -557,6 +557,14 @@ Es lo que permite servir a todos los tenants desde un único contenedor
 `frontend-tenant` (ver docs/dev/DECISIONS.md, ADR "Colapso de contenedores
 por-tenant"). **404** si el Host no corresponde a ningún tenant.
 
+Si el Host termina en `.localhost` y no matchea ningún dominio, se reintenta la
+búsqueda sin ese sufijo (`pachoteayuda.ar.localhost` → `pachoteayuda.ar`): es el
+atajo de dev local (`http://pachoteayuda.ar.localhost/`, ver
+`docker-compose.tenants.local.yml`), ya que cualquier `*.localhost` resuelve a
+loopback por RFC 6761 y no hace falta `/etc/hosts` ni duplicar la fila del
+tenant con un dominio de prueba. En producción ese Host no llega nunca: ningún
+router de Traefik lo matchea.
+
 **Response 200:**
 ```json
 {
@@ -743,6 +751,91 @@ creadas por autoregistro/gmail en desarrollo).
 ```json
 { "success": true, "message": "Usuario eliminado" }
 ```
+
+---
+
+## Módulos (manifiesto + entitlement)
+
+El catálogo de módulos vive en `backend/app/modules/manifest.py` (fuente de verdad: qué
+módulos existen, de qué dependen, qué routers montan y qué superficies exponen) — ver
+ADR-028. Los routers de módulos se incluyen al boot desde ese manifiesto, y
+`ENABLED_MODULES` (env, CSV) decide qué módulos están instalados en el deploy.
+
+### GET `/api/public/modules/manifest`
+
+Manifiesto de los módulos instalados, sin auth. Lo consumen las dos SPAs
+(`frontend/` y `frontend-tenant/`) para derivar navegación, rutas y widgets de chat.
+
+**Response 200:**
+```json
+{
+  "modules": [
+    {
+      "module_key": "agent",
+      "name": "Agente",
+      "description": "Agente conversacional: chat, canales y runtime LLM.",
+      "version": "1.0.0",
+      "scope": "platform",
+      "requires": [],
+      "admin": { "nav": { "to": "/bots", "label": "Agentes", "icon": "Bot", "roles": [] },
+                 "bot_tabs": [{ "path": "/bots/:botId/channels", "label": "Canales" }] },
+      "tenant": null,
+      "chat": null
+    },
+    {
+      "module_key": "appointments",
+      "name": "Turnos",
+      "description": "Reserva de turnos por chat y calendario.",
+      "version": "1.0.0",
+      "scope": "entitled",
+      "requires": [],
+      "admin": { "nav": null, "bot_tabs": [{ "path": "/bots/:botId/appointments", "label": "Turnos" }] },
+      "tenant": null,
+      "chat": { "widget_types": ["appointment_options", "appointment_calendar",
+                                 "appointment_times", "appointment_confirm"] }
+    }
+  ]
+}
+```
+
+- `scope`: `platform` (lo instala el deploy, sin entitlement: `agent`) o `entitled`
+  (se otorga por tenant vía `/api/admin/tenants/{tenant_id}/modules` y, opcionalmente, por
+  bot vía `/api/admin/bots/{bot_id}/modules`).
+- `requires`: claves que deben estar instaladas; al arrancar, un módulo instalado con
+  dependencias faltantes corta el boot (`RuntimeError`). Ningún módulo declara al agente:
+  los módulos se conectan con agente (por el chat) o funcionan de manera autónoma (con sus
+  propias pantallas) — ver ADR-029.
+- Nunca expone las referencias internas del manifiesto (`tools_provider`, `interceptor`,
+  `routers`).
+
+**Errores:** no tiene (es un `GET` público sin parámetros).
+
+### Módulos por tenant (ADR-029)
+
+El entitlement que no depende de que el tenant tenga agente.
+
+### GET `/api/admin/tenants/{tenant_id}/modules`
+
+Todos los módulos del catálogo con su estado para el tenant: `granted` (hay fila en
+`tenant_modules`), `enabled` y `available` (otorgado **o** incluido en el plan del tenant).
+`404` si el tenant no existe.
+
+### POST `/api/admin/tenants/{tenant_id}/modules/{module_key}/grant`
+
+Otorga el módulo al tenant. `404` si el tenant no existe o el `module_key` no está en el
+catálogo. Responde `{"success": true, "module": { "tenant_id", "module_key", "granted",
+"enabled", "available", "module_name", "module_description" }}`.
+
+### DELETE `/api/admin/tenants/{tenant_id}/modules/{module_key}/grant`
+
+Revoca el otorgamiento (borra la fila). `404` si el módulo no estaba otorgado a ese tenant.
+
+### Endpoints de entitlement por bot
+
+`GET/POST/DELETE /api/admin/bots/{bot_id}/modules*` y
+`PATCH /api/tenant/bots/{bot_id}/modules/{module_key}` no cambian de contrato, pero un
+módulo no instalado en el deploy (`ENABLED_MODULES`) ya no queda accesible: los routers
+gateados con `require_module_available` devuelven `403 El módulo '<key>' no está instalado`.
 
 ---
 

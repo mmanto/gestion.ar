@@ -34,7 +34,7 @@ export interface TenantPublicInfo {
   status: TenantStatus;
   branding: TenantBranding;
   /** Flags de runtime por tenant (p. ej. stats_two_cols_mobile), ver Tenant.settings. */
-  settings?: { stats_two_cols_mobile?: boolean };
+  settings?: { stats_two_cols_mobile?: boolean; free_signup?: boolean };
 }
 
 export interface BotModuleInfo {

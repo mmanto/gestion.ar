@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { NAV_LINKS } from '../../config/navLinks';
+import { useNavLinks } from '../../config/navLinks';
 import { useSidebar } from '../../components/ui/sidebar-context';
 
 export const KeroSidebar: React.FC = () => {
   const location = useLocation();
   const { state, toggleSidebar } = useSidebar();
+  const navLinks = useNavLinks();
   const collapsed = state === 'collapsed';
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -18,7 +19,7 @@ export const KeroSidebar: React.FC = () => {
 
   const navItems = (
     <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1.5">
-      {NAV_LINKS.map(({ to, label, icon }) => (
+      {navLinks.map(({ to, label, icon }) => (
         <Link
           key={to}
           to={to}
@@ -37,7 +38,7 @@ export const KeroSidebar: React.FC = () => {
 
   const desktopNavItems = (
     <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1.5">
-      {NAV_LINKS.map(({ to, label, icon }) => (
+      {navLinks.map(({ to, label, icon }) => (
         <Link
           key={to}
           to={to}

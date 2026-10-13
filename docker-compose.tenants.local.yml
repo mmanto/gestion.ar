@@ -1,21 +1,28 @@
 # docker-compose.tenants.local.yml — Simulación local de multi-tenant por dominio
 # (Fase 7). NO usar en producción: el traefik acá no tiene TLS/ACME, solo
-# rutea por Host en :80 para probar con dominios *.test resueltos a 127.0.0.1
-# vía /etc/hosts.
+# rutea por Host en :80.
 #
-# DOS contenedores fijos (frontend-tenant + landing), igual que en prod. En dev
-# local el tenant NO se resuelve por Host (los dominios *.test no coinciden con
-# tenants.domain de la BD), así que se fuerza con ?tenant=<id> (persistido en
-# localStorage por TenantContext).
+# DOS contenedores fijos (frontend-tenant + landing), igual que en prod. Dos
+# convenciones de host local:
+#   - Tenants sin dominio real (erma, ius): dominio simulado *.test resuelto a
+#     127.0.0.1 vía /etc/hosts. No coincide con tenants.domain de la BD, así que
+#     el tenant se fuerza con ?tenant=<id> (persistido en localStorage por
+#     TenantContext).
+#   - Tenants con dominio propio (pachoteayuda): `<dominio>.localhost`
+#     (pachoteayuda.ar.localhost). Cualquier *.localhost resuelve a loopback por
+#     RFC 6761 — no hace falta /etc/hosts — y el backend resuelve el tenant por
+#     Host quitando el sufijo .localhost (GET /api/public/tenants/current).
 #
 # Setup:
-#   1. Agregar a /etc/hosts:
+#   1. Agregar a /etc/hosts (solo los dominios .test):
 #        127.0.0.1 erma.com.test
 #        127.0.0.1 ius.mx.test
 #   2. docker compose -f docker-compose.yml -f docker-compose.tenants.local.yml up -d --build
 #   3. Abrir http://erma.com.test?tenant=<tenant_id> o
 #      http://ius.mx.test?tenant=<tenant_id> (la landing de ius vive en la raíz
-#      de ius.mx.test, ver comentario en landing-ius más abajo)
+#      de ius.mx.test, ver comentario en landing-ius más abajo), o
+#      http://pachoteayuda.ar.localhost/ (landing en la raíz + /normas/,
+#      /tramites/ y /residuos/; el SPA del tenant en el resto de las rutas)
 #
 # Para bajar solo esto: docker compose -f docker-compose.yml -f docker-compose.tenants.local.yml down
 #
@@ -24,6 +31,17 @@
 # de arriba — ver ese archivo para el detalle.
 
 services:
+  # Passkeys (WebAuthn): una passkey queda atada a UN dominio, así que el RP ID
+  # tiene que ser el host de la página (o un sufijo suyo) y los origins, exactos.
+  # De los hosts locales, solo los *.localhost son contexto seguro — en
+  # http://erma.com.test / http://ius.mx.test el navegador ni expone
+  # PublicKeyCredential, así que el botón de passkey no aparece ahí. Se usa
+  # pachoteayuda.ar.localhost, el tenant con dominio propio simulado.
+  app:
+    environment:
+      WEBAUTHN_RP_ID: pachoteayuda.ar.localhost
+      WEBAUTHN_ORIGINS: http://pachoteayuda.ar.localhost
+
   traefik-local:
     image: traefik:v3.6
     container_name: gestionar_traefik_local
@@ -71,7 +89,9 @@ services:
       - "traefik.http.routers.tenant-ius.priority=1"
       - "traefik.http.routers.tenant-ius.service=tenant-ius"
       - "traefik.http.services.tenant-ius.loadbalancer.server.port=80"
-      - "traefik.http.routers.tenant-pachoteayuda.rule=Host(`pachoteayuda.ar`)"
+      # Tenant con dominio propio: se prueba en <dominio>.localhost (ver
+      # cabecera) — `pachoteayuda.ar` a secas resolvería al sitio de prod.
+      - "traefik.http.routers.tenant-pachoteayuda.rule=Host(`pachoteayuda.ar.localhost`)"
       - "traefik.http.routers.tenant-pachoteayuda.entrypoints=web"
       - "traefik.http.routers.tenant-pachoteayuda.priority=1"
       - "traefik.http.routers.tenant-pachoteayuda.service=tenant-pachoteayuda"
@@ -101,3 +121,13 @@ services:
       - "traefik.http.routers.landing-ius.priority=10"
       - "traefik.http.routers.landing-ius.service=landing-ius"
       - "traefik.http.services.landing-ius.loadbalancer.server.port=80"
+      # pachoteayuda: mismo reparto de paths que en prod
+      # (docker-compose.tenants.prod.yml) — la landing se queda con /, los
+      # .html, sus assets bajo /landing/, las páginas generadas (/normas/,
+      # /tramites/, /residuos/) y /reclamos/; todo lo demás (/login,
+      # /chat/c/..., /api/*, /ws/*) cae en el SPA del tenant (priority 1 < 10).
+      - 'traefik.http.routers.landing-pachoteayuda.rule=Host(`pachoteayuda.ar.localhost`) && (Path(`/`) || PathRegexp(`^/.*\.html$`) || Path(`/chat-widget.js`) || Path(`/robots.txt`) || Path(`/sitemap.xml`) || Path(`/reclamos`) || PathPrefix(`/reclamos/`) || PathPrefix(`/landing/`) || PathPrefix(`/normas/`) || PathPrefix(`/tramites/`) || PathPrefix(`/residuos/`))'
+      - "traefik.http.routers.landing-pachoteayuda.entrypoints=web"
+      - "traefik.http.routers.landing-pachoteayuda.priority=10"
+      - "traefik.http.routers.landing-pachoteayuda.service=landing-pachoteayuda"
+      - "traefik.http.services.landing-pachoteayuda.loadbalancer.server.port=80"

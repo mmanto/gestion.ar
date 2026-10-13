@@ -9,7 +9,10 @@ from sqlalchemy.sql.elements import ColumnElement
 
 from app.auth_service import get_password_hash, verify_password, User
 from app.db.database import AsyncSessionLocal
+from app.db.models import PasskeyCredential as PasskeyCredentialModel
+from app.db.models import Tenant as TenantModel
 from app.db.models import User as UserModel
+from devbout_oauth import PasskeyCredential, PasskeyUser
 
 
 def owner_scope_clause(owner_column: ColumnElement, owner_usernames: List[str]) -> ColumnElement:
@@ -54,6 +57,28 @@ def _to_user_in_db(row: UserModel) -> UserInDB:
         requested_plan_id=row.requested_plan_id,
         subscription_status=row.subscription_status,
         broker_username=row.broker_username,
+    )
+
+
+def _to_passkey_user(row: UserModel) -> PasskeyUser:
+    """Usuario en el shape que pide WebAuthn: el `username` es el email (lo que
+    el usuario escribe en la pantalla de ingreso) y el display name, su nombre."""
+    return PasskeyUser(
+        user_id=row.username,
+        username=row.email or row.username,
+        display_name=" ".join(part for part in (row.nombre, row.apellido) if part) or row.username,
+    )
+
+
+def _to_passkey_credential(row: PasskeyCredentialModel) -> PasskeyCredential:
+    return PasskeyCredential(
+        credential_id=row.credential_id,
+        user_id=row.username,
+        public_key=row.public_key,
+        sign_count=row.sign_count or 0,
+        transports=list(row.transports or []),
+        name=row.name,
+        created_at=row.created_at,
     )
 
 
@@ -237,6 +262,210 @@ class UserService:
 
         token = create_access_token({"sub": username, "tenant_id": tenant_id, "role": role})
         return username, token
+
+    # ── PasskeyStorage (devbout-oauth / WebAuthn) ──────────────────────────────
+    # Login alternativo con passkeys (Face ID, huella, Windows Hello, llave de
+    # seguridad). Se guarda la clave pública y el contador de firmas del
+    # autenticador — nunca un secreto; la cuenta sigue siendo users.username.
+    # Un usuario `disabled` no puede ingresar ni registrar passkeys.
+
+    async def _passkey_user(self, username: str) -> Optional[PasskeyUser]:
+        async with AsyncSessionLocal() as session:
+            row = await session.get(UserModel, username)
+        if not row or row.disabled:
+            return None
+        return _to_passkey_user(row)
+
+    async def get_passkey_user(self, user_id: str) -> Optional[PasskeyUser]:
+        return await self._passkey_user(user_id)
+
+    async def get_passkey_user_by_username(self, username: str) -> Optional[PasskeyUser]:
+        # El "username" de la ceremonia de registro es el email (ver
+        # _to_passkey_user); el login también acepta el username interno.
+        if "@" in username:
+            async with AsyncSessionLocal() as session:
+                result = await session.execute(
+                    select(UserModel).where(func.lower(UserModel.email) == username.lower())
+                )
+                row = result.scalars().first()
+            if row:
+                return None if row.disabled else _to_passkey_user(row)
+        return await self._passkey_user(username)
+
+    async def save_passkey(
+        self,
+        user_id: str,
+        credential_id: str,
+        public_key: str,
+        sign_count: int,
+        transports: List[str],
+        name: Optional[str],
+    ) -> None:
+        async with AsyncSessionLocal() as session:
+            session.add(
+                PasskeyCredentialModel(
+                    credential_id=credential_id,
+                    username=user_id,
+                    public_key=public_key,
+                    sign_count=sign_count,
+                    transports=list(transports),
+                    name=name,
+                )
+            )
+            await session.commit()
+
+    async def get_passkey(self, credential_id: str) -> Optional[PasskeyCredential]:
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(PasskeyCredentialModel, UserModel.disabled)
+                .join(UserModel, UserModel.username == PasskeyCredentialModel.username)
+                .where(PasskeyCredentialModel.credential_id == credential_id)
+            )
+            found = result.first()
+        if not found:
+            return None
+        row, disabled = found
+        # Deshabilitado ⇒ para devbout-oauth la credencial no existe y el login
+        # responde 401 en lugar de emitir un token que ya no corresponde.
+        if disabled:
+            return None
+        return _to_passkey_credential(row)
+
+    async def list_passkeys(self, user_id: str) -> List[PasskeyCredential]:
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(PasskeyCredentialModel)
+                .where(PasskeyCredentialModel.username == user_id)
+                .order_by(PasskeyCredentialModel.created_at)
+            )
+            rows = result.scalars().all()
+        return [_to_passkey_credential(row) for row in rows]
+
+    async def update_passkey_sign_count(self, credential_id: str, sign_count: int) -> None:
+        async with AsyncSessionLocal() as session:
+            row = await session.get(PasskeyCredentialModel, credential_id)
+            if row:
+                row.sign_count = sign_count
+                await session.commit()
+
+    async def delete_passkey(self, user_id: str, credential_id: str) -> None:
+        async with AsyncSessionLocal() as session:
+            row = await session.get(PasskeyCredentialModel, credential_id)
+            if row and row.username == user_id:
+                await session.delete(row)
+                await session.commit()
+
+    async def issue_app_token(self, user_id: str) -> str:
+        """JWT de un usuario que YA existe: el login con passkey autentica, no
+        crea cuentas (mismos claims que find_or_create_by_identity)."""
+        from app.auth_service import create_access_token
+
+        async with AsyncSessionLocal() as session:
+            row = await session.get(UserModel, user_id)
+        if not row:
+            raise ValueError(f"Usuario inexistente: {user_id}")
+        return create_access_token(
+            {"sub": row.username, "tenant_id": row.tenant_id, "role": row.role}
+        )
+
+    async def tenant_has_passkeys(self, tenant_id: str) -> bool:
+        """¿Algún usuario de este tenant ya registró una passkey?
+
+        Sirve para no abrir el picker de credenciales del sistema cuando el
+        dominio todavía no tiene ninguna passkey: el navegador no encuentra nada
+        y el usuario termina en un callejón sin salida ("no hay llaves
+        disponibles, probá con otro dispositivo") en vez de un mensaje útil.
+        """
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(PasskeyCredentialModel.credential_id)
+                .join(UserModel, UserModel.username == PasskeyCredentialModel.username)
+                .where(UserModel.tenant_id == tenant_id)
+                .limit(1)
+            )
+            return result.first() is not None
+
+    # ── Alta self-service con passkey ──────────────────────────────────────────
+    # Cuenta nueva creada con una passkey y SIN datos de contacto (ni email ni
+    # teléfono): es la contraparte de find_or_create_tenant_user sin identidad
+    # social verificada, así que no se le puede reclamar el email a nadie (no
+    # hay email) y administración completa los datos después.
+
+    async def next_passkey_username(self) -> str:
+        """Username para un alta con passkey (no hay email del que derivarlo):
+        `pk_<8 hex>`, garantizando que no exista todavía."""
+        import secrets
+
+        while True:
+            candidate = f"pk_{secrets.token_hex(4)}"
+            if not await self.get_user_by_username(candidate):
+                return candidate
+
+    async def create_passkey_account(
+        self,
+        tenant_id: str,
+        username: str,
+        nombre: Optional[str] = None,
+        plan: Optional[str] = None,
+    ) -> tuple[str, str]:
+        """Crea la cuenta del alta con passkey y devuelve (username, token).
+
+        Misma cuenta que crea el login con Google en un tenant (rol `operativo`,
+        tenant del host), pero sin email/teléfono. Si el alta viene de la
+        pantalla de registro, el plan elegido queda pendiente de aprobación
+        (mismo camino que el alta por Gmail).
+        """
+        import secrets
+
+        await self.create_user(
+            username=username,
+            # Cuenta sin contraseña utilizable: se guarda una aleatoria que nadie
+            # conoce, igual que en el alta por OAuth.
+            password=secrets.token_urlsafe(32),
+            email=None,
+            nombre=nombre,
+            apellido=None,
+            tenant_id=tenant_id,
+            role="operativo",
+        )
+        if plan:
+            await self.record_pending_plan(username, plan)
+        token = await self.issue_app_token(username)
+        return username, token
+
+    async def record_pending_plan(self, username: str, plan: str) -> None:
+        """Deja el plan elegido como pendiente en el usuario que se acaba de dar
+        de alta (login OAuth o alta con passkey de un tenant).
+
+        Los tenants con alta gratuita (`settings.free_signup`, p. ej.
+        pachoteayuda) no registran plan: la cuenta queda vigente sin pago, sin
+        importar qué camino de alta la haya creado.
+
+        Para el tenant ius solo hay dos planes (Pro Mensual/Pro Anual): se elige
+        el plan pagado de esa periodicidad (no el Plan Básico por defecto,
+        amount=0).
+        """
+        from app.services.plan_service import get_plan_service
+
+        async with AsyncSessionLocal() as session:
+            row = await session.get(UserModel, username)
+            tenant = (
+                await session.get(TenantModel, row.tenant_id)
+                if row is not None and row.tenant_id
+                else None
+            )
+        if tenant is not None and tenant.settings and tenant.settings.get("free_signup"):
+            return
+
+        plan_period = "monthly" if plan == "mensual" else "annual"
+        candidates = [
+            catalog_plan
+            for catalog_plan in await get_plan_service().list_plans()
+            if catalog_plan.periodicity.value == plan_period
+        ]
+        catalog_plan = max(candidates, key=lambda p: p.amount, default=None)
+        if catalog_plan:
+            await self.set_requested_plan(username, catalog_plan.plan_id)
 
     # ── OAuth self-service para usuarios de tenant (ver tenant_oauth_router.py) ─
     # A diferencia de find_or_create_by_identity (administración general, sin

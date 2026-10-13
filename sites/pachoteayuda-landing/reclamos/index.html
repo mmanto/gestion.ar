@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reclamos de vecinos en Bolívar · mapa</title>
+<meta name="description" content="Mapa de los reclamos de los vecinos y vecinas de San Carlos de Bolívar: acumulación de basura y pérdida de agua, con la zona, la fecha y el estado de cada uno." />
+<!-- Los reclamos de esta página son de EJEMPLO: la plataforma todavía no tiene
+     el registro de reclamos (ver la nota en el body). Por eso la página no se
+     indexa ni se enlaza desde la landing — cuando el registro esté en línea hay
+     que sacar el noindex, sumar /reclamos/ al nav de las páginas (generador) y
+     a sitemap.xml. -->
+<meta name="robots" content="noindex, nofollow" />
+<link rel="canonical" href="https://pachoteayuda.ar/reclamos/" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://pachoteayuda.ar/reclamos/" />
+<meta property="og:title" content="Reclamos de vecinos en Bolívar · mapa" />
+<meta property="og:description" content="Mapa de los reclamos de los vecinos y vecinas de San Carlos de Bolívar, con la zona, la fecha y el estado de cada uno." />
+<meta property="og:image" content="https://pachoteayuda.ar/landing/og-image.png" />
+<meta property="og:site_name" content="Pacho Te Ayuda" />
+<meta property="og:locale" content="es_AR" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="icon" type="image/png" sizes="32x32" href="/landing/favicon-32.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/landing/apple-touch-icon.png" />
+<meta name="theme-color" content="#130a21" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="preconnect" href="https://unpkg.com" crossorigin />
+<!-- El basemap del mapa sale de este host: conviene abrir la conexión antes. -->
+<link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+<!-- Leaflet 1.9.4 (mapa): es el único JS de terceros. SRI calculado sobre los
+     archivos de unpkg (mismo criterio que el resto de assets con nombre fijo:
+     si se actualiza la versión hay que recalcular el hash). -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" />
+<link rel="stylesheet" href="/landing/seo.css" />
+<style>
+  /* Sólo de esta página (seo.css lo comparten las ~3.900 páginas generadas).
+   * El contenido va más ancho que el resto de la landing (1000px en seo.css):
+   * el mapa y la grilla de reclamos aprovechan la pantalla. Los párrafos
+   * largos siguen acotados por .lead (760px). */
+  .wrap{max-width:1400px;}
+  .mapa-bloque{
+    margin-top:22px;
+    background:var(--white);
+    border:1px solid var(--line);
+    border-radius:18px;
+    overflow:hidden;
+  }
+  #mapa{
+    /* Mientras bajan las teselas se ve el lienzo del basemap, no un hueco blanco. */
+    height:min(66vh,540px);
+    background:#e8e6dc;
+  }
+  /* El pin lo dibuja el SVG del divIcon: el div de Leaflet no lleva fondo. */
+  .reclamo-pin{background:none;border:0;}
+  .leyenda{
+    display:flex;
+    align-items:center;
+    gap:6px 20px;
+    flex-wrap:wrap;
+    list-style:none;
+    padding:12px 16px;
+    border-top:1px solid var(--line);
+    font-size:13.5px;
+    color:var(--muted);
+  }
+  .leyenda li{display:flex;align-items:center;gap:7px;}
+  .leyenda li.leyenda-total{margin-left:auto;font-family:'JetBrains Mono',Consolas,monospace;font-size:12px;text-transform:uppercase;letter-spacing:.5px;}
+  .nota{
+    margin-top:16px;
+    padding:12px 16px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    background:rgba(68,30,125,.06);
+    color:var(--muted);
+    font-size:13.5px;
+  }
+  .nota strong{color:var(--purple-800);}
+  .reclamos{
+    list-style:none;
+    margin-top:20px;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    gap:16px;
+  }
+  .reclamos li{
+    background:var(--white);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:16px 18px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .reclamos .fila{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    font-family:'JetBrains Mono',Consolas,monospace;
+    font-size:12px;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:.5px;
+  }
+  .reclamos .tipo{font-size:15px;font-weight:800;color:var(--purple-800);}
+  .reclamos p{font-size:14.5px;color:var(--muted);}
+  .estado{
+    border-radius:999px;
+    padding:2px 10px;
+    font-size:11.5px;
+    font-weight:700;
+    letter-spacing:.5px;
+  }
+  .estado--pendiente{background:#fdf1d6;color:#8a5a00;}
+  .estado--en-curso{background:#e3eefb;color:#1c5a92;}
+  .estado--resuelto{background:#e2f4e8;color:#1f6b3f;}
+  .reclamos .ver{
+    font-family:inherit;
+    font-size:14.5px;
+    font-weight:700;
+    color:var(--accent);
+    background:none;
+    border:0;
+    padding:0;
+    margin-top:auto;
+    text-align:left;
+    cursor:pointer;
+  }
+  .reclamos .ver:hover{text-decoration:underline;}
+  @media (max-width:620px){
+    #mapa{height:60vh;}
+    .leyenda li.leyenda-total{margin-left:0;}
+  }
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Inicio",
+      "item": "https://pachoteayuda.ar/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Reclamos"
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<header class="site-header">
+  <a class="brand" href="/"><img src="/landing/logo.webp" alt="Pacho Te Ayuda" width="558" height="200" /></a>
+  <nav>
+    <a href="/tramites/">Trámites</a>
+    <a href="/residuos/">Residuos</a>
+    <a href="/normas/">Normas del HCD</a>
+    <a href="/">Asistente</a>
+  </nav>
+</header>
+<main class="wrap">
+<nav class="breadcrumbs" aria-label="Ruta de navegación"><a href="/">Inicio</a><span>›</span><span>Reclamos</span></nav>
+  <h1>Reclamos de vecinos en Bolívar</h1>
+  <p class="lead">Qué reclamaron los vecinos y vecinas del municipio, dónde está cada problema y en qué estado va. Cada pin del mapa es un reclamo, del color de su tipo: acumulación de basura o pérdida de agua.</p>
+  <p class="meta" id="meta-reclamos">Datos de ejemplo</p>
+
+  <div class="mapa-bloque">
+    <div id="mapa" role="region" aria-label="Mapa de los reclamos de San Carlos de Bolívar"></div>
+    <noscript><p class="nota">El mapa necesita JavaScript activado.</p></noscript>
+    <ul class="leyenda" id="leyenda"></ul>
+  </div>
+
+  <p class="nota"><strong>Reclamos de ejemplo:</strong> los 4 reclamos de este mapa son una muestra para probar la página — todavía no se pueden cargar reclamos desde acá y ninguno de estos existe en el registro del municipio. Cuando el registro esté en línea, el mapa y la lista van a mostrar los reclamos reales, con su zona y su estado.</p>
+
+  <h2>Los reclamos</h2>
+  <ul class="reclamos" id="reclamos"></ul>
+
+  <aside class="cta">
+    <p>¿Tenés un problema en tu zona?<small>Preguntale al asistente qué área del municipio lo atiende, con qué contacto y qué dice la ordenanza.</small></p>
+    <button type="button" class="btn-chat" data-open-chat>Preguntale al asistente</button>
+  </aside>
+</main>
+<footer class="site-footer">
+  <div class="inner">
+    <p><strong>Pacho Te Ayuda</strong> — Asistente Ciudadano de Bolívar. Información oficial del Municipio de San Carlos de Bolívar y del Honorable Concejo Deliberante de San Carlos de Bolívar.</p>
+    <p>Fuentes: <a href="https://www.bolivar.gob.ar/" target="_blank" rel="noopener">bolivar.gob.ar</a> · <a href="https://www.hcdbolivar.gob.ar/" target="_blank" rel="noopener">hcdbolivar.gob.ar</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></p>
+  </div>
+</footer>
+<script>window.__IPA_CHAT__ = { openOnLoad: false };</script>
+<script src="/chat-widget.js" defer></script>
+<script>
+  document.querySelectorAll('[data-open-chat]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (window.__IPA_OPEN_CHAT__) window.__IPA_OPEN_CHAT__();
+    });
+  });
+</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+<script>
+/* Mapa de reclamos. Vanilla JS a propósito: la landing es estática (no hay
+ * build), así que el mapa es Leaflet por CDN sobre las teselas raster de
+ * OpenStreetMap — mismo criterio que el mapa de maparg, sin deck.gl (que
+ * necesita bundler) y sin Mapbox (que necesita token).
+ *
+ * Los reclamos son datos de EJEMPLO, con la forma que va a tener la respuesta
+ * de la API cuando exista el registro (id, tipo, descripcion, lugar, fecha,
+ * estado, lat, lon): la página no cambia, cambia de dónde salen los datos.
+ * Las coordenadas son puntos del casco urbano de San Carlos de Bolívar.
+ */
+(function () {
+  'use strict';
+
+  var RECLAMOS = [
+    {
+      id: 'RC-1042',
+      tipo: 'basura',
+      descripcion: 'Contenedor desbordado y bolsas sobre la vereda desde el fin de semana.',
+      lugar: 'Centro',
+      fecha: '2026-10-09',
+      estado: 'pendiente',
+      lat: -36.228491,
+      lon: -61.111923
+    },
+    {
+      id: 'RC-1043',
+      tipo: 'agua',
+      descripcion: 'Pérdida de agua en la vereda: corre por la calle desde hace varios días.',
+      lugar: 'Zona norte',
+      fecha: '2026-10-10',
+      estado: 'en curso',
+      lat: -36.226112,
+      lon: -61.117838
+    },
+    {
+      id: 'RC-1044',
+      tipo: 'basura',
+      descripcion: 'Microbasural en el terreno baldío de la esquina.',
+      lugar: 'Zona oeste',
+      fecha: '2026-09-28',
+      estado: 'en curso',
+      lat: -36.231022,
+      lon: -61.122314
+    },
+    {
+      id: 'RC-1045',
+      tipo: 'agua',
+      descripcion: 'Pérdida en la conexión domiciliaria, se inunda el paso peatonal.',
+      lugar: 'Zona sudeste',
+      fecha: '2026-10-07',
+      estado: 'resuelto',
+      lat: -36.233181,
+      lon: -61.107261
+    }
+  ];
+
+  /* Tipo de reclamo: etiqueta y color del pin (el mismo en el mapa y en la
+   * leyenda). Orden en que se listan en la leyenda. */
+  var TIPOS = {
+    basura: { etiqueta: 'Acumulación de basura', color: '#7a5230' },
+    agua: { etiqueta: 'Pérdida de agua', color: '#1f6f8b' }
+  };
+  var TIPOS_ORDEN = ['basura', 'agua'];
+
+  /* Estados del reclamo: etiqueta y clase del badge (ver el CSS de arriba). */
+  var ESTADOS = {
+    'pendiente': { etiqueta: 'Pendiente', clase: 'pendiente' },
+    'en curso': { etiqueta: 'En curso', clase: 'en-curso' },
+    'resuelto': { etiqueta: 'Resuelto', clase: 'resuelto' }
+  };
+
+  var LOCALIDAD = { nombre: 'San Carlos de Bolívar', lat: -36.229879, lon: -61.113917 };
+  var ZOOM_LOCALIDAD = 14;
+  var ZOOM_RECLAMO = 16;
+
+  /* Pin (gota) del color del tipo, para el mapa y para la leyenda: misma
+   * geometría que el pin del mapa de maparg (circunferencia de radio 8 con
+   * centro en (10, 10) y punta en (10, 27), en un viewBox 20x28). */
+  function pinSvg(color, width, height) {
+    return '<svg width="' + width + '" height="' + height + '" viewBox="0 0 20 28" aria-hidden="true">' +
+      '<path d="M10 27 L2.94 14.7 A8 8 0 1 1 17.06 14.7 Z" fill="' + color + '" stroke="#fff" stroke-width="2.5" />' +
+      '</svg>';
+  }
+
+  /* 2026-10-09 → 09/10/2026. */
+  function fechaCorta(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    return m ? m[3] + '/' + m[2] + '/' + m[1] : iso;
+  }
+
+  function cantidad(tipo) {
+    return RECLAMOS.filter(function (r) { return r.tipo === tipo; }).length;
+  }
+
+  /* Leyenda: un renglón por tipo con su color y cuántos hay. */
+  var leyenda = document.getElementById('leyenda');
+  TIPOS_ORDEN.forEach(function (tipo) {
+    var def = TIPOS[tipo];
+    var li = document.createElement('li');
+    li.innerHTML = pinSvg(def.color, 10, 14) + '<span>' + def.etiqueta + ' (' + cantidad(tipo) + ')</span>';
+    leyenda.appendChild(li);
+  });
+  var total = document.createElement('li');
+  total.className = 'leyenda-total';
+  total.textContent = RECLAMOS.length + ' reclamos de ejemplo';
+  leyenda.appendChild(total);
+  document.getElementById('meta-reclamos').textContent =
+    'Datos de ejemplo · ' + RECLAMOS.length + ' reclamos · ' + LOCALIDAD.nombre;
+
+  var map = L.map('mapa', { scrollWheelZoom: false })
+    .setView([LOCALIDAD.lat, LOCALIDAD.lon], ZOOM_LOCALIDAD);
+
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
+  }).addTo(map);
+
+  /* La localidad, para ubicarse cuando el zoom se aleja. */
+  L.circle([LOCALIDAD.lat, LOCALIDAD.lon], {
+    radius: 1400,
+    color: '#2f6b4f',
+    weight: 1,
+    fill: false,
+    interactive: false
+  }).addTo(map);
+
+  var iconos = {};
+  TIPOS_ORDEN.forEach(function (tipo) {
+    iconos[tipo] = L.divIcon({
+      className: 'reclamo-pin',
+      html: pinSvg(TIPOS[tipo].color, 26, 36),
+      iconSize: [26, 36],
+      iconAnchor: [13, 36],
+      popupAnchor: [0, -30]
+    });
+  });
+
+  /* El popup: id, tipo, descripción, zona, fecha y estado del reclamo. Los
+   * textos salen de RECLAMOS (hoy constantes del archivo): si mañana llegan
+   * de la API hay que escaparlos antes de armar el HTML. */
+  function popupHtml(r) {
+    var estado = ESTADOS[r.estado] || { etiqueta: r.estado, clase: '' };
+    return '<strong>' + r.id + ' · ' + TIPOS[r.tipo].etiqueta + '</strong><br>' +
+      r.descripcion + '<br>' +
+      '<span style="font-family:\'JetBrains Mono\',monospace;font-size:12px;text-transform:uppercase;letter-spacing:.4px">' +
+      r.lugar + ' · ' + fechaCorta(r.fecha) + ' · ' + estado.etiqueta + '</span>';
+  }
+
+  var marcadores = {};
+  RECLAMOS.forEach(function (r) {
+    marcadores[r.id] = L.marker([r.lat, r.lon], { icon: iconos[r.tipo], title: r.id, alt: TIPOS[r.tipo].etiqueta })
+      .addTo(map)
+      .bindPopup(popupHtml(r));
+  });
+
+  /* Lista de reclamos: una tarjeta por reclamo y un botón que lleva el mapa al
+   * pin (es el camino sin mouse: el mapa no es navegable con teclado). */
+  var lista = document.getElementById('reclamos');
+  RECLAMOS.forEach(function (r) {
+    var estado = ESTADOS[r.estado] || { etiqueta: r.estado, clase: '' };
+    var li = document.createElement('li');
+
+    var fila = document.createElement('div');
+    fila.className = 'fila';
+    fila.innerHTML = '<span>' + r.id + '</span>' +
+      '<span class="estado estado--' + estado.clase + '">' + estado.etiqueta + '</span>';
+
+    var tipo = document.createElement('h3');
+    tipo.className = 'tipo';
+    tipo.textContent = TIPOS[r.tipo].etiqueta;
+
+    var texto = document.createElement('p');
+    texto.textContent = r.descripcion;
+
+    var lugar = document.createElement('p');
+    lugar.className = 'fila';
+    lugar.textContent = r.lugar + ' · ' + fechaCorta(r.fecha);
+
+    var ver = document.createElement('button');
+    ver.type = 'button';
+    ver.className = 'ver';
+    ver.textContent = 'Ver en el mapa';
+    ver.addEventListener('click', function () {
+      map.setView([r.lat, r.lon], ZOOM_RECLAMO);
+      marcadores[r.id].openPopup();
+      document.getElementById('mapa').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    li.appendChild(fila);
+    li.appendChild(tipo);
+    li.appendChild(texto);
+    li.appendChild(lugar);
+    li.appendChild(ver);
+    lista.appendChild(li);
+  });
+})();
+</script>
+</body>
+</html>

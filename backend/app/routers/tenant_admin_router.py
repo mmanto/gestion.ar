@@ -282,3 +282,34 @@ async def revoke_module(bot_id: str, module_key: str):
     if not revoked:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "El módulo no estaba otorgado a este bot")
     return {"success": True, "message": "Módulo revocado"}
+
+
+@router.get("/tenants/{tenant_id}/modules", response_model=dict)
+async def get_tenant_modules(tenant_id: str):
+    tenant = await get_tenant_service().get_tenant(tenant_id)
+    if not tenant:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Tenant no encontrado")
+    items = await get_module_service().get_tenant_modules(tenant_id)
+    return {"success": True, "modules": [m.model_dump() for m in items]}
+
+
+@router.post("/tenants/{tenant_id}/modules/{module_key}/grant", response_model=dict)
+async def grant_tenant_module(tenant_id: str, module_key: str, current_user: User = Depends(get_current_user)):
+    tenant = await get_tenant_service().get_tenant(tenant_id)
+    if not tenant:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Tenant no encontrado")
+
+    modules = await get_module_service().list_modules()
+    if module_key not in {m.module_key for m in modules}:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Módulo no encontrado")
+
+    result = await get_module_service().grant_tenant_module(tenant_id, module_key, granted_by=current_user.username)
+    return {"success": True, "module": result.model_dump()}
+
+
+@router.delete("/tenants/{tenant_id}/modules/{module_key}/grant", response_model=dict)
+async def revoke_tenant_module(tenant_id: str, module_key: str):
+    revoked = await get_module_service().revoke_tenant_module(tenant_id, module_key)
+    if not revoked:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "El módulo no estaba otorgado a este tenant")
+    return {"success": True, "message": "Módulo revocado"}

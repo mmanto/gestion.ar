@@ -1,6 +1,7 @@
 """
-Module Service - Catálogo de módulos y otorgamiento/habilitación por bot
-(capa de entitlement — ver estrategia multi-tenant, docs/dev/DECISIONS.md).
+Module Service - Catálogo de módulos y otorgamiento/habilitación por bot y
+por tenant (capa de entitlement — ver estrategia multi-tenant,
+docs/dev/DECISIONS.md).
 
 `granted` lo escribe únicamente administración general (super_admin).
 `enabled` lo escribe el admin del tenant, y sólo si `granted=True`.
@@ -17,7 +18,8 @@ from app.db.models import BotModule as BotModuleModel
 from app.db.models import Module as ModuleModel
 from app.db.models import PlanModule as PlanModuleModel
 from app.db.models import Tenant as TenantModel
-from app.models.tenant import BotModuleOut, ModuleOut
+from app.db.models import TenantModule as TenantModuleModel
+from app.models.tenant import BotModuleOut, ModuleOut, TenantModuleOut
 
 
 def _to_module(row: ModuleModel) -> ModuleOut:
@@ -58,6 +60,13 @@ class ModuleService:
         tenant = await session.get(TenantModel, bot.tenant_id)
         if not tenant:
             return False
+
+        # Otorgamiento a nivel tenant (módulos autónomos que el tenant usa
+        # sin agente): cuenta sólo si el tenant lo tiene habilitado.
+        tenant_module = await session.get(TenantModuleModel, (tenant.tenant_id, module_key))
+        if tenant_module and tenant_module.enabled:
+            return True
+
         plan_module = await session.get(PlanModuleModel, (tenant.plan_id, module_key))
         return plan_module is not None
 
@@ -133,6 +142,83 @@ class ModuleService:
                 return False
             row.granted = False
             row.enabled = False
+            await session.commit()
+            return True
+
+    async def get_tenant_modules(self, tenant_id: str) -> List[TenantModuleOut]:
+        """Todos los módulos del catálogo, con su estado granted/enabled/
+        available para este tenant. `granted` = existe fila TenantModule
+        (la existencia de la fila es el otorgamiento)."""
+        async with AsyncSessionLocal() as session:
+            modules_result = await session.execute(select(ModuleModel))
+            modules = modules_result.scalars().all()
+
+            grants_result = await session.execute(
+                select(TenantModuleModel).where(TenantModuleModel.tenant_id == tenant_id)
+            )
+            grants_by_key = {g.module_key: g for g in grants_result.scalars().all()}
+
+            # Set de módulos incluidos por el plan del tenant — una sola
+            # query para todos los módulos del catálogo, no una por módulo.
+            plan_included_keys: set = set()
+            tenant = await session.get(TenantModel, tenant_id)
+            if tenant:
+                plan_modules_result = await session.execute(
+                    select(PlanModuleModel.module_key).where(PlanModuleModel.plan_id == tenant.plan_id)
+                )
+                plan_included_keys = {row[0] for row in plan_modules_result.all()}
+
+        items = []
+        for module in modules:
+            grant = grants_by_key.get(module.module_key)
+            granted = grant is not None
+            items.append(TenantModuleOut(
+                tenant_id=tenant_id,
+                module_key=module.module_key,
+                granted=granted,
+                enabled=grant.enabled if grant else False,
+                available=granted or module.module_key in plan_included_keys,
+                module_name=module.name,
+                module_description=module.description,
+            ))
+        return items
+
+    async def grant_tenant_module(self, tenant_id: str, module_key: str, granted_by: str) -> TenantModuleOut:
+        """Otorga un módulo al tenant. Crea la fila (enabled=True) si no
+        existía; si ya existía, la reactiva y actualiza autor/fecha."""
+        async with AsyncSessionLocal() as session:
+            row = await session.get(TenantModuleModel, (tenant_id, module_key))
+            if row is None:
+                row = TenantModuleModel(
+                    tenant_id=tenant_id,
+                    module_key=module_key,
+                    enabled=True,
+                    granted_by=granted_by,
+                    granted_at=datetime.now(timezone.utc),
+                )
+                session.add(row)
+            else:
+                row.enabled = True
+                row.granted_by = granted_by
+                row.granted_at = datetime.now(timezone.utc)
+            await session.commit()
+            await session.refresh(row)
+            module = await session.get(ModuleModel, module_key)
+            return TenantModuleOut(
+                tenant_id=row.tenant_id, module_key=row.module_key,
+                granted=True, enabled=row.enabled, available=True,
+                module_name=module.name if module else None,
+                module_description=module.description if module else None,
+            )
+
+    async def revoke_tenant_module(self, tenant_id: str, module_key: str) -> bool:
+        """Revoca el otorgamiento a nivel tenant — borra la fila, que es
+        la marca de otorgamiento."""
+        async with AsyncSessionLocal() as session:
+            row = await session.get(TenantModuleModel, (tenant_id, module_key))
+            if row is None:
+                return False
+            await session.delete(row)
             await session.commit()
             return True
 

@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { KeyRound, UserPlus } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTenant } from '../../hooks/useTenant';
 import { biometricService } from '../../services/biometric.service';
+import { isPasskeySupported, PasskeyCancelled } from '../../services/passkey.service';
 import { Spinner } from '../common/Spinner';
 import type { AuthProvider } from '../../types/auth.types';
 
@@ -31,7 +33,21 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const [biometricReady, setBiometricReady] = useState(false);
   const [biometricLoading, setBiometricLoading] = useState(false);
 
-  const { login, loginWithProvider, loginWithBiometric } = useAuth();
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
+  const [signupLoading, setSignupLoading] = useState(false);
+  const [signupNombre, setSignupNombre] = useState('');
+  const signupInFlight = useRef(false);
+
+  // Se muestra cuando el sistema no encontró ninguna passkey en el dispositivo:
+  // el picker solo ofrece escanear un QR con otro equipo (no hay forma de crear
+  // una desde ahí) — la creación vive en Ajustes y requiere sesión iniciada.
+  const [passkeyHint, setPasskeyHint] = useState<string | null>(null);
+
+  // Mismo guard que el OAuth: el prompt de la passkey puede tardar (el usuario
+  // elige el dispositivo), y un segundo clic reiniciaría la ceremonia.
+  const passkeyInFlight = useRef(false);
+
+  const { login, loginWithProvider, loginWithPasskey, signupWithPasskey, loginWithBiometric } = useAuth();
   const { tenantId } = useTenant();
   const navigate = useNavigate();
 
@@ -84,6 +100,80 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     } finally {
       oauthInFlight.current = false;
       setOauthLoading(null);
+    }
+  };
+
+  const handlePasskeyLogin = async () => {
+    if (!tenantId || passkeyInFlight.current) return;
+    passkeyInFlight.current = true;
+    setError('');
+    setPasskeyHint(null);
+    setPasskeyLoading(true);
+    try {
+      // Si el usuario ya escribió su usuario se lo mandamos (acota las
+      // credenciales que ofrece el navegador); si no, el navegador ofrece
+      // cualquier passkey registrada (credencial descubrible) y el backend
+      // resuelve la cuenta.
+      await loginWithPasskey(tenantId, username.trim() || undefined);
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (err: unknown) {
+      // El navegador no distingue "cancelaste el prompt" de "este dispositivo no
+      // tiene ninguna passkey" (lo hace a propósito, para no filtrar qué
+      // credenciales existen), y un 401 también aparece cuando la passkey se
+      // revocó desde otro lado: en todos esos casos se deja la instrucción de
+      // cómo crear una. La creación vive en Ajustes porque requiere sesión.
+      setPasskeyHint(
+        'Si todavía no creaste una passkey, o la revocaste: entrá con tu contraseña (o con ' +
+          'Google) y agregala en Ajustes → Passkeys. Si el dispositivo ya tenía una de este ' +
+          'sitio, borrala del gestor de contraseñas del sistema para poder crear otra.',
+      );
+      if (!(err instanceof PasskeyCancelled)) {
+        setError(err instanceof Error && err.message
+          ? err.message
+          : 'No se pudo iniciar sesión con passkey. Intentá nuevamente');
+      }
+    } finally {
+      passkeyInFlight.current = false;
+      setPasskeyLoading(false);
+    }
+  };
+
+  /**
+   * Alta de cuenta nueva con passkey desde el login: un solo paso, sin correo
+   * ni contraseña (la cuenta queda sin datos de contacto y administración los
+   * completa). Si la cuenta ya existe, lo que corresponde es entrar con
+   * contraseña o Google y agregar la passkey desde Ajustes.
+   */
+  const handlePasskeySignup = async () => {
+    if (!tenantId || signupInFlight.current) return;
+    if (!signupNombre.trim()) {
+      setError('Completá tu nombre para crear la cuenta.');
+      return;
+    }
+    signupInFlight.current = true;
+    setError('');
+    setPasskeyHint(null);
+    setSignupLoading(true);
+    try {
+      await signupWithPasskey(tenantId, { nombre: signupNombre.trim() });
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (err: unknown) {
+      if (!(err instanceof PasskeyCancelled)) {
+        setError(err instanceof Error && err.message
+          ? err.message
+          : 'No se pudo crear la cuenta con passkey. Intentá nuevamente');
+      }
+    } finally {
+      signupInFlight.current = false;
+      setSignupLoading(false);
     }
   };
 
@@ -216,7 +306,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             autoFocus
             placeholder="Ingresa tu usuario"
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={(e) => {
+              setUsername(e.target.value);
+              setPasskeyHint(null);
+            }}
             disabled={loading}
             className={inputClass}
           />
@@ -303,6 +396,47 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         </svg>
         {oauthLoading === 'google' ? 'Conectando…' : 'Continuar con Google'}
       </button>
+
+      {/* Login con passkey (WebAuthn: Face ID, huella, Windows Hello o llave) */}
+      {isPasskeySupported() && (
+        <button
+          type="button"
+          onClick={handlePasskeyLogin}
+          disabled={passkeyLoading || oauthLoading !== null || !tenantId}
+          className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl py-3.5 font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-60"
+        >
+          <KeyRound className="w-5 h-5" />
+          {passkeyLoading ? 'Verificando…' : 'Entrar con passkey'}
+        </button>
+      )}
+
+      {passkeyHint && (
+        <div className="flex flex-col gap-3 border-t border-gray-100 pt-4">
+          <p className="text-xs text-gray-500 text-center leading-relaxed">{passkeyHint}</p>
+          {/* Alta de cuenta nueva con passkey: pide el nombre (es lo que el
+              navegador/OS muestra en la lista de passkeys) y crea la cuenta
+              sin correo ni contraseña. */}
+          <label className="block">
+            <span className="block text-xs font-medium text-gray-700 mb-1">Tu nombre</span>
+            <input
+              value={signupNombre}
+              onChange={(e) => setSignupNombre(e.target.value)}
+              type="text"
+              placeholder="Nombre y apellido"
+              className="w-full px-3 py-2 rounded-lg border-2 border-gray-200 outline-none transition-colors focus:border-[#2563eb]"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={handlePasskeySignup}
+            disabled={signupLoading || passkeyLoading || !tenantId}
+            className="w-full flex items-center justify-center gap-3 border border-dashed border-gray-300 rounded-xl py-3.5 font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-60"
+          >
+            <UserPlus className="w-5 h-5" />
+            {signupLoading ? 'Creando cuenta…' : 'Crear cuenta nueva con passkey'}
+          </button>
+        </div>
+      )}
 
       <p className="text-xs text-gray-400 text-center leading-relaxed">
         ¿No tenés cuenta? Ingresá con Google y se crea automáticamente, o pedile acceso a quien

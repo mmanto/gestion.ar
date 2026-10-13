@@ -5,13 +5,14 @@
 # del host (evita que DB_USER/DB_PASSWORD/DB_NAME de otros proyectos contaminen
 # la URL de Postgres). Sin parametros, muestra un menu interactivo.
 #
-# Incluye tenants de ejemplo (erma, ius) via docker-compose.tenants.local.yml
-# con dominios .test resueltos a 127.0.0.1 via /etc/hosts.
+# Incluye tenants de ejemplo (erma, ius, pachoteayuda) via docker-compose.tenants.local.yml
+# con dominios .test resueltos a 127.0.0.1 via /etc/hosts (y <dominio>.localhost
+# para los tenants con dominio propio).
 #
 # Hot-reload de los tenants (Vite dev-server en vez del build de nginx, ver
 # docker-compose.tenants.dev.yml): seteá TENANT_HOT_RELOAD=1 antes de
 # up/rebuild/restart. Sin esa variable, up/rebuild/restart SIEMPRE dejan
-# erma/ius en el build de produccion (nginx, sin hot-reload) — este wrapper
+# los tenants en el build de produccion (nginx, sin hot-reload) — este wrapper
 # no lo recuerda entre corridas, hay que pasarlo cada vez que se toca el
 # stack (incluido un 'rebuild' de otro servicio).
 #   TENANT_HOT_RELOAD=1 ./stack.dev rebuild ius
@@ -37,7 +38,9 @@
 #   ./stack.dev build-android erma device http://192.168.1.100:8000/api  # APK de erma en dispositivo fisico
 #   ./stack.dev clean                   # limpiar recursos
 #   docker network create traefik_public (una sola vez)
-#   /etc/hosts con: 127.0.0.1 erma.com.test ius.mx.test
+#   /etc/hosts con: 127.0.0.1 erma.com.test ius.mx.test (los tenants con
+#   dominio propio usan <dominio>.localhost: resuelve a loopback por RFC 6761,
+#   sin entrada en /etc/hosts)
 
 set -euo pipefail
 
@@ -48,7 +51,16 @@ if [[ "${TENANT_HOT_RELOAD:-}" == "1" ]]; then
 fi
 
 CORE_SERVICES=(app frontend postgres redis traefik-local)
-TENANTS=(erma ius)
+TENANTS=(erma ius pachoteayuda)
+# Host local de cada tenant (ver la cabecera de docker-compose.tenants.local.yml):
+# los tenants sin dominio real usan dominios simulados *.test con entrada en
+# /etc/hosts; los que tienen dominio propio usan <dominio>.localhost, que
+# resuelve a loopback por RFC 6761 sin tocar /etc/hosts.
+declare -A TENANT_DOMAINS=(
+  ["erma"]="erma.com.test"
+  ["ius"]="ius.mx.test"
+  ["pachoteayuda"]="pachoteayuda.ar.localhost"
+)
 # ius-landing comparte dominio con el tenant "ius" (routing por Path en
 # Traefik, ver docker-compose.tenants.local.yml) — mismo host que TENANTS,
 # por eso no necesita entrada propia en check_hosts()/health_check().
@@ -76,9 +88,10 @@ COMPOSE_CMD=(docker compose --env-file "$ENV_FILE" "${COMPOSE_FILES[@]}")
 
 check_hosts() {
   local missing=()
-  local -A DOMAIN_MAP=(["erma"]="erma.com.test" ["ius"]="ius.mx.test")
   for tenant in "${TENANTS[@]}"; do
-    local domain="${DOMAIN_MAP[$tenant]}"
+    local domain="${TENANT_DOMAINS[$tenant]}"
+    # Los host *.localhost resuelven a loopback sin /etc/hosts (RFC 6761).
+    [[ "$domain" == *.localhost ]] && continue
     if ! grep -qE "127\.0\.0\.1\s+${domain}" /etc/hosts 2>/dev/null; then
       missing+=("127.0.0.1 ${domain}")
     fi
@@ -121,9 +134,8 @@ health_check() {
   fi
 
   # Tenants via Traefik en :80
-  local -A DOMAIN_MAP=(["erma"]="erma.com.test" ["ius"]="ius.mx.test")
   for tenant in "${TENANTS[@]}"; do
-    local domain="${DOMAIN_MAP[$tenant]}"
+    local domain="${TENANT_DOMAINS[$tenant]}"
     curl -sf -o /dev/null -w "tenant-${tenant}: %{http_code}\n" "http://${domain}/" \
       || echo -e "${YELLOW}tenant-${tenant}: sin respuesta${NC}"
   done
@@ -217,9 +229,7 @@ cmd_up() {
       echo -e "  Frontend: ${CYAN}http://localhost:5173${NC}"
       echo -e "  Backend:  ${CYAN}http://localhost:8000${NC}"
       for tenant in "${TENANTS[@]}"; do
-        local domain="${tenant}.com.test"
-        [[ "$tenant" == "ius" ]] && domain="ius.mx.test"
-        echo -e "  Tenant ${tenant}: ${CYAN}http://${domain}${NC}"
+        echo -e "  Tenant ${tenant}: ${CYAN}http://${TENANT_DOMAINS[$tenant]}${NC}"
       done
       cmd_ps
       return
@@ -678,11 +688,11 @@ case "$CMD" in
     echo "Uso: $0 [up|down|restart|rebuild|logs|ps|status|shell|build-android|clean] [servicio|target]"
     echo "Sin parametros muestra el menu interactivo."
     echo "Core: ${CORE_SERVICES[*]}"
-    echo "Tenants: ${TENANTS[*]} (usa el nombre corto: erma, ius)"
+    echo "Tenants: ${TENANTS[*]} (usa el nombre corto: ${TENANTS[*]})"
     echo "Sites: ${SITES[*]} (landing estatica, sin backend detras)"
     echo "build-android: <${ANDROID_TENANT_SLUGS[*]}> emulator | device [api-url] (default: emulator, http://10.0.2.2:8000/api)"
     echo "clean: sin flag | --deep | --all"
-    echo "TENANT_HOT_RELOAD=1 antes del comando: erma/ius quedan con Vite dev-server (hot-reload) en vez del build de nginx"
+    echo "TENANT_HOT_RELOAD=1 antes del comando: los tenants quedan con Vite dev-server (hot-reload) en vez del build de nginx"
     ;;
   *)             echo -e "${RED}Comando desconocido: $CMD${NC}"; menu ;;
 esac

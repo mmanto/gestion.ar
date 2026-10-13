@@ -106,6 +106,28 @@ class BotModule(Base):
     )
 
 
+class TenantModule(Base):
+    """Otorgamiento (super_admin) de un módulo a nivel tenant, espejo de
+    `BotModule` para tenants sin agente (bot) que igual usan un módulo
+    autónomo (p. ej. `appointments`).
+
+    La **existencia de la fila = otorgado** — revocar es borrar la fila.
+    `enabled` es lo que el tenant puede apagar sin perder el otorgamiento."""
+
+    __tablename__ = "tenant_modules"
+
+    tenant_id = Column(Text, ForeignKey("tenants.tenant_id", ondelete="CASCADE"), primary_key=True)
+    module_key = Column(Text, ForeignKey("modules.module_key"), primary_key=True)
+    enabled = Column(Boolean, nullable=False, default=True, server_default="true")
+    granted_by = Column(Text, ForeignKey("users.username"), nullable=True)
+    granted_at = Column(DateTime(timezone=True), nullable=True)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("ix_tenant_modules_module_key", "module_key"),
+    )
+
+
 class PlanModule(Base):
     """Módulos que un plan incluye por defecto (ver ADR-008,
     docs/dev/DECISIONS.md). `BotModule.granted` sigue funcionando como
@@ -389,6 +411,31 @@ class DeviceCredential(Base):
 
     __table_args__ = (
         Index("ix_device_credentials_username", "username"),
+    )
+
+
+class PasskeyCredential(Base):
+    """Credencial WebAuthn (passkey) de un usuario — login con Face ID, huella,
+    Windows Hello o llave de seguridad (ver `PasskeyStorage` en devbout-oauth).
+
+    Solo se guarda la clave PÚBLICA del autenticador y su contador de firmas:
+    la privada nunca sale del dispositivo. `credential_id`/`public_key` son
+    base64url (formato de WebAuthn) y `sign_count` se actualiza en cada login —
+    devbout-oauth rechaza una aserción cuyo contador no avance (posible clon).
+    """
+
+    __tablename__ = "passkey_credentials"
+
+    credential_id = Column(Text, primary_key=True)
+    username = Column(Text, ForeignKey("users.username", ondelete="CASCADE"), nullable=False)
+    public_key = Column(Text, nullable=False)
+    sign_count = Column(Integer, nullable=False, default=0, server_default="0")
+    transports = Column(JSONB, nullable=False, default=list, server_default="[]")
+    name = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("ix_passkey_credentials_username", "username"),
     )
 
 

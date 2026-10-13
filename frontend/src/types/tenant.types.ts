@@ -3,7 +3,9 @@
  */
 
 export type TenantStatus = 'active' | 'suspended' | 'trial';
-export type TenantUserRole = 'admin' | 'operativo';
+/** Roles de un usuario de tenant — espejo de `UserRole` en el backend
+ * (`app/models/tenant.py`), sin `super_admin` (no se puede crear con tenant). */
+export type TenantUserRole = 'admin' | 'operativo' | 'broker';
 export type PlanPeriodicity = 'monthly' | 'annual';
 // Estado de la solicitud de plan del tenant: 'pending' al darse de alta por
 // autoregistro/gmail; el pase a approved/active lo hace super_admin (ADR-013).
@@ -137,6 +139,21 @@ export interface BotModuleInfo {
   // incluido en el plan del tenant, ver ADR-008). Es el campo correcto
   // para decidir si una página puede llamar a la API del módulo sin
   // recibir 403 — `granted` es solo para la UI de otorgamiento manual.
+  available: boolean;
+  module_name?: string;
+  module_description?: string;
+}
+
+/**
+ * Módulo del catálogo con su estado **para el tenant** (no para un bot): es el
+ * entitlement que permite usar un módulo sin agente. La existencia de la fila
+ * = otorgado; `enabled` es lo que el tenant puede apagar. Ver ADR-029.
+ */
+export interface TenantModuleInfo {
+  tenant_id: string;
+  module_key: string;
+  granted: boolean;
+  enabled: boolean;
   available: boolean;
   module_name?: string;
   module_description?: string;

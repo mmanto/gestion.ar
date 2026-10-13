@@ -4,8 +4,7 @@ import type { BotModuleInfo } from '../../types/tenant.types';
 
 export interface ModuleConfigLink {
   label: string;
-  path?: string; // navega a una ruta dedicada (ej. Turnos)
-  onClick?: () => void; // ejecuta una acción en la página actual (ej. abrir edición del bot)
+  path: string; // ruta de la pantalla propia del módulo (ej. Turnos)
 }
 
 interface ModuleCardProps {
@@ -32,15 +31,9 @@ export const ModuleCard = ({ module, onToggleGrant, updating, configLink }: Modu
     </div>
     <div className="flex items-center gap-2">
       {module.granted && configLink && (
-        configLink.path ? (
-          <Link to={configLink.path}>
-            <Button variant="outline">{configLink.label}</Button>
-          </Link>
-        ) : (
-          <Button variant="outline" onClick={configLink.onClick}>
-            {configLink.label}
-          </Button>
-        )
+        <Link to={configLink.path}>
+          <Button variant="outline">{configLink.label}</Button>
+        </Link>
       )}
       <Button
         variant={module.granted ? 'danger' : 'primary'}

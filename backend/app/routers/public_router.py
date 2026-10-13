@@ -18,8 +18,16 @@ from app.services.tenant_service import get_tenant_service
 from app.models.channel import ChannelStatus, ChannelType
 from app.models.bot import BotStatus
 from app.models.tenant import TenantPublicInfo
+from app.modules.manifest import enabled_manifests
 
 router = APIRouter(prefix="/api/public", tags=["public"])
+
+# Sufijo reservado por RFC 6761: cualquier *.localhost resuelve a loopback, así
+# que en dev local un tenant con dominio propio se abre en <dominio>.localhost
+# (ej. http://pachoteayuda.ar.localhost/) sin tocar /etc/hosts ni duplicar la
+# fila del tenant con un dominio de prueba. En prod no está alcanzable: Traefik
+# no tiene ningún router cuyo Host termine en .localhost.
+LOCALHOST_SUFFIX = ".localhost"
 
 
 @router.get("/tenants/current", response_model=TenantPublicInfo)
@@ -31,10 +39,15 @@ async def get_current_tenant(request: Request):
     tenant_id inyectado por entrypoint (window.__TENANT_CONFIG__). Con el
     colapso a un único contenedor, el tenant se deriva del dominio
     (tenants.domain) reenviado sin modificar por el nginx del frontend
-    (proxy_set_header Host $host) y Traefik.
+    (proxy_set_header Host $host) y Traefik. Si el Host termina en
+    `.localhost` (dev local, ver LOCALHOST_SUFFIX) se reintenta sin el sufijo.
     """
     host = (request.headers.get("host") or "").split(":")[0].lower()
     tenant = await get_tenant_service().get_tenant_by_domain(host)
+    if not tenant and host.endswith(LOCALHOST_SUFFIX):
+        alias = host[: -len(LOCALHOST_SUFFIX)]
+        if alias:
+            tenant = await get_tenant_service().get_tenant_by_domain(alias)
     if not tenant:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant no encontrado para este dominio")
 
@@ -303,3 +316,61 @@ async def get_public_user_info(username: str):
         "username": username,
         "bots": bots_data,
     }
+
+
+def _nav_entry_dict(entry) -> dict:
+    return {
+        "to": entry.to,
+        "label": entry.label,
+        "icon": entry.icon,
+        "roles": list(entry.roles),
+    }
+
+
+@router.get("/modules/manifest")
+async def get_modules_manifest():
+    """Manifiesto de los módulos instalados (proyección pública).
+
+    Lo consumen las dos SPAs (admin y tenant) para derivar navegación, rutas
+    y extension points del chat. NUNCA expone referencias internas del
+    manifiesto (`tools_provider`, `interceptor`, `routers`).
+    """
+    enabled = enabled_manifests()
+
+    modules = []
+    for module_key, manifest in enabled.items():
+        admin = None
+        if manifest.admin is not None:
+            admin = {
+                "nav": (
+                    _nav_entry_dict(manifest.admin.nav)
+                    if manifest.admin.nav is not None
+                    else None
+                ),
+                "bot_tabs": [
+                    {"path": tab.path, "label": tab.label}
+                    for tab in manifest.admin.bot_tabs
+                ],
+            }
+
+        tenant = None
+        if manifest.tenant is not None:
+            tenant = {"nav": [_nav_entry_dict(entry) for entry in manifest.tenant.nav]}
+
+        chat = None
+        if manifest.chat is not None:
+            chat = {"widget_types": list(manifest.chat.widget_types)}
+
+        modules.append({
+            "module_key": module_key,
+            "name": manifest.name,
+            "description": manifest.description,
+            "version": manifest.version,
+            "scope": manifest.scope,
+            "requires": [dep for dep in manifest.requires if dep in enabled],
+            "admin": admin,
+            "tenant": tenant,
+            "chat": chat,
+        })
+
+    return {"modules": modules}
