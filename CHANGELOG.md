@@ -221,6 +221,39 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   con la instrucción de la tool y las 3 decisiones de calificación.
 
 ### Corregido
+- **El login y el alta con passkey funcionan en el dominio de cada tenant**
+  (`backend/app/routers/tenant_passkey_router.py`, `backend/app/services/oauth_config.py`,
+  `backend/app/services/tenant_service.py`). El RP ID de WebAuthn salía de una config global
+  de entorno (`WEBAUTHN_RP_ID` / el host de `FRONTEND_URL`), o sea que toda ceremonia
+  iniciada en el dominio de un cliente pedía `rp.id = admin.intellify.pro`: el navegador la
+  bloqueaba con `SecurityError` —lo que el frontend muestra como *"El navegador bloqueó la
+  passkey. Verificá que el sitio use HTTPS y el dominio correcto"*— y no se podía crear ni
+  usar ninguna passkey en `pachoteayuda.ar`, `ius.intellify.pro`, `erma.com.ar`, etc.
+  (verificado contra la API de prod: las opciones de ceremonia devolvían
+  `rp.id = admin.intellify.pro` en una página servida por `pachoteayuda.ar`). Ahora el
+  `rp.id` y el origin aceptado se derivan del origen de **la página** de cada ceremonia
+  (`Origin`, no el host del API: el dev-server de Vite proxea `/api` con `changeOrigin`), y
+  solo se aceptan hosts que sirven una organización —misma resolución `Host → tenant` que
+  `GET /api/public/tenants/current`, ahora en `TenantService.get_tenant_by_host`— (`400` si
+  no). `WEBAUTHN_RP_ID` desaparece y `WEBAUTHN_ORIGINS` queda como escape de dev (Vite en
+  `localhost` con `?tenant=<id>`); `docker-compose.tenants.local.yml` ya no necesita
+  configurar el dominio. Además se dejan de montar las rutas de passkeys de
+  `devbout_oauth.create_router` (`/api/auth/oauth/passkey/*`): aceptan una config fija —el
+  mismo problema— y no tienen cliente. Ver ADR-032 y docs/dev/API.md.
+- **Deploy de producción documentado sobre `./stack.prod` y health-wait del `up`
+  arreglado**. Los docs (`docs/ops/DEPLOYMENT.md`, `docs/ops/RUNBOOK.md`,
+  `docs/dev/MOBILE.md`) y el comentario de `docker-compose.prod.yml` mandaban a
+  `./deploy.sh`, un script que ya no existe (borrado en el commit `93c8f0d`): el
+  reemplazo real es `git pull && ./stack.prod rebuild`, que carga `.env.prod` y los
+  **tres** compose files. Los docs viejos omitían `docker-compose.tenants.prod.yml`,
+  que es justamente el que trae los servicios `frontend-tenant` y `landing`: sin él
+  ninguna request a `ius.intellify.pro` (ni a los otros hosts de tenant) matchea un
+  router de Traefik y el servidor responde 404. Además `./stack.prod up` contaba como
+  "no listos" a los contenedores que **tienen** healthcheck (`grep -c '"Health"'`,
+  y todos los traen como campo), así que terminaba siempre en "Timeout esperando
+  healthy" con el stack perfecto — un up sano se reportaba como fallido y llevaba a
+  repetir deploys. Ahora cuenta sólo los `starting`/`unhealthy` o en estado
+  `exited`/`restarting`, y el mensaje de timeout dice cuántos contenedores faltan.
 - **El paso de régimen de seguridad social del árbol de iUS no distinguía IMSS de
   ISSSTE** (`docs/ius_legal_config.json`, `docs/IUS_ARBOL_DECISION.md`,
   `docs/IUS_ARBOL_DECISION.html`, `scripts/build_ius_arbol_decision.py`,

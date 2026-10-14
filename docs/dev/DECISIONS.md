@@ -1922,3 +1922,70 @@ plugin PostCSS, el script de alta del tenant y el ruteo por dominio.
 - Un sitio standalone debe resolver por su cuenta lo que antes venía del SPA (resolución de
   tenant, login, assets, deploy), a cambio de independencia y de no cargar a la plataforma con
   código de un solo cliente.
+
+---
+
+## ADR-032: El RP ID de las passkeys es el dominio de la página, no una config global
+
+**Estado:** Aceptado
+**Fecha:** 2026-10-13
+
+### Contexto
+
+WebAuthn ata cada passkey a **un** dominio: el `rp.id` de la ceremonia tiene que
+ser igual al dominio de la página que la inicia (o un sufijo suyo) y el
+`clientData.origin`, el origin exacto; el navegador rechaza lo demás con
+`SecurityError` antes de llegar al backend.
+
+La plataforma sirve la **misma SPA** en el dominio propio de cada tenant
+(`pachoteayuda.ar`, `erma.com.ar`, `openpadel.pro`, `*.intellify.pro`, …) desde un
+único contenedor (ADR-027). El RP ID y los origins, en cambio, salían de una
+config global de entorno (`WEBAUTHN_RP_ID` / el host de `FRONTEND_URL`): en prod
+eso daba `rp.id = admin.intellify.pro`, así que en el login del tenant
+(p. ej. `https://pachoteayuda.ar/login`) el navegador bloqueaba cualquier
+ceremonia con *"El navegador bloqueó la passkey. Verificá que el sitio use HTTPS
+y el dominio correcto"* — ni crear ni usar una passkey era posible en ningún
+dominio de cliente.
+
+### Opciones consideradas
+
+1. **Un RP ID global + passkeys sólo en un dominio** (p. ej. `admin.intellify.pro`
+   o un subdominio común): obliga a sacar al usuario del dominio de su
+   organización para registrarse y para entrar, y deja sin passkeys a los
+   tenants con dominio propio. Descartado.
+2. **Config por tenant** (`WEBAUTHN_RP_ID` por contenedor): contradice el colapso
+   a un contenedor compartido (ADR-027) y de todos modos tiene que resolver el
+   mismo problema — el dominio que ve el navegador. Descartado.
+3. **Derivar el RP ID del origen de cada ceremonia**: la request ya trae el
+   dominio de la página (`Origin`), y el backend ya sabe resolver un Host a
+   organización (`GET /api/public/tenants/current`). Elegida.
+
+### Decisión
+
+`/api/tenant/oauth/passkey/*` construye la `PasskeyConfig` **por request**: el
+`rp.id` es el host del `Origin` de la página (no el del API — en dev el
+dev-server de Vite proxea `/api` con `changeOrigin` y el Host es el upstream) y
+los origins aceptados son ese origin más los declarados por entorno para el
+mismo host. Como el RP ID que el navegador exige tiene que ser un dominio que
+sirva una organización, un host que no resuelva a ningún tenant (con el alias de
+dev `<dominio>.localhost`) se rechaza con **400** en vez de emitir opciones
+imposibles de completar — misma resolución `Host → tenant` que
+`TenantService.get_tenant_by_host`, compartida con el endpoint público.
+
+`WEBAUTHN_RP_ID` desaparece (un único dominio forzado es exactamente el bug) y
+`WEBAUTHN_ORIGINS` queda como escape de dev para cuando la página y el API no
+comparten host. Las rutas de passkeys que `devbout_oauth.create_router` monta de
+fábrica (`/api/auth/oauth/passkey/*`) se dejan de montar: aceptan una
+`PasskeyConfig` fija y no tienen cliente (el login del admin general no las usa).
+
+### Consecuencias
+
+- Una passkey creada en el dominio de un tenant **no** sirve en el de otro (ni
+  en `admin.intellify.pro`): es la garantía de WebAuthn, no una limitación de la
+  implementación. Cada organización tiene su propio login.
+- Cambiar de dominio un tenant invalida sus passkeys: el RP ID queda grabado en
+  la credencial del autenticador.
+- La página tiene que estar en contexto seguro (`https://`, o `*.localhost` en
+  dev); WebAuthn no acepta IPs ni hosts como `erma.com.test`.
+- El backend puede servir passkeys a un dominio nuevo sin tocar configuración:
+  alcanza con que la fila del tenant tenga ese `domain`.

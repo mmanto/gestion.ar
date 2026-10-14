@@ -120,9 +120,9 @@ en `.env.dev` — funciona porque `docker-compose.override.yml` monta
    servicio `app`, y `.env.prod` ya tiene
    `FCM_CREDENTIALS_PATH=/app/secrets/firebase-credentials.json` (ruta
    dentro del contenedor) — no hace falta tocar nada más de config
-6. Redeploy: `cd /opt/app && ./deploy.sh` (o el `docker compose ... up -d
-   --build app` manual de `DEPLOYMENT.md` si solo se cambió el mount, sin
-   nuevo código)
+6. Redeploy: `cd /opt/gestion.ar && git pull && ./stack.prod rebuild` (o el
+   `docker compose ... up -d --build app` manual de `DEPLOYMENT.md` si solo se
+   cambió el mount, sin nuevo código)
 7. Verificar (al arrancar el contenedor, en `PushService.__init__`):
    `docker compose ... logs app | grep -i fcm` debería mostrar `✅ Push
    Service (FCM) inicializado correctamente` en vez de `⚠️  Push Service:

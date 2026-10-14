@@ -21,6 +21,13 @@ from app.db.models import (
 )
 from app.models.tenant import Tenant, TenantCreate, TenantStatus, TenantUpdate
 
+# Sufijo reservado por RFC 6761: cualquier *.localhost resuelve a loopback, así
+# que en dev local un tenant con dominio propio se abre en <dominio>.localhost
+# (ej. http://pachoteayuda.ar.localhost/) sin tocar /etc/hosts ni duplicar la
+# fila del tenant con un dominio de prueba. En prod no está alcanzable: Traefik
+# no tiene ningún router cuyo Host termine en .localhost.
+LOCALHOST_SUFFIX = ".localhost"
+
 
 def _to_tenant(row: TenantModel) -> Tenant:
     return Tenant(
@@ -63,6 +70,24 @@ class TenantService:
             result = await session.execute(select(TenantModel).where(TenantModel.domain == domain))
             row = result.scalars().first()
             return _to_tenant(row) if row else None
+
+    async def get_tenant_by_host(self, host: str) -> Optional[Tenant]:
+        """Tenant que sirve `host` (incluye el alias de dev `<dominio>.localhost`).
+
+        Es el único lugar que sabe cómo un Host se traduce a tenant: lo usan
+        `GET /api/public/tenants/current` (la SPA resuelve su organización) y la
+        config de passkeys (el RP ID de WebAuthn tiene que ser el dominio que de
+        verdad sirve la página).
+        """
+        host = host.split(":")[0].strip().lower()
+        if not host:
+            return None
+        tenant = await self.get_tenant_by_domain(host)
+        if not tenant and host.endswith(LOCALHOST_SUFFIX):
+            alias = host[: -len(LOCALHOST_SUFFIX)]
+            if alias:
+                tenant = await self.get_tenant_by_domain(alias)
+        return tenant
 
     async def list_tenants(self, skip: int = 0, limit: int = 20) -> Dict:
         async with AsyncSessionLocal() as session:

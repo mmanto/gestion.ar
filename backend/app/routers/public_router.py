@@ -22,13 +22,6 @@ from app.modules.manifest import enabled_manifests
 
 router = APIRouter(prefix="/api/public", tags=["public"])
 
-# Sufijo reservado por RFC 6761: cualquier *.localhost resuelve a loopback, así
-# que en dev local un tenant con dominio propio se abre en <dominio>.localhost
-# (ej. http://pachoteayuda.ar.localhost/) sin tocar /etc/hosts ni duplicar la
-# fila del tenant con un dominio de prueba. En prod no está alcanzable: Traefik
-# no tiene ningún router cuyo Host termine en .localhost.
-LOCALHOST_SUFFIX = ".localhost"
-
 
 @router.get("/tenants/current", response_model=TenantPublicInfo)
 async def get_current_tenant(request: Request):
@@ -39,15 +32,11 @@ async def get_current_tenant(request: Request):
     tenant_id inyectado por entrypoint (window.__TENANT_CONFIG__). Con el
     colapso a un único contenedor, el tenant se deriva del dominio
     (tenants.domain) reenviado sin modificar por el nginx del frontend
-    (proxy_set_header Host $host) y Traefik. Si el Host termina en
-    `.localhost` (dev local, ver LOCALHOST_SUFFIX) se reintenta sin el sufijo.
+    (proxy_set_header Host $host) y Traefik. Ver
+    `TenantService.get_tenant_by_host` (incluye el alias de dev `<dominio>.localhost`).
     """
-    host = (request.headers.get("host") or "").split(":")[0].lower()
-    tenant = await get_tenant_service().get_tenant_by_domain(host)
-    if not tenant and host.endswith(LOCALHOST_SUFFIX):
-        alias = host[: -len(LOCALHOST_SUFFIX)]
-        if alias:
-            tenant = await get_tenant_service().get_tenant_by_domain(alias)
+    host = request.headers.get("host") or ""
+    tenant = await get_tenant_service().get_tenant_by_host(host)
     if not tenant:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant no encontrado para este dominio")
 

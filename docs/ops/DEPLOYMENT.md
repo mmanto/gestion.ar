@@ -43,19 +43,33 @@ curl -I https://admin.intellify.pro
 ## Deploy de actualización
 
 ```bash
-ssh deploy@<IP_SERVIDOR>
+ssh mmanto@<IP_SERVIDOR>
 cd /opt/gestion.ar
-./deploy.sh
+git pull
+./stack.prod rebuild     # = docker compose up -d --build de los 6 servicios
 ```
 
-`deploy.sh` hace `git pull` + `docker compose --env-file .env.prod -f
-docker-compose.yml -f docker-compose.prod.yml up -d --build` + health check
-de `api.intellify.pro` y `admin.intellify.pro`. Existe porque un deploy
-manual sin los dos `-f` (solo `docker-compose.yml`, sin el override de prod)
-rompió producción varias veces: sin `docker-compose.prod.yml` los
-contenedores levantan con los labels de Traefik viejos (o sin ninguno) y con
-`.env.dev` en vez de `.env.prod` — **usar siempre `./deploy.sh`, no el
-comando de `docker compose` a mano.**
+`./stack.prod` (symlink a `scripts/stack-prod.sh`) es el único camino de
+deploy: carga `.env.prod` y los **tres** compose files (`docker-compose.yml` +
+`docker-compose.prod.yml` + `docker-compose.tenants.prod.yml`) y aísla las
+variables del host. `rebuild` es `up -d --build`; `up` levanta sin
+reconstruir imágenes (útil cuando las imágenes ya están al día) y sin
+parámetro abre el menú interactivo. Existe porque un deploy manual sin los
+`-f` correctos rompió producción varias veces: sin `docker-compose.prod.yml`
+los contenedores levantan con los labels de Traefik viejos (o sin ninguno) y
+con `.env.dev` en vez de `.env.prod`, y sin
+`docker-compose.tenants.prod.yml` **no se levantan los tenants ni las
+landings** (`frontend-tenant`, `landing`) — **usar siempre `./stack.prod`, no
+el comando de `docker compose` a mano.**
+
+Verificar después del deploy:
+
+```bash
+./stack.prod status      # ps + health check de api, admin y cada tenant
+```
+
+> `./deploy.sh` (nombre viejo, borrado en el commit `93c8f0d`) ya no existe:
+> si un doc o un runbook lo menciona, el reemplazo es `./stack.prod rebuild`.
 
 Para debug manual puntual (rebuild de un solo servicio, por ejemplo), el
 comando completo sigue siendo (nunca omitir `--env-file .env.prod`: sin él,

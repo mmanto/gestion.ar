@@ -31,17 +31,15 @@
 # de arriba — ver ese archivo para el detalle.
 
 services:
-  # Passkeys (WebAuthn): una passkey queda atada a UN dominio, así que el RP ID
-  # tiene que ser el host de la página (o un sufijo suyo) y los origins, exactos.
-  # De los hosts locales, solo los *.localhost son contexto seguro — en
-  # http://erma.com.test / http://ius.mx.test el navegador ni expone
-  # PublicKeyCredential, así que el botón de passkey no aparece ahí. Se usa
-  # pachoteayuda.ar.localhost, el tenant con dominio propio simulado.
-  app:
-    environment:
-      WEBAUTHN_RP_ID: pachoteayuda.ar.localhost
-      WEBAUTHN_ORIGINS: http://pachoteayuda.ar.localhost
-
+  # Passkeys (WebAuthn): el RP ID sale del dominio de la página, así que no hay
+  # nada que configurar por tenant. Lo único a tener en cuenta: el navegador
+  # solo expone WebAuthn en contexto seguro, y de los hosts locales solo los
+  # *.localhost lo son — en http://erma.com.test / http://ius.mx.test el botón
+  # de passkey no aparece. Se prueba en pachoteayuda.ar.localhost, el tenant con
+  # dominio propio simulado.
+  # La ceremonia usa el dominio de la página (pachoteayuda.ar.localhost); el
+  # backend lo acepta porque resuelve el tenant quitando el sufijo .localhost
+  # (ver TenantService.get_tenant_by_host).
   traefik-local:
     image: traefik:v3.6
     container_name: gestionar_traefik_local

@@ -710,6 +710,73 @@ del `endUser.endUserId` y guarda el resultado. Configurar en el dashboard de
 Nango: Webhook URL = `https://api.intellify.pro/api/tenant/oauth/webhook/nango`
 + evento auth (ver `docs/dev/SETUP.md`).
 
+---
+
+## Tenant — Passkeys (WebAuthn)
+
+Login alternativo con Face ID / huella / Windows Hello / llave de seguridad,
+sobre las mismas cuentas de `users`. El backend guarda solo la clave pública y
+el contador de firmas del autenticador (`passkey_credentials`); la clave privada
+nunca sale del dispositivo. Las ceremonias son *stateless*: el `challengeToken`
+firmado que devuelven los `*/options` (válido 5 min) viaja de vuelta en el body
+de los `*/verify`.
+
+El **RP ID** (`rp.id` de las opciones) es el dominio de **la página que inicia
+la ceremonia** — del header `Origin`, no del host del API: el mismo backend
+sirve la SPA de todos los tenants y WebAuthn ata cada passkey a un dominio (el
+navegador bloquea con `SecurityError` toda ceremonia cuyo `rp.id` no sea el
+dominio de la página). Un host que no sirva ninguna organización (`tenants.domain`,
+con el alias de dev `<dominio>.localhost`) devuelve **400**. En dev, el
+dev-server de Vite (que proxea `/api` a otro host) se declara con
+`WEBAUTHN_ORIGINS`. Ver ENV.md y docs/dev/DECISIONS.md (ADR-032).
+
+### POST `/api/tenant/oauth/passkey/register/options`
+
+**Requiere JWT.** Opciones de `navigator.credentials.create()` para el usuario
+actual; sus passkeys ya registradas viajan como `excludeCredentials`.
+
+**Response 200:** `{ "options": {...}, "challengeToken": "eyJ..." }`
+
+### POST `/api/tenant/oauth/passkey/register/verify`
+
+**Requiere JWT.** Body: `{credential, challengeToken, name?}`. Valida la
+attestation (desafío, `rp_id`, origin) y guarda la clave pública. `400` si la
+attestation no verifica, `403` si el desafío es de otro usuario, `409` si esa
+passkey ya estaba registrada.
+
+### POST `/api/tenant/oauth/passkey/login/options`
+
+Body: `{tenant_id, username?}`. Sin `username` es un login "sin usuario": el
+navegador ofrece cualquier passkey del dominio y la cuenta se resuelve al
+verificar la aserción (`allowCredentials` vacío ⇒ credencial descubrible).
+`409` con instrucciones si ese tenant (o esa cuenta) todavía no tiene ninguna
+passkey, en vez de abrir el picker del sistema con el que el usuario no tiene
+salida.
+
+### POST `/api/tenant/oauth/passkey/login/verify`
+
+Body: `{tenant_id, credential, challengeToken}`. Valida la aserción contra la
+clave pública guardada y emite el JWT (misma forma que el login OAuth de
+tenant). `401` si la credencial es desconocida o la firma no verifica, `403` si
+la cuenta pertenece a otra organización (mismo criterio que
+`find_or_create_tenant_user`).
+
+### POST `/api/tenant/oauth/passkey/signup/options` · `/signup/verify`
+
+Alta de cuenta **nueva** con passkey, sin email ni teléfono (los completa
+administración): el `username` (`pk_<hex>`) lo genera el backend y viaja firmado
+dentro del `challengeToken`, así que una ceremonia abandonada no crea cuentas a
+medio crear. Body de `verify`: `{tenant_id, credential, challengeToken, nombre,
+plan?}`; en un tenant con alta gratuita (`settings.free_signup`) no se registra
+plan. `409` si el usuario ya existe.
+
+### GET `/api/tenant/oauth/passkey/credentials` · DELETE `/{credential_id}`
+
+**Requieren JWT.** Lista / revoca las passkeys del usuario actual (revocar borra
+la fila; el dispositivo puede registrar una nueva).
+
+---
+
 ## Tenant — Usuarios
 
 Gestión de usuarios del propio tenant (requiere JWT con rol `admin` del

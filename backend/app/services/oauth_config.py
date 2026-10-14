@@ -24,21 +24,53 @@ def build_nango_config() -> NangoConfig:
     )
 
 
-def build_passkey_config() -> PasskeyConfig:
-    """Config WebAuthn (passkeys: Face ID, huella, Windows Hello).
+def configured_passkey_origins() -> list[str]:
+    """Origins declarados por entorno (`WEBAUTHN_ORIGINS`, separados por coma).
 
-    El RP ID y los origins salen del frontend público: WebAuthn exige que el
-    dominio que firma la credencial sea el mismo que sirve la página y no
-    acepta IPs, así que en dev `FRONTEND_URL` tiene que ser
-    `http://localhost:5173` (RP ID `localhost`). `WEBAUTHN_RP_ID` y
-    `WEBAUTHN_ORIGINS` (separados por coma) los sobreescriben, por ejemplo para
-    habilitar también el subdominio de un tenant.
+    Existen para el único caso en que la página **no** está en el dominio del
+    tenant: el dev-server de Vite (`http://localhost:5174`) con el tenant
+    forzado por `?tenant=<id>`. En prod la lista queda vacía y el dominio de la
+    página sale del origen de cada request (ver `build_passkey_config`).
     """
-    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173").rstrip("/")
-    origins = [origin.strip() for origin in os.getenv("WEBAUTHN_ORIGINS", "").split(",") if origin.strip()]
+    return [
+        origin.strip().rstrip("/")
+        for origin in os.getenv("WEBAUTHN_ORIGINS", "").split(",")
+        if origin.strip()
+    ]
+
+
+def passkey_allowed_hosts() -> set[str]:
+    """Hosts con passkeys declarados por entorno (ver `configured_passkey_origins`)."""
+    return {(urlparse(origin).hostname or "").lower() for origin in configured_passkey_origins()} - {""}
+
+
+def build_passkey_config(origin: str) -> PasskeyConfig:
+    """Config WebAuthn (passkeys: Face ID, huella, Windows Hello) de `origin`.
+
+    `origin` es el origen de la **página** que inicia la ceremonia, no el del
+    API: WebAuthn ata cada passkey a un dominio y el navegador rechaza con
+    `SecurityError` cualquier ceremonia cuyo `rpId` no sea ese dominio (o un
+    sufijo suyo). Con un RP ID global, la misma SPA servida en el dominio de
+    cada tenant (`pachoteayuda.ar`, `ius.intellify.pro`, …) no podía crear ni
+    usar passkeys en ninguno de esos dominios. Por eso el RP ID se deriva del
+    origen de la página y el backend solo acepta hosts que sirven una
+    organización (ver `_passkey_config` en `tenant_passkey_router`).
+
+    Los origins declarados por entorno se suman a los del mismo host, para
+    tolerar otras variantes del dominio (p. ej. otro puerto en dev).
+    """
+    parsed = urlparse(origin)
+    rp_id = (parsed.hostname or "").lower()
+    if parsed.scheme not in ("http", "https") or not rp_id:
+        raise ValueError(f"origin de WebAuthn inválido: {origin!r}")
+    extra_origins = [
+        configured
+        for configured in configured_passkey_origins()
+        if (urlparse(configured).hostname or "").lower() == rp_id
+    ]
     return PasskeyConfig(
-        rp_id=os.getenv("WEBAUTHN_RP_ID") or (urlparse(frontend_url).hostname or "localhost"),
+        rp_id=rp_id,
         rp_name=os.getenv("WEBAUTHN_RP_NAME", "Gestion.ar"),
-        origins=origins or [frontend_url],
+        origins=list(dict.fromkeys([origin] + extra_origins)),
         user_verification=os.getenv("WEBAUTHN_USER_VERIFICATION", "preferred"),
     )

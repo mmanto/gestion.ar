@@ -378,7 +378,7 @@ imagen; el contenedor actual no los tiene):
 
 ```bash
 ssh mmanto@<VPS>
-cd /opt/gestion.ar && ./deploy.sh
+cd /opt/gestion.ar && git pull && ./stack.prod rebuild
 ```
 
 Después copiar el corpus y indexar:

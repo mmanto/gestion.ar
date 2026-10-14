@@ -4,7 +4,7 @@
 # Requiere en el servidor:
 #   - .env.prod → REGISTRY_IMAGE, DB_USER, DB_PASSWORD, DB_NAME y credenciales
 #     reales (ver .env.example). Pasar --env-file .env.prod al comando de
-#     arriba, o usar ./deploy.sh que ya lo hace.
+#   arriba, o usar ./stack.prod (scripts/stack-prod.sh) que ya lo hace.
 #   - docs/             → directorio (puede estar vacío)
 #   - Traefik standalone de infra/traefik/ corriendo (container "traefik",
 #     HTTP-01, red traefik_public) — este es el reverse proxy real del

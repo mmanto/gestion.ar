@@ -188,21 +188,29 @@ README), como **instancia compartida** entre las apps que consumen
 Alternativa al login por password y por Google, sobre las **mismas** cuentas
 (`users.username`): el usuario registra una passkey ya logueado (Face ID,
 huella, Windows Hello, llave de seguridad) y después ingresa con eso. Lo sirve
-`devbout-oauth` en `/api/auth/oauth/passkey/*`; el backend guarda solo la clave
-pública y el contador de firmas (`passkey_credentials`).
+el backend en `/api/tenant/oauth/passkey/*` (ver docs/dev/API.md); guarda solo la
+clave pública y el contador de firmas (`passkey_credentials`).
 
 | Variable | Requerida | Descripción | Ejemplo |
 |---|---|---|---|
-| `WEBAUTHN_RP_ID` | ❌ | Dominio de registro de las passkeys (el host de `FRONTEND_URL` si se omite) | `tudominio.com` (dev: `localhost`) |
 | `WEBAUTHN_RP_NAME` | ❌ | Nombre que muestra el navegador/OS al crear la passkey | `Gestion.ar` |
-| `WEBAUTHN_ORIGINS` | ❌ | Origins extra autorizados, separados por coma (`[FRONTEND_URL]` si se omite) | `https://tudominio.com,https://tenant.tudominio.com` |
+| `WEBAUTHN_ORIGINS` | ❌ | Origins extra permitidos, separados por coma. Solo para dev (el dev-server de Vite en `localhost` con el tenant forzado por `?tenant=<id>`): en prod el dominio de la página sale del origen de cada request | `http://localhost:5174` |
 | `WEBAUTHN_USER_VERIFICATION` | ❌ | `preferred` (default) o `required` (exige autenticador que verifique al usuario) | `preferred` |
 
-> El RP ID **no se puede cambiar** después sin invalidar las passkeys ya
-> registradas, y WebAuthn no acepta IPs: en dev el frontend tiene que estar en
-> `http://localhost:5173` (RP ID `localhost`) y en prod es `https://`. Un
-> origin que no coincida con el que ve el navegador no falla al arrancar: se ve
-> como 401 en `/passkey/*/verify`.
+> **El RP ID no se configura: se deriva del dominio de la página** (el
+> `Origin` de la ceremonia). El mismo backend sirve la SPA en el dominio de cada
+> tenant (`pachoteayuda.ar`, `ius.intellify.pro`, `erma.com.ar`, …) y WebAuthn
+> ata cada passkey a UN dominio: con un RP ID global (p. ej. el de
+> `FRONTEND_URL`) el navegador bloquea la ceremonia en todos los demás con
+> `SecurityError` ("El navegador bloqueó la passkey…"). Ver ADR-032 en
+> docs/dev/DECISIONS.md.
+>
+> Consecuencias: una passkey creada en un dominio **no** sirve en otro
+> (inherente a WebAuthn; cada tenant tiene su propio login), la página tiene que
+> estar en `https://` (o `http://localhost*`, que el navegador trata como
+> contexto seguro) y WebAuthn no acepta IPs. Un host que no sirva ninguna
+> organización devuelve `400` en `/passkey/*/options`; un origin que no coincida
+> con el que ve el navegador se ve como `401` en `/passkey/*/verify`.
 
 ---
 

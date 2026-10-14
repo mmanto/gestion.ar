@@ -186,10 +186,17 @@ cmd_up() {
   echo -e "${GREEN}==> Esperando que los servicios estén healthy...${NC}"
   local timeout=120
   local elapsed=0
+  local not_ready=0
   while [ $elapsed -lt $timeout ]; do
-    local unhealthy
-    unhealthy=$("${COMPOSE_CMD[@]}" ps --format json 2>/dev/null | grep -c '"Health"' || true)
-    if [ "$unhealthy" -eq 0 ]; then
+    # Cuenta contenedores que NO están listos: health "starting" (todavía
+    # arrancando) o "unhealthy", o estado "restarting"/"exited". Antes contaba
+    # los contenedores que TIENEN healthcheck (grep '"Health"', y todos lo
+    # tienen como campo), así que daba 6 con el stack sano y el comando
+    # SIEMPRE terminaba en "Timeout esperando healthy" — un up perfecto se
+    # reportaba como fallido y los deploys se repetían de más.
+    not_ready=$("${COMPOSE_CMD[@]}" ps --format json 2>/dev/null \
+      | grep -cE '"Health":"(starting|unhealthy)"|"State":"(exited|restarting|dead)"' || true)
+    if [ "$not_ready" -eq 0 ]; then
       echo -e "${GREEN}==> Todos los servicios arriba.${NC}"
       cmd_ps
       return
@@ -197,7 +204,7 @@ cmd_up() {
     sleep 5
     elapsed=$((elapsed + 5))
   done
-  echo -e "${YELLOW}==> Timeout esperando healthy — verificá con 'status'${NC}"
+  echo -e "${YELLOW}==> Timeout esperando healthy: $not_ready contenedor(es) sin estar listos — verificá con 'status'${NC}"
   cmd_ps
 }
 

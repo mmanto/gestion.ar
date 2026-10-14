@@ -20,20 +20,31 @@ Endpoints (el frontend los llama sin el prefijo `/api`, que lo agrega
   POST   /login/verify       (–)    valida la aserción y emite el JWT
   GET    /credentials        (JWT)  passkeys registradas del usuario
   DELETE /credentials/{id}   (JWT)  revoca una passkey
+
+La misma SPA corre en el dominio de cada tenant (`pachoteayuda.ar`,
+`ius.intellify.pro`, `erma.com.ar`, …), así que el RP ID de WebAuthn —que el
+navegador exige igual al dominio de la página o a un sufijo suyo— se deriva del
+origen de cada ceremonia (ver `_passkey_config`) y no de una config global.
 """
 import logging
 from typing import Annotated, Literal, Optional
+from urllib.parse import urlparse
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, StringConstraints
 
 from app.auth_service import User
 from app.dependencies.auth import get_current_user
 from app.models.tenant import Tenant
-from app.services.oauth_config import build_nango_config, build_passkey_config
+from app.services.oauth_config import (
+    build_nango_config,
+    build_passkey_config,
+    passkey_allowed_hosts,
+)
 from app.services.tenant_service import get_tenant_service
 from app.services.user_service import get_user_service
 from devbout_oauth import (
+    PasskeyConfig,
     PasskeyError,
     PasskeyUser,
     authentication_options,
@@ -47,8 +58,53 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/tenant/oauth/passkey", tags=["tenant-passkey"])
 
-_passkey_config = build_passkey_config()
 _signing_key = build_nango_config().state_signing_key
+
+
+def _page_origin(request: Request) -> str:
+    """Origen de la página que inicia la ceremonia.
+
+    Es el header `Origin` (lo pone el navegador y es el valor que WebAuthn
+    valida), no el host del API: en prod el SPA y el API comparten dominio (el
+    nginx del frontend reenvía el `Host` intacto), pero en dev el dev-server de
+    Vite proxea /api al backend con `changeOrigin`, así que ahí el `Host` es el
+    upstream y no el dominio de la página.
+    """
+    origin = (request.headers.get("origin") or "").strip().rstrip("/")
+    if origin:
+        return origin
+    # Sin `Origin` (cliente que no es un navegador sobre la página) se
+    # reconstruye del Host, respetando el esquema que anunció el proxy.
+    scheme = (request.headers.get("x-forwarded-proto") or request.url.scheme).split(",")[0].strip()
+    host = (request.headers.get("host") or "").strip()
+    if not host:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Falta el header Origin (o Host) de la página")
+    return f"{scheme}://{host}"
+
+
+async def _passkey_config(request: Request) -> PasskeyConfig:
+    """Config WebAuthn de esta ceremonia: RP ID = dominio de la página.
+
+    Una passkey no puede cruzar dominios: el navegador solo acepta un `rpId`
+    igual al dominio de la página (o un sufijo suyo). Como el mismo backend
+    sirve la SPA de todos los tenants, el RP ID sale del origen de la request y
+    el host tiene que ser un dominio que sirva alguna organización — si no,
+    ninguna passkey podría usarse desde ahí y el navegador ya habría bloqueado
+    la ceremonia con `SecurityError`.
+    """
+    origin = _page_origin(request)
+    host = (urlparse(origin).hostname or "").lower()
+    if not host:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Origin inválido: {origin}")
+    if host not in passkey_allowed_hosts():
+        tenant = await get_tenant_service().get_tenant_by_host(host)
+        if tenant is None:
+            logger.warning("Passkey en un dominio sin organización: %s", origin)
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                "Passkeys no disponibles en este dominio. Entrá desde el dominio de tu organización.",
+            )
+    return build_passkey_config(origin)
 
 
 class _RegisterVerifyRequest(BaseModel):
@@ -98,7 +154,10 @@ async def _ensure_active_tenant(tenant_id: str) -> Tenant:
 # ── Registro (usuario ya autenticado) ─────────────────────────────────────────
 
 @router.post("/register/options", response_model=dict)
-async def passkey_register_options(current_user: User = Depends(get_current_user)):
+async def passkey_register_options(
+    current_user: User = Depends(get_current_user),
+    config: PasskeyConfig = Depends(_passkey_config),
+):
     """Opciones de registro para el usuario actual (ya ingresó con password o
     Google). Las passkeys ya registradas van como `excludeCredentials` para no
     pedir dos veces el mismo dispositivo."""
@@ -108,7 +167,7 @@ async def passkey_register_options(current_user: User = Depends(get_current_user
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado")
     existing = await service.list_passkeys(current_user.username)
     options, challenge_token = registration_options(
-        _passkey_config, _signing_key, user, existing
+        config, _signing_key, user, existing
     )
     return {"options": options, "challengeToken": challenge_token}
 
@@ -117,12 +176,13 @@ async def passkey_register_options(current_user: User = Depends(get_current_user
 async def passkey_register_verify(
     body: _RegisterVerifyRequest,
     current_user: User = Depends(get_current_user),
+    config: PasskeyConfig = Depends(_passkey_config),
 ):
     """Valida la attestation (desafío firmado, rp_id, origin) y guarda la clave
     pública de la passkey."""
     try:
         registered = finish_registration(
-            _passkey_config, _signing_key, body.credential, body.challengeToken
+            config, _signing_key, body.credential, body.challengeToken
         )
     except PasskeyError as exc:
         logger.warning("Registro de passkey fallido para %s: %s", current_user.username, exc)
@@ -157,7 +217,10 @@ async def passkey_register_verify(
 # ── Login (sin JWT) ───────────────────────────────────────────────────────────
 
 @router.post("/login/options", response_model=dict)
-async def passkey_login_options(body: _LoginOptionsRequest):
+async def passkey_login_options(
+    body: _LoginOptionsRequest,
+    config: PasskeyConfig = Depends(_passkey_config),
+):
     """Opciones de ingreso. Sin `username` es un login "sin usuario": el
     navegador ofrece cualquier passkey de este dominio y la cuenta se resuelve
     al verificar la aserción.
@@ -196,13 +259,16 @@ async def passkey_login_options(body: _LoginOptionsRequest):
         )
 
     options, challenge_token = authentication_options(
-        _passkey_config, _signing_key, credentials, user_id
+        config, _signing_key, credentials, user_id
     )
     return {"options": options, "challengeToken": challenge_token}
 
 
 @router.post("/login/verify", response_model=dict)
-async def passkey_login_verify(body: _LoginVerifyRequest):
+async def passkey_login_verify(
+    body: _LoginVerifyRequest,
+    config: PasskeyConfig = Depends(_passkey_config),
+):
     """Valida la aserción contra la clave pública guardada y emite el JWT, con
     la misma forma que el login OAuth de tenant."""
     await _ensure_active_tenant(body.tenant_id)
@@ -231,7 +297,7 @@ async def passkey_login_verify(body: _LoginVerifyRequest):
 
     try:
         new_sign_count = finish_authentication(
-            _passkey_config, _signing_key, body.credential, body.challengeToken, stored
+            config, _signing_key, body.credential, body.challengeToken, stored
         )
     except PasskeyError as exc:
         logger.warning("Login con passkey fallido para %s: %s", stored.user_id, exc)
@@ -251,7 +317,10 @@ async def passkey_login_verify(body: _LoginVerifyRequest):
 # ── Alta de cuenta con passkey (sin email ni teléfono) ────────────────────────
 
 @router.post("/signup/options", response_model=dict)
-async def passkey_signup_options(body: _SignupOptionsRequest):
+async def passkey_signup_options(
+    body: _SignupOptionsRequest,
+    config: PasskeyConfig = Depends(_passkey_config),
+):
     """Opciones de registro para una cuenta que todavía **no** existe.
 
     El `username` se genera acá (`pk_<hex>`) y viaja firmado dentro del
@@ -264,12 +333,15 @@ async def passkey_signup_options(body: _SignupOptionsRequest):
     username = await get_user_service().next_passkey_username()
     display = body.nombre
     user = PasskeyUser(user_id=username, username=display, display_name=display)
-    options, challenge_token = registration_options(_passkey_config, _signing_key, user)
+    options, challenge_token = registration_options(config, _signing_key, user)
     return {"options": options, "challengeToken": challenge_token}
 
 
 @router.post("/signup/verify", response_model=dict)
-async def passkey_signup_verify(body: _SignupVerifyRequest):
+async def passkey_signup_verify(
+    body: _SignupVerifyRequest,
+    config: PasskeyConfig = Depends(_passkey_config),
+):
     """Valida la attestation y crea la cuenta + la passkey.
 
     La cuenta queda con el rol `operativo` del login de tenant, sin email ni
@@ -281,7 +353,7 @@ async def passkey_signup_verify(body: _SignupVerifyRequest):
 
     try:
         registered = finish_registration(
-            _passkey_config, _signing_key, body.credential, body.challengeToken
+            config, _signing_key, body.credential, body.challengeToken
         )
     except PasskeyError as exc:
         logger.warning("Alta con passkey fallida en tenant %s: %s", body.tenant_id, exc)

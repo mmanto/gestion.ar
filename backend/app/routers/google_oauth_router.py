@@ -5,15 +5,17 @@ Usa devbout_oauth.create_router con un GestionConnectionStorage que delega en
 UserService (SQLAlchemy async, sesión por operación).
 Nango custodia y refresca los tokens del proveedor.
 
-Además cuelga el login con passkeys (`/api/auth/oauth/passkey/*`): el storage
-de passkeys es directamente UserService, que implementa el protocolo
-PasskeyStorage — ver ENV.md (WEBAUTHN_*).
+No se montan las rutas de passkeys de la librería (`/api/auth/oauth/passkey/*`):
+el login con passkeys vive en `tenant_passkey_router.py`, que sí puede derivar
+el RP ID del dominio de cada tenant. Una `PasskeyConfig` global (la que acepta
+`create_router`) ata todas las passkeys a UN dominio, así que en el dominio de
+un tenant el navegador bloquea la ceremonia con `SecurityError`.
 """
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from app.auth_service import verify_token
-from app.services.oauth_config import build_nango_config, build_passkey_config
+from app.services.oauth_config import build_nango_config
 from app.services.user_service import get_user_service
 from devbout_oauth import ConnectionStorage, create_router
 
@@ -68,6 +70,4 @@ router = create_router(
     storage=GestionConnectionStorage(),
     get_current_user_id=_get_current_user_id,
     prefix="/api/auth/oauth",
-    passkeys=build_passkey_config(),
-    passkey_storage=get_user_service(),
 )
