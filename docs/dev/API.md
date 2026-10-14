@@ -821,6 +821,69 @@ creadas por autoregistro/gmail en desarrollo).
 
 ---
 
+## Reclamos (mapa de vecinos)
+
+Los reclamos georreferenciados que carga la landing de pachoteayuda
+(`sites/pachoteayuda-landing/reclamos/index.html`): el vecino marca un punto en
+el mapa —o usa la ubicación del teléfono— y el reclamo queda en el tenant del
+dominio. No es un módulo (ADR-028/ADR-029) sino un recurso del tenant que sólo
+consume la landing — ver ADR-033.
+
+### GET `/api/reclamos`
+
+**Público** (sin JWT): es el mapa de los vecinos. El tenant sale del Host de la
+request, igual que `/api/public/tenants/current` (el nginx del SPA lo reenvía sin
+reescribir). Devuelve los reclamos del tenant, del más nuevo al más viejo (tope
+de 500) y **sin el autor**: el reclamo es del vecino, no de la cuenta que lo
+cargó. `404` si el Host no corresponde a ningún tenant.
+
+**Response 200:**
+```json
+[
+  {
+    "id": 12,
+    "tipo": "basura",
+    "descripcion": "Contenedor desbordado y bolsas sobre la vereda.",
+    "lugar": "Centro",
+    "fecha": "2026-10-14",
+    "estado": "pendiente",
+    "lat": -36.228491,
+    "lon": -61.111923
+  }
+]
+```
+
+### POST `/api/reclamos`
+
+Requiere JWT de un usuario del tenant: la landing es estática y comparte origen
+con el SPA, así que manda el mismo token (`Authorization: Bearer`). El reclamo
+queda en el `tenant_id` del usuario (no en el del Host) y nace en estado
+`pendiente` — el pasaje a `en curso`/`resuelto` lo hace el municipio, todavía sin
+pantalla.
+
+**Request (JSON):**
+```json
+{
+  "tipo": "basura",
+  "descripcion": "Contenedor desbordado y bolsas sobre la vereda.",
+  "lugar": "Centro",
+  "lat": -36.228491,
+  "lon": -61.111923
+}
+```
+
+`tipo`: `basura` | `agua` (los tipos que declara la landing). `lugar` es opcional
+(referencia en palabras; el punto exacto es `lat`/`lon`). `descripcion`: 1–600
+caracteres, y se recorta antes de validar (un texto en blanco no es un reclamo).
+
+**Response 201:** el reclamo creado (mismo shape que el listado).
+
+**Errores:** `401`/`403` sin sesión válida; `422` si el `tipo` no es uno de los
+dos, si la descripción queda vacía o si `lat`/`lon` se salen del rango
+(`±90` / `±180`).
+
+---
+
 ## Módulos (manifiesto + entitlement)
 
 El catálogo de módulos vive en `backend/app/modules/manifest.py` (fuente de verdad: qué

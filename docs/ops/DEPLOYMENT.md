@@ -287,8 +287,9 @@ cliente `pachoteayuda.ar`.
 El servicio `landing` no sirve una sola página para pachoteayuda: además del
 `index.html` atiende `/normas/…` (una página por norma del HCD de Bolívar),
 `/tramites/`, `/residuos/` (la grilla de recolección de residuos de Bolívar
-Verde, ver ADR-020), `/reclamos/` (los reclamos de ejemplo en un mapa, página
-escrita a mano y **sí** versionada), el `sitemap.xml` y sus assets en
+Verde, ver ADR-020), `/reclamos/` (el mapa de reclamos de los vecinos, que se
+cargan marcando el punto — página escrita a mano y **sí** versionada, ver
+ADR-033), el `sitemap.xml` y sus assets en
 `/landing/`. Salvo `/reclamos/`, nada de eso se versiona — lo genera
 `scripts/generate_pachoteayuda_pages.py`, y el `COPY`
 de `pachoteayuda-landing/` en `sites/Dockerfile` falla si no se corrió (a

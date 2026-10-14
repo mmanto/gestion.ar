@@ -7,6 +7,22 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **Reclamos de vecinos en el mapa de `/reclamos/` de pachoteayuda** — ya no son los 4 de
+  ejemplo: la página muestra los reclamos reales del tenant y permite **marcar un punto en el
+  mapa** (o usar la ubicación del teléfono) y registrar el reclamo ahí. Backend: tabla `reclamos`
+  (migración `20261014_1200_add_reclamos.py`) y `app/routers/reclamos_router.py` con
+  `GET /api/reclamos` (**público**: es el mapa de los vecinos; resuelve el tenant por Host y no
+  expone el autor) y `POST /api/reclamos` (exige JWT del tenant, nace `pendiente`). En la landing,
+  `sites/pachoteayuda-landing/reclamos/index.html` pide la lista a la API, escapa el texto de los
+  vecinos antes de armar el popup del mapa y suma la barra **"Marcar un reclamo"** con formulario
+  (tipo, descripción, referencia), botón "Usar mi ubicación" y pin arrastrable. **Sin sesión**: el
+  botón y el aviso del mapa guardan el borrador —punto incluido— en `sessionStorage` y mandan a
+  `/login?next=/reclamos/?nuevo=1`; el login ahora respeta `?next=`
+  (`frontend-tenant/src/utils/homePath.ts`; sólo acepta caminos del propio sitio) y al volver el
+  formulario se reabre con el punto y lo escrito. Si la sesión se cae en el POST, se limpia el
+  navegador y se vuelve al login con el borrador. Razones en **ADR-033** (por qué no es un módulo
+  y por qué el listado es público). **Requiere** migración + rebuild de `landing` **y** de
+  `frontend-tenant` (el `?next=` del login viaja en el bundle del SPA).
 - **Menú de sesión en la landing de pachoteayuda (nombre del usuario + "Salir")**. En el menú
   superior de las páginas de la landing —la de reclamos y las generadas de `/normas/`,
   `/tramites/` y `/residuos/`— aparece a la derecha el nombre del usuario con sesión y un

@@ -223,8 +223,10 @@ del hero, `og-image.png`, favicon y `seo.css`) y los prefijos `/normas/`,
 `scripts/generate_pachoteayuda_pages.py` (ver ADR-019, ADR-020 y el paso
 de build en DEPLOYMENT.md); `/reclamos/` es una página escrita a mano y
 versionada (`sites/pachoteayuda-landing/reclamos/index.html`: mapa Leaflet sobre
-teselas de OpenStreetMap, con reclamos de ejemplo), que mientras los datos sean
-de ejemplo va con `noindex, nofollow` y sin enlazar desde la landing.
+teselas de OpenStreetMap con los reclamos reales del tenant —los carga el vecino
+marcando el punto en el mapa, ver ADR-033—), que sigue con `noindex, nofollow` y
+sin enlazar desde la landing por decisión (es una herramienta, no contenido para
+buscadores).
 
 Antes de esa regla, `robots.txt` y `sitemap.xml` los servía el SPA del tenant
 (`200 text/html` con `<title>Backoffice</title>`), así que el robots.txt no tenía

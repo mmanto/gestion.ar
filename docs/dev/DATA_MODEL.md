@@ -234,6 +234,30 @@ presentado contra el hash y, si coincide y no está revocado, emite un JWT nuevo
 
 Migración: `20260807_0000_add_device_credentials.py`.
 
+### `reclamos`
+
+Reclamos de vecinos georreferenciados — el mapa de `/reclamos/` de la landing de
+pachoteayuda (ADR-033). El reclamo es del **tenant**, no del usuario: lo carga un
+usuario con sesión (`created_by`, para auditoría) y el listado público no expone
+quién lo cargó. El estado lo mueve el municipio (hoy no hay pantalla: todo nace
+`pendiente`).
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `reclamo_id` | `BIGSERIAL PK` | Número del reclamo (el que se muestra en el mapa: `#12`) |
+| `tenant_id` | `TEXT NOT NULL` → FK `tenants.tenant_id` `ON DELETE CASCADE` | Tenant dueño del mapa |
+| `tipo` | `TEXT NOT NULL` | `basura` / `agua` (`CHECK`): los tipos que declara la landing |
+| `descripcion` | `TEXT NOT NULL` | Qué pasa (1–600 caracteres, recortada) |
+| `lugar` | `TEXT` (opt) | Referencia en palabras ("frente a la plaza") |
+| `lat` / `lon` | `DOUBLE PRECISION NOT NULL` | Punto marcado en el mapa (`CHECK` de rango) |
+| `estado` | `TEXT NOT NULL DEFAULT 'pendiente'` | `pendiente` / `en curso` / `resuelto` (`CHECK`) |
+| `created_by` | `TEXT` → FK `users.username` `ON DELETE SET NULL` | Quién lo cargó (auditoría; no se expone) |
+| `created_at` | `TIMESTAMPTZ NOT NULL` | Fecha del reclamo: la `fecha` que devuelve la API es esta, en hora de Argentina |
+
+Índices: `tenant_id`, `(tenant_id, created_at)`.
+
+Migración: `20261014_1200_add_reclamos.py`.
+
 ### `tenants`
 
 Contenedor multi-tenant (una cuenta de cliente / organización de nuestro

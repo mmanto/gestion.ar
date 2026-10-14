@@ -11,6 +11,7 @@ from sqlalchemy import (
     CheckConstraint,
     Column,
     DateTime,
+    Double,
     ForeignKey,
     Index,
     Integer,
@@ -489,5 +490,44 @@ class PushSubscription(Base):
             "endpoint",
             unique=True,
             postgresql_where=text("endpoint IS NOT NULL"),
+        ),
+    )
+
+
+class Reclamo(Base):
+    """Reclamo de un vecino, georreferenciado (mapa de `/reclamos/` de la
+    landing de pachoteayuda).
+
+    Lo carga un usuario con sesión del tenant: la landing es estática y manda
+    el mismo JWT que el SPA (sites/pachoteayuda-landing/reclamos/index.html).
+    El listado en cambio es **público** —es el mapa de reclamos de los vecinos,
+    sin sesión— así que `created_by` queda para auditoría y no se expone.
+    """
+
+    __tablename__ = "reclamos"
+
+    reclamo_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    tenant_id = Column(Text, ForeignKey("tenants.tenant_id", ondelete="CASCADE"), nullable=False)
+    # Tipos que declara la landing (TIPOS en reclamos/index.html).
+    tipo = Column(Text, nullable=False)
+    descripcion = Column(Text, nullable=False)
+    # Referencia en palabras del lugar ("frente a la plaza", "Zona norte"); el
+    # punto exacto es lat/lon.
+    lugar = Column(Text, nullable=True)
+    lat = Column(Double, nullable=False)
+    lon = Column(Double, nullable=False)
+    estado = Column(Text, nullable=False, default="pendiente", server_default="pendiente")
+    created_by = Column(Text, ForeignKey("users.username", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("ix_reclamos_tenant_id", "tenant_id"),
+        Index("ix_reclamos_tenant_id_created_at", "tenant_id", "created_at"),
+        CheckConstraint("tipo IN ('basura', 'agua')", name="ck_reclamos_tipo"),
+        CheckConstraint(
+            "estado IN ('pendiente', 'en curso', 'resuelto')", name="ck_reclamos_estado"
+        ),
+        CheckConstraint(
+            "lat BETWEEN -90 AND 90 AND lon BETWEEN -180 AND 180", name="ck_reclamos_coords"
         ),
     )

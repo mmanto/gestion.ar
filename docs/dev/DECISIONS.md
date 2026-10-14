@@ -1989,3 +1989,64 @@ fábrica (`/api/auth/oauth/passkey/*`) se dejan de montar: aceptan una
   dev); WebAuthn no acepta IPs ni hosts como `erma.com.test`.
 - El backend puede servir passkeys a un dominio nuevo sin tocar configuración:
   alcanza con que la fila del tenant tenga ese `domain`.
+
+---
+
+## ADR-033: Los reclamos de la landing son un recurso del tenant, no un módulo
+
+**Estado:** Aceptado
+**Fecha:** 2026-10-14
+
+### Contexto
+La página `/reclamos/` de la landing de pachoteayuda mostraba 4 reclamos **de
+ejemplo** (los del mapa de maparg) porque la plataforma no tenía registro de
+reclamos. Se pidió poder marcar un punto en el mapa y registrar el reclamo ahí,
+pidiendo sesión si no la hay. Tres decisiones no obvias: cómo se modela la
+capacidad en el sistema de módulos (ADR-028/ADR-029), quién puede leer el
+listado, y cómo sobrevive un reclamo a medio cargar al viaje por el login.
+
+### Opciones consideradas
+1. **Módulo `reclamos`** (`scope="entitled"`) con otorgamiento por tenant en
+   `tenant_modules` + `require_module_available`. Es el mecanismo de la
+   plataforma para "este tenant tiene esta capacidad", pero un módulo declara
+   **superficies** (pantallas propias o extensiones del chat) y este feature no
+   tiene ninguna: su interfaz es una página estática de la landing, fuera del
+   SPA. Habría quedado un módulo sin interfaz (el caso que ADR-029 documenta
+   como advertencia en la consola) más una migración de otorgamiento y un gating
+   que hoy no aportan nada: el único consumidor es la landing de pachoteayuda.
+2. **Router propio montado en `main.py`**, como el resto de los dominios
+   (`public_router`, `tenant_router`, `upload_router`): el camino que ya usa la
+   plataforma para un recurso HTTP sin superficies de UI.
+
+### Decisión
+Opción 2 (`app/routers/reclamos_router.py`, tabla `reclamos`), con estos recortes:
+
+- `GET /api/reclamos` es **público** (el mapa de los vecinos se ve sin cuenta,
+  como se veía la página con los datos de ejemplo) y resuelve el tenant por el
+  Host, igual que `/api/public/tenants/current`. La respuesta **no expone el
+  autor**: `created_by` queda para auditoría.
+- `POST /api/reclamos` exige JWT de un usuario del tenant y guarda el reclamo en
+  el `tenant_id` de esa cuenta, no en el del Host: así una cuenta sólo puede
+  escribir en su propio tenant. Nace `pendiente`.
+- El reclamo a medio cargar viaja en `sessionStorage` de la landing y el regreso
+  desde el login se hace con `?next=` (`frontend-tenant/src/utils/homePath.ts`),
+  porque el home por rol (`home_paths`) no sirve acá: en pachoteayuda manda a
+  `/reclamos` sólo a los `operativo`, y un `admin` volvería al panel en vez de al
+  mapa. `resolveNextPath` sólo acepta caminos del propio sitio (un `next`
+  absoluto sería un open redirect).
+
+### Consecuencias
+- Los reclamos **no tienen entitlement**: cualquier tenant cuya landing sirva el
+  mapa los tiene disponibles. Es a propósito (un flag de más no compra nada hoy),
+  pero conviene saberlo si otro cliente pide el mapa: no hay nada que otorgar.
+- El `?next=` del login es genérico, no específico de reclamos: sirve para
+  cualquier página que mande a `/login` y espere volver. El alta de cuenta sigue
+  yendo al panel (comportamiento ya documentado del alta).
+- La página sigue con `noindex` y sin enlazar desde el nav — ahora por decisión
+  (es una herramienta, y publicar reclamos de vecinos es decisión del municipio),
+  no porque los datos fueran de ejemplo. Indexarla es un paso aparte: hay que
+  sacar el `noindex`, sumar `/reclamos/` al nav del generador y al `sitemap.xml`.
+- `disabled` en `users` **no** se aplica por request: `GET /api/auth/me` y el
+  `POST /api/reclamos` siguen aceptando el JWT de un usuario deshabilitado (sí se
+  aplica en el login). Verificado al probar el manejo de sesión vencida; queda
+  como deuda aparte, no de este ADR.

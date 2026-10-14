@@ -5,11 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Reclamos de vecinos en Bolívar · mapa</title>
 <meta name="description" content="Mapa de los reclamos de los vecinos y vecinas de San Carlos de Bolívar: acumulación de basura y pérdida de agua, con la zona, la fecha y el estado de cada uno." />
-<!-- Los reclamos de esta página son de EJEMPLO: la plataforma todavía no tiene
-     el registro de reclamos (ver la nota en el body). Por eso la página no se
-     indexa ni se enlaza desde la landing — cuando el registro esté en línea hay
-     que sacar el noindex, sumar /reclamos/ al nav de las páginas (generador) y
-     a sitemap.xml. -->
+<!-- Los reclamos son reales: los carga un vecino con sesión desde el mapa
+     (POST /api/reclamos) y el listado es público (GET /api/reclamos). La
+     página sigue con noindex y sin enlazar desde el nav de la landing: es una
+     herramienta, no contenido de buscadores — si algún día se quiere indexar
+     hay que sacar el noindex, sumar /reclamos/ al nav del generador y a
+     sitemap.xml. -->
 <meta name="robots" content="noindex, nofollow" />
 <link rel="canonical" href="https://pachoteayuda.ar/reclamos/" />
 <meta property="og:type" content="website" />
@@ -106,6 +107,7 @@
   }
   .reclamos .tipo{font-size:15px;font-weight:800;color:var(--purple-800);}
   .reclamos p{font-size:14.5px;color:var(--muted);}
+  .reclamos li.vacio{grid-column:1/-1;color:var(--muted);text-align:center;}
   .estado{
     border-radius:999px;
     padding:2px 10px;
@@ -129,6 +131,81 @@
     cursor:pointer;
   }
   .reclamos .ver:hover{text-decoration:underline;}
+  /* ---------- MARCAR UN RECLAMO (formulario + avisos) ---------- */
+  .marcar{
+    display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;
+    margin-top:22px;
+  }
+  .marcar-hint{font-size:14.5px;color:var(--muted);flex:1 1 340px;}
+  .btn-primary{
+    display:inline-flex;align-items:center;gap:9px;
+    font-family:inherit;font-size:15px;font-weight:700;
+    color:var(--white);background:var(--purple-900);
+    border:0;border-radius:999px;
+    padding:13px 24px;
+    cursor:pointer;
+  }
+  .btn-primary:hover{background:var(--accent);}
+  .btn-primary[disabled]{opacity:.5;cursor:default;}
+  .btn-primary svg{width:17px;height:17px;flex:0 0 auto;}
+  .btn-secundario{
+    font-family:inherit;font-size:14.5px;font-weight:700;
+    color:var(--accent);background:var(--white);
+    border:1px solid var(--line);border-radius:999px;
+    padding:12px 20px;
+    cursor:pointer;
+  }
+  .btn-secundario:hover{border-color:var(--accent);}
+  .btn-link{
+    font-family:inherit;font-size:14.5px;font-weight:600;
+    color:var(--muted);background:none;border:0;
+    padding:6px 4px;
+    text-decoration:underline;
+    cursor:pointer;
+  }
+  .reclamo{
+    margin-top:18px;
+    background:var(--white);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:22px 24px;
+    display:flex;flex-direction:column;gap:14px;
+  }
+  /* El `display:flex` de arriba le gana al `[hidden]` del navegador: sin esta
+   * regla el formulario se vería siempre. */
+  .reclamo[hidden]{display:none;}
+  .reclamo h2{margin:0;}
+  .reclamo-punto{font-size:14.5px;color:var(--muted);}
+  .reclamo-punto .coords{font-family:'JetBrains Mono',Consolas,monospace;font-size:13.5px;font-weight:600;color:var(--purple-800);}
+  .reclamo-tipos{border:0;display:flex;flex-wrap:wrap;gap:8px 20px;}
+  .reclamo-tipos legend{font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:0;margin-bottom:8px;}
+  .reclamo-tipos label{display:flex;align-items:center;gap:8px;font-size:15px;}
+  .reclamo-campo{display:flex;flex-direction:column;gap:6px;font-size:13.5px;font-weight:700;color:var(--purple-800);}
+  .reclamo-campo .opcional{font-weight:500;color:var(--muted);}
+  .reclamo textarea,.reclamo input[type=text]{
+    font-family:inherit;font-size:15px;color:var(--ink);font-weight:400;
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:11px 13px;
+    width:100%;
+    resize:vertical;
+  }
+  .reclamo textarea:focus,.reclamo input[type=text]:focus{outline:2px solid var(--accent);outline-offset:1px;}
+  .reclamo-acciones{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;}
+  .aviso{
+    margin-top:14px;padding:12px 16px;
+    border:1px solid var(--line);border-radius:12px;
+    background:rgba(68,30,125,.06);
+    color:var(--purple-800);
+    font-size:14.5px;
+  }
+  .aviso--error{border-color:#eec9c9;background:#fdf0f0;color:#8a2020;}
+  .aviso--ok{border-color:#c3e3ce;background:#eefaf1;color:#1f6b3f;}
+  .aviso button{margin-left:8px;}
+  /* Mientras se elige el punto: el mapa lo dice con el cursor. */
+  #mapa.eligiendo{cursor:crosshair;box-shadow:inset 0 0 0 3px var(--accent);}
+  .pin-sel{background:none;border:0;}
   @media (max-width:620px){
     #mapa{height:60vh;}
     .leyenda li.leyenda-total{margin-left:0;}
@@ -168,15 +245,43 @@
 <nav class="breadcrumbs" aria-label="Ruta de navegación"><a href="/">Inicio</a><span>›</span><span>Reclamos</span></nav>
   <h1>Reclamos de vecinos en Bolívar</h1>
   <p class="lead">Qué reclamaron los vecinos y vecinas del municipio, dónde está cada problema y en qué estado va. Cada pin del mapa es un reclamo, del color de su tipo: acumulación de basura o pérdida de agua.</p>
-  <p class="meta" id="meta-reclamos">Datos de ejemplo</p>
+  <p class="meta" id="meta-reclamos">Cargando los reclamos…</p>
+
+  <div class="marcar">
+    <button type="button" class="btn-primary" id="btn-marcar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+      Marcar un reclamo
+    </button>
+    <p class="marcar-hint" id="marcar-hint">Marcá en el mapa el lugar del problema —o usá la ubicación de tu teléfono— y contanos qué pasa. Para dejarlo en el registro hay que iniciar sesión.</p>
+  </div>
+  <p class="aviso" id="aviso" hidden></p>
+
+  <form class="reclamo" id="reclamo" hidden>
+    <h2>Nuevo reclamo</h2>
+    <p class="reclamo-punto">Punto marcado: <span class="coords" id="punto">—</span> <span id="punto-origen"></span></p>
+    <fieldset class="reclamo-tipos">
+      <legend>Tipo de reclamo</legend>
+      <label><input type="radio" name="tipo" value="basura" checked /> Acumulación de basura</label>
+      <label><input type="radio" name="tipo" value="agua" /> Pérdida de agua</label>
+    </fieldset>
+    <label class="reclamo-campo">Descripción
+      <textarea id="descripcion" rows="3" maxlength="600" placeholder="Ej.: contenedor desbordado y bolsas sobre la vereda desde el fin de semana." required></textarea>
+    </label>
+    <label class="reclamo-campo">Barrio o referencia <span class="opcional">(opcional)</span>
+      <input type="text" id="lugar" maxlength="120" placeholder="Ej.: Centro, frente a la plaza" />
+    </label>
+    <div class="reclamo-acciones">
+      <button type="button" class="btn-secundario" id="btn-ubicacion">Usar mi ubicación</button>
+      <button type="submit" class="btn-primary" id="btn-enviar">Registrar reclamo</button>
+      <button type="button" class="btn-link" id="btn-cancelar">Cancelar</button>
+    </div>
+  </form>
 
   <div class="mapa-bloque">
     <div id="mapa" role="region" aria-label="Mapa de los reclamos de San Carlos de Bolívar"></div>
     <noscript><p class="nota">El mapa necesita JavaScript activado.</p></noscript>
     <ul class="leyenda" id="leyenda"></ul>
   </div>
-
-  <p class="nota"><strong>Reclamos de ejemplo:</strong> los 4 reclamos de este mapa son una muestra para probar la página — todavía no se pueden cargar reclamos desde acá y ninguno de estos existe en el registro del municipio. Cuando el registro esté en línea, el mapa y la lista van a mostrar los reclamos reales, con su zona y su estado.</p>
 
   <h2>Los reclamos</h2>
   <ul class="reclamos" id="reclamos"></ul>
@@ -209,56 +314,23 @@
  * OpenStreetMap — mismo criterio que el mapa de maparg, sin deck.gl (que
  * necesita bundler) y sin Mapbox (que necesita token).
  *
- * Los reclamos son datos de EJEMPLO, con la forma que va a tener la respuesta
- * de la API cuando exista el registro (id, tipo, descripcion, lugar, fecha,
- * estado, lat, lon): la página no cambia, cambia de dónde salen los datos.
- * Las coordenadas son puntos del casco urbano de San Carlos de Bolívar.
+ * Los reclamos salen de la API del tenant: `GET /api/reclamos` es público (es
+ * el mapa de los vecinos) y `POST /api/reclamos` exige sesión. La landing
+ * comparte origen con el SPA, así que manda el mismo JWT que el SPA guarda en
+ * localStorage (ver session-menu.js): sin sesión, el reclamo a medio cargar
+ * viaja en sessionStorage y la página manda al login con `?next=` — al volver,
+ * el formulario se reabre con el punto y lo escrito (ese `next` lo respeta
+ * frontend-tenant/src/utils/homePath.ts).
  */
 (function () {
   'use strict';
 
-  var RECLAMOS = [
-    {
-      id: 'RC-1042',
-      tipo: 'basura',
-      descripcion: 'Contenedor desbordado y bolsas sobre la vereda desde el fin de semana.',
-      lugar: 'Centro',
-      fecha: '2026-10-09',
-      estado: 'pendiente',
-      lat: -36.228491,
-      lon: -61.111923
-    },
-    {
-      id: 'RC-1043',
-      tipo: 'agua',
-      descripcion: 'Pérdida de agua en la vereda: corre por la calle desde hace varios días.',
-      lugar: 'Zona norte',
-      fecha: '2026-10-10',
-      estado: 'en curso',
-      lat: -36.226112,
-      lon: -61.117838
-    },
-    {
-      id: 'RC-1044',
-      tipo: 'basura',
-      descripcion: 'Microbasural en el terreno baldío de la esquina.',
-      lugar: 'Zona oeste',
-      fecha: '2026-09-28',
-      estado: 'en curso',
-      lat: -36.231022,
-      lon: -61.122314
-    },
-    {
-      id: 'RC-1045',
-      tipo: 'agua',
-      descripcion: 'Pérdida en la conexión domiciliaria, se inunda el paso peatonal.',
-      lugar: 'Zona sudeste',
-      fecha: '2026-10-07',
-      estado: 'resuelto',
-      lat: -36.233181,
-      lon: -61.107261
-    }
-  ];
+  var API = '/api/reclamos';
+  var TOKEN_KEY = 'token';
+  var USER_KEY = 'user';
+  var BORRADOR_KEY = 'ipa_reclamo_borrador';
+  var LOGIN = '/login';
+  var VOLVER = '/reclamos/?nuevo=1';  // a dónde volver desde el login
 
   /* Tipo de reclamo: etiqueta y color del pin (el mismo en el mapa y en la
    * leyenda). Orden en que se listan en la leyenda. */
@@ -279,6 +351,119 @@
   var ZOOM_LOCALIDAD = 14;
   var ZOOM_RECLAMO = 16;
 
+  var HINT_ELIGIENDO = 'Hacé clic en el mapa para elegir el punto del reclamo (después podés mover el pin).';
+
+  var reclamos = [];     // lo que devuelve la API
+  var marcadores = {};   // id → marcador del reclamo
+  var seleccion = null;  // marcador del punto que se está cargando
+  /* Último punto que se tocó en el mapa, aunque todavía no haya sesión: si el
+   * vecino marca el lugar y recién después inicia sesión, el punto lo espera
+   * (viaja en el borrador, ver datosDelForm). */
+  var ultimoClic = null;
+
+  var form = document.getElementById('reclamo');
+  var aviso = document.getElementById('aviso');
+  var meta = document.getElementById('meta-reclamos');
+  var hint = document.getElementById('marcar-hint');
+  var lista = document.getElementById('reclamos');
+  var campoDescripcion = document.getElementById('descripcion');
+  var campoLugar = document.getElementById('lugar');
+  var btnEnviar = document.getElementById('btn-enviar');
+  var lienzo = document.getElementById('mapa');
+  // El texto de la barra tal como lo escribió la página: se restaura al cerrar
+  // el formulario sin repetir la frase acá (si cambia en el HTML, cambia sola).
+  var hintInicial = hint.textContent;
+
+  /* Escapa lo que escriben los vecinos para el popup del mapa (ahí el HTML se
+   * arma como texto, así que no sirve textContent). */
+  function esc(texto) {
+    return String(texto == null ? '' : texto)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function estadoDe(r) {
+    return ESTADOS[r.estado] || { etiqueta: r.estado, clase: '' };
+  }
+
+  function token() {
+    try { return localStorage.getItem(TOKEN_KEY); } catch (e) { return null; }
+  }
+
+  function olvidarSesion() {
+    try {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+    } catch (e) { /* localStorage bloqueado */ }
+  }
+
+  /* El reclamo a medio cargar tiene que sobrevivir al viaje por el login.
+   * sessionStorage y no localStorage: es intención de esta pestaña, no del
+   * navegador entero. */
+  function leerBorrador() {
+    try { return JSON.parse(sessionStorage.getItem(BORRADOR_KEY) || 'null'); } catch (e) { return null; }
+  }
+
+  function guardarBorrador(datos) {
+    try { sessionStorage.setItem(BORRADOR_KEY, JSON.stringify(datos)); } catch (e) { /* modo privado */ }
+  }
+
+  function borrarBorrador() {
+    try { sessionStorage.removeItem(BORRADOR_KEY); } catch (e) { /* ya no estaba */ }
+  }
+
+  function datosDelForm() {
+    // Sin punto elegido todavía, vale el último lugar que tocó en el mapa.
+    var punto = seleccion ? seleccion.getLatLng() : ultimoClic;
+    var tipo = form.querySelector('input[name=tipo]:checked');
+    return {
+      lat: punto ? punto.lat : null,
+      lon: punto ? punto.lng : null,
+      tipo: tipo ? tipo.value : TIPOS_ORDEN[0],
+      descripcion: campoDescripcion.value,
+      lugar: campoLugar.value
+    };
+  }
+
+  /* Sin sesión no se registra: se guarda lo cargado y se va al login, que
+   * vuelve acá (`?nuevo=1`) porque el SPA respeta el `next`. */
+  function pedirSesion() {
+    guardarBorrador(datosDelForm());
+    window.location.assign(LOGIN + '?next=' + encodeURIComponent(VOLVER));
+  }
+
+  /* Aviso del formulario. `accion` es opcional: { etiqueta, onClick }. */
+  function mostrarAviso(texto, tipo, accion) {
+    aviso.className = 'aviso' + (tipo ? ' aviso--' + tipo : '');
+    aviso.textContent = texto;
+    if (accion) {
+      var boton = document.createElement('button');
+      boton.type = 'button';
+      boton.className = 'btn-secundario';
+      boton.textContent = accion.etiqueta;
+      boton.addEventListener('click', accion.onClick);
+      aviso.appendChild(boton);
+    }
+    aviso.hidden = false;
+  }
+
+  function limpiarAviso() {
+    aviso.hidden = true;
+    aviso.textContent = '';
+  }
+
+  /* Un clic en el mapa sin sesión avisa y ofrece el login, pero no manda solo:
+   * curiosear el mapa no es la intención de registrarse. */
+  function avisoDeSesion() {
+    mostrarAviso('Para dejar el reclamo en el registro hay que iniciar sesión.', 'info', {
+      etiqueta: 'Iniciar sesión',
+      onClick: pedirSesion
+    });
+  }
+
   /* Pin (gota) del color del tipo, para el mapa y para la leyenda: misma
    * geometría que el pin del mapa de maparg (circunferencia de radio 8 con
    * centro en (10, 10) y punta en (10, 27), en un viewBox 20x28). */
@@ -295,23 +480,10 @@
   }
 
   function cantidad(tipo) {
-    return RECLAMOS.filter(function (r) { return r.tipo === tipo; }).length;
+    return reclamos.filter(function (r) { return r.tipo === tipo; }).length;
   }
 
-  /* Leyenda: un renglón por tipo con su color y cuántos hay. */
-  var leyenda = document.getElementById('leyenda');
-  TIPOS_ORDEN.forEach(function (tipo) {
-    var def = TIPOS[tipo];
-    var li = document.createElement('li');
-    li.innerHTML = pinSvg(def.color, 10, 14) + '<span>' + def.etiqueta + ' (' + cantidad(tipo) + ')</span>';
-    leyenda.appendChild(li);
-  });
-  var total = document.createElement('li');
-  total.className = 'leyenda-total';
-  total.textContent = RECLAMOS.length + ' reclamos de ejemplo';
-  leyenda.appendChild(total);
-  document.getElementById('meta-reclamos').textContent =
-    'Datos de ejemplo · ' + RECLAMOS.length + ' reclamos · ' + LOCALIDAD.nombre;
+  /* ---------- mapa ---------- */
 
   var map = L.map('mapa', { scrollWheelZoom: false })
     .setView([LOCALIDAD.lat, LOCALIDAD.lon], ZOOM_LOCALIDAD);
@@ -341,35 +513,41 @@
     });
   });
 
-  /* El popup: id, tipo, descripción, zona, fecha y estado del reclamo. Los
-   * textos salen de RECLAMOS (hoy constantes del archivo): si mañana llegan
-   * de la API hay que escaparlos antes de armar el HTML. */
-  function popupHtml(r) {
-    var estado = ESTADOS[r.estado] || { etiqueta: r.estado, clase: '' };
-    return '<strong>' + r.id + ' · ' + TIPOS[r.tipo].etiqueta + '</strong><br>' +
-      r.descripcion + '<br>' +
-      '<span style="font-family:\'JetBrains Mono\',monospace;font-size:12px;text-transform:uppercase;letter-spacing:.4px">' +
-      r.lugar + ' · ' + fechaCorta(r.fecha) + ' · ' + estado.etiqueta + '</span>';
-  }
-
-  var marcadores = {};
-  RECLAMOS.forEach(function (r) {
-    marcadores[r.id] = L.marker([r.lat, r.lon], { icon: iconos[r.tipo], title: r.id, alt: TIPOS[r.tipo].etiqueta })
-      .addTo(map)
-      .bindPopup(popupHtml(r));
+  /* El pin del punto que se está cargando: más grande, del violeta de la marca
+   * y arrastrable para ajustarlo. */
+  var iconoSeleccion = L.divIcon({
+    className: 'pin-sel',
+    html: pinSvg('#441e7d', 34, 47),
+    iconSize: [34, 47],
+    iconAnchor: [17, 47],
+    popupAnchor: [0, -40]
   });
 
-  /* Lista de reclamos: una tarjeta por reclamo y un botón que lleva el mapa al
-   * pin (es el camino sin mouse: el mapa no es navegable con teclado). */
-  var lista = document.getElementById('reclamos');
-  RECLAMOS.forEach(function (r) {
-    var estado = ESTADOS[r.estado] || { etiqueta: r.estado, clase: '' };
+  /* ---------- dibujar los reclamos ---------- */
+
+  function popupHtml(r) {
+    var estado = estadoDe(r);
+    return '<strong>#' + esc(r.id) + ' · ' + TIPOS[r.tipo].etiqueta + '</strong><br>' +
+      esc(r.descripcion) + '<br>' +
+      '<span style="font-family:\'JetBrains Mono\',monospace;font-size:12px;text-transform:uppercase;letter-spacing:.4px">' +
+      (r.lugar ? esc(r.lugar) + ' · ' : '') + fechaCorta(r.fecha) + ' · ' + estado.etiqueta + '</span>';
+  }
+
+  /* Una tarjeta de la lista. El botón lleva el mapa al pin: es el camino sin
+   * mouse (el mapa no es navegable con teclado). */
+  function tarjeta(r) {
+    var estado = estadoDe(r);
     var li = document.createElement('li');
 
     var fila = document.createElement('div');
     fila.className = 'fila';
-    fila.innerHTML = '<span>' + r.id + '</span>' +
-      '<span class="estado estado--' + estado.clase + '">' + estado.etiqueta + '</span>';
+    var num = document.createElement('span');
+    num.textContent = '#' + r.id;
+    var badge = document.createElement('span');
+    badge.className = 'estado estado--' + estado.clase;
+    badge.textContent = estado.etiqueta;
+    fila.appendChild(num);
+    fila.appendChild(badge);
 
     var tipo = document.createElement('h3');
     tipo.className = 'tipo';
@@ -380,7 +558,7 @@
 
     var lugar = document.createElement('p');
     lugar.className = 'fila';
-    lugar.textContent = r.lugar + ' · ' + fechaCorta(r.fecha);
+    lugar.textContent = (r.lugar ? r.lugar + ' · ' : '') + fechaCorta(r.fecha);
 
     var ver = document.createElement('button');
     ver.type = 'button';
@@ -389,7 +567,7 @@
     ver.addEventListener('click', function () {
       map.setView([r.lat, r.lon], ZOOM_RECLAMO);
       marcadores[r.id].openPopup();
-      document.getElementById('mapa').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      lienzo.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
 
     li.appendChild(fila);
@@ -397,8 +575,256 @@
     li.appendChild(texto);
     li.appendChild(lugar);
     li.appendChild(ver);
-    lista.appendChild(li);
+    return li;
+  }
+
+  function renderLeyenda() {
+    var leyenda = document.getElementById('leyenda');
+    leyenda.innerHTML = '';
+    TIPOS_ORDEN.forEach(function (tipo) {
+      var li = document.createElement('li');
+      li.innerHTML = pinSvg(TIPOS[tipo].color, 10, 14) +
+        '<span>' + TIPOS[tipo].etiqueta + ' (' + cantidad(tipo) + ')</span>';
+      leyenda.appendChild(li);
+    });
+    var total = document.createElement('li');
+    total.className = 'leyenda-total';
+    total.textContent = reclamos.length + (reclamos.length === 1 ? ' reclamo' : ' reclamos');
+    leyenda.appendChild(total);
+  }
+
+  function renderTodo() {
+    Object.keys(marcadores).forEach(function (id) { map.removeLayer(marcadores[id]); });
+    marcadores = {};
+    lista.innerHTML = '';
+
+    reclamos.forEach(function (r) {
+      marcadores[r.id] = L.marker([r.lat, r.lon], {
+        icon: iconos[r.tipo],
+        title: '#' + r.id,
+        alt: TIPOS[r.tipo].etiqueta
+      }).addTo(map).bindPopup(popupHtml(r));
+      lista.appendChild(tarjeta(r));
+    });
+
+    if (!reclamos.length) {
+      var vacio = document.createElement('li');
+      vacio.className = 'vacio';
+      vacio.textContent = 'Todavía no hay reclamos registrados. Marcá el primero en el mapa.';
+      lista.appendChild(vacio);
+    }
+
+    renderLeyenda();
+    meta.textContent = (reclamos.length
+      ? reclamos.length + (reclamos.length === 1 ? ' reclamo' : ' reclamos')
+      : 'Todavía no hay reclamos') + ' · ' + LOCALIDAD.nombre;
+  }
+
+  /* El listado es público: el mapa se ve entero sin cuenta. */
+  function cargar() {
+    fetch(API, { credentials: 'same-origin' })
+      .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function (datos) {
+        reclamos = datos || [];
+        renderTodo();
+      })
+      .catch(function () {
+        meta.textContent = 'No pudimos cargar los reclamos · ' + LOCALIDAD.nombre;
+        mostrarAviso('No pudimos cargar los reclamos del mapa. Recargá la página para volver a intentar.', 'error');
+      });
+  }
+
+  /* ---------- marcar un reclamo ---------- */
+
+  function abrirForm() {
+    form.hidden = false;
+    lienzo.classList.add('eligiendo');
+    hint.textContent = HINT_ELIGIENDO;
+    var borrador = leerBorrador();
+    if (!borrador) return;
+    // Vuelta del login: se retoma lo que había quedado a medio cargar.
+    campoDescripcion.value = borrador.descripcion || '';
+    campoLugar.value = borrador.lugar || '';
+    var tipo = form.querySelector('input[name=tipo][value="' + borrador.tipo + '"]');
+    if (tipo) tipo.checked = true;
+    if (borrador.lat != null && borrador.lon != null) {
+      marcar(borrador.lat, borrador.lon, 'elegido antes de iniciar sesión');
+    }
+  }
+
+  function cerrarForm() {
+    form.hidden = true;
+    lienzo.classList.remove('eligiendo');
+    hint.textContent = hintInicial;
+    if (seleccion) {
+      map.removeLayer(seleccion);
+      seleccion = null;
+    }
+    btnEnviar.disabled = true;
+  }
+
+  function cancelar() {
+    borrarBorrador();
+    cerrarForm();
+    form.reset();
+    limpiarAviso();
+  }
+
+  /* Pone (o mueve) el pin del punto que se está cargando. */
+  function marcar(lat, lon, origen) {
+    if (!seleccion) {
+      seleccion = L.marker([lat, lon], { icon: iconoSeleccion, draggable: true, title: 'Punto del reclamo' }).addTo(map);
+      seleccion.on('dragend', function () {
+        var punto = seleccion.getLatLng();
+        mostrarPunto(punto.lat, punto.lng, 'ajustado en el mapa');
+      });
+    } else {
+      seleccion.setLatLng([lat, lon]);
+    }
+    btnEnviar.disabled = false;
+    mostrarPunto(lat, lon, origen);
+  }
+
+  function mostrarPunto(lat, lon, origen) {
+    document.getElementById('punto').textContent = lat.toFixed(6) + ', ' + lon.toFixed(6);
+    document.getElementById('punto-origen').textContent = origen ? '(' + origen + ')' : '';
+  }
+
+  /* La ubicación del teléfono como alternativa al clic: es lo que quiere el
+   * vecino parado frente al problema. */
+  function usarUbicacion() {
+    if (!navigator.geolocation) {
+      mostrarAviso('Este navegador no comparte la ubicación: marcá el punto en el mapa.', 'error');
+      return;
+    }
+    mostrarAviso('Buscando tu ubicación…', 'info');
+    navigator.geolocation.getCurrentPosition(
+      function (posicion) {
+        limpiarAviso();
+        map.setView([posicion.coords.latitude, posicion.coords.longitude], ZOOM_RECLAMO);
+        marcar(posicion.coords.latitude, posicion.coords.longitude, 'tu ubicación');
+      },
+      function (error) {
+        mostrarAviso(error && error.code === 1
+          ? 'El navegador bloqueó la ubicación. Permitila desde el candado de la barra de direcciones, o marcá el punto en el mapa.'
+          : 'No pudimos obtener tu ubicación: marcá el punto en el mapa.', 'error');
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
+    );
+  }
+
+  function enviar(evento) {
+    evento.preventDefault();
+    if (!seleccion) {
+      mostrarAviso('Marcá el punto en el mapa (o usá tu ubicación) antes de registrar.', 'error');
+      return;
+    }
+    var descripcion = campoDescripcion.value.trim();
+    if (!descripcion) {
+      mostrarAviso('Contanos qué pasa: la descripción es obligatoria.', 'error');
+      campoDescripcion.focus();
+      return;
+    }
+    if (!token()) {
+      pedirSesion();
+      return;
+    }
+
+    var punto = seleccion.getLatLng();
+    var tipo = form.querySelector('input[name=tipo]:checked');
+    btnEnviar.disabled = true;
+    mostrarAviso('Registrando el reclamo…', 'info');
+
+    fetch(API, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + token()
+      },
+      body: JSON.stringify({
+        tipo: tipo ? tipo.value : TIPOS_ORDEN[0],
+        descripcion: descripcion,
+        lugar: campoLugar.value.trim() || null,
+        lat: punto.lat,
+        lon: punto.lng
+      })
+    }).then(function (res) {
+      if (res.status === 401 || res.status === 403) {
+        // La sesión venció mientras completaba: se guarda y se vuelve al login.
+        olvidarSesion();
+        pedirSesion();
+        return null;
+      }
+      if (!res.ok) {
+        return res.json().catch(function () { return null; }).then(function (cuerpo) {
+          var detalle = cuerpo && typeof cuerpo.detail === 'string' ? cuerpo.detail : null;
+          throw new Error(detalle || 'No pudimos registrar el reclamo (error ' + res.status + ').');
+        });
+      }
+      return res.json();
+    }).then(function (nuevo) {
+      if (!nuevo) return;  // se fue al login
+      reclamos.unshift(nuevo);
+      renderTodo();
+      cancelar();          // el formulario queda listo para el próximo reclamo
+      map.setView([nuevo.lat, nuevo.lon], ZOOM_RECLAMO);
+      marcadores[nuevo.id].openPopup();
+      mostrarAviso('¡Listo! El reclamo #' + nuevo.id + ' quedó registrado: el municipio lo va a revisar.', 'ok');
+    }).catch(function (error) {
+      btnEnviar.disabled = false;
+      mostrarAviso(error && error.message ? error.message : 'No pudimos registrar el reclamo. Probá de nuevo.', 'error');
+    });
+  }
+
+  /* ---------- eventos ---------- */
+
+  document.getElementById('btn-marcar').addEventListener('click', function () {
+    if (!token()) {
+      // Es la acción explícita de marcar: se guarda lo que haya y se va al
+      // login, que vuelve acá con el formulario abierto (ver pedirSesion).
+      // Un clic en el mapa, en cambio, sólo avisa (avisoDeSesion).
+      pedirSesion();
+      return;
+    }
+    if (form.hidden) abrirForm();
+    lienzo.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
+
+  document.getElementById('btn-ubicacion').addEventListener('click', usarUbicacion);
+  document.getElementById('btn-cancelar').addEventListener('click', cancelar);
+  form.addEventListener('submit', enviar);
+
+  /* Un clic en el mapa es "quiero marcar acá". */
+  map.on('click', function (evento) {
+    ultimoClic = evento.latlng;  // LatLng, igual shape que seleccion.getLatLng()
+    if (!token()) {
+      avisoDeSesion();
+      return;
+    }
+    if (form.hidden) abrirForm();
+    marcar(evento.latlng.lat, evento.latlng.lng, 'marcado en el mapa');
+  });
+
+  /* ---------- arranque ---------- */
+
+  btnEnviar.disabled = true;
+  cargar();
+
+  /* Vuelta del login (`?nuevo=1`, ver pedirSesion): se reabre el formulario con
+   * el punto y lo escrito, y se limpia el parámetro para que un recargue no lo
+   * vuelva a abrir. */
+  if (window.location.search.indexOf('nuevo=1') !== -1) {
+    if (token()) {
+      abrirForm();
+      try { history.replaceState(null, '', '/reclamos/'); } catch (e) { /* sin history */ }
+    } else {
+      avisoDeSesion();
+    }
+  }
 })();
 </script>
 </body>
