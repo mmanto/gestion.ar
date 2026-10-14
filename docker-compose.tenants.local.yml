@@ -124,7 +124,7 @@ services:
       # .html, sus assets bajo /landing/, las páginas generadas (/normas/,
       # /tramites/, /residuos/) y /reclamos/; todo lo demás (/login,
       # /chat/c/..., /api/*, /ws/*) cae en el SPA del tenant (priority 1 < 10).
-      - 'traefik.http.routers.landing-pachoteayuda.rule=Host(`pachoteayuda.ar.localhost`) && (Path(`/`) || PathRegexp(`^/.*\.html$`) || Path(`/chat-widget.js`) || Path(`/robots.txt`) || Path(`/sitemap.xml`) || Path(`/reclamos`) || PathPrefix(`/reclamos/`) || PathPrefix(`/landing/`) || PathPrefix(`/normas/`) || PathPrefix(`/tramites/`) || PathPrefix(`/residuos/`))'
+      - 'traefik.http.routers.landing-pachoteayuda.rule=Host(`pachoteayuda.ar.localhost`) && (Path(`/`) || PathRegexp(`^/.*\.html$`) || Path(`/chat-widget.js`) || Path(`/session-menu.js`) || Path(`/robots.txt`) || Path(`/sitemap.xml`) || Path(`/reclamos`) || PathPrefix(`/reclamos/`) || PathPrefix(`/landing/`) || PathPrefix(`/normas/`) || PathPrefix(`/tramites/`) || PathPrefix(`/residuos/`))'
       - "traefik.http.routers.landing-pachoteayuda.entrypoints=web"
       - "traefik.http.routers.landing-pachoteayuda.priority=10"
       - "traefik.http.routers.landing-pachoteayuda.service=landing-pachoteayuda"

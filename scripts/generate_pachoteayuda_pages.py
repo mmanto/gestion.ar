@@ -349,6 +349,7 @@ def page(*, title: str, description: str, canonical: str, body: str,
 </footer>
 <script>window.__IPA_CHAT__ = {{ openOnLoad: false }};</script>
 <script src="/chat-widget.js" defer></script>
+<script src="/session-menu.js" defer></script>
 <script>
   document.querySelectorAll('[data-open-chat]').forEach(function (btn) {{
     btn.addEventListener('click', function () {{

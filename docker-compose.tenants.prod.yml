@@ -135,7 +135,7 @@ services:
       - "traefik.docker.network=traefik_public"
 
       # ── pachoteayuda ────────────────────────────────────────────────────
-      - 'traefik.http.routers.landing-pachoteayuda.rule=Host(`pachoteayuda.ar`) && (Path(`/`) || PathRegexp(`^/.*\.html$`) || Path(`/chat-widget.js`) || Path(`/robots.txt`) || Path(`/sitemap.xml`) || Path(`/reclamos`) || PathPrefix(`/reclamos/`) || PathPrefix(`/landing/`) || PathPrefix(`/normas/`) || PathPrefix(`/tramites/`) || PathPrefix(`/residuos/`))'
+      - 'traefik.http.routers.landing-pachoteayuda.rule=Host(`pachoteayuda.ar`) && (Path(`/`) || PathRegexp(`^/.*\.html$`) || Path(`/chat-widget.js`) || Path(`/session-menu.js`) || Path(`/robots.txt`) || Path(`/sitemap.xml`) || Path(`/reclamos`) || PathPrefix(`/reclamos/`) || PathPrefix(`/landing/`) || PathPrefix(`/normas/`) || PathPrefix(`/tramites/`) || PathPrefix(`/residuos/`))'
       - "traefik.http.routers.landing-pachoteayuda.entrypoints=websecure"
       - "traefik.http.routers.landing-pachoteayuda.tls.certresolver=letsencrypt"
       - "traefik.http.routers.landing-pachoteayuda.priority=10"

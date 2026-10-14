@@ -7,6 +7,26 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **Menú de sesión en la landing de pachoteayuda (nombre del usuario + "Salir")**. En el menú
+  superior de las páginas de la landing —la de reclamos y las generadas de `/normas/`,
+  `/tramites/` y `/residuos/`— aparece a la derecha el nombre del usuario con sesión y un
+  desplegable con su correo y **Salir**. La landing es estática y no tiene login propio: el menú
+  lo agrega `sites/pachoteayuda-landing/session-menu.js` (vanilla JS) leyendo la sesión que el
+  SPA del tenant guarda en `localStorage` en el mismo origen (`'token'` y `'user'`, ver
+  `frontend-tenant/src/services/tokenStorage.ts`) y la valida contra `GET /api/auth/me`. Sin
+  sesión válida no se dibuja nada —un vecino sin cuenta ve el header como hasta ahora— y con un
+  token vencido se limpia el navegador, igual que hace el SPA. "Salir" hace lo mismo que el
+  logout del SPA (borra token y usuario; el JWT no se revoca, no hay endpoint de backend) y
+  recarga la página. Los estilos van inyectados desde el propio script —igual que `chat-widget.js`,
+  no en `landing/seo.css`— porque el service worker del SPA del tenant
+  (`frontend-tenant/public/sw.js`, scope `/`) cachea para siempre los assets de nombre fijo de
+  este origen: un cambio en el CSS compartido no llegaría a los navegadores que ya entraron al
+  panel hasta que cambie su `CACHE_NAME`. El nav se corre a la derecha para dejar el menú contra
+  el borde y en mobile el menú se acomoda al lado del logo. Ruteo: `/session-menu.js`
+  sumado al rule del router `landing-pachoteayuda` en prod y local, más el location sin caché en
+  el nginx de la landing (mismo criterio que `chat-widget.js`, que también es un nombre fijo
+  entre redeploys). El `<script>` va además en el template del generador, así que las ~3.900
+  páginas generadas lo incluyen. **Requiere** rebuild + redeploy del servicio `landing`.
 - **Página de reclamos en la landing de pachoteayuda (`/reclamos/`), con los reclamos simulados
   del mapa de maparg**. Página estática versionada
   (`sites/pachoteayuda-landing/reclamos/index.html`): mapa Leaflet 1.9.4 (CDN con SRI) sobre las
