@@ -38,6 +38,7 @@ sqlalchemy==2.0.46
 asyncpg==0.31.0
 alembic==1.18.4
 psycopg2-binary==2.9.11
+
 # PASO 9: Push notifications nativas (FCM/APNs) — ver ADR-007 en docs/dev/DECISIONS.md
 firebase-admin==6.0.0
 # aioapns (no apns2): apns2 depende de hyper==0.7.0, que fija h2/hyperframe en
@@ -46,3 +47,8 @@ firebase-admin==6.0.0
 # así que esa combinación rompe toda la app (Claude/DeepSeek incluidos), no
 # solo el envío de push iOS.
 aioapns==4.0
+
+# PASO 10: Canal de voz (proxy WS a Deepgram Agent) — ver ADR-034.
+# Fijado a 12.x: uvicorn 0.27 ya lo trae transitivamente y la API
+# `additional_headers` no existe en versiones anteriores.
+websockets==12.0

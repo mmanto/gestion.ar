@@ -2,7 +2,7 @@
  * Channel types - TypeScript interfaces for Channel entity
  */
 
-export type ChannelType = 'whatsapp' | 'telegram' | 'web' | 'pwa';
+export type ChannelType = 'whatsapp' | 'telegram' | 'web' | 'pwa' | 'voice';
 export type ChannelStatus = 'pending' | 'active' | 'inactive' | 'error';
 export type WhatsAppProvider = 'meta' | 'twilio';
 
@@ -54,6 +54,12 @@ export interface PwaConfig {
   vapid_subject?: string;
 }
 
+export interface VoiceConfig {
+  listen_model?: string;
+  language?: string;
+  voice_model?: string;
+}
+
 export interface Channel {
   channel_id: string;
   bot_id: string;
@@ -65,6 +71,7 @@ export interface Channel {
   telegram_config?: TelegramConfig;
   web_config?: WebConfig;
   pwa_config?: PwaConfig;
+  voice_config?: VoiceConfig;
   webhook_url?: string;
   created_at: string;
   updated_at: string;
@@ -83,6 +90,7 @@ export interface ChannelCreate {
   telegram_config?: TelegramConfig;
   web_config?: WebConfig;
   pwa_config?: PwaConfig;
+  voice_config?: VoiceConfig;
   webhook_url?: string;
 }
 
@@ -94,6 +102,7 @@ export interface ChannelUpdate {
   telegram_config?: Partial<TelegramConfig>;
   web_config?: Partial<WebConfig>;
   pwa_config?: Partial<PwaConfig>;
+  voice_config?: Partial<VoiceConfig>;
   webhook_url?: string;
 }
 

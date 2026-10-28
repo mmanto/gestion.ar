@@ -6,6 +6,7 @@ import type {
   WhatsAppConfig,
   TelegramConfig,
   WhatsAppProvider,
+  VoiceConfig,
 } from '../../types/channel.types';
 import type { TenantUser } from '../../types/tenant.types';
 
@@ -37,6 +38,7 @@ export const ChannelEditForm = ({ channel, tenantUsers, onSave, onCancel, saving
     webhook_url: string;
     whatsapp_config?: WhatsAppConfig;
     telegram_config?: TelegramConfig;
+    voice_config?: VoiceConfig;
   }>({
     name: channel.name,
     status: channel.status,
@@ -48,6 +50,7 @@ export const ChannelEditForm = ({ channel, tenantUsers, onSave, onCancel, saving
     telegram_config: channel.telegram_config
       ? { ...channel.telegram_config }
       : undefined,
+    voice_config: channel.voice_config ? { ...channel.voice_config } : {},
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -126,6 +129,10 @@ export const ChannelEditForm = ({ channel, tenantUsers, onSave, onCancel, saving
 
     if (channel.channel_type === 'telegram' && formData.telegram_config) {
       updateData.telegram_config = formData.telegram_config;
+    }
+
+    if (channel.channel_type === 'voice') {
+      updateData.voice_config = formData.voice_config || {};
     }
 
     await onSave(updateData);
@@ -505,6 +512,42 @@ export const ChannelEditForm = ({ channel, tenantUsers, onSave, onCancel, saving
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 placeholder="Secret para validar webhooks (opcional)"
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {channel.channel_type === 'voice' && (
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Voz (Deepgram)</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Voz del agente (Aura-2, español)
+              </label>
+              <select
+                value={formData.voice_config?.voice_model || 'aura-2-celeste-es'}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    voice_config: { ...formData.voice_config, voice_model: e.target.value },
+                  })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="aura-2-celeste-es">Celeste</option>
+                <option value="aura-2-estrella-es">Estrella</option>
+                <option value="aura-2-nestor-es">Néstor</option>
+                <option value="aura-2-sirio-es">Sirio</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+              <div>
+                Modelo STT: <span className="font-medium">nova-3</span>
+              </div>
+              <div>
+                Idioma: <span className="font-medium">es</span>
+              </div>
             </div>
           </div>
         </div>

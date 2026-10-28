@@ -13,6 +13,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import AsyncSessionLocal
+from app.db.models import Bot as BotModel
 from app.db.models import Client as ClientModel
 from app.db.models import Conversation as ConversationModel
 from app.db.models import Message as MessageModel
@@ -145,9 +146,21 @@ class ConversationService:
         metadata = metadata or {}
 
         async with AsyncSessionLocal() as session:
+            # El tenant sale del bot (fuente de verdad del aislamiento). Antes
+            # quedaba NULL y solo clientes/canales lo llevaban; el canal de voz
+            # necesita la conversación atribuida al tenant que resolvió la key.
+            tenant_id = None
+            if bot_id:
+                tenant_id = (
+                    await session.execute(
+                        select(BotModel.tenant_id).where(BotModel.bot_id == bot_id)
+                    )
+                ).scalars().first()
+
             session.add(ConversationModel(
                 conversation_id=conversation_id,
                 bot_id=bot_id,
+                tenant_id=tenant_id,
                 client_id=client_id,
                 user_id=user_id,
                 channel=channel,

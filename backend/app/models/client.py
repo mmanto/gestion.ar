@@ -26,6 +26,7 @@ class ClientSource(str, Enum):
     WHATSAPP = "whatsapp"
     TELEGRAM = "telegram"
     WEB = "web"
+    VOICE = "voice"
     MANUAL = "manual"
 
 

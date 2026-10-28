@@ -37,6 +37,7 @@ from app.models.push_subscription import SendNotificationRequest
 from app.routers.whatsapp_webhook_router import router as whatsapp_webhook_router
 from app.routers.telegram_webhook_router import router as telegram_webhook_router
 from app.routers.web_chat_router import router as web_chat_router
+from app.routers.voice_router import router as voice_router
 from app.routers.staff_chat_router import router as staff_chat_router
 from app.routers.pwa_router import router as pwa_router
 from app.routers.public_router import router as public_router
@@ -82,6 +83,7 @@ app.include_router(whatsapp_webhook_router)  # Webhooks de WhatsApp multi-provee
 app.include_router(telegram_webhook_router)  # Webhooks de Telegram por canal
 app.include_router(staff_chat_router)          # WebSocket chat staff (agentes)
 app.include_router(web_chat_router)          # QR code + WebSocket chat web
+app.include_router(voice_router)             # Canal de voz Deepgram (proxy WS + bootstrap por API key)
 app.include_router(pwa_router)               # PWA Push Notifications (VAPID)
 app.include_router(public_router)            # Endpoints públicos sin JWT
 app.include_router(reclamos_router)          # Reclamos de vecinos georreferenciados (mapa de la landing de pachoteayuda)

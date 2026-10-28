@@ -210,6 +210,54 @@ curl "https://api.telegram.org/botTU_TOKEN/getWebhookInfo"
 
 ---
 
+## Configurar canal de voz (Deepgram) y el APK
+
+El canal de voz no requiere webhook ni credenciales en el cliente: el backend
+habla con Deepgram (`DEEPGRAM_API_KEY`) y el APK sólo se conecta al proxy.
+
+1. **Backend**: agregar `DEEPGRAM_API_KEY` (y opcionalmente `VOICE_THINK`) a
+   `.env.dev`; reiniciar `app`. El canal usa el prompt y las tools del bot.
+2. **Canal**: crear un canal `voice` desde `/bots/{bot_id}/channels` (pestaña
+   Canales → “Voz (Deepgram Voice Agent)”) y activarlo.
+3. **API key del tenant** (se muestra una sola vez):
+   ```bash
+   curl -X POST "http://localhost:8000/api/admin/tenants/TENANT_ID/api-key?rotate=true" \
+     -H "Authorization: Bearer $SUPER_ADMIN_JWT"
+   ```
+   Verificar con `GET /api/public/voice/config` usando
+   `Authorization: Bearer tk_live_…`.
+4. **APK** (`~/workspace/deepgram_chat`):
+   - `.env`: `BACKEND_URL=http://127.0.0.1:8000` y `TENANT_KEY=tk_live_…`
+     (o dejar `TENANT_KEY` vacía y cargarla en Configuración dentro de la app).
+   - Compilar/instalar:
+     ```bash
+     JAVA_HOME=/usr/lib/jvm/java-21-openjdk \
+       dx build --platform android --target aarch64-linux-android
+     adb install -r "$CARGO_TARGET_DIR/dx/deepgram-chat/debug/android/app/app/build/outputs/apk/debug/app-debug.apk"
+     adb reverse tcp:8000 tcp:8000   # si BACKEND_URL usa 127.0.0.1
+     ```
+   - En escritorio: `dx serve` con el mismo `.env` (el runtime lo lee sin
+     recompilar).
+
+Verificación rápida del backend (sin micrófono):
+
+```bash
+KEY=tk_live_…
+curl -s -X POST http://localhost:8000/api/public/voice/session \
+  -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' \
+  -d '{"device_id":"dev-test"}' | jq
+# → tenants/bot/channel/greeting/ws_path/ticket
+```
+
+Con el micrófono, la app muestra el nombre del bot/tenant, abre el micrófono
+tras `SettingsApplied` y cada turno queda en `conversations` con
+`channel='voice'` y `tenant_id` del bot.
+
+> `getUserMedia` exige `https` o `localhost`. Para probar desde el teléfono
+> contra la LAN, usá `adb reverse` y apuntá a `localhost`.
+
+---
+
 ## Configurar push notifications VAPID
 
 ```bash

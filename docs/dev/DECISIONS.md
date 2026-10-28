@@ -2050,3 +2050,107 @@ Opción 2 (`app/routers/reclamos_router.py`, tabla `reclamos`), con estos recort
   `POST /api/reclamos` siguen aceptando el JWT de un usuario deshabilitado (sí se
   aplica en el login). Verificado al probar el manejo de sesión vencida; queda
   como deuda aparte, no de este ADR.
+
+---
+
+## ADR-034: El canal de voz es un proxy server-side a Deepgram Agent
+
+**Estado:** Aceptado
+**Fecha:** 2026-10-28
+
+### Contexto
+Se sumó un canal de voz para la PWA y el APK (`~/workspace/deepgram_chat`, Rust +
+Dioxus). El cliente original hablaba **directo** con
+`wss://agent.deepgram.com/v1/agent/converse` usando una API key de Deepgram
+pegada en el dispositivo y armaba su propio `Settings` (prompt, tools, LLM).
+
+Eso no sirve para gestion.ar: la key de Deepgram quedaría en el APK, el prompt
+y las tools del bot no serían los del tenant, y cada turno no se persistiría en
+`conversations`/`messages` ni llegaría a la bandeja de staff.
+
+### Decisión
+El backend actúa de proxy WebSocket y es dueño de la sesión:
+
+- `DEEPGRAM_API_KEY` sólo vive en el servidor. `app/services/voice_session_service.py`
+  arma `Settings` (`listen=nova-3/es`, `speak=aura-2-*-es`, `think` gestionado o
+  BYO según `VOICE_THINK`) y las `functions`.
+- Las tools se ejecutan **in-process**, en el mismo proceso que sostiene el
+  socket: las contribuciones sin estado de `AgentService.build_tools`
+  (calificación por semáforo + fuentes públicas) y RAG si `bot.config.use_rag`.
+  No corren interceptores pre-LLM ni widgets de módulos (el turno lo decide el
+  LLM de Deepgram).
+- El cliente no envía `Settings`; `Settings`/`UpdateThink`/`UpdatePrompt`/
+  `UpdateSpeak` del cliente se ignoran en el puente.
+- Cada `ConversationText` se persiste (`conversations.channel='voice'`,
+  `clients.source='voice'`) y el turno del usuario dispara
+  `notify_staff_of_client_message`. El costo se estima por minuto
+  (`VOICE_COST_PER_MINUTE_USD`, default 0.075).
+- El canal es aditivo: `ChannelType.VOICE`, `channels.voice_config` (JSONB),
+  `ClientSource.VOICE`. WhatsApp, Telegram, web y PWA no cambian.
+
+### Opciones consideradas
+1. **Cliente directo a Deepgram con una key temporal por sesión**: Deepgram
+   tendría que emitir tokens efímeros y el prompt/tools seguirían en el cliente;
+   persistencia y staff quedarían fuera.
+2. **Proxy server-side** (elegida): una sola fuente de verdad, key y prompt en
+   el servidor, tools reutilizadas, persistencia y staff gratis.
+
+### Consecuencias
+- `websockets==12.0` queda fijado (uvicorn 0.27 lo trae transitivamente; la API
+  `additional_headers` no existe en versiones anteriores).
+- El prompt con LLM **gestionado** tiene tope de 25 000 chars; con
+  `VOICE_THINK=deepseek|claude` no. `OLLAMA` cae a gestionado (no es alcanzable
+  desde Deepgram).
+- Límite de 45 conexiones concurrentes por cuenta Deepgram y costo por minuto:
+  el canal de voz no es gratis y debe rate-limitearse por tenant/dispositivo.
+- El WS abierto por `channel_id` (sin ticket) mantiene la capacidad del QR web;
+  para el APK, el ticket corto evita que la key viaje en la URL.
+
+---
+
+## ADR-035: La API key de tenant es aleatoria y se guarda como SHA-256
+
+**Estado:** Aceptado
+**Fecha:** 2026-10-28
+
+### Contexto
+El APK de voz necesita identificar a qué tenant pertenece sin login de usuario
+y sin que el servidor reciba un `tenant_id`/`channel_id` elegido por el
+cliente. Se pidió una "key estilo hash" asociada al tenant.
+
+`tenant_id` y `channel_id` son **públicos** (`/api/public/tenants/{id}`,
+`/api/public/channels/{id}` y el QR), así que un hash derivado de ellos no es
+un secreto.
+
+### Decisión
+- Se emite `tk_live_` + `secrets.token_urlsafe(32)` (256 bits) desde
+  `POST /api/admin/tenants/{id}/api-key` (super_admin). Se muestra **una sola
+  vez**; en `tenants.api_key_hash` queda sólo el SHA-256 (índice único).
+- La resolución es por hash indexado (`TenantService.get_tenant_by_api_key`),
+  sin comparar la key en claro en Python. `rotate=true` reemplaza la anterior;
+  `DELETE` la revoca.
+- Es el mismo patrón de `devbout-appointments` (`docs/dev/API.md` §1.2): una
+  convención del ecosistema, no una invención de este repo.
+- El APK hace `POST /api/public/voice/session` con `Authorization: Bearer
+  tk_live_…`; recibe tenant/bot/canal, saludo y un **ticket JWT de 60 s**
+  (`purpose=voice_ws`) para abrir el WebSocket. La key nunca va en la URL.
+
+### Opciones consideradas
+1. **`channel_id` como key**: cero cambios, pero no es por tenant, no se revoca
+   y ya es público.
+2. **Hash de `tenant_id`**: adivinable (el id es público). Descartado.
+3. **HMAC(secreto, tenant_id)**: sin storage, pero rotar el secreto invalida a
+   todos los tenants.
+4. **`tk_live_…` + SHA-256** (elegida).
+
+### Consecuencias
+- La key en un APK es extraíble: se acepta como **capacidad acotada** al canal
+  de voz del tenant (no da JWT, panel ni DB). Si se distribuye una APK por
+  tenant, conviene rotarla; si la APK es genérica, la key se ingresa en
+  Configuración y se guarda en `localStorage`.
+- No hay caché de resolución: revocar/rotar tiene efecto inmediato.
+- El ticket se firma con `JWT_SECRET_KEY`; los JWT de usuario no llevan
+  `purpose=voice_ws`, así que no sirven para abrir el WS de voz.
+- Queda como deuda: rate limiting por key/dispositivo y uso de un solo ticket
+  (hoy el TTL de 60 s acota la ventana, pero el mismo ticket puede reusarse
+  dentro de ella).

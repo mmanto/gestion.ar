@@ -59,6 +59,11 @@ class Tenant(Base):
     # Antes se inyectaban por contenedor (TENANT_ID/STATS_TWO_COLS_MOBILE);
     # ahora viven en la BD para servir a un único contenedor frontend-tenant.
     settings = Column(JSONB, nullable=False, default=dict, server_default="{}")
+    # SHA-256 de la API key del tenant (`tk_live_…`), nunca la key en claro.
+    # La usa el cliente de voz (APK/PWA) para resolver tenant → canal de voz
+    # sin JWT de usuario (ver ADR-035). Nullable: los tenants viejos no
+    # tienen key hasta que el super_admin la emita.
+    api_key_hash = Column(Text, nullable=True)
     # Todo tenant está suscripto a un plan específico (ver estrategia de
     # facturación) — FK a plans, no nullable (se backfillea en la migración
     # que introduce esta columna).
@@ -68,6 +73,9 @@ class Tenant(Base):
 
     __table_args__ = (
         Index("ix_tenants_domain", "domain", unique=True, postgresql_where=text("domain IS NOT NULL")),
+        # Postgres permite múltiples NULL en un índice único: solo las keys
+        # emitidas quedan restringidas a un tenant.
+        Index("ix_tenants_api_key_hash", "api_key_hash", unique=True),
         Index("ix_tenants_status", "status"),
         Index("ix_tenants_plan_id", "plan_id"),
         CheckConstraint("status IN ('active', 'suspended', 'trial')", name="ck_tenants_status"),
@@ -252,6 +260,7 @@ class Channel(Base):
     telegram_config = Column(JSONB, nullable=True)
     web_config = Column(JSONB, nullable=True)
     pwa_config = Column(JSONB, nullable=True)
+    voice_config = Column(JSONB, nullable=True)
     webhook_url = Column(Text, nullable=True)
     total_messages_received = Column(Integer, nullable=False, default=0)
     total_messages_sent = Column(Integer, nullable=False, default=0)

@@ -3,6 +3,7 @@ Tenant Service - CRUD de tenants y usuarios de administración general
 (ver estrategia multi-tenant, docs/dev/DECISIONS.md).
 """
 
+import secrets
 import uuid
 from typing import Dict, Optional
 
@@ -20,6 +21,7 @@ from app.db.models import (
     User as UserModel,
 )
 from app.models.tenant import Tenant, TenantCreate, TenantStatus, TenantUpdate
+from app.services.device_service import sha256_hex
 
 # Sufijo reservado por RFC 6761: cualquier *.localhost resuelve a loopback, así
 # que en dev local un tenant con dominio propio se abre en <dominio>.localhost
@@ -120,6 +122,69 @@ class TenantService:
                     setattr(row, k, v)
             await session.commit()
             await session.refresh(row)
+            return _to_tenant(row)
+
+    # ── API key del tenant (canal de voz / clientes server-side) ──────────
+    #
+    # Mismo patrón que devbout-appointments (docs/dev/API.md §1.2): la key se
+    # muestra en claro una sola vez y en la BD queda solo su SHA-256. No se
+    # deriva del tenant_id (que es público): es un secreto aleatorio.
+
+    @staticmethod
+    def _generate_key() -> tuple[str, str]:
+        key = "tk_live_" + secrets.token_urlsafe(32)
+        return key, sha256_hex(key)
+
+    async def issue_api_key(self, tenant_id: str, rotate: bool = False) -> Optional[str]:
+        """Emite una key nueva y devuelve la key en claro (única vez).
+
+        - `rotate=False` y el tenant ya tiene key → no toca nada y devuelve None.
+        - `rotate=True` reemplaza la anterior (la vieja deja de resolver al
+          instante, sin caché).
+        """
+        key, key_hash = self._generate_key()
+        async with AsyncSessionLocal() as session:
+            row = await session.get(TenantModel, tenant_id)
+            if not row:
+                raise LookupError(tenant_id)
+            if row.api_key_hash and not rotate:
+                return None
+            row.api_key_hash = key_hash
+            await session.commit()
+            return key
+
+    async def has_api_key(self, tenant_id: str) -> bool:
+        async with AsyncSessionLocal() as session:
+            row = await session.get(TenantModel, tenant_id)
+            return bool(row and row.api_key_hash)
+
+    async def clear_api_key(self, tenant_id: str) -> bool:
+        """Revoca la key del tenant (los clientes pasan a 401)."""
+        async with AsyncSessionLocal() as session:
+            row = await session.get(TenantModel, tenant_id)
+            if not row:
+                return False
+            row.api_key_hash = None
+            await session.commit()
+            return True
+
+    async def get_tenant_by_api_key(self, key: str) -> Optional[Tenant]:
+        """Resuelve el tenant por el hash de la key presentada.
+
+        Lookup indexado por `api_key_hash`; no se compara la key en claro en
+        Python ni se loguea. Un tenant suspendido no resuelve (el caller
+        devuelve 403 con el mismo criterio que la SPA).
+        """
+        key = (key or "").strip()
+        if not key.startswith("tk_live_"):
+            return None
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(TenantModel).where(TenantModel.api_key_hash == sha256_hex(key))
+            )
+            row = result.scalars().first()
+            if not row or row.status != TenantStatus.ACTIVE.value:
+                return None
             return _to_tenant(row)
 
     async def delete_tenant(self, tenant_id: str) -> bool:

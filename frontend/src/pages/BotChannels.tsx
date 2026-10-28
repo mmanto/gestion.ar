@@ -29,6 +29,7 @@ const channelTypeLabels: Record<ChannelType, string> = {
   telegram: 'Telegram',
   web: 'Web (WebSocket)',
   pwa: 'PWA (Push Notifications)',
+  voice: 'Voz (Deepgram)',
 };
 
 const whatsappProviderLabels: Record<WhatsAppProvider, string> = {
@@ -160,6 +161,8 @@ export const BotChannels = () => {
           ? { whatsapp_config: whatsappConfig }
           : formData.channel_type === 'telegram'
           ? { telegram_config: formData.telegram_config }
+          : formData.channel_type === 'voice'
+          ? { voice_config: {} }
           : {}),
       };
 
@@ -340,6 +343,7 @@ export const BotChannels = () => {
                     <option value="telegram">Telegram</option>
                     <option value="web">Web (WebSocket + QR)</option>
                     <option value="pwa">PWA (Push Notifications + WebSocket)</option>
+                    <option value="voice">Voz (Deepgram Voice Agent)</option>
                   </select>
                 </div>
 
@@ -604,6 +608,14 @@ export const BotChannels = () => {
                   </div>
                 )}
 
+                {formData.channel_type === 'voice' && (
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-sm text-purple-800">
+                    <p className="font-medium mb-1">Canal de voz (Deepgram)</p>
+                    <p>No requiere configuración: el backend arma el prompt, las tools y la voz. El cliente (APK/PWA) se conecta al proxy de gestion.ar con la API key del tenant.</p>
+                    <p className="mt-2 text-xs text-purple-600">Una vez activado, el APK se conecta con la API key del tenant; la URL del WebSocket aparece en la tarjeta del canal.</p>
+                  </div>
+                )}
+
                 {formData.channel_type === 'telegram' && (
                   <>
                     <div>
@@ -811,6 +823,8 @@ const ChannelCard = ({ channel, botId, tenantUsers, onActivate, onDeactivate, on
 
   const isWebChannel = channel.channel_type === 'web';
   const isPwaChannel = channel.channel_type === 'pwa';
+  const isVoiceChannel = channel.channel_type === 'voice';
+  const isWebsocketChannel = isWebChannel || isPwaChannel || isVoiceChannel;
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
@@ -862,9 +876,9 @@ const ChannelCard = ({ channel, botId, tenantUsers, onActivate, onDeactivate, on
       <div className="mt-4">
         <div className="flex items-center justify-between mb-1">
           <span className="text-sm text-gray-700">
-            {isWebChannel || isPwaChannel ? 'WebSocket URL:' : 'Webhook URL:'}
+            {isWebsocketChannel ? 'WebSocket URL:' : 'Webhook URL:'}
           </span>
-          {!isWebChannel && !isPwaChannel && (
+          {!isWebsocketChannel && (
             <button
               onClick={() => setIsEditingWebhook(!isEditingWebhook)}
               className="text-xs text-indigo-600 hover:text-indigo-800"
@@ -873,7 +887,7 @@ const ChannelCard = ({ channel, botId, tenantUsers, onActivate, onDeactivate, on
             </button>
           )}
         </div>
-        {!isWebChannel && !isPwaChannel && isEditingWebhook ? (
+        {!isWebsocketChannel && isEditingWebhook ? (
           <div className="flex gap-2">
             <input
               type="url"

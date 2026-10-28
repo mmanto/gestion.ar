@@ -56,7 +56,7 @@ async def create_channel(
     """
     Crear un nuevo canal para un bot
 
-    - **channel_type**: Tipo de canal (whatsapp o telegram)
+    - **channel_type**: Tipo de canal (whatsapp, telegram, web, pwa o voice)
     - **name**: Nombre identificador del canal
     - **whatsapp_config**: Configuración de WhatsApp (si es tipo whatsapp)
     - **telegram_config**: Configuración de Telegram (si es tipo telegram)

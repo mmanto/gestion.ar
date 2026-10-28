@@ -277,6 +277,22 @@ Crear un canal.
 }
 ```
 
+**Ejemplo — Voz (Deepgram):**
+```json
+{
+  "bot_id": "bot_123",
+  "channel_type": "voice",
+  "name": "Voz",
+  "voice_config": {
+    "listen_model": "nova-3",
+    "language": "es",
+    "voice_model": "aura-2-celeste-es"
+  }
+}
+```
+`voice_config` es opcional (defaults del servidor). El canal no requiere
+credenciales: la key de Deepgram vive en el backend (ver ADR-034).
+
 ### GET `/api/channels/{channel_id}`
 
 Obtener un canal por ID.
@@ -615,6 +631,27 @@ Editar un tenant. Todos los campos opcionales: `name`, `domain`, `status`
 Eliminar un tenant. **409** si el tenant no existe o tiene datos asociados
 (bots, usuarios, canales, clientes, conversaciones) que deben eliminarse
 primero — nunca borra en cascada datos de negocio.
+
+### GET `/api/admin/tenants/{tenant_id}/api-key`
+
+¿El tenant tiene API key emitida? `{"success": true, "has_key": true|false}`.
+Nunca devuelve la key ni su hash.
+
+### POST `/api/admin/tenants/{tenant_id}/api-key?rotate=false`
+
+Emite la **API key del tenant** (`tk_live_` + `secrets.token_urlsafe(32)`) y la
+devuelve **en claro una sola vez**:
+```json
+{ "success": true, "api_key": "tk_live_…", "note": "Guardala ahora: no se puede volver a mostrar" }
+```
+En la BD solo queda su **SHA-256** (`tenants.api_key_hash`, índice único). Sin
+`rotate=true`, un tenant que ya tiene key responde **409**; con `rotate=true`
+la reemplaza (la anterior deja de resolver al instante). La key se usa en
+`/api/public/voice/*` (ver ADR-035).
+
+### DELETE `/api/admin/tenants/{tenant_id}/api-key`
+
+Revoca la key. Los clientes que la usan pasan a `401`.
 
 ---
 
@@ -966,6 +1003,66 @@ Revoca el otorgamiento (borra la fila). `404` si el módulo no estaba otorgado a
 `PATCH /api/tenant/bots/{bot_id}/modules/{module_key}` no cambian de contrato, pero un
 módulo no instalado en el deploy (`ENABLED_MODULES`) ya no queda accesible: los routers
 gateados con `require_module_available` devuelven `403 El módulo '<key>' no está instalado`.
+
+---
+
+## Canal de voz (Deepgram, ADR-034/ADR-035)
+
+Proxy WebSocket server-side: la `DEEPGRAM_API_KEY`, el prompt, las tools y la
+voz los arma el backend; el cliente sólo transporta PCM. Dos formas de entrar:
+por API key de tenant (APK) o por `channel_id` (PWA/QR).
+
+### GET `/api/public/voice/config?channel_id=<opt>`
+
+Header `Authorization: Bearer tk_live_…`. Resuelve el tenant activo de la key y
+su canal de voz. Si el tenant tiene más de un canal activo, `channel_id` es
+obligatorio (`409` si falta). Todo `channel_id` se valida contra el tenant
+(`404`/`400`/`403` si no corresponde, no es `voice` o está inactivo).
+
+```json
+{
+  "tenant": { "tenant_id": "tenant_…", "name": "turnos-qa" },
+  "bot": { "bot_id": "bot_…", "name": "Bot QA" },
+  "channel": { "channel_id": "channel_…" },
+  "greeting": "¡Hola! ¿Cómo puedo ayudarte hoy?",
+  "ws_path": "/ws/voice/channel/channel_…"
+}
+```
+
+### POST `/api/public/voice/session`
+
+Header `Authorization: Bearer tk_live_…`. Body:
+```json
+{ "device_id": "uuid-del-dispositivo", "channel_id": "opcional" }
+```
+Devuelve lo mismo que `/config` más `device_id`, `ticket` y `ticket_ttl` (60 s).
+El `ticket` es un JWT con `purpose=voice_ws` y los ids firmados; sirve **sólo**
+para abrir el WebSocket y no como sesión de usuario.
+
+Errores: `401` key inválida/tenant inactivo, `409` sin canal o varios sin
+`channel_id`, `403` canal inactivo.
+
+### GET `/api/voice/channels/{channel_id}/config`
+
+Config pública del canal (PWA/QR). `404`/`400`/`403` igual que arriba.
+
+### WS `/ws/voice/channel/{channel_id}?ticket=<jwt>&device_id=<id>`
+
+- Con `ticket`: valida `purpose`, que sea del mismo canal y que tenant/canal
+  sigan activos. Es la ruta del APK.
+- Sin `ticket`: modo abierto por `channel_id` (misma capacidad que el QR del
+  chat web). El `channel_id` es el secreto de facto.
+- Crea/reutiliza el `client` (`source="voice"`, `external_id=device_id`) y una
+  `conversation` (`channel="voice"`, `tenant_id` del bot) y reanuda el historial
+  de esa conversación anterior en `agent.context`.
+
+Frames servidor → cliente: `meta` (`conversation_id`, `bot_name`,
+`tenant_name`, `greeting`), `SettingsApplied`, `ConversationText`,
+`UserStartedSpeaking`, `AgentThinking`, `AgentStartedSpeaking`,
+`AgentAudioDone`, `Error`, `Warning`, y tramas binarias PCM16 24 kHz.
+Cliente → servidor: binario PCM16 16 kHz o `{"type":"text","content":"…"}`.
+`Settings`/`UpdateThink`/`UpdatePrompt`/`UpdateSpeak` se ignoran: el servidor
+es dueño de la configuración.
 
 ---
 

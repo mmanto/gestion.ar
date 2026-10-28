@@ -62,6 +62,21 @@ se usan para sustituir `${...}` dentro de `docker-compose.yml`/`docker-compose.p
 
 ---
 
+## Canal de voz (Deepgram Agent, ADR-034)
+
+| Variable | Requerida | Descripción | Ejemplo |
+|---|---|---|---|
+| `DEEPGRAM_API_KEY` | ✅* | API key de Deepgram; sólo la usa el backend en el proxy WS | — |
+| `VOICE_THINK` | ❌ | LLM del agente: `auto` (mapea `LLM_PROVIDER`; `ollama`/desconocidos → gestionado), `managed`, `deepseek` o `claude` | `auto` (default) |
+| `VOICE_FALLBACK_LLM` | ❌ | Modelo del LLM gestionado por Deepgram | `gpt-4o-mini` (default) |
+| `VOICE_COST_PER_MINUTE_USD` | ❌ | Costo estimado por minuto para `conversations.metadata` | `0.075` (default) |
+
+> *Requerida sólo si se habilita un canal `voice`. Con `VOICE_THINK=deepseek`
+> se usa `DEEPSEEK_API_KEY`; con `claude`, `CLAUDE_API_KEY`/`ANTHROPIC_API_KEY`.
+> El prompt con LLM gestionado tiene un tope de 25 000 caracteres.
+
+---
+
 ## Autenticación / JWT
 
 | Variable | Requerida | Descripción | Ejemplo |

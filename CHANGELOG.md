@@ -7,6 +7,21 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **Canal de voz Deepgram + API key de tenant** (ADR-034/ADR-035). Nuevo
+  `channel_type='voice'` con `channels.voice_config` (migración
+  `20261028_1200_add_channel_voice_config.py`): el backend hace de proxy
+  WebSocket a `agent.deepgram.com`, arma el `Settings` (prompt/tools/voz) y
+  ejecuta las tools in-process; cada turno queda en `conversations`/
+  `messages` (`channel='voice'`, `tenant_id` derivado del bot) y notifica al
+  staff. El cliente (`~/workspace/deepgram_chat`, Rust + Dioxus) ya no habla
+  con Deepgram ni guarda una API key: pide un ticket con la **API key del
+  tenant** (`tk_live_…`). Esta se emite una sola vez en
+  `POST /api/admin/tenants/{id}/api-key`, se guarda como SHA-256
+  (`tenants.api_key_hash`, migración `20261028_1300_add_tenant_api_key_hash.py`)
+  y se resuelve por hash en `GET/POST /api/public/voice/*`. Incluye UI de
+  canal de voz en el panel (tipo, voz Aura y URL del WebSocket; sin QR hasta
+  que exista la UI de voz de la PWA). **No cambia** WhatsApp, Telegram, web ni
+  PWA.
 - **Reclamos de vecinos en el mapa de `/reclamos/` de pachoteayuda** — ya no son los 4 de
   ejemplo: la página muestra los reclamos reales del tenant y permite **marcar un punto en el
   mapa** (o usar la ubicación del teléfono) y registrar el reclamo ahí. Backend: tabla `reclamos`

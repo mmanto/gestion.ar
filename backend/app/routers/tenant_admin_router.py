@@ -134,6 +134,46 @@ async def update_tenant(tenant_id: str, data: TenantUpdate):
     return {"success": True, "tenant": tenant.model_dump()}
 
 
+@router.get("/tenants/{tenant_id}/api-key", response_model=dict)
+async def get_tenant_api_key_status(tenant_id: str):
+    """¿El tenant tiene API key emitida? Nunca devuelve la key ni su hash."""
+    service = get_tenant_service()
+    if not await service.get_tenant(tenant_id):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Tenant no encontrado")
+    return {"success": True, "has_key": await service.has_api_key(tenant_id)}
+
+
+@router.post("/tenants/{tenant_id}/api-key", response_model=dict, status_code=status.HTTP_201_CREATED)
+async def issue_tenant_api_key(
+    tenant_id: str,
+    rotate: bool = Query(False, description="Reemplazar la key existente"),
+):
+    """Emite la API key del tenant. La key en claro se devuelve UNA SOLA VEZ."""
+    try:
+        api_key = await get_tenant_service().issue_api_key(tenant_id, rotate=rotate)
+    except LookupError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Tenant no encontrado")
+    if api_key is None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "El tenant ya tiene una API key; usá rotate=true para reemplazarla",
+        )
+    return {
+        "success": True,
+        "api_key": api_key,
+        "note": "Guardala ahora: no se puede volver a mostrar",
+    }
+
+
+@router.delete("/tenants/{tenant_id}/api-key", response_model=dict)
+async def revoke_tenant_api_key(tenant_id: str):
+    """Revoca la API key (los clientes de voz pasan a 401)."""
+    cleared = await get_tenant_service().clear_api_key(tenant_id)
+    if not cleared:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Tenant no encontrado")
+    return {"success": True, "message": "API key revocada"}
+
+
 @router.delete("/tenants/{tenant_id}", response_model=dict)
 async def delete_tenant(tenant_id: str):
     deleted = await get_tenant_service().delete_tenant(tenant_id)

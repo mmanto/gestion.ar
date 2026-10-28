@@ -95,9 +95,9 @@ Un canal es la configuración de una plataforma de mensajería asociada a un bot
 |---|---|---|
 | `channel_id` | `TEXT PK` | ID único (`channel_xxxx`) |
 | `bot_id` | `TEXT` → FK `bots.bot_id` `ON DELETE CASCADE` | |
-| `channel_type` | `TEXT` | `whatsapp` / `telegram` / `web` / `pwa` |
+| `channel_type` | `TEXT` | `whatsapp` / `telegram` / `web` / `pwa` / `voice` |
 | `name` / `status` / `webhook_url` | `TEXT` | |
-| `whatsapp_config` / `telegram_config` / `web_config` / `pwa_config` | `JSONB` (opt, una columna por tipo) | Sólo la correspondiente al `channel_type` suele estar poblada, pero **no hay CHECK constraint** que lo exija — ver nota abajo |
+| `whatsapp_config` / `telegram_config` / `web_config` / `pwa_config` / `voice_config` | `JSONB` (opt, una columna por tipo) | Sólo la correspondiente al `channel_type` suele estar poblada, pero **no hay CHECK constraint** que lo exija — ver nota abajo |
 | `total_messages_received` / `total_messages_sent` | `INT` | |
 | `metadata` | `JSONB` (opt) | |
 | `created_at` / `updated_at` / `last_activity_at` | `TIMESTAMPTZ` | |
@@ -105,6 +105,13 @@ Un canal es la configuración de una plataforma de mensajería asociada a un bot
 Índices: `bot_id`, `(bot_id, channel_type)`, `status`, índice de expresión sobre `(whatsapp_config->'twilio_config'->>'phone_number')` (usado por `get_channel_by_twilio_phone`).
 
 **Nota histórica:** el esquema inicial (Fase 1 de la migración) tenía 4 `CHECK constraints` que exigían `*_config IS NOT NULL` según `channel_type`. Se eliminaron: la lógica real (`channel_router.py`) sólo valida `whatsapp_config`/`telegram_config` al crear, nunca `web_config`/`pwa_config` — y los canales reales de esos dos tipos existen sin config poblada.
+
+#### VoiceConfig (canal de voz, ADR-034)
+
+`{"listen_model": "nova-3", "language": "es", "voice_model": "aura-2-celeste-es"}`.
+Migración `20261028_1200_add_channel_voice_config.py`. El prompt, las tools y la
+API key de Deepgram no viven acá: se arman por request en
+`app/services/voice_session_service.py`.
 
 #### WhatsAppConfig (proveedores)
 
@@ -121,7 +128,7 @@ Personas que interactúan con un bot a través de algún canal.
 | `client_id` | `TEXT PK` | ID único (`client_xxxx`) |
 | `bot_id` | `TEXT` → FK `bots.bot_id` `ON DELETE CASCADE` | |
 | `external_id` | `TEXT` | ID externo: número de teléfono, chat_id, session_id |
-| `source` | `TEXT` | `whatsapp` / `telegram` / `web` / `manual` |
+| `source` | `TEXT` | `whatsapp` / `telegram` / `web` / `voice` / `manual` |
 | `name` / `email` / `phone` | `TEXT` (opt) | |
 | `status` | `TEXT` | `active` / `blocked` / `archived` |
 | `score` | `NUMERIC` | Lead score (0-100), calculado por `calculate_score()` en `client_service.py` |
@@ -141,9 +148,10 @@ Cada conversación agrupa los mensajes de un cliente con un bot en una sesión.
 |---|---|---|
 | `conversation_id` | `TEXT PK` | |
 | `bot_id` | `TEXT` (opt) → FK `bots.bot_id` | Nullable: conversaciones legacy pre-multi-tenant podían no tener bot |
+| `tenant_id` | `TEXT` (opt) → FK `tenants.tenant_id` | Se deriva del bot al crear (`create_conversation`); las conversaciones legacy pueden tener `NULL` |
 | `client_id` | `TEXT` (opt) → FK `clients.client_id` | |
 | `user_id` | `TEXT` | Identificador del usuario final (teléfono, session_id, etc.) |
-| `channel` | `TEXT` (opt) | `whatsapp` / `telegram` / `web` / `pwa` |
+| `channel` | `TEXT` (opt) | `whatsapp` / `telegram` / `web` / `pwa` / `voice` |
 | `source` | `TEXT` (opt) | Promovido desde `metadata.source` — columna propia porque se filtra con `WHERE` real en stats/búsqueda |
 | `channel_id` | `TEXT` (opt) → FK `channels.channel_id` | Promovido desde `metadata.channel_id`, mismo motivo |
 | `total_tokens_used` | `INT` | |
@@ -274,10 +282,12 @@ no en el tenant.
 | `status` | `TEXT NOT NULL` | `active` / `suspended` / `trial` |
 | `branding` | `JSONB` | Marca (logo, color, tagline) |
 | `settings` | `JSONB` | Flags de runtime por tenant (p. ej. `{"stats_two_cols_mobile": true}`). Antes se inyectaban por contenedor (`STATS_TWO_COLS_MOBILE`); ahora viajan en el response de `/api/public/tenants/current` |
+| `api_key_hash` | `TEXT` UNIQUE (opt) | **SHA-256** de la API key del tenant (`tk_live_…`); la key en claro se muestra una sola vez al emitirla. Resuelve el tenant en `/api/public/voice/*` (ADR-035). Múltiples `NULL` permitidos |
 | `plan_id` | `TEXT` → FK `plans.plan_id` | Plan de suscripción al que está dado de alta el tenant |
 | `created_at` / `updated_at` | `TIMESTAMPTZ` | |
 
-Migración: `20261008_0000_add_tenant_settings.py`.
+Migraciones: `20261008_0000_add_tenant_settings.py` y
+`20261028_1300_add_tenant_api_key_hash.py`.
 
 ### Módulos (entitlement): `modules`, `bot_modules`, `plan_modules`, `tenant_modules`
 

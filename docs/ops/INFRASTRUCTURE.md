@@ -88,8 +88,14 @@ Disco:  80 GB SSD
 | Dominio con DNS apuntando al servidor | SSL + URLs estables de webhook |
 | HTTPS (SSL/TLS) | Telegram lo exige; PWA push notifications también |
 | Puertos 80 y 443 abiertos | Traefik / Nginx |
+| Egress a `agent.deepgram.com:443` (WSS) | Canal de voz: el backend es el único que abre la conexión con Deepgram (ADR-034) |
+| Proxy WS con upgrade de larga duración | `/ws/voice/channel/{id}`; nginx/Traefik ya soportan WS, no agregar timeout corto |
 
 > Let's Encrypt + Traefik = SSL automático y gratuito.
+>
+> **Costo/límites del canal de voz:** Deepgram PAYG permite ~45 conexiones
+> concurrentes por cuenta. Cada minuto de sesión se cobra; el backend registra
+> un costo estimado por turno (`VOICE_COST_PER_MINUTE_USD`, default 0.075).
 
 ---
 

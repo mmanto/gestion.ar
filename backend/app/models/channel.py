@@ -14,6 +14,7 @@ class ChannelType(str, Enum):
     TELEGRAM = "telegram"
     WEB = "web"
     PWA = "pwa"
+    VOICE = "voice"
 
 
 class WhatsAppProvider(str, Enum):
@@ -84,6 +85,17 @@ class PwaConfig(BaseModel):
     vapid_subject: Optional[str] = Field(None, description="mailto: o https: para VAPID (usa el global si no se especifica)")
 
 
+class VoiceConfig(BaseModel):
+    """Configuración del canal de voz (Deepgram Agent, ver ADR-034).
+
+    El backend es dueño de la key de Deepgram y del `Settings`; acá solo vive
+    lo que puede cambiar por canal sin tocar código.
+    """
+    listen_model: str = Field(default="nova-3", description="Modelo STT de Deepgram")
+    language: str = Field(default="es", description="Idioma de escucha")
+    voice_model: str = Field(default="aura-2-celeste-es", description="Voz Aura-2 en español")
+
+
 class ChannelBase(BaseModel):
     """Modelo base de Channel"""
     bot_id: str = Field(..., description="ID del bot asociado")
@@ -98,6 +110,7 @@ class ChannelCreate(ChannelBase):
     telegram_config: Optional[TelegramConfig] = None
     web_config: Optional[WebConfig] = None
     pwa_config: Optional[PwaConfig] = None
+    voice_config: Optional[VoiceConfig] = None
     webhook_url: Optional[str] = Field(None, description="URL del webhook (opcional, se genera automáticamente si no se proporciona)")
 
 
@@ -110,18 +123,23 @@ class ChannelUpdate(BaseModel):
     telegram_config: Optional[TelegramConfig] = None
     web_config: Optional[WebConfig] = None
     pwa_config: Optional[PwaConfig] = None
+    voice_config: Optional[VoiceConfig] = None
     webhook_url: Optional[str] = Field(None, description="URL del webhook personalizado")
 
 
 class Channel(ChannelBase):
     """Modelo completo de Channel"""
     channel_id: str
+    # Tenant dueño del canal. Se resuelve desde el bot y se expone para que
+    # los endpoints que reciben un channel_id puedan validar pertenencia.
+    tenant_id: Optional[str] = None
     owner_username: Optional[str] = None
     status: ChannelStatus = ChannelStatus.PENDING
     whatsapp_config: Optional[WhatsAppConfig] = None
     telegram_config: Optional[TelegramConfig] = None
     web_config: Optional[WebConfig] = None
     pwa_config: Optional[PwaConfig] = None
+    voice_config: Optional[VoiceConfig] = None
     webhook_url: Optional[str] = Field(None, description="URL del webhook / WebSocket configurado")
     created_at: str
     updated_at: str

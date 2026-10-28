@@ -25,6 +25,7 @@ def _to_channel(row: ChannelModel) -> Channel:
     return Channel(
         channel_id=row.channel_id,
         bot_id=row.bot_id,
+        tenant_id=row.tenant_id,
         channel_type=row.channel_type,
         name=row.name,
         owner_username=row.owner_username,
@@ -33,6 +34,7 @@ def _to_channel(row: ChannelModel) -> Channel:
         telegram_config=row.telegram_config,
         web_config=row.web_config,
         pwa_config=row.pwa_config,
+        voice_config=row.voice_config,
         webhook_url=row.webhook_url,
         created_at=row.created_at.isoformat(),
         updated_at=row.updated_at.isoformat(),
@@ -82,6 +84,9 @@ class ChannelService:
         elif channel_type == ChannelType.PWA:
             ws_base = base_url.replace("https://", "wss://").replace("http://", "ws://")
             return f"{ws_base}/ws/chat/channel/{channel_id}"
+        elif channel_type == ChannelType.VOICE:
+            ws_base = base_url.replace("https://", "wss://").replace("http://", "ws://")
+            return f"{ws_base}/ws/voice/channel/{channel_id}"
         else:
             return f"{base_url}/api/webhook/{channel_type.value}/{channel_id}"
 
@@ -126,6 +131,7 @@ class ChannelService:
                 telegram_config=channel_data.telegram_config.model_dump() if channel_data.telegram_config else None,
                 web_config=channel_data.web_config.model_dump() if channel_data.web_config else None,
                 pwa_config=channel_data.pwa_config.model_dump() if channel_data.pwa_config else None,
+                voice_config=channel_data.voice_config.model_dump() if channel_data.voice_config else None,
                 webhook_url=webhook_url,
                 total_messages_received=0,
                 total_messages_sent=0,
@@ -203,6 +209,24 @@ class ChannelService:
             )
             row = result.scalars().first()
             return _to_channel(row) if row else None
+
+    async def get_active_voice_channels_by_tenant(self, tenant_id: str) -> List[Channel]:
+        """Canales de voz activos del tenant (para resolver la API key).
+
+        Un tenant puede tener más de uno (varios bots/sucursales); el caller
+        desambigua por `channel_id` y valida que pertenezca a este tenant.
+        """
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(ChannelModel)
+                .where(
+                    ChannelModel.tenant_id == tenant_id,
+                    ChannelModel.channel_type == ChannelType.VOICE.value,
+                    ChannelModel.status == ChannelStatus.ACTIVE.value,
+                )
+                .order_by(ChannelModel.created_at.asc())
+            )
+            return [_to_channel(r) for r in result.scalars().all()]
 
     async def update_channel(self, channel_id: str, update_data: ChannelUpdate) -> Optional[Channel]:
         """Actualiza un canal"""
