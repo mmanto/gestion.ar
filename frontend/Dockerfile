@@ -27,8 +27,26 @@ ENV VITE_NANGO_API_URL=${VITE_NANGO_API_URL}
 # Copiar package.json y package-lock.json
 COPY package*.json ./
 
-# Instalar dependencias
-RUN npm ci
+# Reintentos de red: el build corre en el VPS de prod, donde el registry
+# corta conexiones de forma intermitente (ver más abajo).
+ENV NPM_CONFIG_FETCH_RETRIES=5 \
+    NPM_CONFIG_FETCH_RETRY_MINTIMEOUT=20000 \
+    NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT=120000
+
+# Instalar dependencias.
+#
+# --maxsockets 1000 NO es tuning: npm 10.x/11.x arrastra un bug en
+# agent-base (npm/cli#9386) por el que las descargas que quedan en cola
+# detrás de maxsockets (default 15) nunca arrancan cuando una conexión
+# falla — sus promesas no se resuelven, npm se queda sin event loop y muere
+# con "npm error Exit handler never called!" SIN imprimir el error real.
+# Con maxsockets por encima del tamaño del árbol (608 entradas) cada fetch
+# falla rápido y el build muestra el ETIMEDOUT/ENOTFOUND verdadero.
+# Reproducido en node:22-alpine (npm 10.9.9) contra un registry inalcanzable.
+#
+# --no-audit/--no-fund: el POST de audit es otro request al registry que no
+# aporta nada en el build y puede colgarse en la misma red.
+RUN npm ci --maxsockets 1000 --no-audit --no-fund
 
 # Copiar el resto del código
 COPY . .

@@ -25,7 +25,7 @@ Internet
 | Servicio | Imagen | RAM runtime | Puerto interno | Puerto host (dev) |
 |---|---|---|---|---|
 | `backend` | build local (Python 3.11) | ~1.8-2.5 GB | 8000 | 8000 |
-| `frontend` | build local (Node 20 / Nginx) | ~50-80 MB | 80 | 5173 (dev) / 80 (prod) |
+| `frontend` | build local (Node 22 / Nginx) | ~50-80 MB | 80 | 5173 (dev) / 80 (prod) |
 | `mongo` | mongo:7 | ~512 MB | 27017 | 27018 |
 | `redis` | redis:7-alpine | ~150 MB | 6379 | 6380 |
 | `traefik` | traefik:v3 (prod) | ~50 MB | 80, 443 | — |

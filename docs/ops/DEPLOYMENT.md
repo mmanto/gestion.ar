@@ -83,6 +83,37 @@ docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod
 
 ---
 
+## Build de `frontend` falla con `npm error Exit handler never called!`
+
+No es el código ni el lockfile. Es el bug de npm 10.x/11.x en `agent-base`
+(npm/cli#9386): npm abre 15 conexiones (`maxsockets`) y encola el resto; si
+una conexión contra el registry falla, las encoladas nunca arrancan, npm se
+queda sin event loop y muere con ese mensaje genérico **sin imprimir el error
+de red real**. Sólo se dispara cuando el VPS no llega bien a
+`registry.npmjs.org`.
+
+Los Dockerfiles de `frontend/` y `frontend-tenant/` ya lo mitigan
+(`npm ci --maxsockets 1000 --no-audit --no-fund` +
+`NPM_CONFIG_FETCH_RETRIES=5`), así que el build ahora falla mostrando el error
+verdadero. Si aparece un `ETIMEDOUT`/`ENOTFOUND`:
+
+```bash
+# ¿el VPS llega al registry? (código HTTP y tiempo)
+curl -sS -o /dev/null -w '%{http_code} %{time_total}s\n' https://registry.npmjs.org/react
+# DNS, proxy y MTU del host (VPN/WireGuard con MTU mal ajustada rompe TLS)
+getent hosts registry.npmjs.org; env | grep -i _proxy; ip link show | grep -o 'mtu [0-9]*'
+```
+
+- `curl` cuelga o falla → salida a internet del VPS rota/bloqueada: se puede
+  buildear en otra máquina y publicar `${REGISTRY_IMAGE}/frontend:${IMAGE_TAG}`
+  (compose levanta sin `--build`), o abrir la salida.
+- `ETIMEDOUT` intermitente → red inestable: reintentar el build (npm ya
+  reintenta 5 veces por request) y revisar MTU si hay VPN.
+- Si aun así aparece `Exit handler never called!`, el `docker build` está
+  cacheado: `--no-cache` en el target (`frontend` o `frontend-tenant`).
+
+---
+
 ## Rollback
 
 ```bash

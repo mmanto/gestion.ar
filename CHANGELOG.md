@@ -376,6 +376,20 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   por zona, aceite usado y pilas, horario de la basura) llamaron a la tool
   (clave `public_sources:v1:residuos:*` nueva) y respondieron con la grilla y el
   enlace oficial.
+- **El build de producción de `frontend` y `frontend-tenant` ya no muere con
+  `npm error Exit handler never called!`**. No era el código ni el lockfile:
+  es el bug de npm 10.x/11.x en `agent-base` (npm/cli#9386). npm abre 15
+  conexiones (`maxsockets`) y encola el resto; cuando una conexión contra
+  `registry.npmjs.org` falla (timeout intermitente del VPS), las encoladas
+  nunca arrancan, sus promesas no se resuelven y npm se queda sin event loop:
+  muere con ese mensaje genérico y sin imprimir el `ETIMEDOUT` real. Ahora los
+  dos Dockerfiles corren `npm ci --maxsockets 1000 --no-audit --no-fund` con
+  `NPM_CONFIG_FETCH_RETRIES=5`, así un fallo de red del server se ve como
+  `ETIMEDOUT`/`ENOTFOUND` en el log del build en vez de ese error opaco.
+  Reproducido con `node:22-alpine` (npm 10.9.9) contra un registry
+  inalcanzable: con `maxsockets` default aparece exactamente
+  `Exit handler never called!`; con `--maxsockets 1000` el mismo build falla
+  mostrando `connect ETIMEDOUT` sobre el tarball real.
 
 ### Cambiado
 - **«Gestionar usuarios y módulos» usa el `DataTable` del paquete**: la grilla de usuarios
