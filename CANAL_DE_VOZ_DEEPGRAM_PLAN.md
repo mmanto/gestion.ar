@@ -409,7 +409,7 @@ Smoke de punta a punta (obligatorio antes de cerrar):
 ```bash
 # 1. Key + stack
 #    agregar DEEPGRAM_API_KEY=<key> a .env.dev (el contenedor app lo lee por env_file)
-./scripts/stack-dev.sh start          # frontend http://localhost:5173, backend :8000
+make up                               # frontend http://localhost:5173, backend :8000
 
 # 2. Canal de voz sobre un bot de prueba con prompt corto
 TOKEN=$(curl -s -X POST http://localhost:8000/api/auth/login \

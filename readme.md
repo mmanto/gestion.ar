@@ -64,13 +64,16 @@ cp .env.example .env.dev
 # Completar variables en .env.dev (ver ENV.md)
 
 # Levantar con Docker
-docker compose up -d
+make up
 
 # Verificar
+make status
 curl http://localhost:8000/api/health
 ```
 
 Ver `docs/dev/SETUP.md` para configuración completa de canales y desarrollo.
+`make` (o `make help`) es la entrada única al stack; producción con `prod-*`
+(`make prod-rebuild`, `make prod-status`, …).
 
 ---
 
@@ -108,14 +111,14 @@ Ver `docs/dev/SETUP.md` para configuración completa de canales y desarrollo.
 
 ```bash
 # Desarrollo
-docker compose up -d
-docker compose logs -f backend
+make up
+make logs SERVICE=app
 
 # Producción
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+make prod-rebuild
 
 # Tests
-docker compose exec backend pytest
+make test
 
 # Acceder a MongoDB (host)
 mongosh mongodb://localhost:27018/gestionar_dev

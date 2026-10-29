@@ -1,6 +1,6 @@
 Assets nativos para el APK Android del tenant `proptech`.
 
-Antes de poder correr `./stack.prod build-android proptech ...` hace falta:
+Antes de poder correr `make prod-build-android TENANT=proptech TARGET=prod API_URL=...` hace falta:
 
 1. Completar en `.env.prod`:
    ```

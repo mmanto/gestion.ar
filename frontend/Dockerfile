@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # Stage 1: Build
 FROM node:22-alpine AS builder
 
@@ -46,7 +47,8 @@ ENV NPM_CONFIG_FETCH_RETRIES=5 \
 #
 # --no-audit/--no-fund: el POST de audit es otro request al registry que no
 # aporta nada en el build y puede colgarse en la misma red.
-RUN npm ci --maxsockets 1000 --no-audit --no-fund
+RUN --mount=type=cache,id=npm,target=/root/.npm,sharing=locked \
+    npm ci --prefer-offline --maxsockets 1000 --no-audit --no-fund
 
 # Copiar el resto del código
 COPY . .

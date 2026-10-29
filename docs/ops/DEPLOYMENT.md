@@ -46,30 +46,37 @@ curl -I https://admin.intellify.pro
 ssh mmanto@<IP_SERVIDOR>
 cd /opt/gestion.ar
 git pull
-./stack.prod rebuild     # = docker compose up -d --build de los 6 servicios
+make prod-rebuild     # = docker compose up -d --build de los 6 servicios
 ```
 
-`./stack.prod` (symlink a `scripts/stack-prod.sh`) es el único camino de
-deploy: carga `.env.prod` y los **tres** compose files (`docker-compose.yml` +
-`docker-compose.prod.yml` + `docker-compose.tenants.prod.yml`) y aísla las
-variables del host. `rebuild` es `up -d --build`; `up` levanta sin
-reconstruir imágenes (útil cuando las imágenes ya están al día) y sin
-parámetro abre el menú interactivo. Existe porque un deploy manual sin los
-`-f` correctos rompió producción varias veces: sin `docker-compose.prod.yml`
-los contenedores levantan con los labels de Traefik viejos (o sin ninguno) y
-con `.env.dev` en vez de `.env.prod`, y sin
+`make` es la única entrada al stack (convención DevBout): los targets `prod-*`
+cargan `.env.prod` y los **tres** compose files (`docker-compose.yml` +
+`docker-compose.prod.yml` + `docker-compose.tenants.prod.yml`) y aíslan las
+variables del host. `make prod-rebuild` es `up -d --build`; `make prod-up`
+levanta sin reconstruir imágenes (útil cuando las imágenes ya están al día).
+`make prod-check` valida `.env.prod` y `REGISTRY_IMAGE` antes de tocar Docker.
+Existe porque un deploy manual sin los `-f` correctos rompió producción varias
+veces: sin `docker-compose.prod.yml` los contenedores levantan con los labels
+de Traefik viejos (o sin ninguno) y con `.env.dev` en vez de `.env.prod`, y sin
 `docker-compose.tenants.prod.yml` **no se levantan los tenants ni las
-landings** (`frontend-tenant`, `landing`) — **usar siempre `./stack.prod`, no
+landings** (`frontend-tenant`, `landing`) — **usar siempre `make prod-*`, no
 el comando de `docker compose` a mano.**
 
 Verificar después del deploy:
 
 ```bash
-./stack.prod status      # ps + health check de api, admin y cada tenant
+make prod-status      # ps + health check de api, admin y cada tenant
 ```
 
 > `./deploy.sh` (nombre viejo, borrado en el commit `93c8f0d`) ya no existe:
-> si un doc o un runbook lo menciona, el reemplazo es `./stack.prod rebuild`.
+> si un doc o un runbook lo menciona, el reemplazo es `make prod-rebuild`.
+>
+> **Build de prod (ADR-036):** `app` instala torch CPU (no CUDA) y cachea
+> apt/pip; el modelo de embeddings se bakea con `timeout 180` y, si falla,
+> la imagen se construye igual (runtime con `EMBEDDING_MODEL` o
+> `/opt/models/embedding-model`). La primera build en un VPS limpio descarga
+> las ruedas y el modelo; las siguientes reutilizan capas. `make prod-build`
+> construye sin levantar.
 
 Para debug manual puntual (rebuild de un solo servicio, por ejemplo), el
 comando completo sigue siendo (nunca omitir `--env-file .env.prod`: sin él,
@@ -139,7 +146,7 @@ env | grep -i _proxy; ip link show | grep -o 'mtu [0-9]*'
 - **Host resuelve, contenedor no** → DNS del daemon. Se arregla por build con
   `--network=host` (usa la red del host, sin tocar el daemon):
   `docker build --network=host -t "$REGISTRY_IMAGE/backend:latest" backend/`
-  (ídem `frontend/`, `frontend-tenant/`), después `./stack.prod up` sin
+  (ídem `frontend/`, `frontend-tenant/`), después `make prod-up` sin
   `--build`. Alternativa permanente: `/etc/docker/daemon.json` con
   `{"dns": ["1.1.1.1", "8.8.8.8"]}` + `systemctl restart docker` (reiniciar el
   daemon recrea el stack).
@@ -407,7 +414,7 @@ curl -sI https://pachoteayuda.ar/login   | head -1      # 200 (SPA del tenant)
 docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml \
   exec app python scripts/create_openpadel_tenant.py
 #   → (opcional) copiar TENANT_ID_OPENPADEL al .env.prod SOLO si se va a
-#     buildear el APK nativo (scripts/stack-*.sh build-android); el web no lo usa.
+#     buildear el APK nativo (make prod-build-android); el web no lo usa.
 
 # 2. Levantar los 2 contenedores compartidos (los routers ya están en compose):
 docker compose --env-file .env.prod \

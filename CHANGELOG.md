@@ -407,6 +407,31 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   cero reintentos). Diagnóstico en `docs/ops/DEPLOYMENT.md`.
 
 ### Cambiado
+- **Build del stack mucho más rápido y liviano** (`backend/Dockerfile`,
+  `frontend/Dockerfile`, `frontend-tenant/Dockerfile`, `.dockerignore`,
+  `docker-compose.dev.yml`, `Makefile`; ADR-036). La imagen `app` pasa de
+  **11.8 GB a 3.34 GB** porque `sentence-transformers` ya no arrastra
+  `torch+cu132`/`nvidia-*`: se instala `torch` CPU desde el índice de
+  PyTorch antes de `requirements.txt`. Se agregan cache mounts de BuildKit para
+  apt/pip/npm (npm compartido entre los dos frontends), `.dockerignore` por
+  servicio (backend sin tests/datos/secretos; `frontend-tenant` sin `android/`,
+  `dist-*`, `www/` ni `tenant-assets/`), etapas `deps`/`dev`/`prod` en el
+  backend (dev no hace `COPY . .` ni bakea el modelo; prod bakea con timeout
+  180 s) y `COMPOSE_BAKE=true` en `make build`/`rebuild`. En dev, el modelo de
+  embeddings se descarga al primer uso y se cachea en el volumen `hf_cache`.
+  Verificado: build de dev del backend ~3 s en caliente (1.5 s tras tocar
+  código), build completo en caliente ~3 s, cambio real de `frontend-tenant`
+  ~17 s.
+- **El stack se maneja con `make` en vez de `./stack.dev` / `./stack.prod`**
+  (`Makefile`, `scripts/{preflight,status,clean,android-build}.sh`). Se eliminaron
+  los symlinks `stack.*` y los scripts interactivos `scripts/stack-{dev,prod}.sh`.
+  `make` (o `make help`) es ahora la entrada única: desarrollo en targets sin
+  prefijo (`up`, `down`, `reset`, `restart`, `rebuild`, `build`, `logs`, `ps`, `status`,
+  `shell`, `test`, `config`, `clean`, `build-android`) y producción con `prod-*`
+  (`prod-up`, `prod-rebuild`, `prod-status`, `prod-clean`, …), como en
+  `cms-saas`/`gestion360`. La lógica no trivial vive en helpers no interactivos
+  bajo `scripts/`; el build Android quedó unificado para dev y prod
+  (`make build-android` / `make prod-build-android`).
 - **«Gestionar usuarios y módulos» usa el `DataTable` del paquete**: la grilla de usuarios
   pasa de la tabla propia a `defineTableDTO` + `DataTable` (`@mmanto/devbout-ui`, como la
   lista de tenants) — buscador, columnas visibles y menú de acciones de fila

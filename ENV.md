@@ -266,7 +266,7 @@ repo), por eso el nombre de marca tiene una clave por app.
 | `VITE_TENANT_APP_NAME` | ❌ | Nombre de marca de `frontend-tenant/` | `Backoffice` |
 | `VITE_NANGO_CONNECT_URL` | ❌* | URL de Nango Connect visible desde el browser | dev: `http://localhost:3009` · prod: `https://nango.tudominio.com` |
 | `VITE_NANGO_API_URL` | ❌* | URL de la API de Nango visible desde el browser | dev: `http://localhost:3003` · prod: `https://api.nango.tudominio.com` |
-| `VITE_APPOINTMENTS_REMOTE_URL` | ❌* | URL del remote de turnos (Module Federation, `devbout-appointments` — ver ADR-009). En dev web es el dev-server de `frontend-widgets`; en builds de Android (`scripts/stack-*.sh`) se inyecta una URL alcanzable desde el dispositivo (host del backend + `:8180`, o un túnel) | dev: `http://localhost:8180/remoteEntry.js` · prod: `https://appointments-widgets.intellify.pro/remoteEntry.js` |
+| `VITE_APPOINTMENTS_REMOTE_URL` | ❌* | URL del remote de turnos (Module Federation, `devbout-appointments` — ver ADR-009). En dev web es el dev-server de `frontend-widgets`; en builds de Android (`make build-android` / `make prod-build-android`) se inyecta una URL alcanzable desde el dispositivo (host del backend + `:8180`, o un túnel) | dev: `http://localhost:8180/remoteEntry.js` · prod: `https://appointments-widgets.intellify.pro/remoteEntry.js` |
 
 > *Sin valor, caen al default hardcodeado de `auth.service.ts`
 > (`localhost:3009`/`localhost:3003`), que no resuelve en producción. Son
@@ -278,8 +278,8 @@ repo), por eso el nombre de marca tiene una clave por app.
 > `VITE_APPOINTMENTS_REMOTE_URL` sin valor cae al fallback de `vite.config.ts`
 > (la URL de prod), para que un build que no carga `.env.dev`/`.env.prod`
 > (p.ej. `vite build --mode capacitor`) no hornee un `localhost` inalcanzable.
-> Para apuntar un APK a un remote de dev, `scripts/stack-*.sh` derivan la URL
-> desde el host del backend (`:8180`) u se puede sobreescribir exportando
+> Para apuntar un APK a un remote de dev, `make build-android` /
+> `make prod-build-android` derivan la URL desde el host del backend (`:8180`) u se puede sobreescribir exportando
 > `VITE_APPOINTMENTS_REMOTE_URL` antes de ejecutarlos.
 
 ---
@@ -290,8 +290,8 @@ repo), por eso el nombre de marca tiene una clave por app.
 |---|---|---|---|
 | `REGISTRY_IMAGE` | ✅ | Registry + namespace de las imágenes | `registry.gitlab.com/NAMESPACE/PROJECT` |
 | `IMAGE_TAG` | ❌ | Tag a deployar (default `latest`) | `v1.2.3` |
-| `TENANT_ID_<SLUG>` | ❌ | Tenant ID horneado en el APK nativo del tenant (`scripts/stack-*.sh build-android`). Ya NO se usa en el frontend web: un único contenedor `frontend-tenant` resuelve el tenant por Host contra `tenants.domain` | `tenant_78f507331c18` |
-| `TENANT_APPID_<SLUG>` | ❌ | `applicationId` Android del APK del tenant (build-android en `scripts/stack-*.sh`) | `ius.intellify.pro` |
+| `TENANT_ID_<SLUG>` | ❌ | Tenant ID horneado en el APK nativo del tenant (`make build-android` / `make prod-build-android`). Ya NO se usa en el frontend web: un único contenedor `frontend-tenant` resuelve el tenant por Host contra `tenants.domain` | `tenant_78f507331c18` |
+| `TENANT_APPID_<SLUG>` | ❌ | `applicationId` Android del APK del tenant (`make build-android` / `make prod-build-android`) | `ius.intellify.pro` |
 || `TENANT_APPNAME_<SLUG>` | ❌ | Nombre visible del APK del tenant | `"ius"` |
 | `TENANT_BRANDCOLOR_<SLUG>` | ❌ | Color de marca (splash + status bar) del APK del tenant | `#25357a` |
 | `TENANT_PUBLIC_URL_<SLUG>` | ❌* | Dominio público del frontend web del tenant, horneado en el APK como `VITE_TENANT_PUBLIC_URL`. En la app nativa las llamadas van directo al backend (`VITE_API_URL`, ej. `api.intellify.pro`), así que `getPublicUrl()` no puede derivar el dominio del tenant del Host de la request — sin esto el link de chat ("Compartir", "Mi link de chat") apunta al dominio del API en vez del frontend del tenant. *Sin valor, el APK queda con la derivación por Host (rota en nativo; web no lo usa) | `https://ius.intellify.pro` |

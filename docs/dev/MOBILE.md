@@ -46,17 +46,17 @@ cd android && ./gradlew assembleDebug
 ya setea para `ius` en la web (`STATS_TWO_COLS_MOBILE`, leído por
 `docker-entrypoint.sh`) — sin esto, `bake-tenant-config.mjs` hornea
 `statsTwoColsMobile: false` y el dashboard (`StatsCards.tsx`) muestra las
-stat cards en 1 columna en el celular en vez de 2. `stack.dev`/`stack.prod
-build-android` ya lo setean; si se corre `npm run build:capacitor` a mano,
-hay que pasarlo explícitamente.
+stat cards en 1 columna en el celular en vez de 2. `make build-android` /
+`make prod-build-android` ya lo setean; si se corre `npm run build:capacitor`
+a mano, hay que pasarlo explícitamente.
 
 O, más simple, usando el comando del stack (valida requisitos, fija
 `VITE_API_URL`/`VITE_TENANT_ID` según el entorno):
 
 ```bash
-./stack.dev build-android emulator                          # http://10.0.2.2:8000/api
-./stack.dev build-android device http://192.168.1.100:8000/api
-./stack.prod build-android prod https://api.intellify.pro/api
+make build-android TENANT=ius TARGET=emulator                        # http://10.0.2.2:8000/api
+make build-android TENANT=ius TARGET=device API_URL=http://192.168.1.100:8000/api
+make prod-build-android TENANT=ius TARGET=prod API_URL=https://api.intellify.pro/api
 ```
 
 `appId: ius.intellify.pro`, `appName: 'ius'`
@@ -101,7 +101,7 @@ suscribirse con el `user_id` de otro miembro del staff.
 
 **Local (ya hecho):** `backend/secrets/firebase-credentials.json`
 (gitignored) + `FCM_CREDENTIALS_PATH=/app/secrets/firebase-credentials.json`
-en `.env.dev` — funciona porque `docker-compose.override.yml` monta
+en `.env.dev` — funciona porque `docker-compose.dev.yml` monta
 `./backend:/app` entero.
 
 **Prod (pendiente — requiere acceso SSH al servidor, ver
@@ -120,7 +120,7 @@ en `.env.dev` — funciona porque `docker-compose.override.yml` monta
    servicio `app`, y `.env.prod` ya tiene
    `FCM_CREDENTIALS_PATH=/app/secrets/firebase-credentials.json` (ruta
    dentro del contenedor) — no hace falta tocar nada más de config
-6. Redeploy: `cd /opt/gestion.ar && git pull && ./stack.prod rebuild` (o el
+6. Redeploy: `cd /opt/gestion.ar && git pull && make prod-rebuild` (o el
    `docker compose ... up -d --build app` manual de `DEPLOYMENT.md` si solo se
    cambió el mount, sin nuevo código)
 7. Verificar (al arrancar el contenedor, en `PushService.__init__`):

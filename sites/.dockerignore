@@ -1,0 +1,9 @@
+# Las landings se copian completas (HTML, assets, imágenes, video). Solo se
+# excluye lo que no debe viajar al contexto de build.
+.git
+.gitignore
+**/.DS_Store
+**/node_modules
+**/__pycache__
+**/*.log
+**/*.map

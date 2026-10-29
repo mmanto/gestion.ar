@@ -1,0 +1,55 @@
+# docker-compose.dev.yml — Base de desarrollo local.
+# No usar en producción. Agrega hot-reload, mounts del código y el target `dev`
+# del backend (sin bake del modelo). `docker-compose.override.yml` (ignorado
+# por git) se carga después si existe, para ajustes personales.
+#
+# Lo usan `make up|build|rebuild|...` y scripts/{status,clean}.sh.
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    ports:
+      - "5173:5173"
+    env_file:
+      - ./.env.dev
+
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: dev
+      # En dev no se bakea el modelo de embeddings (el código se bind-montea y
+      # el modelo se cachea en hf_cache); además se permite la descarga al
+      # primer uso. En prod los defaults del Dockerfile siguen vigentes.
+      args:
+        BAKE_EMBEDDING_MODEL: "0"
+        HF_OFFLINE: "0"
+    volumes:
+      - ./backend:/app
+      - hf_cache:/root/.cache/huggingface
+    # LLM_PROVIDER es global por env (ver get_llm_service() en
+    # app/claude_service.py) y `environment:` gana sobre `env_file:` (.env.dev
+    # trae ollama). Ollama NO soporta tool calling, así que para medir la suite
+    # de semáforo hace falta un provider con tools (claude/deepseek).
+    # Claude quedó sin crédito (Anthropic 400 "credit balance is too low"), así
+    # que la corrida va con deepseek y la key se toma del entorno del host
+    # (igual que .env.prod, que usa LLM_PROVIDER=deepseek).
+    environment:
+      - LLM_PROVIDER=${IUS_LLM_PROVIDER:-ollama}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - DEEPSEEK_MODEL=${DEEPSEEK_MODEL:-deepseek-v4-flash}
+      - DEEPSEEK_THINKING=disabled
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+
+volumes:
+  frontend_node_modules:
+  hf_cache:

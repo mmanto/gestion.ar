@@ -1,4 +1,9 @@
+# Contexto de build del backend: solo lo que necesita la imagen.
+# En dev el código se bind-montea; en prod se hornea el runtime.
+.git
+.gitignore
 __pycache__
+**/__pycache__
 *.pyc
 *.pyo
 *.pyd
@@ -9,9 +14,19 @@ __pycache__
 dist
 build
 .env
+.env.*
 .venv
 venv/
 *.log
 .pytest_cache
 .coverage
 htmlcov/
+# No se hornean datos ni secretos: en runtime se montan volúmenes/secrets.
+documents/
+uploads/
+chroma_db/
+secrets/
+# Tests y docs no forman parte del runtime.
+tests/
+*.md
+README.md

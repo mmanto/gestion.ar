@@ -23,12 +23,23 @@ cp .env.example .env.dev
 # Editar .env.dev con las credenciales reales (ver ENV.md)
 
 # 3. Levantar servicios de desarrollo
-docker compose up -d
+make up
 
 # 4. Verificar que todo esté corriendo
-docker compose ps
+make status
 curl http://localhost:8000/api/health
 ```
+
+> `make` (o `make help`) es la entrada única al stack: desarrollo por defecto y
+> producción con el prefijo `prod-` (`make prod-up`, `make prod-status`, …).
+> Detalle de targets en [`docs/ops/DEPLOYMENT.md`](../ops/DEPLOYMENT.md).
+>
+> `make build` / `make rebuild` usan BuildKit Bake (paralelo) y cachean
+> apt/pip/npm entre builds. `app` instala **torch CPU** (no CUDA) y en dev usa
+> la etapa `dev` (sin `COPY` del código ni bake del modelo); el modelo de
+> embeddings se descarga al primer uso y queda en el volumen `hf_cache`.
+> La primera build en un host limpio igual descarga las ruedas de Python y,
+> en prod, el modelo; las siguientes son de segundos. Ver ADR-036.
 
 > Postgres queda accesible en el host en el puerto `5433`. Redis en `6380` (para evitar colisiones con instancias locales).
 
@@ -272,13 +283,13 @@ scripts/generate_vapid_keys.sh
 
 ```bash
 # Ver logs del backend en tiempo real
-docker compose logs -f backend
+make logs SERVICE=app
 
 # Ver logs de todos los servicios
-docker compose logs -f
+make logs
 
 # Reiniciar solo el backend
-docker compose restart backend
+make restart SERVICE=app
 
 # Acceder a MongoDB
 mongosh mongodb://localhost:27018/gestionar_dev
@@ -287,7 +298,7 @@ mongosh mongodb://localhost:27018/gestionar_dev
 redis-cli -p 6380
 
 # Ejecutar tests del backend
-docker compose exec backend pytest
+make test
 
 # Limpiar la base de conocimiento RAG (ChromaDB)
 curl -X DELETE http://localhost:8000/api/rag/clear

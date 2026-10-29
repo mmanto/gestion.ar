@@ -1,7 +1,7 @@
 Assets nativos para el APK Android del tenant `erma`.
 
-Antes de poder correr `./stack.prod build-android erma ...` (o
-`./stack.dev build-android erma ...`) hace falta:
+Antes de poder correr `make prod-build-android TENANT=erma TARGET=prod API_URL=...` (o
+`make build-android TENANT=erma TARGET=emulator`) hace falta:
 
 1. Completar en `.env.prod` (y `.env.dev` si vas a compilar en local):
    ```

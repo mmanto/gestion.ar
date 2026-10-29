@@ -31,12 +31,19 @@ Internet
 | `traefik` | traefik:v3 (prod) | ~50 MB | 80, 443 | — |
 
 > El backend consume más RAM por `sentence-transformers` (PyTorch): ~1.8-2.5 GB solo para el proceso Python.
+> PyTorch se instala en variante **CPU** (no CUDA): la imagen `app` queda en
+> ~3.34 GB (dev) / ~4.29 GB (prod con el modelo) en vez de ~11.8 GB.
 >
 > El modelo de embeddings RAG (`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`,
-> ~470 MB) se descarga en **build** de la imagen y queda bakeado en
-> `/root/.cache/huggingface`; el runtime corre con `HF_HUB_OFFLINE=1` y nunca
-> contacta huggingface.co (el contenedor puede no tener DNS hacia el hub).
-> Sobreescribir el modelo con `--build-arg EMBEDDING_MODEL=<id>` en el build.
+> ~470 MB) se descarga en **build** de la imagen de producción y queda bakeado
+> en `/root/.cache/huggingface`; el runtime corre con `HF_HUB_OFFLINE=1` y nunca
+> contacta huggingface.co. En **dev** no se bakea (`BAKE_EMBEDDING_MODEL=0`): se
+> descarga al primer uso y queda en el volumen `hf_cache` (`HF_OFFLINE=0`).
+> Sobreescribir el modelo con `--build-arg EMBEDDING_MODEL=<id>`.
+>
+> Build: `make build` (Bake paralelo) con cache mounts de apt/pip/npm y
+> `.dockerignore` por servicio; el backend usa etapas `deps`/`dev`/`prod`
+> (ADR-036). Un cambio de código en dev no invalida la capa de dependencias.
 
 ---
 
@@ -284,7 +291,7 @@ En local el router `landing-pachoteayuda` replica el reparto de paths de prod
 `/normas/`, `/tramites/` y `/residuos/` los sirve la landing, y `/login`,
 `/chat/c/<channel>`, `/api/*` y `/ws/*` el SPA del tenant. `sites/nginx.conf`
 mapea el host nuevo a la raíz de la landing (el `map $http_host` es el mismo en
-dev y prod: `pachoteayuda.ar` sigue mapeado para prod) y `scripts/stack-dev.sh`
+dev y prod: `pachoteayuda.ar` sigue mapeado para prod) y `scripts/preflight.sh`
 conoce ambos mundos (`TENANT_DOMAINS`): exige los `.test` en `/etc/hosts` y
 omite los `.localhost`.
 

@@ -2154,3 +2154,61 @@ un secreto.
 - Queda como deuda: rate limiting por key/dispositivo y uso de un solo ticket
   (hoy el TTL de 60 s acota la ventana, pero el mismo ticket puede reusarse
   dentro de ella).
+
+---
+
+## ADR-036: El build usa torch CPU, cachés de BuildKit y contextos mínimos
+
+**Estado:** Aceptado
+**Fecha:** 2026-10-29
+
+### Contexto
+`make build` era muy lento y la imagen `gestionar-app` pesaba **11.8 GB**. El
+código corre en CPU, pero `sentence-transformers` resolvía `torch` desde PyPI y
+arrastraba `torch 2.15.0+cu132` con todas las dependencias `nvidia-*`. A eso se
+sumaban: contextos de build grandes (`frontend-tenant/android`, `dist-apk`,
+`tenant-assets`), falta de cachés de `pip`/`npm` entre builds, y el bake del
+modelo de embeddings sin timeout (un build podía quedar colgado >5 min
+descargando de Hugging Face).
+
+### Opciones consideradas
+1. **Torch CPU + cachés BuildKit + `.dockerignore`** (elegida): ataca la causa
+   (descarga/export de ~8 GB) sin cambiar el runtime.
+2. **Multi-stage para quitar `build-essential`**: baja la imagen final, pero no
+   el tiempo de build cacheado; queda como optimización futura.
+3. **Imagen base de dependencias publicada en el registry**: acelera el primer
+   build en CI, pero agrega un artefacto y un release más; se puede sumar
+   después con `cache_from`.
+
+### Decisión
+- Instalar `torch==${TORCH_VERSION}+cpu` desde
+  `https://download.pytorch.org/whl/cpu` **antes** de `requirements.txt`, para
+  que el resolver use la rueda CPU (las dependencias quedan satisfechas).
+- Cache mounts de BuildKit para `apt` (`/var/cache/apt`,
+  `/var/lib/apt/lists`), `pip` (`/root/.cache/pip`) y `npm`
+  (`id=npm`, compartido entre `frontend` y `frontend-tenant`).
+- `.dockerignore` por servicio: el backend no hornea `tests/`, `documents/`,
+  `uploads/`, `chroma_db/` ni `secrets/`; `frontend-tenant` excluye `android/`,
+  `dist-*`, `www/` y `tenant-assets/` (un cambio de README de assets ya no
+  invalida el build de Vite).
+- Dockerfile del backend en etapas `deps` / `dev` / `prod`: `dev` (compose
+  override) no hace `COPY . .` ni bakea el modelo; el compose de dev monta
+  `hf_cache` para la descarga al primer uso. `prod` (default) bakea con
+  `timeout 180` y hornea el código.
+- `make build`/`rebuild` usan `COMPOSE_BAKE=true` (BuildKit Bake, builds en
+  paralelo); `rebuild` = `build` + `up`, no `up --build`.
+
+### Consecuencias
+- Imagen `gestionar-app`: **11.8 GB → 3.34 GB**; se eliminan ~8 GB de
+  descarga/export por build.
+- Build de dev del backend: **~3 s** en caliente y **~1.5 s** tras tocar
+  código (el bind mount no invalida la capa de deps). Un cambio real de
+  `frontend-tenant` (Vite) sigue costando ~17 s.
+- El primer build en un host limpio sigue pagando la descarga de ruedas
+  (torch CPU + requirements) y, en prod, el bake del modelo; los cache mounts
+  y el timeout acotan el costo.
+- El bake de prod puede fallar por red: la imagen se construye igual y el
+  runtime usa `EMBEDDING_MODEL` (snapshot montado o hub). Con `HF_OFFLINE=1`
+  sin snapshot, el error es accionable (ver RUNBOOK).
+- Deuda: evaluar multi-stage para quitar `build-essential` de la imagen final y
+  `cache_from`/`cache_to` en CI.
