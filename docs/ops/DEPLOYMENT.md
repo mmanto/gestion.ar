@@ -121,20 +121,29 @@ El Dockerfile de `backend/` ya reintenta (`apt-get -o Acquire::Retries=5`).
 ### Comprobaciones en el server
 
 ```bash
-# ¿resuelve y llega? (código HTTP + tiempo; DNS primero)
-getent hosts deb.debian.org registry.npmjs.org; cat /etc/resolv.conf
+# 1) host vs. contenedor: si el host resuelve y el build no, el DNS roto es el
+#    del daemon de Docker (no el del VPS)
+getent hosts deb.debian.org registry.npmjs.org
+docker run --rm python:3.13-slim getent hosts deb.debian.org
+
+# 2) el error de apt sin el wrapper de BuildKit
+docker run --rm python:3.13-slim sh -c 'apt-get update 2>&1 | tail -15'
+
+# 3) red, reloj, disco, proxy/MTU
 curl -sS -o /dev/null -w '%{http_code} %{time_total}s\n' https://registry.npmjs.org/react
-# reloj (un desfase rompe apt y TLS) y disco
 date -u; timedatectl status | head -3
 df -h /var/lib/docker; df -i /var/lib/docker
-# proxy y MTU (VPN/WireGuard con MTU mal ajustada corta TLS)
 env | grep -i _proxy; ip link show | grep -o 'mtu [0-9]*'
 ```
 
-- `getent` no resuelve → DNS: fijar resolvers para el **daemon** (no basta el
-  `dns:` del compose, que aplica al runtime del contenedor, no al build):
-  `/etc/docker/daemon.json` con `{"dns": ["1.1.1.1", "8.8.8.8"]}` +
-  `systemctl restart docker`. Ojo: reiniciar el daemon reinicia el stack.
+- **Host resuelve, contenedor no** → DNS del daemon. Se arregla por build con
+  `--network=host` (usa la red del host, sin tocar el daemon):
+  `docker build --network=host -t "$REGISTRY_IMAGE/backend:latest" backend/`
+  (ídem `frontend/`, `frontend-tenant/`), después `./stack.prod up` sin
+  `--build`. Alternativa permanente: `/etc/docker/daemon.json` con
+  `{"dns": ["1.1.1.1", "8.8.8.8"]}` + `systemctl restart docker` (reiniciar el
+  daemon recrea el stack).
+- **Ninguno de los dos resuelve** → DNS del VPS (`cat /etc/resolv.conf`).
 - Reloj desfasado → `timedatectl set-ntp true`.
 - Sin salida a internet → buildear en otra máquina y publicar
   `${REGISTRY_IMAGE}/frontend:${IMAGE_TAG}` y `${REGISTRY_IMAGE}/backend:…`

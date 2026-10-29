@@ -93,9 +93,11 @@ Contrato de consumo (el detalle completo está en el README del paquete):
   (fila en memoria) u `onSubmit` async contra la API: el form espera la promesa,
   deshabilita el envío, muestra el error si falla y cierra si sale bien.
 - Además de `header`, `rowActions` y `bulkActions`, el `DataTable` acepta
-  `toolbarActions`: acciones propias en la fila del toolbar, al lado del buscador tras la
-  barra separadora. La pantalla del tenant lo usa para el alta de usuario, que va en un
-  `Dialog` de la app porque el schema no tiene contraseña ni `AvatarPicker`.
+  `toolbarActions` (`^0.4.0`): acciones propias en la fila del toolbar, al lado del
+  buscador tras la barra separadora. La pantalla del tenant lo usa para el alta de
+  usuario, que va en un `Dialog` de la app porque el schema no tiene contraseña ni
+  `AvatarPicker`; el botón usa la `Button` del paquete para que ambas grillas
+  hereden el mismo toolbar.
 - Los tokens semánticos (`--primary`, `--card`, `--radius`, …) son el otro contrato:
   los define la app, el paquete sólo usa tokens.
 

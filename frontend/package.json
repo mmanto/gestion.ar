@@ -13,7 +13,7 @@
     "@base-ui/react": "^1.8.0",
     "@hugeicons/core-free-icons": "^4.3.5",
     "@hugeicons/react": "^1.1.10",
-    "@mmanto/devbout-ui": "^0.3.0",
+    "@mmanto/devbout-ui": "^0.4.0",
     "@nangohq/frontend": "^0.70.9",
     "axios": "^1.13.2",
     "class-variance-authority": "^0.7.1",

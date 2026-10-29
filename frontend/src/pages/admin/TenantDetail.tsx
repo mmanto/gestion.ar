@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { PlusSignIcon } from '@hugeicons/core-free-icons';
 import { AppLayout } from '../../components/layout/AppLayout';
 import { LoadingPage } from '../../components/common/Spinner';
 import { PageHeader } from '../../components/common/PageHeader';
@@ -10,7 +12,12 @@ import { useModules } from '../../modules/ModulesProvider';
 import type { ModuleManifest } from '../../modules/manifest';
 import { Input } from '../../components/ui/input';
 import { AvatarPicker } from '../../components/common/AvatarPicker';
-import { DataTable, defineTableDTO, type TableDTO } from '@mmanto/devbout-ui';
+import {
+  Button as UiButton,
+  DataTable,
+  defineTableDTO,
+  type TableDTO,
+} from '@mmanto/devbout-ui';
 import { Badge } from '../../components/ui/badge';
 import {
   Dialog,
@@ -265,14 +272,16 @@ export const TenantDetail = () => {
     [tenantId],
   );
 
-  // Alta de usuario: sigue en un `Dialog` propio (el schema del paquete no
-  // renderiza la contraseña ni el `AvatarPicker`), pero el botón va en el
-  // toolbar de la grilla, al lado del buscador.
+  // Alta de usuario: el botón lo renderiza el toolbar del `DataTable`
+  // (`toolbarActions`) con la misma primitiva y forma que el alta de entidad,
+  // así ambas grillas heredan el mismo toolbar. El formulario sigue en un
+  // `Dialog` propio porque el schema no cubre contraseña ni `AvatarPicker`.
   const toolbarButton = useMemo(
     () => (
-      <Button variant="primary" onClick={() => setShowUserModal(true)}>
-        + Nuevo usuario
-      </Button>
+      <UiButton onClick={() => setShowUserModal(true)}>
+        <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} />
+        Nuevo usuario
+      </UiButton>
     ),
     [],
   );
@@ -306,11 +315,7 @@ export const TenantDetail = () => {
   const usersDto = useMemo<TableDTO<TenantUser>>(
     () =>
       defineTableDTO<TenantUser>({
-        // `toolbarActions` es de @mmanto/devbout-ui 0.4 (changeset
-        // `data-table-toolbar-actions`): el 0.3.0 publicado todavía no lo tipa, así
-        // que va por un cast. Se cae al actualizar la dependencia
-        // (`npm install @mmanto/devbout-ui@^0.4.0`).
-        ...({ toolbarActions: toolbarButton } as Partial<TableDTO<TenantUser>>),
+        toolbarActions: toolbarButton,
         selectable: false,
         onDataChange: setUsers,
         search: { columnId: 'username', placeholder: 'Buscar usuario' },

@@ -272,6 +272,15 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   con la instrucción de la tool y las 3 decisiones de calificación.
 
 ### Corregido
+- **La grilla de usuarios del tenant vuelve a mostrar el alta en el toolbar**
+  (`frontend/src/pages/admin/TenantDetail.tsx`, `frontend/package.json`).
+  `TenantDetail` pasaba el botón «Nuevo usuario» por `toolbarActions`, pero
+  `gestion.ar` estaba en `@mmanto/devbout-ui@0.3.0`, que todavía no renderiza ese
+  slot: la grilla de `Tenants` mostraba el alta (viene de `entity.create`) y la de
+  usuarios no, con lo que las dos pantallas parecían tablas distintas. Ahora se
+  usa `^0.4.0`, el botón se declara sin cast y con la `Button`/icono del paquete,
+  así ambas grillas heredan el mismo toolbar (búsqueda, alta, masivas, tamaño de
+  página y columnas) del `DataTable`.
 - **El login y el alta con passkey funcionan en el dominio de cada tenant**
   (`backend/app/routers/tenant_passkey_router.py`, `backend/app/services/oauth_config.py`,
   `backend/app/services/tenant_service.py`). El RP ID de WebAuthn salía de una config global
