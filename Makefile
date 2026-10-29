@@ -32,6 +32,9 @@ COMPOSE_PROD := docker compose --env-file $(ENV_PROD) \
 # BuildKit/Bake: paraleliza los builds de los servicios y comparte caché.
 # COMPOSE_BAKE=0 lo desactiva si el Docker Compose del host es viejo.
 COMPOSE_BAKE ?= true
+# auto: usa Compose/Bake y cae a --network=host si el DNS del daemon falla.
+# compose: fuerza Compose/Bake. host: fuerza docker build --network=host.
+BUILD_NETWORK ?= auto
 
 # ── Parámetros opcionales ─────────────────────────────────────────────────
 # make logs SERVICE=app · make rebuild SERVICE=frontend
@@ -43,8 +46,8 @@ API_URL ?=
 # make clean MODE=deep
 MODE ?= light
 
-.PHONY: help urls up down reset restart rebuild build logs ps status shell test config net-check clean \
-	build-android prod-check prod-up prod-down prod-restart prod-rebuild prod-build \
+.PHONY: help urls up down reset restart rebuild build build-host logs ps status shell test config net-check clean \
+	build-android prod-check prod-up prod-down prod-restart prod-rebuild prod-build prod-build-host \
 	prod-logs prod-ps prod-status prod-shell prod-config prod-clean \
 	prod-build-android
 
@@ -60,6 +63,8 @@ help:
 	@echo "  make restart [SERVICE=]    reiniciar todo o un servicio"
 	@echo "  make rebuild [SERVICE=]    reconstruir imagenes y levantar"
 	@echo "  make build [SERVICE=]      construir imagenes sin levantar"
+	@echo "  make build-host [SERVICE=] build con --network=host (DNS del daemon roto)"
+	@echo "  BUILD_NETWORK=auto|compose|host  (default auto)"
 	@echo "  make logs [SERVICE=]       seguir logs (todos o uno)"
 	@echo "  make ps                    estado de los contenedores"
 	@echo "  make status                ps + health checks"
@@ -74,6 +79,7 @@ help:
 	@echo "Produccion:"
 	@echo "  make prod-up | prod-down | prod-restart [SERVICE=] | prod-rebuild"
 	@echo "  make prod-build [SERVICE=] | prod-logs [SERVICE=] | prod-ps | prod-status"
+	@echo "  make prod-build-host [SERVICE=]  build prod con --network=host"
 	@echo "  make prod-shell SERVICE=app | prod-config"
 	@echo "  make prod-clean [MODE=light|images]"
 	@echo "  make prod-build-android TENANT=... TARGET=emulator|device|prod [API_URL=...]"
@@ -117,7 +123,16 @@ rebuild: build
 
 build:
 	@./scripts/preflight.sh dev
-	COMPOSE_BAKE=$(COMPOSE_BAKE) $(COMPOSE_DEV) build $(SERVICE)
+	@if [ "$(BUILD_NETWORK)" = "host" ] || { [ "$(BUILD_NETWORK)" = "auto" ] && ! ./scripts/net-check.sh >/dev/null 2>&1; }; then \
+		echo "==> DNS del build no disponible: usando docker build --network=host"; \
+		./scripts/build-host.sh dev "$(SERVICE)"; \
+	else \
+		COMPOSE_BAKE=$(COMPOSE_BAKE) $(COMPOSE_DEV) build $(SERVICE); \
+	fi
+
+build-host:
+	@./scripts/preflight.sh dev
+	@./scripts/build-host.sh dev "$(SERVICE)"
 
 logs:
 	$(COMPOSE_DEV) logs -f --tail=100 $(SERVICE)
@@ -141,9 +156,7 @@ config:
 # Diagnóstico de DNS del build (mismo resolver que usan BuildKit/pip/npm).
 # Si falla, ver docs/ops/DEPLOYMENT.md § "El build falla por red del VPS".
 net-check:
-	@docker run --rm python:3.13-slim python -c "import socket; [socket.getaddrinfo(h,443) for h in ('pypi.org','download.pytorch.org','github.com')]" \
-		&& echo "DNS del build OK" \
-		|| { echo "ERROR: el contenedor de build no resuelve pypi.org/download.pytorch.org/github.com."; echo "Arreglá el DNS del daemon o buildear con --network=host (docs/ops/DEPLOYMENT.md)."; exit 1; }
+	@./scripts/net-check.sh
 
 clean:
 	@./scripts/clean.sh dev "$(MODE)"
@@ -169,7 +182,15 @@ prod-rebuild: prod-build
 	$(COMPOSE_PROD) up -d --wait $(SERVICE)
 
 prod-build: prod-check
-	COMPOSE_BAKE=$(COMPOSE_BAKE) $(COMPOSE_PROD) build $(SERVICE)
+	@if [ "$(BUILD_NETWORK)" = "host" ] || { [ "$(BUILD_NETWORK)" = "auto" ] && ! ./scripts/net-check.sh >/dev/null 2>&1; }; then \
+		echo "==> DNS del build no disponible: usando docker build --network=host"; \
+		./scripts/build-host.sh prod "$(SERVICE)"; \
+	else \
+		COMPOSE_BAKE=$(COMPOSE_BAKE) $(COMPOSE_PROD) build $(SERVICE); \
+	fi
+
+prod-build-host: prod-check
+	@./scripts/build-host.sh prod "$(SERVICE)"
 
 prod-logs: prod-check
 	$(COMPOSE_PROD) logs -f --tail=100 $(SERVICE)

@@ -2214,5 +2214,11 @@ descargando de Hugging Face).
 - El bake de prod puede fallar por red: la imagen se construye igual y el
   runtime usa `EMBEDDING_MODEL` (snapshot montado o hub). Con `HF_OFFLINE=1`
   sin snapshot, el error es accionable (ver RUNBOOK).
+- Si el DNS del **daemon** de Docker está roto (contenedor no resuelve
+  `pypi.org`/`deb.debian.org`), `make build`/`prod-build` lo detectan
+  (`BUILD_NETWORK=auto`) y construyen con `docker build --network=host`
+  (`scripts/build-host.sh`), que usa el resolver del host. `make prod-build-host`
+  fuerza ese modo. Arreglo permanente: `dns` en `/etc/docker/daemon.json` +
+  `systemctl restart docker`.
 - Deuda: evaluar multi-stage para quitar `build-essential` de la imagen final y
   `cache_from`/`cache_to` en CI.

@@ -75,7 +75,10 @@ make prod-status      # ps + health check de api, admin y cada tenant
 > `devbout-oauth` desde tarball) y cachea pip; el modelo de embeddings se
 > bakea con `timeout 180` y, si falla,
 > la imagen se construye igual (runtime con `EMBEDDING_MODEL` o
-> `/opt/models/embedding-model`). La primera build en un VPS limpio descarga
+> `/opt/models/embedding-model`). Si el DNS del daemon está roto, `make
+> prod-build`/`prod-rebuild` caen solos a `docker build --network=host`
+> (`BUILD_NETWORK=auto`); se puede forzar con `make prod-build-host`. La
+> primera build en un VPS limpio descarga
 > las ruedas y el modelo; las siguientes reutilizan capas. `make prod-build`
 > construye sin levantar.
 
@@ -145,18 +148,19 @@ df -h /var/lib/docker; df -i /var/lib/docker
 env | grep -i _proxy; ip link show | grep -o 'mtu [0-9]*'
 ```
 
-- **Host resuelve, contenedor no** → DNS del daemon. Arreglo permanente:
+- **Host resuelve, contenedor no** → DNS del daemon. `make build` /
+  `make prod-build` lo detectan (`BUILD_NETWORK=auto`) y caen solos a
+  `docker build --network=host`; también se puede forzar con
+  `BUILD_NETWORK=host` o `make prod-build-host`. Arreglo permanente:
   ```bash
   sudo tee /etc/docker/daemon.json >/dev/null <<'JSON'
   {"dns": ["1.1.1.1", "8.8.8.8"]}
   JSON
   sudo systemctl restart docker   # recrea los contenedores; después make prod-up
   ```
-  Alternativa por build, sin tocar el daemon: `docker build --network=host`
-  usa la red/DNS del host (BuildKit no lo acepta vía Compose Bake sin
-  `--allow=network.host`; por eso es un comando directo):
-  `docker build --network=host -t "$REGISTRY_IMAGE/backend:latest" backend/`
-  (ídem `frontend/`, `frontend-tenant/`), después `make prod-up` sin `--build`.
+  `--network=host` usa la red/DNS del host y no toca el daemon (BuildKit no lo
+  acepta vía Compose Bake sin `--allow=network.host`, por eso el Makefile usa
+  `docker build` directo en ese modo).
 - **Ninguno de los dos resuelve** → DNS del VPS (`cat /etc/resolv.conf`,
   `resolvectl status` si usa systemd-resolved).
 - Reloj desfasado → `timedatectl set-ntp true`.

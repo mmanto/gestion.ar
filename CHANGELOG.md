@@ -425,6 +425,10 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   Verificado: build de dev del backend ~3 s en caliente (1.5 s tras tocar
   código), build completo en caliente ~3 s, cambio real de `frontend-tenant`
   ~17 s. Para diagnosticar DNS del daemon antes de buildear: `make net-check`.
+  Si el contenedor de build no resuelve (DNS del daemon roto), `make build` /
+  `prod-build` caen solos a `docker build --network=host`
+  (`BUILD_NETWORK=auto`, scripts/net-check.sh + scripts/build-host.sh); también
+  se puede forzar con `make build-host` / `make prod-build-host`.
 - **El stack se maneja con `make` en vez de `./stack.dev` / `./stack.prod`**
   (`Makefile`, `scripts/{preflight,status,clean,android-build}.sh`). Se eliminaron
   los symlinks `stack.*` y los scripts interactivos `scripts/stack-{dev,prod}.sh`.

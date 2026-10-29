@@ -40,7 +40,9 @@ curl http://localhost:8000/api/health
 > la etapa `dev` (sin `COPY` del código ni bake del modelo); el modelo de
 > embeddings se descarga al primer uso y queda en el volumen `hf_cache`.
 > La primera build en un host limpio igual descarga las ruedas de Python y,
-> en prod, el modelo; las siguientes son de segundos. Ver ADR-036.
+> en prod, el modelo; las siguientes son de segundos. Si el DNS del daemon de
+> Docker no resuelve, `make build` cae solo a `docker build --network=host`
+> (`BUILD_NETWORK=auto`; `make net-check` lo diagnostica). Ver ADR-036.
 
 > Postgres queda accesible en el host en el puerto `5433`. Redis en `6380` (para evitar colisiones con instancias locales).
 
