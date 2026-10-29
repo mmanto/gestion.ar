@@ -2,7 +2,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   LogoutIcon,
-  PaletteIcon,
   Settings05Icon,
   UnfoldMoreIcon,
 } from '@hugeicons/core-free-icons';
@@ -105,10 +104,6 @@ export function NavUser() {
             <DropdownMenuItem render={<Link to="/settings" />}>
               <HugeiconsIcon icon={Settings05Icon} strokeWidth={2} />
               Ajustes
-            </DropdownMenuItem>
-            <DropdownMenuItem render={<Link to="/apariencia" />}>
-              <HugeiconsIcon icon={PaletteIcon} strokeWidth={2} />
-              Apariencia
             </DropdownMenuItem>
 
             <DropdownMenuSeparator />

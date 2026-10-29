@@ -31,7 +31,6 @@ const statusVariants: Record<TenantStatus, 'success' | 'destructive' | 'warning'
 export const Tenants = () => {
   const navigate = useNavigate();
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -41,7 +40,6 @@ export const Tenants = () => {
       if (!options?.silent) setLoading(true);
       const result = await tenantAdminService.listTenants(1, 100);
       setTenants(result.tenants);
-      setTotal(result.total);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error cargando tenants');
     } finally {
@@ -153,6 +151,14 @@ export const Tenants = () => {
       entity,
       // Sin columna de checks: la grilla se opera fila por fila.
       selectable: false,
+      // Cabecera dentro del DataTable: hereda su layout (título + métricas
+      // arriba del toolbar, con el mismo padding que el resto del componente).
+      header: (rows) => (
+        <PageHeader
+          title="Tenants"
+          description={`${rows.length} tenant${rows.length !== 1 ? 's' : ''} en total`}
+        />
+      ),
       // Grilla controlada: al declarar `onDataChange` renderiza `data`, así el
       // refetch posterior a cada mutación se refleja en la tabla.
       onDataChange: (rows) => setTenants(rows),
@@ -208,11 +214,6 @@ export const Tenants = () => {
   return (
     <AppLayout>
       <div className="flex flex-col gap-4">
-        <PageHeader
-          title="Tenants"
-          description={`${total} tenant${total !== 1 ? 's' : ''} en total`}
-        />
-
         {error && <Alert variant="error">Error: {error}</Alert>}
 
         <EntityNavigateProvider navigate={navigate}>

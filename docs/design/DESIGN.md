@@ -34,15 +34,15 @@ Fuente única: `frontend/src/index.css`. Para cambiar un color de la app se toca
 
 ---
 
-## Temas (pantalla Apariencia)
+## Temas (sección Apariencia en Ajustes)
 
-- Pantalla: `/apariencia` (`frontend/src/pages/Apariencia.tsx`), con link en `frontend/src/config/navLinks.tsx`. Secciones: **Modo** (Claro / Oscuro / Sistema), Presets, Tipografía, Bloques y Vista previa.
+- Pantalla: `/settings` (`frontend/src/pages/Settings.tsx` → sección `Apariencia` de `frontend/src/pages/Apariencia.tsx`); ya no hay link propio en `frontend/src/config/navLinks.tsx`. Solo la ve `super_admin`. Secciones: **Modo** (Claro / Oscuro / Sistema), Presets, Tipografía, Bloques y Vista previa.
 - Catálogo de presets vendoreado en `frontend/src/lib/theme-presets/catalog.ts` (9 presets, generado con `scripts/generate-theme-presets.mjs`) más la opción «Predeterminado» (tema base).
 - Preset, tonos de bloque y tamaño de títulos se emiten como CSS `html:root` / `html:root.dark` que `frontend/src/components/theme-preset-provider.tsx` inyecta en `<head>` (style + links de Google Fonts) y persiste en `localStorage['theme-preset']`.
 - Claro/oscuro: `frontend/src/context/ThemeContext.tsx` + `frontend/src/lib/colorScheme.ts` (clase `.dark` y `color-scheme` en `<html>`, `localStorage['gestionar-theme']`, atajo de teclado `d`).
 - Ambos se aplican antes del primer render: `bootstrapThemePreset()` y `bootstrapColorScheme()` se llaman en `frontend/src/main.tsx`.
 - El tema es **global**: los tokens viven en `:root`/`.dark`, así que afectan a los dos templates y a las páginas públicas.
-- Límite conocido: varias páginas del admin todavía usan utilidades grises (`text-gray-900`, `bg-white`, `border-gray-300`) heredadas; en modo oscuro ese texto queda por debajo del contraste legible. Migrarlas a tokens está pendiente. Ya migrada: `pages/admin/TenantDetail.tsx` («Gestionar usuarios y módulos») — tokens en toda la pantalla y, para los formularios, la misma receta que los formularios de entidad del paquete (`Dialog` + `Input`/`Select` con label `text-xs font-medium` arriba y pie cancelar/enviar a la derecha).
+- Límite conocido: varias páginas del admin todavía usan utilidades grises (`text-gray-900`, `bg-white`, `border-gray-300`) heredadas; en modo oscuro ese texto queda por debajo del contraste legible. Migrarlas a tokens está pendiente. Ya migradas: `pages/Settings.tsx` (cuenta + vistas de entidad + Apariencia) y `pages/admin/TenantDetail.tsx` («Gestionar usuarios y módulos») — tokens en toda la pantalla y, para los formularios, la misma receta que los formularios de entidad del paquete (`Dialog` + `Input`/`Select` con label `text-xs font-medium` arriba y pie cancelar/enviar a la derecha).
 
 ---
 
@@ -98,6 +98,10 @@ Contrato de consumo (el detalle completo está en el README del paquete):
   usuario, que va en un `Dialog` de la app porque el schema no tiene contraseña ni
   `AvatarPicker`; el botón usa la `Button` del paquete para que ambas grillas
   hereden el mismo toolbar.
+- El **título/métricas** de cada grilla también va dentro del componente
+  (`dto.header`), no en un `PageHeader` externo: así la cabecera hereda el
+  `pt-4` y el orden header → toolbar → tabla → paginación del `DataTable`.
+  Es el caso de Tenants y de la grilla de usuarios del tenant.
 - Los tokens semánticos (`--primary`, `--card`, `--radius`, …) son el otro contrato:
   los define la app, el paquete sólo usa tokens.
 

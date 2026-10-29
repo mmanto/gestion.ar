@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Blocks, Bot, Building2, CreditCard, Palette } from 'lucide-react';
+import { Blocks, Bot, Building2, CreditCard } from 'lucide-react';
 import { useModules } from '../modules/ModulesProvider';
 import type { ModuleManifest } from '../modules/manifest';
 
@@ -33,16 +33,11 @@ const CORE_LINKS: NavLink[] = [
     label: 'Planes',
     icon: <CreditCard size={20} className="shrink-0" />,
   },
-  {
-    to: '/apariencia',
-    label: 'Apariencia',
-    icon: <Palette size={20} className="shrink-0" />,
-  },
 ];
 
 /**
  * Navegación de la consola: los links core + los que aporta cada módulo
- * instalado (`admin.nav` del manifiesto). Apariencia cierra la lista.
+ * instalado (`admin.nav` del manifiesto). Apariencia vive en Ajustes, no acá.
  */
 export function buildNavLinks(modules: ModuleManifest[]): NavLink[] {
   const moduleLinks: NavLink[] = modules
@@ -50,8 +45,7 @@ export function buildNavLinks(modules: ModuleManifest[]): NavLink[] {
     .filter((nav): nav is NonNullable<typeof nav> => Boolean(nav))
     .map((nav) => ({ to: nav.to, label: nav.label, icon: iconFor(nav.icon) }));
 
-  const appearance = CORE_LINKS[CORE_LINKS.length - 1];
-  return [...CORE_LINKS.slice(0, -1), ...moduleLinks, appearance];
+  return [...CORE_LINKS, ...moduleLinks];
 }
 
 export function useNavLinks(): NavLink[] {

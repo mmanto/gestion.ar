@@ -24,7 +24,6 @@ import { Tenants } from './pages/admin/Tenants';
 import { TenantDetail } from './pages/admin/TenantDetail';
 import { TenantEdit } from './pages/admin/TenantEdit';
 import { Plans } from './pages/admin/Plans';
-import { Apariencia } from './pages/Apariencia';
 import { Settings } from './pages/Settings';
 
 function App() {
@@ -142,22 +141,13 @@ function AppRoutes() {
                       />
                     ))}
 
-                    {/* Ajustes de cuenta — cualquier usuario autenticado */}
+                    {/* Ajustes de cuenta — cualquier usuario autenticado.
+                        La sección Apariencia (super_admin) vive dentro. */}
                     <Route
                       path="/settings"
                       element={
                         <ProtectedRoute>
                           <Settings />
-                        </ProtectedRoute>
-                      }
-                    />
-
-                    {/* Apariencia — tema global (presets, oscuro, tonos) */}
-                    <Route
-                      path="/apariencia"
-                      element={
-                        <ProtectedRoute roles={['super_admin']}>
-                          <Apariencia />
                         </ProtectedRoute>
                       }
                     />

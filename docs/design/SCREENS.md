@@ -17,7 +17,6 @@
 | Knowledge Base | `/knowledge-base` | Gestión de documentos RAG |
 | Chat Web | `/chat/:botId` | Chat público embebible para canal web |
 | Chat Canal | `/chat/c/:channelId` | Chat público de un canal específico |
-| Apariencia | `/apariencia` | Tema global del panel: preset de diseño (9 presets + predeterminado), modo claro/oscuro, tonos de bloque y tamaño de títulos. Solo `super_admin` |
 | Editar tenant | `/admin/tenants/:id/editar` | Datos generales del tenant (nombre, dominio, estado, plan) y su marca (logos, color, tagline). Solo `super_admin` |
 
 **Frontend de tenant (`frontend-tenant/`, un panel por tenant):**
@@ -25,7 +24,7 @@
 | Pantalla | Ruta | Descripción |
 |---|---|---|
 | Registro "Crea tu cuenta" | `/registro` (alias `/register`) | Autoregistro público de un admin del tenant: plan mensual/anual, nombre/correo/contraseña y pago Mercado Pago. Réplica del bloque de la landing ius. |
-| Ajustes | `/settings` | Información de la cuenta, branding, honorarios y huella. |
+| Ajustes | `/settings` | Información de la cuenta, vistas de entidad y (solo `super_admin`) la sección **Apariencia**: preset de diseño (9 presets + predeterminado), modo claro/oscuro, tonos de bloque y tamaño de títulos. |
 | Compartir | `/compartir` | El staff comparte sus datos y su link de chat web propio con un cliente por WhatsApp: input de número + botón que abre `wa.me` con el mensaje armado. |
 
 ---

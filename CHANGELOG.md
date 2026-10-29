@@ -407,6 +407,18 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   cero reintentos). Diagnóstico en `docs/ops/DEPLOYMENT.md`.
 
 ### Cambiado
+- **Apariencia se movió dentro de Ajustes** (`frontend/src/pages/Settings.tsx`,
+  `frontend/src/pages/Apariencia.tsx`, `App.tsx`, `config/navLinks.tsx`,
+  `templates/default/NavUser.tsx`). Se eliminó la pantalla independiente
+  `/apariencia`, el link del sidebar y el ítem del menú de usuario; la sección
+  se renderiza dentro de `/settings` (solo `super_admin`, como antes). Se
+  actualizaron `docs/design/SCREENS.md` y `DESIGN.md`.
+- **La cabecera de las grillas pasa a `dto.header`** (`Tenants.tsx`,
+  `TenantDetail.tsx`). El título/métricas ya no se renderiza con un
+  `PageHeader` fuera del `DataTable`: ahora va en el slot `header` del
+  componente, así respeta su layout (`pt-4` + toolbar + tabla + paginación) como
+  en `devbout-ui/base`. El toolbar ya renderizaba los cinco grupos con las
+  primitivas del paquete.
 - **Build del stack mucho más rápido y liviano** (`backend/Dockerfile`,
   `frontend/Dockerfile`, `frontend-tenant/Dockerfile`, `.dockerignore`,
   `docker-compose.dev.yml`, `Makefile`; ADR-036). La imagen `app` pasa de

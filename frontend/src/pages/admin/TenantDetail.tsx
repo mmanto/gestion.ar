@@ -316,6 +316,10 @@ export const TenantDetail = () => {
     () =>
       defineTableDTO<TenantUser>({
         toolbarActions: toolbarButton,
+        // Cabecera dentro del DataTable (título + contador) para heredar su layout.
+        header: (rows) => (
+          <h3 className={sectionTitle}>Usuarios ({rows.length})</h3>
+        ),
         selectable: false,
         onDataChange: setUsers,
         search: { columnId: 'username', placeholder: 'Buscar usuario' },
@@ -458,7 +462,6 @@ export const TenantDetail = () => {
 
         {/* Usuarios */}
         <section className="grid gap-3">
-          <h3 className={sectionTitle}>Usuarios ({users.length})</h3>
           <DataTable dto={usersDto} data={users} />
         </section>
 

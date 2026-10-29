@@ -3,6 +3,7 @@ import { AppLayout } from '../components/layout/AppLayout';
 import { PageHeader } from '../components/common/PageHeader';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
+import { Apariencia } from './Apariencia';
 import { useAuth } from '../hooks/useAuth';
 import type { UserRole } from '../types/auth.types';
 
@@ -67,28 +68,30 @@ export const Settings = () => {
       <div className="flex flex-col gap-4">
         <PageHeader
           title="Ajustes"
-          description="Información de tu cuenta"
+          description="Tu cuenta, vistas de entidad y apariencia"
         />
 
         <Card shadow="none">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Mi cuenta</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-4">Mi cuenta</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <p className="text-xs font-medium text-gray-700 mb-1">Usuario</p>
-              <p className="text-sm text-gray-900">{user?.username}</p>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Usuario</p>
+              <p className="text-sm text-foreground">{user?.username}</p>
             </div>
             <div>
-              <p className="text-xs font-medium text-gray-700 mb-1">Email</p>
-              <p className="text-sm text-gray-900">{user?.email || '(No configurado)'}</p>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Email</p>
+              <p className="text-sm text-foreground">{user?.email || '(No configurado)'}</p>
             </div>
             <div>
-              <p className="text-xs font-medium text-gray-700 mb-1">Rol</p>
-              <p className="text-sm text-gray-900">{user ? roleLabels[user.role] : ''}</p>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Rol</p>
+              <p className="text-sm text-foreground">{user ? roleLabels[user.role] : ''}</p>
             </div>
           </div>
         </Card>
 
         <EntityViewCard />
+
+        {user?.role === 'super_admin' && <Apariencia />}
       </div>
     </AppLayout>
   );

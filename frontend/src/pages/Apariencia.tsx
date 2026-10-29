@@ -1,4 +1,3 @@
-import { AppLayout } from "../components/layout/AppLayout";
 import * as React from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Copy01Icon } from "@hugeicons/core-free-icons"
@@ -162,15 +161,22 @@ export function Apariencia() {
   }
 
   return (
-    <AppLayout>
-      <div className="flex max-w-3xl flex-col gap-6">
-        <div className="flex flex-col gap-1">
-          <h1 className="font-heading heading-screen font-medium">Apariencia</h1>
-          <p className="text-sm text-muted-foreground">
-            Elegí un preset para ver cómo cambia el diseño de toda la aplicación.
-            Se guarda en este navegador.
-          </p>
-        </div>
+    <section
+      className="flex max-w-3xl flex-col gap-6"
+      aria-labelledby="apariencia-heading"
+    >
+      <div className="flex flex-col gap-1">
+        <h2
+          id="apariencia-heading"
+          className="text-xl font-semibold text-foreground"
+        >
+          Apariencia
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Elegí un preset para ver cómo cambia el diseño de toda la aplicación.
+          Se guarda en este navegador.
+        </p>
+      </div>
 
         <Separator />
 
@@ -409,7 +415,6 @@ export function Apariencia() {
           translúcido del menú no se aplican en runtime: viven en las clases de
           los componentes, no en los tokens.
         </p>
-      </div>
-    </AppLayout>
+      </section>
   )
 }
