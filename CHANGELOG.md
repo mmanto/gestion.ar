@@ -410,10 +410,13 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 - **Build del stack mucho más rápido y liviano** (`backend/Dockerfile`,
   `frontend/Dockerfile`, `frontend-tenant/Dockerfile`, `.dockerignore`,
   `docker-compose.dev.yml`, `Makefile`; ADR-036). La imagen `app` pasa de
-  **11.8 GB a 3.34 GB** porque `sentence-transformers` ya no arrastra
+  **11.8 GB a 2.77 GB** (dev; prod ~3.7 GB con el modelo) porque
+  `sentence-transformers` ya no arrastra
   `torch+cu132`/`nvidia-*`: se instala `torch` CPU desde el índice de
-  PyTorch antes de `requirements.txt`. Se agregan cache mounts de BuildKit para
-  apt/pip/npm (npm compartido entre los dos frontends), `.dockerignore` por
+  PyTorch antes de `requirements.txt`. El backend ya **no hace `apt-get`**
+  (wheels + `devbout-oauth` desde tarball de GitHub; healthcheck con Python),
+  así que el build no depende de `deb.debian.org`. Se agregan cache mounts de
+  BuildKit para pip/npm (npm compartido entre los dos frontends), `.dockerignore` por
   servicio (backend sin tests/datos/secretos; `frontend-tenant` sin `android/`,
   `dist-*`, `www/` ni `tenant-assets/`), etapas `deps`/`dev`/`prod` en el
   backend (dev no hace `COPY . .` ni bakea el modelo; prod bakea con timeout
@@ -421,7 +424,7 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   embeddings se descarga al primer uso y se cachea en el volumen `hf_cache`.
   Verificado: build de dev del backend ~3 s en caliente (1.5 s tras tocar
   código), build completo en caliente ~3 s, cambio real de `frontend-tenant`
-  ~17 s.
+  ~17 s. Para diagnosticar DNS del daemon antes de buildear: `make net-check`.
 - **El stack se maneja con `make` en vez de `./stack.dev` / `./stack.prod`**
   (`Makefile`, `scripts/{preflight,status,clean,android-build}.sh`). Se eliminaron
   los symlinks `stack.*` y los scripts interactivos `scripts/stack-{dev,prod}.sh`.

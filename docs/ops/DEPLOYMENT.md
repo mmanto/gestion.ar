@@ -71,8 +71,9 @@ make prod-status      # ps + health check de api, admin y cada tenant
 > `./deploy.sh` (nombre viejo, borrado en el commit `93c8f0d`) ya no existe:
 > si un doc o un runbook lo menciona, el reemplazo es `make prod-rebuild`.
 >
-> **Build de prod (ADR-036):** `app` instala torch CPU (no CUDA) y cachea
-> apt/pip; el modelo de embeddings se bakea con `timeout 180` y, si falla,
+> **Build de prod (ADR-036):** `app` no usa `apt-get` (torch CPU + wheels +
+> `devbout-oauth` desde tarball) y cachea pip; el modelo de embeddings se
+> bakea con `timeout 180` y, si falla,
 > la imagen se construye igual (runtime con `EMBEDDING_MODEL` o
 > `/opt/models/embedding-model`). La primera build en un VPS limpio descarga
 > las ruedas y el modelo; las siguientes reutilizan capas. `make prod-build`
@@ -110,53 +111,60 @@ Los Dockerfiles de `frontend/` y `frontend-tenant/` ya lo mitigan
 verdadero. Si aparece un `ETIMEDOUT`/`ENOTFOUND`, ver las comprobaciones de
 abajo.
 
-### `app`: `apt-get … did not complete successfully: exit code: 100`
+### `app`: DNS roto (`Temporary failure resolving`, `Could not resolve host`)
 
-`apt-get` sale con 100 ante cualquier error de fetch, y Docker sólo muestra el
-`/bin/sh -c apt-get …`. El motivo está en las líneas de `E:` inmediatamente
-arriba del cierre:
+El Dockerfile de `backend/` **ya no usa `apt-get`**: instala todo con wheels
+(`torch` CPU, `requirements.txt`) y `devbout-oauth` desde el tarball de GitHub.
+Si ves `Temporary failure resolving 'deb.debian.org'` es un build con el
+Dockerfile viejo; actualizá el repo. Si el DNS del daemon está roto, el error
+ahora aparece en PyPI/PyTorch:
 
-| Línea `E:` | Causa |
+| Error | Causa |
 |---|---|
-| `Temporary failure resolving 'deb.debian.org'` | DNS roto en el host |
-| `Release file … is not valid yet` / `has expired` | reloj del VPS desfasado (`date -u`) |
+| `Temporary failure resolving 'deb.debian.org'` | Dockerfile viejo o DNS del daemon |
+| `Could not resolve host: pypi.org` / `download.pytorch.org` / `github.com` | DNS del daemon de Docker |
 | `No space left on device` | disco lleno (`df -h /var/lib/docker`) |
 | `Hash Sum mismatch` / `Writing more data` | proxy/caché intermedio, o descarga cortada |
-
-El Dockerfile de `backend/` ya reintenta (`apt-get -o Acquire::Retries=5`).
 
 ### Comprobaciones en el server
 
 ```bash
+# 0) desde el repo: mismo chequeo que hace el build (DNS de contenedor)
+make net-check
+
 # 1) host vs. contenedor: si el host resuelve y el build no, el DNS roto es el
 #    del daemon de Docker (no el del VPS)
-getent hosts deb.debian.org registry.npmjs.org
-docker run --rm python:3.13-slim getent hosts deb.debian.org
+getent hosts pypi.org download.pytorch.org github.com
+docker run --rm python:3.13-slim python -c \
+  "import socket; [socket.getaddrinfo(h,443) for h in ('pypi.org','download.pytorch.org','github.com')]"
 
-# 2) el error de apt sin el wrapper de BuildKit
-docker run --rm python:3.13-slim sh -c 'apt-get update 2>&1 | tail -15'
-
-# 3) red, reloj, disco, proxy/MTU
-curl -sS -o /dev/null -w '%{http_code} %{time_total}s\n' https://registry.npmjs.org/react
+# 2) red, reloj, disco, proxy/MTU
+curl -sS -o /dev/null -w '%{http_code} %{time_total}s\n' https://pypi.org/simple/
 date -u; timedatectl status | head -3
 df -h /var/lib/docker; df -i /var/lib/docker
 env | grep -i _proxy; ip link show | grep -o 'mtu [0-9]*'
 ```
 
-- **Host resuelve, contenedor no** → DNS del daemon. Se arregla por build con
-  `--network=host` (usa la red del host, sin tocar el daemon):
+- **Host resuelve, contenedor no** → DNS del daemon. Arreglo permanente:
+  ```bash
+  sudo tee /etc/docker/daemon.json >/dev/null <<'JSON'
+  {"dns": ["1.1.1.1", "8.8.8.8"]}
+  JSON
+  sudo systemctl restart docker   # recrea los contenedores; después make prod-up
+  ```
+  Alternativa por build, sin tocar el daemon: `docker build --network=host`
+  usa la red/DNS del host (BuildKit no lo acepta vía Compose Bake sin
+  `--allow=network.host`; por eso es un comando directo):
   `docker build --network=host -t "$REGISTRY_IMAGE/backend:latest" backend/`
-  (ídem `frontend/`, `frontend-tenant/`), después `make prod-up` sin
-  `--build`. Alternativa permanente: `/etc/docker/daemon.json` con
-  `{"dns": ["1.1.1.1", "8.8.8.8"]}` + `systemctl restart docker` (reiniciar el
-  daemon recrea el stack).
-- **Ninguno de los dos resuelve** → DNS del VPS (`cat /etc/resolv.conf`).
+  (ídem `frontend/`, `frontend-tenant/`), después `make prod-up` sin `--build`.
+- **Ninguno de los dos resuelve** → DNS del VPS (`cat /etc/resolv.conf`,
+  `resolvectl status` si usa systemd-resolved).
 - Reloj desfasado → `timedatectl set-ntp true`.
 - Sin salida a internet → buildear en otra máquina y publicar
   `${REGISTRY_IMAGE}/frontend:${IMAGE_TAG}` y `${REGISTRY_IMAGE}/backend:…`
   (compose levanta sin `--build`), o abrir la salida.
-- `ETIMEDOUT` intermitente → red inestable: reintentar el build (npm y apt ya
-  reintentan) y revisar MTU si hay VPN.
+- `ETIMEDOUT` intermitente → red inestable: reintentar el build (npm y pip ya
+  cachean/reintentan) y revisar MTU si hay VPN.
 - Si aun así aparece `Exit handler never called!`, el `docker build` está
   cacheado: `--no-cache` en el target (`frontend`, `frontend-tenant` o `app`).
 

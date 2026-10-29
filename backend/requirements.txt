@@ -31,7 +31,8 @@ qrcode[pil]==7.4.2
 pywebpush==2.0.0
 py-vapid==1.9.1
 
-# PASO 7: devbout-oauth se instala en el Dockerfile via --mount=type=secret,id=github_token
+# PASO 7: devbout-oauth se instala en el Dockerfile desde el tarball de GitHub
+# (v0.3.0), sin git ni apt.
 
 # PASO 8: PostgreSQL (SQLAlchemy async + Alembic) — ver ADR-006 en docs/dev/DECISIONS.md
 sqlalchemy==2.0.46

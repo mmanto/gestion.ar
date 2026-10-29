@@ -43,7 +43,7 @@ API_URL ?=
 # make clean MODE=deep
 MODE ?= light
 
-.PHONY: help urls up down reset restart rebuild build logs ps status shell test config clean \
+.PHONY: help urls up down reset restart rebuild build logs ps status shell test config net-check clean \
 	build-android prod-check prod-up prod-down prod-restart prod-rebuild prod-build \
 	prod-logs prod-ps prod-status prod-shell prod-config prod-clean \
 	prod-build-android
@@ -66,6 +66,7 @@ help:
 	@echo "  make shell SERVICE=app     shell dentro de un servicio"
 	@echo "  make test                  pytest dentro de app"
 	@echo "  make config                validar el compose de desarrollo"
+	@echo "  make net-check             diagnosticar DNS del build"
 	@echo "  make clean [MODE=]         light (default) | deep | all"
 	@echo "  make build-android TENANT=ius TARGET=emulator [API_URL=...]"
 	@echo "  TENANT_HOT_RELOAD=1 make rebuild   tenants con Vite hot-reload"
@@ -136,6 +137,13 @@ test:
 
 config:
 	$(COMPOSE_DEV) config --quiet
+
+# Diagnóstico de DNS del build (mismo resolver que usan BuildKit/pip/npm).
+# Si falla, ver docs/ops/DEPLOYMENT.md § "El build falla por red del VPS".
+net-check:
+	@docker run --rm python:3.13-slim python -c "import socket; [socket.getaddrinfo(h,443) for h in ('pypi.org','download.pytorch.org','github.com')]" \
+		&& echo "DNS del build OK" \
+		|| { echo "ERROR: el contenedor de build no resuelve pypi.org/download.pytorch.org/github.com."; echo "Arreglá el DNS del daemon o buildear con --network=host (docs/ops/DEPLOYMENT.md)."; exit 1; }
 
 clean:
 	@./scripts/clean.sh dev "$(MODE)"

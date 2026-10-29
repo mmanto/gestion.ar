@@ -2184,8 +2184,12 @@ descargando de Hugging Face).
 - Instalar `torch==${TORCH_VERSION}+cpu` desde
   `https://download.pytorch.org/whl/cpu` **antes** de `requirements.txt`, para
   que el resolver use la rueda CPU (las dependencias quedan satisfechas).
-- Cache mounts de BuildKit para `apt` (`/var/cache/apt`,
-  `/var/lib/apt/lists`), `pip` (`/root/.cache/pip`) y `npm`
+- **Sin `apt-get` en el backend**: las dependencias tienen wheels y
+  `devbout-oauth` se instala desde el tarball de GitHub (no `git`). El
+  healthcheck usa `python -c urllib...` en vez de `curl`. Así el build no
+  depende de `deb.debian.org` (era el error `Temporary failure resolving` en
+  VPS con DNS de Docker roto) y la imagen no lleva compilador.
+- Cache mounts de BuildKit para `pip` (`/root/.cache/pip`) y `npm`
   (`id=npm`, compartido entre `frontend` y `frontend-tenant`).
 - `.dockerignore` por servicio: el backend no hornea `tests/`, `documents/`,
   `uploads/`, `chroma_db/` ni `secrets/`; `frontend-tenant` excluye `android/`,
@@ -2199,8 +2203,8 @@ descargando de Hugging Face).
   paralelo); `rebuild` = `build` + `up`, no `up --build`.
 
 ### Consecuencias
-- Imagen `gestionar-app`: **11.8 GB → 3.34 GB**; se eliminan ~8 GB de
-  descarga/export por build.
+- Imagen `gestionar-app`: **11.8 GB → 2.77 GB** (dev; prod suma ~0.95 GB del
+  modelo); se eliminan ~9 GB de descarga/export por build.
 - Build de dev del backend: **~3 s** en caliente y **~1.5 s** tras tocar
   código (el bind mount no invalida la capa de deps). Un cambio real de
   `frontend-tenant` (Vite) sigue costando ~17 s.

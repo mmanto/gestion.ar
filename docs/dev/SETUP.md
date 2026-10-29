@@ -35,7 +35,8 @@ curl http://localhost:8000/api/health
 > Detalle de targets en [`docs/ops/DEPLOYMENT.md`](../ops/DEPLOYMENT.md).
 >
 > `make build` / `make rebuild` usan BuildKit Bake (paralelo) y cachean
-> apt/pip/npm entre builds. `app` instala **torch CPU** (no CUDA) y en dev usa
+> pip/npm entre builds. `app` no hace `apt-get` (todo wheels + `devbout-oauth`
+> desde tarball) e instala **torch CPU** (no CUDA); en dev usa
 > la etapa `dev` (sin `COPY` del código ni bake del modelo); el modelo de
 > embeddings se descarga al primer uso y queda en el volumen `hf_cache`.
 > La primera build en un host limpio igual descarga las ruedas de Python y,

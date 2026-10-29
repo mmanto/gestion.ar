@@ -31,8 +31,9 @@ Internet
 | `traefik` | traefik:v3 (prod) | ~50 MB | 80, 443 | — |
 
 > El backend consume más RAM por `sentence-transformers` (PyTorch): ~1.8-2.5 GB solo para el proceso Python.
-> PyTorch se instala en variante **CPU** (no CUDA): la imagen `app` queda en
-> ~3.34 GB (dev) / ~4.29 GB (prod con el modelo) en vez de ~11.8 GB.
+> PyTorch se instala en variante **CPU** (no CUDA) y el backend no hace
+> `apt-get`: la imagen `app` queda en ~2.77 GB (dev) / ~3.7 GB (prod con el
+> modelo) en vez de ~11.8 GB.
 >
 > El modelo de embeddings RAG (`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`,
 > ~470 MB) se descarga en **build** de la imagen de producción y queda bakeado
@@ -41,7 +42,7 @@ Internet
 > descarga al primer uso y queda en el volumen `hf_cache` (`HF_OFFLINE=0`).
 > Sobreescribir el modelo con `--build-arg EMBEDDING_MODEL=<id>`.
 >
-> Build: `make build` (Bake paralelo) con cache mounts de apt/pip/npm y
+> Build: `make build` (Bake paralelo) con cache mounts de pip/npm y
 > `.dockerignore` por servicio; el backend usa etapas `deps`/`dev`/`prod`
 > (ADR-036). Un cambio de código en dev no invalida la capa de dependencias.
 
