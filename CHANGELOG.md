@@ -390,6 +390,12 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   inalcanzable: con `maxsockets` default aparece exactamente
   `Exit handler never called!`; con `--maxsockets 1000` el mismo build falla
   mostrando `connect ETIMEDOUT` sobre el tarball real.
+- **`app` ya no corta el build en `apt-get` por un fetch fallido**. `apt-get`
+  sale con `exit code: 100` ante cualquier error de descarga y Docker sólo
+  muestra el `/bin/sh -c apt-get …`: el motivo real (falla de DNS, reloj
+  desfasado, disco lleno) queda en las líneas `E:` de arriba. El Dockerfile de
+  `backend/` ahora corre `apt-get -o Acquire::Retries=5` (el default de apt es
+  cero reintentos). Diagnóstico en `docs/ops/DEPLOYMENT.md`.
 
 ### Cambiado
 - **«Gestionar usuarios y módulos» usa el `DataTable` del paquete**: la grilla de usuarios

@@ -9,8 +9,13 @@ WORKDIR /app
 # paquete app/ — tanto en el entrypoint como en sesiones `docker compose exec`
 ENV PYTHONPATH=/app
 
-# Instalar dependencias del sistema necesarias
-RUN apt-get update && apt-get install -y \
+# Instalar dependencias del sistema necesarias.
+# -o Acquire::Retries: el default de apt es 0. El build corre en el VPS de
+# prod, donde el egress/DNS corta de forma intermitente (el mismo problema que
+# hace morir `npm ci` con "Exit handler never called!" en frontend/): sin
+# reintentos, un solo fetch fallido aborta el build con "exit code 100".
+RUN apt-get -o Acquire::Retries=5 update \
+    && apt-get -o Acquire::Retries=5 install -y \
     build-essential \
     curl \
     libssl-dev \

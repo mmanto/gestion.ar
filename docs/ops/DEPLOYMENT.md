@@ -83,34 +83,66 @@ docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod
 
 ---
 
-## Build de `frontend` falla con `npm error Exit handler never called!`
+## El build falla por red del VPS
+
+Los dos targets que bajan paquetes de internet fallan con mensajes que no
+señalan la causa. En ambos casos el problema es el mismo: el server no llega
+bien a `registry.npmjs.org` / `deb.debian.org`.
+
+### `frontend` / `frontend-tenant`: `npm error Exit handler never called!`
 
 No es el código ni el lockfile. Es el bug de npm 10.x/11.x en `agent-base`
 (npm/cli#9386): npm abre 15 conexiones (`maxsockets`) y encola el resto; si
 una conexión contra el registry falla, las encoladas nunca arrancan, npm se
 queda sin event loop y muere con ese mensaje genérico **sin imprimir el error
-de red real**. Sólo se dispara cuando el VPS no llega bien a
-`registry.npmjs.org`.
+de red real**.
 
 Los Dockerfiles de `frontend/` y `frontend-tenant/` ya lo mitigan
 (`npm ci --maxsockets 1000 --no-audit --no-fund` +
 `NPM_CONFIG_FETCH_RETRIES=5`), así que el build ahora falla mostrando el error
-verdadero. Si aparece un `ETIMEDOUT`/`ENOTFOUND`:
+verdadero. Si aparece un `ETIMEDOUT`/`ENOTFOUND`, ver las comprobaciones de
+abajo.
+
+### `app`: `apt-get … did not complete successfully: exit code: 100`
+
+`apt-get` sale con 100 ante cualquier error de fetch, y Docker sólo muestra el
+`/bin/sh -c apt-get …`. El motivo está en las líneas de `E:` inmediatamente
+arriba del cierre:
+
+| Línea `E:` | Causa |
+|---|---|
+| `Temporary failure resolving 'deb.debian.org'` | DNS roto en el host |
+| `Release file … is not valid yet` / `has expired` | reloj del VPS desfasado (`date -u`) |
+| `No space left on device` | disco lleno (`df -h /var/lib/docker`) |
+| `Hash Sum mismatch` / `Writing more data` | proxy/caché intermedio, o descarga cortada |
+
+El Dockerfile de `backend/` ya reintenta (`apt-get -o Acquire::Retries=5`).
+
+### Comprobaciones en el server
 
 ```bash
-# ¿el VPS llega al registry? (código HTTP y tiempo)
+# ¿resuelve y llega? (código HTTP + tiempo; DNS primero)
+getent hosts deb.debian.org registry.npmjs.org; cat /etc/resolv.conf
 curl -sS -o /dev/null -w '%{http_code} %{time_total}s\n' https://registry.npmjs.org/react
-# DNS, proxy y MTU del host (VPN/WireGuard con MTU mal ajustada rompe TLS)
-getent hosts registry.npmjs.org; env | grep -i _proxy; ip link show | grep -o 'mtu [0-9]*'
+# reloj (un desfase rompe apt y TLS) y disco
+date -u; timedatectl status | head -3
+df -h /var/lib/docker; df -i /var/lib/docker
+# proxy y MTU (VPN/WireGuard con MTU mal ajustada corta TLS)
+env | grep -i _proxy; ip link show | grep -o 'mtu [0-9]*'
 ```
 
-- `curl` cuelga o falla → salida a internet del VPS rota/bloqueada: se puede
-  buildear en otra máquina y publicar `${REGISTRY_IMAGE}/frontend:${IMAGE_TAG}`
+- `getent` no resuelve → DNS: fijar resolvers para el **daemon** (no basta el
+  `dns:` del compose, que aplica al runtime del contenedor, no al build):
+  `/etc/docker/daemon.json` con `{"dns": ["1.1.1.1", "8.8.8.8"]}` +
+  `systemctl restart docker`. Ojo: reiniciar el daemon reinicia el stack.
+- Reloj desfasado → `timedatectl set-ntp true`.
+- Sin salida a internet → buildear en otra máquina y publicar
+  `${REGISTRY_IMAGE}/frontend:${IMAGE_TAG}` y `${REGISTRY_IMAGE}/backend:…`
   (compose levanta sin `--build`), o abrir la salida.
-- `ETIMEDOUT` intermitente → red inestable: reintentar el build (npm ya
-  reintenta 5 veces por request) y revisar MTU si hay VPN.
+- `ETIMEDOUT` intermitente → red inestable: reintentar el build (npm y apt ya
+  reintentan) y revisar MTU si hay VPN.
 - Si aun así aparece `Exit handler never called!`, el `docker build` está
-  cacheado: `--no-cache` en el target (`frontend` o `frontend-tenant`).
+  cacheado: `--no-cache` en el target (`frontend`, `frontend-tenant` o `app`).
 
 ---
 
