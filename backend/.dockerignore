@@ -30,3 +30,5 @@ secrets/
 tests/
 *.md
 README.md
+# vendor/ se incluye a propósito: wheels cp313 sin equivalente en PyPI
+# (ver backend/vendor/README.md).

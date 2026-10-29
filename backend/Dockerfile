@@ -19,6 +19,17 @@ ENV PYTHONPATH=/app
 
 # Copiar requirements
 COPY requirements.txt .
+# Wheels vendorizados para Python 3.13 (linux x86_64), porque PyPI no publica
+# cp313 para estas versiones y compilarlas requiere g++ (que no está en
+# python:3.13-slim):
+#   - numpy 1.26.4 (langchain 0.1.4 exige numpy<2)
+#   - chroma-hnswlib 0.7.3 (lo fija chromadb 0.4.22)
+# Se regeneran con `pip wheel --no-deps <pkg>==<version>` en una imagen con
+# toolchain. En otra arquitectura hay que regenerar ambos.
+COPY vendor/ /tmp/vendor/
+
+ENV PIP_DEFAULT_TIMEOUT=120 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Torch CPU explícito: sin esto pip resuelve torch+cuXXX desde PyPI y arrastra
 # ~10 GB de librerías NVIDIA que este stack no usa (no hay GPU). Ese era el
@@ -26,14 +37,21 @@ COPY requirements.txt .
 # La versión se puede pisar con --build-arg TORCH_VERSION=...
 ARG TORCH_VERSION=2.15.0
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --no-input \
+    pip install --no-input --retries 5 \
       --index-url https://download.pytorch.org/whl/cpu \
       "torch==${TORCH_VERSION}+cpu"
 
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --no-input --retries 5 \
+      /tmp/vendor/numpy-1.26.4-*.whl \
+      /tmp/vendor/chroma_hnswlib-0.7.3-*.whl
+
 # Copiar dependencias de Python; devbout-oauth desde tarball (sin git/apt).
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --no-input \
-      -r requirements.txt \
+    pip install --no-input --retries 5 -r requirements.txt
+
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --no-input --retries 5 \
       "devbout-oauth @ https://github.com/mmanto/devbout-oauth/archive/refs/tags/v0.3.0.tar.gz"
 
 # ── Desarrollo ──────────────────────────────────────────────────────────────

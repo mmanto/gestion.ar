@@ -415,7 +415,12 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `torch+cu132`/`nvidia-*`: se instala `torch` CPU desde el índice de
   PyTorch antes de `requirements.txt`. El backend ya **no hace `apt-get`**
   (wheels + `devbout-oauth` desde tarball de GitHub; healthcheck con Python),
-  así que el build no depende de `deb.debian.org`. Se agregan cache mounts de
+  así que el build no depende de `deb.debian.org`. Se vendorizan los wheels
+  `numpy-1.26.4` (por `langchain==0.1.4` con `numpy<2`) y
+  `chroma_hnswlib-0.7.3` cp313-linux-x86_64 (`backend/vendor/`): ninguno tiene
+  wheel cp313 en PyPI y compilarlos requiere g++/meson (que no está en
+  `python:3.13-slim`), por lo que un build limpio fallaba en
+  `requirements.txt`. Se agregan cache mounts de
   BuildKit para pip/npm (npm compartido entre los dos frontends), `.dockerignore` por
   servicio (backend sin tests/datos/secretos; `frontend-tenant` sin `android/`,
   `dist-*`, `www/` ni `tenant-assets/`), etapas `deps`/`dev`/`prod` en el

@@ -2189,6 +2189,14 @@ descargando de Hugging Face).
   healthcheck usa `python -c urllib...` en vez de `curl`. Así el build no
   depende de `deb.debian.org` (era el error `Temporary failure resolving` en
   VPS con DNS de Docker roto) y la imagen no lleva compilador.
+- **Wheels vendorizados para Python 3.13** (`backend/vendor/`, linux x86_64):
+  `numpy==1.26.4` (lo exige `langchain==0.1.4` con `numpy<2`) y
+  `chroma-hnswlib==0.7.3` (lo fija `chromadb==0.4.22`). Ninguno publica wheel
+  cp313 en PyPI y compilarlos requiere g++/meson, que `python:3.13-slim` no
+  trae; sin esto, un build limpio falla en `requirements.txt` (el error se veía
+  recién en un host sin caché de pip). Se regeneran con
+  `pip wheel --no-deps <pkg>==<version>` en una imagen con toolchain; en otra
+  arquitectura hay que generar los wheels correspondientes.
 - Cache mounts de BuildKit para `pip` (`/root/.cache/pip`) y `npm`
   (`id=npm`, compartido entre `frontend` y `frontend-tenant`).
 - `.dockerignore` por servicio: el backend no hornea `tests/`, `documents/`,
@@ -2221,4 +2229,6 @@ descargando de Hugging Face).
   fuerza ese modo. Arreglo permanente: `dns` en `/etc/docker/daemon.json` +
   `systemctl restart docker`.
 - Deuda: evaluar multi-stage para quitar `build-essential` de la imagen final y
-  `cache_from`/`cache_to` en CI.
+  `cache_from`/`cache_to` en CI. También actualizar `langchain` (hoy 0.1.4 fija
+  `numpy<2`) para dejar de vendorizar `numpy` cuando haya wheel cp313 de la
+  versión compatible.

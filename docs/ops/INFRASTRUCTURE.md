@@ -33,7 +33,9 @@ Internet
 > El backend consume más RAM por `sentence-transformers` (PyTorch): ~1.8-2.5 GB solo para el proceso Python.
 > PyTorch se instala en variante **CPU** (no CUDA) y el backend no hace
 > `apt-get`: la imagen `app` queda en ~2.77 GB (dev) / ~3.7 GB (prod con el
-> modelo) en vez de ~11.8 GB.
+> modelo) en vez de ~11.8 GB. `backend/vendor/` trae los wheels cp313 de
+> `numpy 1.26.4` y `chroma-hnswlib 0.7.3` (sin wheel en PyPI; compilarlos
+> requiere g++/meson, que no está en `python:3.13-slim`).
 >
 > El modelo de embeddings RAG (`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`,
 > ~470 MB) se descarga en **build** de la imagen de producción y queda bakeado
