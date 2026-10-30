@@ -1,12 +1,17 @@
-import { useEffect, useState } from 'react';
-import { CreditCard } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  DataTable,
+  defineEntity,
+  defineEntitySchema,
+  defineTableDTO,
+  type TableDTO,
+} from '@mmanto/devbout-ui';
 import { AppLayout } from '../../components/layout/AppLayout';
 import { LoadingPage } from '../../components/common/Spinner';
 import { PageHeader } from '../../components/common/PageHeader';
 import { Alert } from '../../components/common/Alert';
-import { EmptyState } from '../../components/common/EmptyState';
-import { Card } from '../../components/common/Card';
-import { Button } from '../../components/common/Button';
+import { Badge } from '../../components/ui/badge';
+import { formatNumber } from '../../utils/formatters';
 import tenantAdminService from '../../services/tenantAdmin.service';
 import type { Plan, PlanPeriodicity } from '../../types/tenant.types';
 
@@ -15,85 +20,203 @@ const periodicityLabels: Record<PlanPeriodicity, string> = {
   annual: 'Anual',
 };
 
-const emptyForm = { name: '', description: '', amount: '', periodicity: 'monthly' as PlanPeriodicity };
-
 export const Plans = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [showModal, setShowModal] = useState(false);
-  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState(emptyForm);
-
-  const fetchPlans = async () => {
+  const fetchPlans = useCallback(async () => {
     try {
-      setLoading(true);
       setPlans(await tenantAdminService.listPlans());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error cargando planes');
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchPlans();
   }, []);
 
-  const openCreateModal = () => {
-    setEditingPlan(null);
-    setForm(emptyForm);
-    setShowModal(true);
-  };
+  useEffect(() => {
+    void fetchPlans();
+  }, [fetchPlans]);
 
-  const openEditModal = (plan: Plan) => {
-    setEditingPlan(plan);
-    setForm({
-      name: plan.name,
-      description: plan.description || '',
-      amount: String(plan.amount),
-      periodicity: plan.periodicity,
-    });
-    setShowModal(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.name || !form.amount) return;
-
-    try {
-      setSaving(true);
-      const payload = {
-        name: form.name,
-        description: form.description || undefined,
-        amount: parseFloat(form.amount),
-        periodicity: form.periodicity,
-      };
-      if (editingPlan) {
-        await tenantAdminService.updatePlan(editingPlan.plan_id, payload);
-      } else {
-        await tenantAdminService.createPlan(payload);
+  const handleDelete = useCallback(
+    async (plan: Plan) => {
+      try {
+        await tenantAdminService.deletePlan(plan.plan_id);
+        setError(null);
+        await fetchPlans();
+      } catch {
+        setError('No se pudo eliminar: puede tener tenants suscriptos.');
       }
-      setShowModal(false);
-      fetchPlans();
-    } catch (err) {
-      console.error('Error guardando plan:', err);
-    } finally {
-      setSaving(false);
-    }
-  };
+    },
+    [fetchPlans],
+  );
 
-  const handleDelete = async (plan: Plan) => {
-    if (!confirm(`¿Eliminar el plan "${plan.name}"?`)) return;
-    try {
-      await tenantAdminService.deletePlan(plan.plan_id);
-      fetchPlans();
-    } catch {
-      alert('No se pudo eliminar: puede tener tenants suscriptos.');
-    }
-  };
+  /**
+   * DTO de la grilla (mismo patrón que Tenants): el paquete resuelve buscador,
+   * orden, visibilidad de columnas, paginación y las acciones. Alta y edición
+   * salen de una sola declaración (`defineEntity`): el schema serializable
+   * alimenta el formulario y el submit contra la API; no hay modal propio.
+   */
+  const dto = useMemo<TableDTO<Plan>>(() => {
+    const entity = defineEntity<Plan>({
+      schema: defineEntitySchema({
+        fields: [
+          {
+            kind: 'text',
+            name: 'name',
+            label: 'Nombre',
+            placeholder: 'Ej: Plan Pro',
+            required: true,
+            rules: { maxLength: 80 },
+          },
+          {
+            kind: 'textarea',
+            name: 'description',
+            label: 'Descripción',
+            rows: 3,
+            placeholder: 'Descripción opcional del plan',
+          },
+          {
+            kind: 'number',
+            name: 'amount',
+            label: 'Monto',
+            placeholder: '0',
+            min: 0,
+            step: 0.01,
+            required: true,
+          },
+          {
+            kind: 'select',
+            name: 'periodicity',
+            label: 'Periodicidad',
+            defaultValue: 'monthly',
+            required: true,
+            options: [
+              { value: 'monthly', label: 'Mensual' },
+              { value: 'annual', label: 'Anual' },
+            ],
+          },
+        ],
+        labels: {
+          createLabel: 'Nuevo plan',
+          createTitle: 'Nuevo plan',
+          createSubmit: 'Crear plan',
+          editLabel: 'Editar',
+          editTitle: 'Editar plan',
+          editSubmit: 'Guardar cambios',
+          cancel: 'Cancelar',
+          empty: '—',
+          messages: {
+            required: 'Este campo es obligatorio',
+            min: 'El monto no puede ser negativo',
+            maxLength: 'Máximo {n} caracteres',
+          },
+        },
+      }),
+      rowId: (plan) => plan.plan_id,
+      onSubmit: async (values, row) => {
+        const payload = {
+          name: values.name.trim(),
+          description: values.description.trim() || undefined,
+          amount: Number(values.amount),
+          periodicity: values.periodicity as PlanPeriodicity,
+        };
+        if (row) {
+          await tenantAdminService.updatePlan(row.plan_id, payload);
+        } else {
+          await tenantAdminService.createPlan(payload);
+        }
+        await fetchPlans();
+      },
+      create: {},
+      edit: {},
+    });
+
+    return defineTableDTO<Plan>({
+      entity,
+      // Sin columna de checks: se opera fila por fila.
+      selectable: false,
+      // Cabecera dentro del DataTable: hereda su layout (título + métricas
+      // arriba del toolbar, con el mismo padding que el resto del componente).
+      header: (rows) => (
+        <PageHeader
+          title="Planes"
+          description={`${rows.length} plan${rows.length !== 1 ? 'es' : ''} en total`}
+        />
+      ),
+      // Grilla controlada: al declarar `onDataChange` renderiza `data`, así el
+      // refetch posterior a cada mutación se refleja en la tabla.
+      onDataChange: setPlans,
+      search: { columnId: 'name', placeholder: 'Buscar plan' },
+      columnLabels: {
+        name: 'Plan',
+        periodicity: 'Periodicidad',
+        amount: 'Monto',
+      },
+      labels: {
+        searchAction: 'Buscar',
+        rowsPerPage: 'Filas por página',
+        columns: 'Columnas',
+        noResults: 'Sin planes todavía.',
+        previous: 'Anterior',
+        next: 'Siguiente',
+        openRowMenu: 'Abrir acciones de la fila',
+      },
+      columns: [
+        {
+          id: 'name',
+          accessorKey: 'name',
+          header: 'Plan',
+          cell: ({ row }) => (
+            <div className="grid">
+              <span className="font-medium">{row.original.name}</span>
+              {row.original.description && (
+                <span className="text-xs text-muted-foreground">
+                  {row.original.description}
+                </span>
+              )}
+            </div>
+          ),
+        },
+        {
+          id: 'periodicity',
+          header: 'Periodicidad',
+          cell: ({ row }) => (
+            <Badge variant="secondary">
+              {periodicityLabels[row.original.periodicity]}
+            </Badge>
+          ),
+        },
+        {
+          id: 'amount',
+          header: 'Monto',
+          cell: ({ row }) => (
+            <span className="tabular-nums">$ {formatNumber(row.original.amount)}</span>
+          ),
+        },
+      ],
+      rowActions: [
+        {
+          id: 'delete',
+          label: 'Eliminar',
+          variant: 'destructive',
+          run: (plan) => {
+            void handleDelete(plan);
+          },
+        },
+      ],
+      confirm: {
+        title: 'Eliminar plan',
+        message: (count) =>
+          count === 1
+            ? '¿Eliminar este plan? Esta acción no se puede deshacer.'
+            : `¿Eliminar ${count} planes? Esta acción no se puede deshacer.`,
+        confirmLabel: 'Eliminar',
+        cancelLabel: 'Cancelar',
+      },
+    });
+  }, [fetchPlans, handleDelete]);
 
   if (loading) {
     return <LoadingPage />;
@@ -102,126 +225,10 @@ export const Plans = () => {
   return (
     <AppLayout>
       <div className="flex flex-col gap-4">
-        <PageHeader
-          title="Planes"
-          description={`${plans.length} plan${plans.length !== 1 ? 'es' : ''} en total`}
-          actions={
-            <Button variant="primary" onClick={openCreateModal}>
-              + Nuevo Plan
-            </Button>
-          }
-        />
+        {error && <Alert variant="error">Error: {error}</Alert>}
 
-        {error && <Alert variant="error" className="mb-6">Error: {error}</Alert>}
-
-        {plans.length === 0 ? (
-          <Card shadow="none">
-            <EmptyState
-              icon={<CreditCard className="w-8 h-8 text-gray-800" />}
-              title="Todavía no hay planes"
-              description="Creá el primer plan para poder suscribir tenants"
-              titleClassName="text-gray-900 text-xl"
-              descriptionClassName="text-gray-900 text-base"
-              action={
-                <Button variant="primary" onClick={openCreateModal}>
-                  Crear el primer plan
-                </Button>
-              }
-            />
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {plans.map((plan) => (
-              <Card key={plan.plan_id} shadow="none">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-lg font-normal text-gray-900">{plan.name}</h3>
-                  <span className="px-2 py-1 text-base font-medium rounded-full bg-gray-200 text-gray-950">
-                    {periodicityLabels[plan.periodicity]}
-                  </span>
-                </div>
-                <p className="text-2xl font-semibold text-gray-900 mb-2">
-                  ${plan.amount.toLocaleString('es-AR')}
-                </p>
-                {plan.description && (
-                  <p className="text-gray-900 text-base mb-4">{plan.description}</p>
-                )}
-                <div className="flex gap-3 mt-4">
-                  <Button variant="outline" onClick={() => openEditModal(plan)}>
-                    Editar
-                  </Button>
-                  <Button variant="danger" onClick={() => handleDelete(plan)}>
-                    Eliminar
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
+        <DataTable dto={dto} data={plans} />
       </div>
-
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
-              {editingPlan ? 'Editar Plan' : 'Nuevo Plan'}
-            </h2>
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-900 mb-1">Nombre *</label>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="Ej: Plan Pro"
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-900 mb-1">Descripción</label>
-                <textarea
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
-                  rows={3}
-                  placeholder="Descripción opcional del plan"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-900 mb-1">Monto *</label>
-                <input
-                  type="number"
-                  value={form.amount}
-                  onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
-                  min={0}
-                  step="0.01"
-                  required
-                />
-              </div>
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-900 mb-1">Periodicidad *</label>
-                <select
-                  value={form.periodicity}
-                  onChange={(e) => setForm({ ...form, periodicity: e.target.value as PlanPeriodicity })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  <option value="monthly">Mensual</option>
-                  <option value="annual">Anual</option>
-                </select>
-              </div>
-              <div className="flex justify-end gap-3">
-                <Button type="button" variant="outline" onClick={() => setShowModal(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit" variant="primary" loading={saving}>
-                  {editingPlan ? 'Guardar cambios' : 'Crear Plan'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </AppLayout>
   );
 };

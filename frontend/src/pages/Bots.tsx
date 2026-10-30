@@ -1,24 +1,23 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Bot as BotIcon } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { PlusSignIcon } from '@hugeicons/core-free-icons';
+import {
+  Button as UiButton,
+  DataTable,
+  defineTableDTO,
+  type TableDTO,
+} from '@mmanto/devbout-ui';
 import { AppLayout } from '../components/layout/AppLayout';
 import { LoadingPage } from '../components/common/Spinner';
 import { PageHeader } from '../components/common/PageHeader';
 import { Alert } from '../components/common/Alert';
-import { EmptyState } from '../components/common/EmptyState';
-import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { useBots } from '../hooks/useBots';
+import { Badge } from '../components/ui/badge';
 import type { Bot, BotStatus } from '../types/bot.types';
 import type { ModuleInfo, Tenant } from '../types/tenant.types';
 import botsService from '../services/bots.service';
 import tenantAdminService from '../services/tenantAdmin.service';
-
-const statusColors: Record<BotStatus, string> = {
-  active: 'bg-green-200 text-green-950',
-  inactive: 'bg-gray-200 text-gray-950',
-  maintenance: 'bg-yellow-200 text-yellow-950',
-};
 
 const statusLabels: Record<BotStatus, string> = {
   active: 'Activo',
@@ -26,26 +25,57 @@ const statusLabels: Record<BotStatus, string> = {
   maintenance: 'Mantenimiento',
 };
 
+const statusVariants: Record<BotStatus, 'success' | 'secondary' | 'warning'> = {
+  active: 'success',
+  inactive: 'secondary',
+  maintenance: 'warning',
+};
+
+const emptyBotForm = { tenant_id: '', name: '', description: '', business_type: '' };
+
 export const Bots = () => {
-  const { bots, loading, error, total, page, pages, goToPage, refetch } = useBots({
-    limit: 10,
-  });
+  const navigate = useNavigate();
+
+  const [bots, setBots] = useState<Bot[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [modules, setModules] = useState<ModuleInfo[]>([]);
   const [selectedModules, setSelectedModules] = useState<string[]>([]);
-  const [newBot, setNewBot] = useState({
-    tenant_id: '',
-    name: '',
-    description: '',
-    business_type: '',
-  });
+  const [newBot, setNewBot] = useState(emptyBotForm);
+
+  // Grilla con paginación propia: se trae la lista completa (igual que Tenants)
+  // y el DataTable pagina/busca del lado del cliente.
+  const fetchBots = useCallback(async () => {
+    try {
+      const response = await botsService.getBots({ limit: 100 });
+      setBots(response.bots);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error cargando agentes');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    tenantAdminService.listTenants(1, 100).then((r) => setTenants(r.tenants)).catch(() => {});
-    tenantAdminService.listModules().then(setModules).catch(() => {});
-  }, []);
+    void fetchBots();
+    tenantAdminService
+      .listTenants(1, 100)
+      .then((r) => setTenants(r.tenants))
+      .catch(() => {});
+    tenantAdminService
+      .listModules()
+      .then(setModules)
+      .catch(() => {});
+  }, [fetchBots]);
+
+  const tenantNames = useMemo(
+    () => new Map(tenants.map((tenant) => [tenant.tenant_id, tenant.name])),
+    [tenants],
+  );
 
   const toggleModule = (moduleKey: string) => {
     setSelectedModules((prev) =>
@@ -61,15 +91,136 @@ export const Bots = () => {
       setCreating(true);
       await botsService.createBot({ ...newBot, module_keys: selectedModules });
       setShowCreateModal(false);
-      setNewBot({ tenant_id: '', name: '', description: '', business_type: '' });
+      setNewBot(emptyBotForm);
       setSelectedModules([]);
-      refetch();
+      await fetchBots();
     } catch (err) {
-      console.error('Error creating bot:', err);
+      setError(err instanceof Error ? err.message : 'No se pudo crear el agente');
     } finally {
       setCreating(false);
     }
   };
+
+  /**
+   * DTO de la grilla (mismo patrón que Tenants): buscador, visibilidad de
+   * columnas, paginación y acciones por fila. El alta sigue en el diálogo
+   * propio porque el schema del paquete no cubre el select de tenant ni la
+   * multi-selección de módulos.
+   */
+  const dto = useMemo<TableDTO<Bot>>(
+    () =>
+      defineTableDTO<Bot>({
+        toolbarActions: (
+          <UiButton onClick={() => setShowCreateModal(true)}>
+            <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} />
+            Crear agente
+          </UiButton>
+        ),
+        // Sin columna de checks: se opera fila por fila.
+        selectable: false,
+        // Cabecera dentro del DataTable: hereda su layout (título + métricas
+        // arriba del toolbar, con el mismo padding que el resto del componente).
+        header: (rows) => (
+          <PageHeader
+            title="Mis Agentes"
+            description={`${rows.length} agente${rows.length !== 1 ? 's' : ''} en total`}
+          />
+        ),
+        // Grilla controlada: al declarar `onDataChange` renderiza `data`, así el
+        // refetch posterior al alta se refleja en la tabla.
+        onDataChange: setBots,
+        search: { columnId: 'name', placeholder: 'Buscar agente' },
+        columnLabels: {
+          name: 'Agente',
+          status: 'Estado',
+          tenant: 'Tenant',
+          business_type: 'Tipo de negocio',
+          total_clients: 'Clientes',
+          total_conversations: 'Chats',
+          total_messages: 'Mensajes',
+        },
+        labels: {
+          searchAction: 'Buscar',
+          rowsPerPage: 'Filas por página',
+          columns: 'Columnas',
+          noResults: 'Sin agentes todavía.',
+          previous: 'Anterior',
+          next: 'Siguiente',
+          openRowMenu: 'Abrir acciones de la fila',
+        },
+        columns: [
+          {
+            id: 'name',
+            accessorKey: 'name',
+            header: 'Agente',
+            cell: ({ row }) => (
+              <div className="grid">
+                <Link
+                  to={`/bots/${row.original.bot_id}`}
+                  className="font-medium text-foreground hover:underline"
+                >
+                  {row.original.name}
+                </Link>
+                {row.original.description && (
+                  <span className="text-xs text-muted-foreground">
+                    {row.original.description}
+                  </span>
+                )}
+              </div>
+            ),
+          },
+          {
+            id: 'status',
+            header: 'Estado',
+            cell: ({ row }) => (
+              <Badge variant={statusVariants[row.original.status]}>
+                {statusLabels[row.original.status]}
+              </Badge>
+            ),
+          },
+          {
+            id: 'tenant',
+            header: 'Tenant',
+            cell: ({ row }) =>
+              tenantNames.get(row.original.tenant_id) ?? row.original.tenant_id,
+          },
+          {
+            id: 'business_type',
+            accessorKey: 'business_type',
+            header: 'Tipo de negocio',
+          },
+          {
+            id: 'total_clients',
+            header: 'Clientes',
+            cell: ({ row }) => (
+              <span className="tabular-nums">{row.original.total_clients}</span>
+            ),
+          },
+          {
+            id: 'total_conversations',
+            header: 'Chats',
+            cell: ({ row }) => (
+              <span className="tabular-nums">{row.original.total_conversations}</span>
+            ),
+          },
+          {
+            id: 'total_messages',
+            header: 'Mensajes',
+            cell: ({ row }) => (
+              <span className="tabular-nums">{row.original.total_messages}</span>
+            ),
+          },
+        ],
+        rowActions: [
+          {
+            id: 'open',
+            label: 'Abrir configuración',
+            run: (bot) => navigate(`/bots/${bot.bot_id}`),
+          },
+        ],
+      }),
+    [navigate, tenantNames],
+  );
 
   if (loading) {
     return <LoadingPage />;
@@ -77,106 +228,11 @@ export const Bots = () => {
 
   return (
     <AppLayout>
-        <div className="flex flex-col gap-4">
-          <PageHeader
-            title="Mis Agentes"
-            description={`${total} agente${total !== 1 ? 's' : ''} en total`}
-            actions={
-              <Button variant="primary" onClick={() => setShowCreateModal(true)}>
-                + Crear Agente
-              </Button>
-            }
-          />
+      <div className="flex flex-col gap-4">
+        {error && <Alert variant="error">Error: {error}</Alert>}
 
-          {error && <Alert variant="error" className="mb-6">Error: {error}</Alert>}
-
-          {/* Bots Grid */}
-          {bots.length === 0 ? (
-            <Card shadow="none">
-              <EmptyState
-                icon={<BotIcon className="w-8 h-8 text-gray-800" />}
-                title="Todavía no tenés agentes"
-                description="Creá tu primer agente para empezar"
-                titleClassName="text-gray-900 text-xl"
-                descriptionClassName="text-gray-900 text-base"
-                action={
-                  <Button variant="primary" onClick={() => setShowCreateModal(true)}>
-                    Crear tu primer agente
-                  </Button>
-                }
-              />
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {bots.map((bot: Bot) => (
-                <Link key={bot.bot_id} to={`/bots/${bot.bot_id}`}>
-                  <Card shadow="none">
-                    <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-lg font-normal text-gray-900">
-                        {bot.name}
-                      </h3>
-                      <span
-                        className={`px-2 py-1 text-base font-medium rounded-full ${
-                          statusColors[bot.status]
-                        }`}
-                      >
-                        {statusLabels[bot.status]}
-                      </span>
-                    </div>
-
-                    {bot.description && (
-                      <p className="text-gray-800 text-base mb-4 line-clamp-2">
-                        {bot.description}
-                      </p>
-                    )}
-
-                    <div className="text-base text-gray-800 mb-4">
-                      <span className="inline-block bg-gray-200 rounded-full px-2 py-1">
-                        {bot.business_type}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 text-center text-base">
-                      <div>
-                        <p className="font-semibold text-gray-900">
-                          {bot.total_clients}
-                        </p>
-                        <p className="text-gray-900">Clientes</p>
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900">
-                          {bot.total_conversations}
-                        </p>
-                        <p className="text-gray-900">Chats</p>
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900">
-                          {bot.total_messages}
-                        </p>
-                        <p className="text-gray-900">Mensajes</p>
-                      </div>
-                    </div>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          )}
-
-          {/* Pagination */}
-          {pages > 1 && (
-            <div className="flex justify-center items-center mt-8 gap-2">
-              <Button variant="outline" onClick={() => goToPage(page - 1)} disabled={page === 1}>
-                Anterior
-              </Button>
-              <span className="px-4 py-2 text-base text-gray-900">
-                Página {page} de {pages}
-              </span>
-              <Button variant="outline" onClick={() => goToPage(page + 1)} disabled={page === pages}>
-                Siguiente
-              </Button>
-            </div>
-          )}
-        </div>
+        <DataTable dto={dto} data={bots} />
+      </div>
 
       {/* Create Bot Modal */}
       {showCreateModal && (
@@ -282,7 +338,6 @@ export const Bots = () => {
           </div>
         </div>
       )}
-
     </AppLayout>
   );
 };

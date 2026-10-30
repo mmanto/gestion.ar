@@ -429,6 +429,20 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   cero reintentos). Diagnóstico en `docs/ops/DEPLOYMENT.md`.
 
 ### Cambiado
+- **Los listados de Planes y Agentes usan la grilla declarativa como Tenants**
+  (`frontend/src/pages/admin/Plans.tsx`, `frontend/src/pages/Bots.tsx`,
+  `frontend/src/hooks/useBots.ts`). Ambas pantallas pasan de tarjetas propias a
+  `DataTable` + `defineTableDTO` de `@mmanto/devbout-ui`: buscador, visibilidad
+  de columnas, tamaño de página y paginación del paquete; la cabecera (título +
+  contador) va en `dto.header` y la `onDataChange` mantiene la grilla
+  controlada. **Planes** además reemplaza el modal propio por `defineEntity`:
+  el schema (nombre, descripción, monto, periodicidad) alimenta alta y edición
+  (superficie del paquete) y el borrado pasa por la confirmación del componente.
+  **Agentes** conserva su diálogo de alta (tenant + multi-selección de módulos,
+  que el schema no cubre) expuesto en `toolbarActions`; la fila muestra nombre
+  (link a `/bots/:id`), estado con chip, tenant, tipo de negocio y métricas, y
+  trae la lista completa (`limit=100`) para que pagine la grilla. Se elimina
+  `useBots` (quedó sin uso).
 - **Apariencia se movió dentro de Ajustes** (`frontend/src/pages/Settings.tsx`,
   `frontend/src/pages/Apariencia.tsx`, `App.tsx`, `config/navLinks.tsx`,
   `templates/default/NavUser.tsx`). Se eliminó la pantalla independiente
