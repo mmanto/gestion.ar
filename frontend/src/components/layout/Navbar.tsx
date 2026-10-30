@@ -74,12 +74,7 @@ export const Navbar: React.FC = () => {
           <div className="flex items-center gap-8">
             {!isAuthenticated && (
               <Link to="/">
-                <span
-                  className="font-editorial text-2xl font-semibold uppercase tracking-[0.08em] select-none"
-                  style={{ color: 'white' }}
-                >
-                  GESTIONA
-                </span>
+                <span className="brand-logo">Intellify</span>
               </Link>
             )}
           </div>

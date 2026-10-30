@@ -429,6 +429,36 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   cero reintentos). Diagnóstico en `docs/ops/DEPLOYMENT.md`.
 
 ### Cambiado
+- **Nuevo logotipo del panel: «Intellify»** (antes «Gestiona/GESTIONA»). La
+  marca pasa a una utilidad `brand-logo` (`frontend/src/index.css`): Cormorant
+  Garamond itálica de 33px, peso 372 y color `#546e87`; la familia se carga en
+  `frontend/index.html` desde Google Fonts (sólo itálica 400, la cara más
+  cercana al peso pedido). Se aplica en la landing sin sesión
+  (`components/layout/Navbar.tsx`), el sidebar de «Clásico»
+  (`templates/default/AppSidebar.tsx`) y el de «Kero» (`templates/kero/Sidebar.tsx`,
+  desktop y drawer), con «I» cuando el sidebar está colapsado. En «Clásico» el
+  logotipo queda centrado horizontalmente en el ancho del sidebar (expandido y
+  colapsado), igual que en «Kero».
+- **Tema por defecto: preset Cian, títulos «Más grande» y barra de menú en Página**
+  (`frontend/`). `DEFAULT_SELECTION` (nuevo `lib/theme-presets/selection.ts`)
+  define lo que ve un navegador sin elección guardada: preset **Cian**
+  (`b1tNnABoO`), bloque «Barra de menú» con tono **Página** y títulos en
+  **Más grande** (`xl`). No se persiste, así un cambio futuro del default sigue
+  llegando; `bootstrapThemePreset()` reconstruye el payload desde la selección
+  (y migra los payloads viejos con `code: null`, marcados ahora con
+  `version: 2`) para que el primer paint ya salga con el default. La tarjeta
+  «Predeterminado» de Apariencia pasa a llamarse **Base** (es el tema base, no
+  el default) y «Restablecer» borra `localStorage['theme-preset']` y vuelve al
+  default (`reset`/`isDefault` nuevos en `useThemePreset()`).
+- **Selección de template movida a Ajustes y «Clásico» como default**
+  (`frontend/`). El selector «Diseño» deja de vivir en el dropdown del usuario
+  (`components/layout/UserMenu.tsx` y `templates/default/NavUser.tsx`) y pasa a
+  una tarjeta en Ajustes (`pages/Settings.tsx`, visible para todo usuario
+  autenticado), junto a «Vistas de entidad». Se elimina
+  `components/layout/TemplatePicker.tsx`. El template por defecto pasa de
+  «Kero» a «Clásico» en `context/TemplateContext.tsx`; en `frontend-tenant/`
+  el default de `resolveTemplateId` también pasa a «Clásico» (la selección ya
+  vivía en Ajustes › Marca).
 - **Los listados de Planes y Agentes usan la grilla declarativa como Tenants**
   (`frontend/src/pages/admin/Plans.tsx`, `frontend/src/pages/Bots.tsx`,
   `frontend/src/hooks/useBots.ts`). Ambas pantallas pasan de tarjetas propias a

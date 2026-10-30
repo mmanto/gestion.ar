@@ -32,13 +32,20 @@ Fuente única: `frontend/src/index.css`. Para cambiar un color de la app se toca
 - **Escala raíz:** `html { font-size: clamp(1rem, 100vw/120, 1.75rem) }` — todas las medidas en `rem` escalan con el viewport.
 - `* { border-color: var(--border) }` en `@layer base`: un `border` sin color usa el token.
 
+## Marca
+
+- Logotipo **Intellify** (reemplaza «Gestiona/GESTIONA»): utilidad `brand-logo` en `frontend/src/index.css` — Cormorant Garamond itálica, `33px` fijos (no escalan con el viewport), peso `372` y color `#546e87`.
+- La familia se carga en `frontend/index.html` desde Google Fonts sólo en itálica 400: al ser una familia estática, 372 resuelve a esa cara.
+- Superficies: `components/layout/Navbar.tsx` (landing sin sesión), `templates/default/AppSidebar.tsx` y `templates/kero/Sidebar.tsx`; con el sidebar colapsado se muestra «I».
+
 ---
 
 ## Temas (sección Apariencia en Ajustes)
 
 - Pantalla: `/settings` (`frontend/src/pages/Settings.tsx` → sección `Apariencia` de `frontend/src/pages/Apariencia.tsx`); ya no hay link propio en `frontend/src/config/navLinks.tsx`. Solo la ve `super_admin`. Secciones: **Modo** (Claro / Oscuro / Sistema), Presets, Tipografía, Bloques y Vista previa.
-- Catálogo de presets vendoreado en `frontend/src/lib/theme-presets/catalog.ts` (9 presets, generado con `scripts/generate-theme-presets.mjs`) más la opción «Predeterminado» (tema base).
-- Preset, tonos de bloque y tamaño de títulos se emiten como CSS `html:root` / `html:root.dark` que `frontend/src/components/theme-preset-provider.tsx` inyecta en `<head>` (style + links de Google Fonts) y persiste en `localStorage['theme-preset']`.
+- Catálogo de presets vendoreado en `frontend/src/lib/theme-presets/catalog.ts` (9 presets, generado con `scripts/generate-theme-presets.mjs`) más la opción «Base» (tema base declarado en `:root`).
+- **Default de la app** (`DEFAULT_SELECTION` en `frontend/src/lib/theme-presets/selection.ts`, versionado con `PRESET_VERSION`): preset **Cian** (`b1tNnABoO`), **Barra de menú** en tono Página y títulos en **Más grande** (`xl`). Se aplica cuando el navegador no tiene elección guardada y no se persiste (un cambio futuro del default sigue llegando); «Restablecer» (`reset()`) borra `localStorage['theme-preset']` y vuelve a él. Los payloads previos (sin `version`) con `code: null` migran al default.
+- Preset, tonos de bloque y tamaño de títulos se emiten como CSS `html:root` / `html:root.dark` que `frontend/src/components/theme-preset-provider.tsx` inyecta en `<head>` (style + links de Google Fonts) y persiste en `localStorage['theme-preset']`. `useThemePreset()` expone además `isDefault` y `reset`.
 - Claro/oscuro: `frontend/src/context/ThemeContext.tsx` + `frontend/src/lib/colorScheme.ts` (clase `.dark` y `color-scheme` en `<html>`, `localStorage['gestionar-theme']`, atajo de teclado `d`).
 - Ambos se aplican antes del primer render: `bootstrapThemePreset()` y `bootstrapColorScheme()` se llaman en `frontend/src/main.tsx`.
 - El tema es **global**: los tokens viven en `:root`/`.dark`, así que afectan a los dos templates y a las páginas públicas.
@@ -134,4 +141,4 @@ si son cortos (`select`/`color`/fecha)— dentro de un `@container`, no en una c
 
 ## Templates del admin
 
-`frontend/src/templates/registry.ts` expone dos shells conmutables desde el dropdown del usuario («Diseño», `components/layout/TemplatePicker.tsx`): `default` («Clásico», `templates/default/`) y `kero` (`templates/kero/`). Cada página se envuelve a sí misma con `components/layout/AppLayout.tsx`, que despacha al `AppLayout` del template activo (`localStorage['gestionar-template']`). El `SidebarProvider` vive dentro de cada template para no envolver las rutas públicas.
+`frontend/src/templates/registry.ts` expone dos shells conmutables desde Ajustes › «Diseño» (`frontend/src/pages/Settings.tsx`): `default` («Clásico», `templates/default/`, el default) y `kero` (`templates/kero/`). Cada página se envuelve a sí misma con `components/layout/AppLayout.tsx`, que despacha al `AppLayout` del template activo (`localStorage['gestionar-template']`). El `SidebarProvider` vive dentro de cada template para no envolver las rutas públicas.

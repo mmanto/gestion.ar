@@ -140,9 +140,11 @@ export function Apariencia() {
     preset,
     overrides,
     title,
+    isDefault,
     setPreset,
     setBlockTone,
     setTitleSize,
+    reset,
   } = useThemePreset()
   const { theme, setTheme } = useTheme()
   const [branch, setBranch] = React.useState("main")
@@ -221,7 +223,7 @@ export function Apariencia() {
             className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
           >
             <PresetCard
-              name="Predeterminado"
+              name="Base"
               description="Tema base Mira con Inter y radio 0.625rem"
               code={null}
               active={code === null}
@@ -336,7 +338,7 @@ export function Apariencia() {
             </h2>
             <p className="text-xs/relaxed text-muted-foreground">
               Los controles de abajo usan los tokens del preset{" "}
-              {preset ? preset.name : "predeterminado"}.
+              {preset ? preset.name : "el tema base"}.
             </p>
           </div>
           <div className="flex flex-col gap-4 rounded-md border p-4">
@@ -388,12 +390,8 @@ export function Apariencia() {
         <section className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
-            disabled={
-              code === null &&
-              Object.keys(overrides).length === 0 &&
-              title === undefined
-            }
-            onClick={() => setPreset(null)}
+            disabled={isDefault}
+            onClick={reset}
           >
             Restablecer
           </Button>

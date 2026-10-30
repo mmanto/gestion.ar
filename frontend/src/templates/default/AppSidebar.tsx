@@ -22,12 +22,12 @@ export function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" className="px-2" render={<Link to="/admin/tenants" />}>
-              <span className="font-editorial text-lg font-semibold uppercase tracking-[0.08em] group-data-[collapsible=icon]:hidden">
-                Gestiona
+            <SidebarMenuButton size="lg" className="justify-center px-2" render={<Link to="/admin/tenants" />}>
+              <span className="brand-logo group-data-[collapsible=icon]:hidden">
+                Intellify
               </span>
-              <span className="hidden font-editorial text-lg font-semibold uppercase group-data-[collapsible=icon]:inline">
-                G
+              <span className="brand-logo hidden group-data-[collapsible=icon]:inline">
+                I
               </span>
             </SidebarMenuButton>
           </SidebarMenuItem>

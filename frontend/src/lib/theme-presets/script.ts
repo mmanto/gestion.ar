@@ -1,24 +1,25 @@
+import { buildPayload, parseSelection } from "./selection"
+
 /** Where the selected preset (and its prepared CSS) is persisted. */
 export const THEME_PRESET_STORAGE_KEY = "theme-preset"
 
 /**
- * Re-applies the stored preset before React mounts — otherwise the app flashes
- * the base theme on every reload. Must stay in sync with the payload
- * `components/theme-preset-provider.tsx` writes.
+ * Aplica el preset guardado (o el default de la app si no hay nada guardado)
+ * antes de que React monte — si no, la app flashea el tema base en cada reload.
+ *
+ * El payload se reconstruye desde la selección (no se confía en el CSS
+ * guardado) para que la migración de payloads viejos y el default nuevo pinten
+ * desde la primera pintura.
  *
  * En base esto es un string inline en el `<head>` (Next); acá corre como
  * función llamada desde `main.tsx` antes de `createRoot(...).render(...)`.
  */
 export function bootstrapThemePreset(): void {
   try {
-    const raw = localStorage.getItem(THEME_PRESET_STORAGE_KEY)
-    if (!raw) return
-    const preset = JSON.parse(raw) as
-      | { fontUrls?: string[]; css?: string }
-      | null
-    if (!preset || typeof preset !== "object") return
+    const raw = localStorage.getItem(THEME_PRESET_STORAGE_KEY) ?? ""
+    const payload = buildPayload(parseSelection(raw))
 
-    for (const url of preset.fontUrls ?? []) {
+    for (const url of payload.fontUrls) {
       const link = document.createElement("link")
       link.rel = "stylesheet"
       link.href = url
@@ -26,13 +27,13 @@ export function bootstrapThemePreset(): void {
       document.head.appendChild(link)
     }
 
-    if (preset.css) {
+    if (payload.css) {
       const style = document.createElement("style")
       style.setAttribute("data-theme-preset", "tokens")
-      style.textContent = preset.css
+      style.textContent = payload.css
       document.head.appendChild(style)
     }
   } catch {
-    /* localStorage bloqueado o payload corrupto: se arranca con el tema base. */
+    /* localStorage bloqueado o payload corrupto: se arranca con el default. */
   }
 }

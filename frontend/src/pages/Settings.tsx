@@ -5,6 +5,7 @@ import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Apariencia } from './Apariencia';
 import { useAuth } from '../hooks/useAuth';
+import { useTemplate } from '../hooks/useTemplate';
 import type { UserRole } from '../types/auth.types';
 
 const roleLabels: Record<UserRole, string> = {
@@ -60,6 +61,32 @@ const EntityViewCard = () => {
   );
 };
 
+/** Shell del panel (`templates/registry.ts`): «Clásico» o «Kero». */
+const DesignCard = () => {
+  const { templateId, setTemplateId, templates } = useTemplate();
+
+  return (
+    <Card shadow="none">
+      <h2 className="text-xl font-semibold text-foreground mb-1">Diseño</h2>
+      <p className="text-sm text-muted-foreground mb-4">
+        Plantilla visual del panel. Se guarda en este navegador.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {templates.map((option) => (
+          <Button
+            key={option.id}
+            type="button"
+            variant={templateId === option.id ? 'default' : 'outline'}
+            onClick={() => setTemplateId(option.id)}
+          >
+            {option.label}
+          </Button>
+        ))}
+      </div>
+    </Card>
+  );
+};
+
 export const Settings = () => {
   const { user } = useAuth();
 
@@ -68,7 +95,7 @@ export const Settings = () => {
       <div className="flex flex-col gap-4">
         <PageHeader
           title="Ajustes"
-          description="Tu cuenta, vistas de entidad y apariencia"
+          description="Tu cuenta, diseño, vistas de entidad y apariencia"
         />
 
         <Card shadow="none">
@@ -88,6 +115,8 @@ export const Settings = () => {
             </div>
           </div>
         </Card>
+
+        <DesignCard />
 
         <EntityViewCard />
 

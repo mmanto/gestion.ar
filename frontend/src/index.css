@@ -198,6 +198,21 @@
   line-height: calc(var(--title-leading) * 5 / 7);
 }
 
+/* Marca «Intellify». Cormorant Garamond se sirve sólo en itálica 400 (familia
+   estática), así el peso 372 cae en esa cara; los `px` no escalan con el
+   viewport, el logotipo mide 33px en cualquier pantalla. */
+@utility brand-logo {
+  font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  font-size: 33px;
+  font-style: italic;
+  font-weight: 372;
+  line-height: 1;
+  color: #546e87;
+  letter-spacing: 0;
+  white-space: nowrap;
+  user-select: none;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

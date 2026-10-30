@@ -21,13 +21,11 @@ import {
   SidebarMenuItem,
 } from '../../components/ui/sidebar';
 import { useSidebar } from '../../components/ui/sidebar-context';
-import { TemplatePicker } from '../../components/layout/TemplatePicker';
 import { useAuth } from '../../hooks/useAuth';
 
 /**
  * Bloque de usuario del sidebar, adaptado de `components/nav-user.tsx` de
- * devbout-ui/base. El selector de template (`TemplatePicker`, «Diseño») sigue
- * viviendo dentro de este dropdown.
+ * devbout-ui/base. La selección de tema («Diseño») vive en Ajustes, no acá.
  */
 export function NavUser() {
   const { user, logout } = useAuth();
@@ -94,10 +92,6 @@ export function NavUser() {
                 </div>
               </DropdownMenuLabel>
             </DropdownMenuGroup>
-
-            <DropdownMenuSeparator />
-
-            <TemplatePicker />
 
             <DropdownMenuSeparator />
 

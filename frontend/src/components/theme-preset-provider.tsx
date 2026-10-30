@@ -1,42 +1,20 @@
 import * as React from "react"
 
-import {
-  normalizeOverrides,
-  type BlockId,
-  type BlockOverrides,
-  type BlockTone,
+import type {
+  BlockId,
+  BlockOverrides,
+  BlockTone,
 } from "../lib/theme-presets/blocks"
-import { PRESET_CATALOG } from "../lib/theme-presets/catalog"
-import {
-  presetFontStylesheetUrls,
-  themeCssText,
-} from "../lib/theme-presets/css"
 import { THEME_PRESET_STORAGE_KEY } from "../lib/theme-presets/script"
-import type { ThemePreset } from "../lib/theme-presets/types"
 import {
-  DEFAULT_TITLE_SIZE,
-  normalizeTitleSize,
-  type TitleSize,
-} from "../lib/theme-presets/typography"
-
-/** What the user picked: a preset (or the base theme), tones and heading size. */
-type ThemeSelection = {
-  code: string | null
-  overrides: BlockOverrides
-  /** `undefined` is the default step, which `:root` already declares. */
-  title: TitleSize | undefined
-}
-
-type ThemePresetPayload = ThemeSelection & {
-  css: string
-  fontUrls: string[]
-}
-
-const EMPTY_SELECTION: ThemeSelection = {
-  code: null,
-  overrides: {},
-  title: undefined,
-}
+  DEFAULT_SELECTION,
+  buildPayload,
+  findPreset,
+  parseSelection,
+  type ThemePresetPayload,
+} from "../lib/theme-presets/selection"
+import type { ThemePreset } from "../lib/theme-presets/types"
+import { DEFAULT_TITLE_SIZE, type TitleSize } from "../lib/theme-presets/typography"
 
 // The selection is an external store (localStorage) so it survives reloads and
 // stays in sync across tabs. Kept in memory too, for environments where storage
@@ -48,27 +26,6 @@ const EMPTY_SELECTION: ThemeSelection = {
 // compares snapshots by identity, and a string keeps that comparison by value.
 const listeners = new Set<() => void>()
 let memoryRaw = ""
-
-function findPreset(code: string): ThemePreset | null {
-  return PRESET_CATALOG.find((preset) => preset.code === code) ?? null
-}
-
-function parseSelection(raw: string): ThemeSelection {
-  if (!raw) {
-    return EMPTY_SELECTION
-  }
-
-  try {
-    const payload = JSON.parse(raw)
-    return {
-      code: typeof payload?.code === "string" ? payload.code : null,
-      overrides: normalizeOverrides(payload?.overrides),
-      title: normalizeTitleSize(payload?.title),
-    }
-  } catch {
-    return EMPTY_SELECTION
-  }
-}
 
 function readRaw(): string {
   try {
@@ -106,14 +63,7 @@ function persist(
   overrides: BlockOverrides,
   title: TitleSize | undefined
 ) {
-  const preset = code === null ? null : findPreset(code)
-  const payload: ThemePresetPayload = {
-    code: preset ? code : null,
-    overrides,
-    title,
-    css: themeCssText(preset, overrides, title),
-    fontUrls: preset ? presetFontStylesheetUrls(preset) : [],
-  }
+  const payload: ThemePresetPayload = buildPayload({ code, overrides, title })
   const raw = JSON.stringify(payload)
 
   inject(payload)
@@ -173,8 +123,30 @@ function applyTitleSize(title: TitleSize) {
 
 /** Re-applies the persisted selection (the bootstrap script already painted it). */
 function reapplySelection() {
-  const selection = parseSelection(readRaw())
+  const raw = readRaw()
+  if (!raw) {
+    // Sin elección guardada: se pinta el default sin persistirlo, así un cambio
+    // futuro del default sigue llegando a este navegador.
+    inject(buildPayload(DEFAULT_SELECTION))
+    return
+  }
+
+  const selection = parseSelection(raw)
   persist(selection.code, selection.overrides, selection.title)
+}
+
+/** Olvida la elección guardada y vuelve al default de la app. */
+function clearSelection() {
+  inject(buildPayload(DEFAULT_SELECTION))
+  memoryRaw = ""
+
+  try {
+    window.localStorage.removeItem(THEME_PRESET_STORAGE_KEY)
+  } catch {
+    // Storage blocked: the in-memory reset still applies.
+  }
+
+  listeners.forEach((listener) => listener())
 }
 
 function subscribePreset(listener: () => void) {
@@ -191,9 +163,12 @@ export interface ThemePresetContextValue {
   preset: ThemePreset | null
   overrides: BlockOverrides
   title: TitleSize | undefined
+  /** No hay elección guardada: se está viendo el default de la app. */
+  isDefault: boolean
   setPreset: (code: string | null) => void
   setBlockTone: (block: BlockId, tone: BlockTone) => void
   setTitleSize: (title: TitleSize) => void
+  reset: () => void
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -224,11 +199,13 @@ export function ThemePresetProvider({
       preset: selection.code === null ? null : findPreset(selection.code),
       overrides: selection.overrides,
       title: selection.title,
+      isDefault: raw === "",
       setPreset: applyPreset,
       setBlockTone: applyBlockTone,
       setTitleSize: applyTitleSize,
+      reset: clearSelection,
     }),
-    [selection]
+    [selection, raw]
   )
 
   return (

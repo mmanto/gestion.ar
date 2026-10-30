@@ -92,8 +92,8 @@ export const KeroSidebar: React.FC = () => {
           }`}
         >
           <Link to="/admin/tenants">
-            <span className="font-editorial text-2xl font-semibold uppercase tracking-[0.08em] text-gray-800 select-none">
-              {collapsed ? 'G' : 'GESTIONA'}
+            <span className="brand-logo">
+              {collapsed ? 'I' : 'Intellify'}
             </span>
           </Link>
         </div>
@@ -128,9 +128,7 @@ export const KeroSidebar: React.FC = () => {
       >
         <div className="flex items-center justify-center gap-2 px-5 h-20 border-b border-gray-200 shrink-0">
           <Link to="/admin/tenants">
-            <span className="font-editorial text-2xl font-semibold uppercase tracking-[0.08em] text-gray-800 select-none">
-              GESTIONA
-            </span>
+            <span className="brand-logo">Intellify</span>
           </Link>
         </div>
         {navItems}

@@ -15,13 +15,13 @@ interface TemplateProviderProps {
 // El tema es una preferencia del TENANT (la elige el admin en Ajustes >
 // Marca), no del navegador de cada usuario — se guarda en
 // tenant.branding.template_id (PATCH /tenant/branding, admin-only) en vez de
-// localStorage, así todos los usuarios del tenant ven el mismo tema. 'kero'
-// es el default para quien todavía no lo eligió explícitamente.
+// localStorage, así todos los usuarios del tenant ven el mismo tema. 'default'
+// («Clásico») es el default para quien todavía no lo eligió explícitamente.
 function resolveTemplateId(stored: string | undefined): TemplateId {
   if (stored && stored in TEMPLATE_MAP) {
     return stored as TemplateId;
   }
-  return 'kero';
+  return 'default';
 }
 
 export const TemplateProvider: React.FC<TemplateProviderProps> = ({ children }) => {

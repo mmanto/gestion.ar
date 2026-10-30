@@ -26,7 +26,7 @@
 | Pantalla | Ruta | Descripción |
 |---|---|---|
 | Registro "Crea tu cuenta" | `/registro` (alias `/register`) | Autoregistro público de un admin del tenant: plan mensual/anual, nombre/correo/contraseña y pago Mercado Pago. Réplica del bloque de la landing ius. |
-| Ajustes | `/settings` | Información de la cuenta, vistas de entidad y (solo `super_admin`) la sección **Apariencia**: preset de diseño (9 presets + predeterminado), modo claro/oscuro, tonos de bloque y tamaño de títulos. |
+| Ajustes | `/settings` | Información de la cuenta, **Diseño** (template del panel: «Clásico» —default— o «Kero», guardado en el navegador), vistas de entidad y (solo `super_admin`) la sección **Apariencia**: preset de diseño (9 presets + base; por defecto **Cian** con títulos «Más grande» y barra de menú en tono Página), modo claro/oscuro, tonos de bloque y tamaño de títulos. |
 | Compartir | `/compartir` | El staff comparte sus datos y su link de chat web propio con un cliente por WhatsApp: input de número + botón que abre `wa.me` con el mensaje armado. |
 
 ---

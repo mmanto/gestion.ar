@@ -19,9 +19,9 @@ function readStoredTemplateId(): TemplateId {
       return stored as TemplateId;
     }
   } catch {
-    // localStorage no disponible (modo privado, etc.) — usar default
+    // localStorage no disponible (modo privado, etc.) — usar el default
   }
-  return 'kero';
+  return 'default';
 }
 
 export const TemplateProvider: React.FC<TemplateProviderProps> = ({ children }) => {
