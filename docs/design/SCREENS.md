@@ -18,6 +18,7 @@
 | Chat Web | `/chat/:botId` | Chat público embebible para canal web |
 | Chat Canal | `/chat/c/:channelId` | Chat público de un canal específico |
 | Editar tenant | `/admin/tenants/:id/editar` | Datos generales del tenant (nombre, dominio, estado, plan) y su marca (logos, color, tagline). Solo `super_admin` |
+| Detalle de tenant | `/admin/tenants/:id` | Usuarios, módulos otorgados y agente del tenant. Si tiene un agente asignado, muestra nombre/estado y enlaza a su configuración (`/bots/:id`). Solo `super_admin` |
 
 **Frontend de tenant (`frontend-tenant/`, un panel por tenant):**
 

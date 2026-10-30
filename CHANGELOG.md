@@ -7,6 +7,13 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **Detalle del tenant: acceso al agente asignado** (`frontend/src/pages/admin/TenantDetail.tsx`).
+  Nueva sección «Agente» entre la cabecera y la grilla de usuarios: si el tenant
+  tiene bots (`GET /api/bots?tenant_id=…`, que la pantalla ya pedía para bloquear
+  el borrado), lista nombre, estado (chip Activo/Inactivo/Mantenimiento) y tipo
+  de negocio, con un botón **«Ver agente»** que navega a `/bots/:bot_id`. Sin
+  agente muestra «Este tenant no tiene un agente asignado». Documentado en
+  `docs/design/SCREENS.md`.
 - **Canal de voz Deepgram + API key de tenant** (ADR-034/ADR-035). Nuevo
   `channel_type='voice'` con `channels.voice_config` (migración
   `20261028_1200_add_channel_voice_config.py`): el backend hace de proxy

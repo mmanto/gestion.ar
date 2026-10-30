@@ -44,12 +44,24 @@ import type {
   TenantUser,
   TenantUserRole,
 } from '../../types/tenant.types';
-import type { Bot } from '../../types/bot.types';
+import type { Bot, BotStatus } from '../../types/bot.types';
 
 const roleLabels: Record<TenantUserRole, string> = {
   admin: 'UsuarioAdmin',
   operativo: 'Usuario',
   broker: 'Broker',
+};
+
+const botStatusLabels: Record<BotStatus, string> = {
+  active: 'Activo',
+  inactive: 'Inactivo',
+  maintenance: 'Mantenimiento',
+};
+
+const botStatusVariants: Record<BotStatus, 'success' | 'secondary' | 'warning'> = {
+  active: 'success',
+  inactive: 'secondary',
+  maintenance: 'warning',
 };
 
 const roleOptions: { value: TenantUserRole; label: string }[] = [
@@ -459,6 +471,42 @@ export const TenantDetail = () => {
         />
 
         {error && <Alert variant="error">Error: {error}</Alert>}
+
+        {/* Agente(s) del tenant: acceso directo a la configuración del bot */}
+        <section className="grid gap-3">
+          <h3 className={sectionTitle}>Agente</h3>
+          {bots.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              Este tenant no tiene un agente asignado.
+            </p>
+          ) : (
+            <div className="grid gap-2">
+              {bots.map((bot) => (
+                <div
+                  key={bot.bot_id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-3"
+                >
+                  <div className="grid gap-1">
+                    <span className="font-medium text-foreground">{bot.name}</span>
+                    <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Badge variant={botStatusVariants[bot.status]}>
+                        {botStatusLabels[bot.status]}
+                      </Badge>
+                      {bot.business_type && <span>{bot.business_type}</span>}
+                    </span>
+                  </div>
+                  <UiButton
+                    variant="outline"
+                    size="sm"
+                    render={<Link to={`/bots/${bot.bot_id}`} />}
+                  >
+                    Ver agente
+                  </UiButton>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
 
         {/* Usuarios */}
         <section className="grid gap-3">
