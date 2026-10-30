@@ -233,7 +233,11 @@ habla con Deepgram (`DEEPGRAM_API_KEY`) y el APK sólo se conecta al proxy.
    `.env.dev`; reiniciar `app`. El canal usa el prompt y las tools del bot.
 2. **Canal**: crear un canal `voice` desde `/bots/{bot_id}/channels` (pestaña
    Canales → “Voz (Deepgram Voice Agent)”) y activarlo.
-3. **API key del tenant** (se muestra una sola vez):
+3. **API key del tenant** (se muestra una sola vez). Desde el panel:
+   `/bots/{bot_id}/channels` → **Editar** el canal de voz → sección «API key
+   del tenant»: **Generar API key** (o **Rotar** si ya existe; rotar invalida
+   la anterior y los clientes conectados dejan de autenticar) y **Copiar**.
+   La key es del tenant, no del canal. Por API:
    ```bash
    curl -X POST "http://localhost:8000/api/admin/tenants/TENANT_ID/api-key?rotate=true" \
      -H "Authorization: Bearer $SUPER_ADMIN_JWT"

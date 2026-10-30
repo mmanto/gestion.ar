@@ -9,6 +9,7 @@ import type {
   VoiceConfig,
 } from '../../types/channel.types';
 import type { TenantUser } from '../../types/tenant.types';
+import { TenantApiKeyCard } from './TenantApiKeyCard';
 
 interface ChannelEditFormProps {
   channel: Channel;
@@ -549,6 +550,7 @@ export const ChannelEditForm = ({ channel, tenantUsers, onSave, onCancel, saving
                 Idioma: <span className="font-medium">es</span>
               </div>
             </div>
+            {channel.tenant_id && <TenantApiKeyCard tenantId={channel.tenant_id} />}
           </div>
         </div>
       )}

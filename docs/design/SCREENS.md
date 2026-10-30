@@ -10,7 +10,7 @@
 | Dashboard | `/` | Vista principal con métricas de conversaciones |
 | Bots | `/bots` | Grilla (`DataTable`) de agentes con buscador, columnas, paginación y acceso a la configuración (`/bots/:id`); alta con diálogo propio (tenant + módulos) |
 | Bot - Detalle | `/bots/:id` | Configuración de un bot específico |
-| Canales | `/bots/:id/channels` | Gestión de canales de un bot |
+| Canales | `/bots/:id/channels` | Gestión de canales de un bot. En un canal de voz, la edición incluye «API key del tenant»: estado, **Generar**/**Rotar** (la key se ve una sola vez, con botón Copiar) para autenticar el APK/PWA de voz. |
 | Conversaciones | `/conversations` | Listado y búsqueda de conversaciones |
 | Conversación | `/conversations/:id` | Vista de una conversación con opción de responder como agente |
 | Clientes | `/clients` | Listado de clientes (leads) con filtros |

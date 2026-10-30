@@ -7,6 +7,15 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **API key del tenant en la configuración del canal de voz**
+  (`frontend/src/components/channels/TenantApiKeyCard.tsx`, dentro de
+  `ChannelEditForm`). La edición de un canal `voice` ahora muestra el estado de
+  la key (`GET /api/admin/tenants/{id}/api-key`), permite **generarla**
+  (`POST …/api-key`), **rotarla** con confirmación —rotar invalida la key
+  anterior y los clientes de voz dejan de autenticar— y **copiarla**; la key en
+  claro se muestra una sola vez, como en el backend. El canal expone
+  `tenant_id` (ya venía en `Channel`) para resolver el tenant dueño de la key.
+  Mismo endpoint que documentaba el setup; ya no hace falta `curl` para emitirla.
 - **Detalle del tenant: acceso al agente asignado** (`frontend/src/pages/admin/TenantDetail.tsx`).
   Nueva sección «Agente» entre la cabecera y la grilla de usuarios: si el tenant
   tiene bots (`GET /api/bots?tenant_id=…`, que la pantalla ya pedía para bloquear

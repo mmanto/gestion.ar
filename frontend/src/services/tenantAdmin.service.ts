@@ -146,6 +146,25 @@ const tenantAdminService = {
   async revokeTenantModule(tenantId: string, moduleKey: string): Promise<void> {
     await api.delete(`/admin/tenants/${tenantId}/modules/${moduleKey}/grant`);
   },
+
+  /**
+   * ¿El tenant tiene API key emitida? El backend nunca devuelve la key ni su
+   * hash (sólo se ve en claro al emitirla).
+   */
+  async getTenantApiKeyStatus(tenantId: string): Promise<boolean> {
+    const response = await api.get<{ success: boolean; has_key: boolean }>(
+      `/admin/tenants/${tenantId}/api-key`
+    );
+    return response.data.has_key;
+  },
+
+  /** Emite la API key del tenant (`tk_live_…`); `rotate` reemplaza la anterior. */
+  async issueTenantApiKey(tenantId: string, rotate = false): Promise<string> {
+    const response = await api.post<{ success: boolean; api_key: string }>(
+      `/admin/tenants/${tenantId}/api-key?rotate=${rotate}`
+    );
+    return response.data.api_key;
+  },
 };
 
 export default tenantAdminService;

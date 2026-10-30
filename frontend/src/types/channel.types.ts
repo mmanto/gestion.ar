@@ -63,6 +63,8 @@ export interface VoiceConfig {
 export interface Channel {
   channel_id: string;
   bot_id: string;
+  /** Tenant dueño del canal; el backend lo resuelve desde el bot. */
+  tenant_id?: string | null;
   channel_type: ChannelType;
   name: string;
   status: ChannelStatus;
