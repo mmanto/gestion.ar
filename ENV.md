@@ -281,6 +281,11 @@ repo), por eso el nombre de marca tiene una clave por app.
 > Para apuntar un APK a un remote de dev, `make build-android` /
 > `make prod-build-android` derivan la URL desde el host del backend (`:8180`) u se puede sobreescribir exportando
 > `VITE_APPOINTMENTS_REMOTE_URL` antes de ejecutarlos.
+>
+> **Deshabilitado temporalmente:** el plugin de Module Federation y los imports
+> de `appointments/*` están comentados en `frontend/` (su CSS global de Tailwind 3
+> pisaba las utilidades del host; ver CHANGELOG). Hoy esta variable no se usa; se
+> vuelve a leer al rehabilitar el remote.
 
 ---
 

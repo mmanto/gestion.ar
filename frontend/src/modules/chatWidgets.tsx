@@ -1,4 +1,10 @@
-import { lazy, Component, type ComponentType, type ReactNode } from 'react';
+// DESHABILITADO TEMPORALMENTE: los widgets de `appointments` llegan por Module
+// Federation (devbout-appointments) e inyectan su CSS global (Tailwind 3,
+// preflight sin @layer) en el documento del host, pisando las utilidades de
+// Tailwind 4 (ver CHANGELOG). El registry queda vacío hasta corregir el remote;
+// un `widget_type` sin entrada no renderiza nada (ChatWidget devuelve null).
+// import { lazy, Component, type ComponentType, type ReactNode } from 'react';
+import { Component, type ComponentType, type ReactNode } from 'react';
 import type { AppointmentWidget } from '../types/chat.types';
 
 /**
@@ -30,13 +36,15 @@ export type ChatWidgetComponent = ComponentType<ChatWidgetProps>;
 // El host pasa TODOS los handlers y el widget completo; cada remote declara
 // (y consume) sólo los suyos, así que el cast es seguro: el `widget_type` es lo
 // que garantiza que el widget y el componente se corresponden.
-const asChatWidget = (component: unknown) => component as ChatWidgetComponent;
+// DESHABILITADO TEMPORALMENTE junto con los imports de `appointments/*`.
+// const asChatWidget = (component: unknown) => component as ChatWidgetComponent;
 
 export const CHAT_WIDGETS: Record<string, ChatWidgetComponent> = {
-  appointment_options: asChatWidget(lazy(() => import('appointments/AppointmentOptionsWidget'))),
-  appointment_calendar: asChatWidget(lazy(() => import('appointments/AppointmentCalendarWidget'))),
-  appointment_times: asChatWidget(lazy(() => import('appointments/AppointmentTimesWidget'))),
-  appointment_confirm: asChatWidget(lazy(() => import('appointments/AppointmentConfirmWidget'))),
+  // DESHABILITADO TEMPORALMENTE (CSS global del remote, ver arriba):
+  // appointment_options: asChatWidget(lazy(() => import('appointments/AppointmentOptionsWidget'))),
+  // appointment_calendar: asChatWidget(lazy(() => import('appointments/AppointmentCalendarWidget'))),
+  // appointment_times: asChatWidget(lazy(() => import('appointments/AppointmentTimesWidget'))),
+  // appointment_confirm: asChatWidget(lazy(() => import('appointments/AppointmentConfirmWidget'))),
 };
 
 // React.lazy no tenía antes ningún punto de falla real (todo bundleado) — un

@@ -2,7 +2,8 @@ import path from 'node:path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-import { federation } from '@module-federation/vite'
+// DESHABILITADO TEMPORALMENTE — ver bloque `federation(...)` más abajo.
+// import { federation } from '@module-federation/vite'
 
 // Remote de turnos servido por devbout-appointments (ver ADR-009 en
 // docs/dev/DECISIONS.md). En dev web, .env.dev define
@@ -11,7 +12,11 @@ import { federation } from '@module-federation/vite'
 // una URL alcanzable desde el dispositivo. El fallback es la URL de prod para
 // que un build sin env no hornee un localhost inalcanzable. Mismo patrón que
 // VITE_API_URL: valor baked en el bundle.
-const appointmentsRemoteUrl = process.env.VITE_APPOINTMENTS_REMOTE_URL || 'https://appointments-widgets.intellify.pro/remoteEntry.js'
+//
+// DESHABILITADO TEMPORALMENTE: el remote inyecta su CSS global (Tailwind 3,
+// preflight sin @layer) y pisa las utilidades del host (Tailwind 4) — ver
+// CHANGELOG. Se comenta la carga del remote hasta corregirlo.
+// const appointmentsRemoteUrl = process.env.VITE_APPOINTMENTS_REMOTE_URL || 'https://appointments-widgets.intellify.pro/remoteEntry.js'
 
 // Target del proxy /api y /ws: "app:8000" es el nombre del servicio dentro de
 // la red de docker-compose (server dev). Si se corre `vite preview` fuera de
@@ -36,24 +41,29 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    federation({
-      name: 'gestionar-frontend',
-      remotes: {
-        appointments: {
-          type: 'module',
-          name: 'appointments',
-          entry: appointmentsRemoteUrl,
-          entryGlobalName: 'appointments',
-          shareScope: 'default',
-        },
-      },
-      shared: {
-        react: { singleton: true, requiredVersion: '^19.2.0' },
-        'react-dom': { singleton: true, requiredVersion: '^19.2.0' },
-        'date-fns': { singleton: true, requiredVersion: '^4.1.0' },
-        'react-router-dom': { singleton: true, requiredVersion: '^7.11.0' },
-      },
-    }),
+    // DESHABILITADO TEMPORALMENTE: el remote de devbout-appointments carga su
+    // CSS global (Tailwind 3, preflight sin @layer) y pisa las utilidades del
+    // host (Tailwind 4): los botones primarios quedaban transparentes. Se
+    // vuelve a habilitar cuando el remote no emita preflight (ver
+    // devbout-docs CHANGELOG/SETUP §1.6).
+    // federation({
+    //   name: 'gestionar-frontend',
+    //   remotes: {
+    //     appointments: {
+    //       type: 'module',
+    //       name: 'appointments',
+    //       entry: appointmentsRemoteUrl,
+    //       entryGlobalName: 'appointments',
+    //       shareScope: 'default',
+    //     },
+    //   },
+    //   shared: {
+    //     react: { singleton: true, requiredVersion: '^19.2.0' },
+    //     'react-dom': { singleton: true, requiredVersion: '^19.2.0' },
+    //     'date-fns': { singleton: true, requiredVersion: '^4.1.0' },
+    //     'react-router-dom': { singleton: true, requiredVersion: '^7.11.0' },
+    //   },
+    // }),
   ],
   // .env.dev / .env.prod viven en la raíz del repo (npm run dev/build pasan
   // --mode dev / --mode prod). Solo aplica fuera de Docker: en docker-compose

@@ -1,22 +1,20 @@
-import { lazy, Suspense } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { AppLayout } from '../components/layout/AppLayout';
 import { PageHeader } from '../components/common/PageHeader';
-import { Input } from '../components/common/Input';
-import { Button } from '../components/common/Button';
 import { Card } from '../components/common/Card';
-import api from '../services/api';
 import type { BotModuleInfo } from '../types/tenant.types';
 
-// Panel completo (tabs Turnos/Recursos/Servicios/Disponibilidad/Config),
-// servido por devbout-appointments vía Module Federation — ver ADR-009,
-// docs/dev/DECISIONS.md. La ruta lo monta detrás de ModuleGate, que resuelve
-// la disponibilidad del módulo; Input/Button/Card y el cliente HTTP se
-// inyectan por props en vez de que el remote los importe del host.
-const RemoteAppointmentsWorkspace = lazy(() => import('appointments/AppointmentsWorkspace'));
+// DESHABILITADO TEMPORALMENTE — el panel de turnos llega por Module Federation
+// desde devbout-appointments (ADR-009, docs/dev/DECISIONS.md), y ese remote
+// inyecta su CSS global (Tailwind 3, preflight sin `@layer`) en el documento
+// del host, pisando las utilidades de Tailwind 4 (los botones primarios
+// quedaban transparentes). Se comentan el import del remote y sus props de
+// inyección (`api`/`Input`/`Button`/`Card`) hasta corregir el remote; la
+// pantalla muestra un aviso en su lugar.
+//
+// const RemoteAppointmentsWorkspace = lazy(() => import('appointments/AppointmentsWorkspace'));
 
 export const BotAppointments = ({ moduleInfo }: { moduleInfo: BotModuleInfo }) => {
-  const accent = 'var(--primary)';
   const { botId } = useParams<{ botId: string }>();
 
   if (!botId) return null;
@@ -47,15 +45,19 @@ export const BotAppointments = ({ moduleInfo }: { moduleInfo: BotModuleInfo }) =
           description="Gestión de recursos, servicios, disponibilidad y turnos reservados"
         />
 
-        <Suspense fallback={<p className="text-gray-700">Cargando...</p>}>
-          <RemoteAppointmentsWorkspace
-            botId={botId}
-            moduleInfo={moduleInfo}
-            apiClient={api}
-            ui={{ Input, Button, Card }}
-            accent={accent}
-          />
-        </Suspense>
+        <Card>
+          <div className="flex flex-col gap-2">
+            <p className="font-medium text-foreground">
+              Turnos deshabilitado temporalmente
+            </p>
+            <p className="text-sm text-muted-foreground">
+              El panel de turnos (<code className="text-xs">{moduleInfo.module_key}</code>) se sirve
+              desde devbout-appointments vía Module Federation y su CSS global
+              interfería con el diseño de la app. Se vuelve a habilitar cuando
+              el remote deje de emitir su propio reset de estilos.
+            </p>
+          </div>
+        </Card>
       </div>
     </AppLayout>
   );

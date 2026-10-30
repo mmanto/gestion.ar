@@ -272,6 +272,21 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   con la instrucción de la tool y las 3 decisiones de calificación.
 
 ### Corregido
+- **Se desactiva temporalmente el remote de `devbout-appointments` (turnos)**
+  (`frontend/vite.config.ts`, `src/modules/chatWidgets.tsx`,
+  `src/pages/BotAppointments.tsx`, `src/pages/MfAdminTestPage.tsx`). El remote
+  compila con Tailwind 3 y `bundleAllCSS` inyecta su CSS **global** en el
+  documento del host; su preflight (reglas **sin `@layer`**) pisa las utilidades
+  de Tailwind 4 del host (en capas): `button,…{background-color:transparent}` y
+  `button,…{color:inherit}` dejaban **transparentes todos los botones
+  primarios** (p. ej. «Nuevo tenant»/«Nuevo usuario» del `DataTable`, que sí
+  tienen `bg-primary` en el DOM) mientras la ubicación del toolbar seguía bien.
+  Se comentan el plugin `federation`, los lazy imports de `appointments/*` y el
+  registry de widgets de chat; la pantalla `/bots/:botId/appointments` ahora
+  muestra un aviso («Turnos deshabilitado temporalmente») y los widgets de
+  turnos no renderizan. El modulo y su API siguen intactos. Se rehabilita cuando
+  el remote deje de emitir preflight (`corePlugins.preflight=false`, ver
+  devbout-docs `CHANGELOG`/`SETUP.md` §1.6).
 - **La grilla de usuarios del tenant vuelve a mostrar el alta en el toolbar**
   (`frontend/src/pages/admin/TenantDetail.tsx`, `frontend/package.json`).
   `TenantDetail` pasaba el botón «Nuevo usuario» por `toolbarActions`, pero
