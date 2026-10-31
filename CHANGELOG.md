@@ -288,6 +288,18 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   con la instrucción de la tool y las 3 decisiones de calificación.
 
 ### Corregido
+- **El canal de voz no conectaba con Deepgram Agent**
+  (`backend/app/routers/voice_router.py`). El proxy abría el WebSocket del
+  cliente, mandaba `meta` y cerraba con 1011
+  (`{"type":"error","message":"Se cortó la conexión con el agente de voz"}`)
+  porque el handshake hacia `wss://agent.deepgram.com/v1/agent/converse`
+  fallaba con `TypeError: create_connection() got an unexpected keyword
+  argument 'additional_headers'`: el código usaba la API asyncio de
+  `websockets` ≥ 14, pero `requirements.txt` fija `websockets==12.0` (la que
+  arrastra uvicorn 0.27). Pasa a `extra_headers`, el nombre de la API legacy
+  de 12.x; verificado contra el endpoint real (101 Switching Protocols). La
+  app móvil dejaba de reconectar en bucle en cuanto el upstream respondía.
+  **Requiere** rebuild + redeploy del servicio `app`.
 - **Se desactiva temporalmente el remote de `devbout-appointments` (turnos)**
   (`frontend/vite.config.ts`, `src/modules/chatWidgets.tsx`,
   `src/pages/BotAppointments.tsx`, `src/pages/MfAdminTestPage.tsx`). El remote

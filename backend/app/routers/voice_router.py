@@ -357,9 +357,13 @@ async def voice_websocket(
     )
 
     try:
+        # `websockets==12` (pin de requirements) habla la API legacy: los
+        # headers del handshake van en `extra_headers`. `additional_headers`
+        # es de la API asyncio de websockets ≥14 y acá terminaba en
+        # `TypeError: create_connection() got an unexpected keyword argument`.
         async with websockets.connect(
             DEEPGRAM_WS_URL,
-            additional_headers={"Authorization": f"Token {api_key}"},
+            extra_headers={"Authorization": f"Token {api_key}"},
             max_size=None,
         ) as dg:
             await _bridge(websocket, dg, settings, dispatch, conv_service, channel_client, conversation_id)

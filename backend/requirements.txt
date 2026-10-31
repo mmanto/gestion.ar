@@ -50,6 +50,7 @@ firebase-admin==6.0.0
 aioapns==4.0
 
 # PASO 10: Canal de voz (proxy WS a Deepgram Agent) — ver ADR-034.
-# Fijado a 12.x: uvicorn 0.27 ya lo trae transitivamente y la API
-# `additional_headers` no existe en versiones anteriores.
+# Fijado a 12.x: uvicorn 0.27 ya lo trae transitivamente y esta versión usa la
+# API legacy, cuyo handshake autentica con `extra_headers` (no con
+# `additional_headers`, que es de la API asyncio de websockets ≥14).
 websockets==12.0
