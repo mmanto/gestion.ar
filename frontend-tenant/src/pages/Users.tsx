@@ -255,7 +255,7 @@ export const Users = () => {
 
       {showCreateModal && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
           style={{
             // El modal nunca entra debajo de la barra de sistema (PWA
             // standalone / app nativa edge-to-edge). env() es 0 en navegador.
@@ -350,7 +350,7 @@ export const Users = () => {
 
       {editingUser && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
           style={{
             // El modal nunca entra debajo de la barra de sistema (PWA
             // standalone / app nativa edge-to-edge). env() es 0 en navegador.

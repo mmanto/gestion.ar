@@ -77,47 +77,51 @@ async def process_whatsapp_message(
             canal="whatsapp",
         )
 
-        # Guardar conversación
-        try:
-            conv_service = get_conversation_service()
-            log_result = await conv_service.log_chat_interaction(
-                user_id=parsed_message.from_number,
-                user_message=parsed_message.text or "[Mensaje no textual]",
-                assistant_response=turn.message,
-                bot_id=bot_id,
-                client_id=client_id,
-                channel="whatsapp",
-                metadata={
-                    "whatsapp_message_id": parsed_message.message_id,
-                    "source": "whatsapp",
-                    "provider": provider_name,
-                    "channel_id": channel_id,
-                    **turn.metadata,
-                }
-            )
-            if bot_id:
-                await notify_staff_of_client_message(
-                    bot_id=bot_id,
-                    conversation_id=log_result["conversation_id"],
-                    client_id=client_id,
-                    client_label=(client.name if client else None) or parsed_message.from_number,
-                    content=parsed_message.text or "[Mensaje no textual]",
-                    channel="whatsapp",
-                )
-        except Exception as e:
-            logger.warning(f"Error guardando conversación: {e}")
-
-        # Actualizar contadores del cliente
-        if client_id:
+        # Guardar conversación — sólo si hubo respuesta (sin proveedor de IA
+        # configurado en el tenant el turno no genera mensaje, ADR-038).
+        if turn.message:
             try:
-                client_service = get_client_service()
-                await client_service.increment_counters(client_id, messages=1)
+                conv_service = get_conversation_service()
+                log_result = await conv_service.log_chat_interaction(
+                    user_id=parsed_message.from_number,
+                    user_message=parsed_message.text or "[Mensaje no textual]",
+                    assistant_response=turn.message,
+                    bot_id=bot_id,
+                    client_id=client_id,
+                    channel="whatsapp",
+                    metadata={
+                        "whatsapp_message_id": parsed_message.message_id,
+                        "source": "whatsapp",
+                        "provider": provider_name,
+                        "channel_id": channel_id,
+                        **turn.metadata,
+                    }
+                )
+                if bot_id:
+                    await notify_staff_of_client_message(
+                        bot_id=bot_id,
+                        conversation_id=log_result["conversation_id"],
+                        client_id=client_id,
+                        client_label=(client.name if client else None) or parsed_message.from_number,
+                        content=parsed_message.text or "[Mensaje no textual]",
+                        channel="whatsapp",
+                    )
             except Exception as e:
-                logger.warning(f"Error actualizando contadores del cliente: {e}")
+                logger.warning(f"Error guardando conversación: {e}")
 
-        # Actualizar contadores del canal
+            # Actualizar contadores del cliente
+            if client_id:
+                try:
+                    client_service = get_client_service()
+                    await client_service.increment_counters(client_id, messages=1)
+                except Exception as e:
+                    logger.warning(f"Error actualizando contadores del cliente: {e}")
+
+        # Actualizar contadores del canal (sent=0 si no hubo respuesta)
         try:
-            await channel_service.increment_message_counters(channel_id, received=1, sent=1)
+            await channel_service.increment_message_counters(
+                channel_id, received=1, sent=1 if turn.message else 0
+            )
         except Exception as e:
             logger.warning(f"Error actualizando contadores: {e}")
 
@@ -238,7 +242,18 @@ async def handle_meta_webhook(
         # Procesar mensaje
         result = await process_whatsapp_message(parsed_message, channel_id, "meta", bot_id=channel.bot_id)
 
-        # Enviar respuesta
+        # Enviar respuesta — sólo si el agente generó texto. Sin proveedor de
+        # IA configurado en el tenant (ADR-038) el turno no produce mensaje y
+        # el canal no manda nada (tampoco el fallback genérico).
+        if result["response_text"] is None:
+            return {
+                "status": "ok",
+                "message": "Proveedor de IA no configurado",
+                "skipped": True,
+                "tokens_used": result["tokens_used"],
+                "cost_usd": result["cost_usd"],
+            }
+
         send_result = await provider.send_message(
             to_number=parsed_message.from_number,
             message=result["response_text"]
@@ -411,7 +426,18 @@ async def handle_twilio_webhook(
         # Procesar mensaje
         result = await process_whatsapp_message(parsed_message, channel_id, "twilio", bot_id=channel.bot_id)
 
-        # Enviar respuesta
+        # Enviar respuesta — sólo si el agente generó texto. Sin proveedor de
+        # IA configurado en el tenant (ADR-038) el turno no produce mensaje y
+        # el canal no manda nada (tampoco el fallback genérico).
+        if result["response_text"] is None:
+            return {
+                "status": "ok",
+                "message": "Proveedor de IA no configurado",
+                "skipped": True,
+                "tokens_used": result["tokens_used"],
+                "cost_usd": result["cost_usd"],
+            }
+
         send_result = await provider.send_message(
             to_number=parsed_message.from_number,
             message=result["response_text"]

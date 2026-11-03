@@ -7,6 +7,37 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **Proveedor de IA por tenant: Claude, DeepSeek u OpenRouter con key propia**
+  (ADR-038). Cada tenant elige proveedor + modelo + API key desde **Ajustes ›
+  Proveedor de IA** (solo `admin`) y el agente del tenant usa esa config en cada
+  turno —chat web, WhatsApp, Telegram, voz y tareas auxiliares (extracción de
+  datos del cliente, resumen de conversación, auditoría semántica del
+  `ius_config`)—. Cuatro endpoints nuevos: `GET/PUT/DELETE
+  /api/tenant/llm-config` y `POST /api/tenant/llm-config/validate`
+  (`backend/app/routers/tenant_router.py`). La key se **valida contra el
+  proveedor antes de guardarse** (una key/modelo inválido no pisa la config
+  vigente) y queda **cifrada** con `ENCRYPTION_KEY` en la tabla nueva
+  `tenant_llm_configs` (migración `20261103_1200_add_tenant_llm_config.py`); la
+  API nunca la devuelve, sólo `api_key_hint` (últimos 4). Nuevo
+  `OpenRouterService` (OpenAI-compatible, costo real por respuesta vía
+  `usage.cost`, tool calling con el mismo fallback anti-respuesta-vacía que
+  DeepSeek). El canal de voz usa el proveedor del tenant como endpoint BYO de
+  Deepgram. UI: `frontend-tenant/src/components/settings/AiProviderSection.tsx`.
+- **`cryptography` como dependencia explícita** del backend
+  (`backend/requirements.txt`): antes llegaba sólo transitivamente por
+  `python-jose[cryptography]` y ahora cifra las keys de IA por tenant.
+- **Tema «Panel» en el panel del tenant: shell de `@mmanto/devbout-ui`**
+  (`frontend-tenant/src/templates/devbout/`). Nuevo `template_id='devbout'`
+  seleccionable en Ajustes › Marca (junto a «Clásico» y «Kero»): sidebar
+  colapsable a iconos (`SidebarProvider`/`Sidebar`/`SidebarRail` + cookie
+  `sidebar_state`), `SidebarInset` con header de trigger + breadcrumb
+  (`ShellHeader`), marca del tenant en el header del sidebar y `NavUser` en el
+  pie con Compartir / Ajustes / Salir. La navegación sale del mismo manifiesto
+  (`config/navLinks.tsx`, filtrado por rol y con labels por rubro) y en mobile
+  el sidebar pasa a `Sheet`. **El contenido de las páginas no cambia**: el tema
+  sólo reemplaza el chrome que aportaba `AppLayout`. Backend:
+  `VALID_TEMPLATE_IDS` acepta `devbout` (`backend/app/routers/tenant_router.py`).
+  Ver ADR-037 y `docs/design/DESIGN.md`.
 - **API key del tenant en la configuración del canal de voz**
   (`frontend/src/components/channels/TenantApiKeyCard.tsx`, dentro de
   `ChannelEditForm`). La edición de un canal `voice` ahora muestra el estado de
@@ -286,6 +317,38 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   de producción (reglas de calificación en `priority.reglas`, `traffic_light`,
   `flujo`) existía únicamente en la base de datos, sin copia en el repo; se exportó
   con la instrucción de la tool y las 3 decisiones de calificación.
+
+### Cambiado
+- **BREAKING (operativo): el LLM deja de ser global.** `LLM_PROVIDER` +
+  `ANTHROPIC_API_KEY`/`DEEPSEEK_API_KEY` quedan sólo para paths sin tenant
+  (bots legacy) y para Ollama. **Sin config de IA propia el agente del tenant no
+  responde**: el turno devuelve `message=None` con `metadata.llm_error =
+  "not_configured"`, el chat web no envía mensaje, WhatsApp/Telegram no envían
+  nada (`{"skipped": true}`) y la voz cierra el WS con error. Tras el deploy
+  cada tenant tiene que cargar proveedor + modelo + key. Requiere
+  `ENCRYPTION_KEY` en el entorno.
+- **El canal de voz ya no tiene LLM gestionado por Deepgram**: se eliminan
+  `VOICE_THINK` y `VOICE_FALLBACK_LLM` (y con ellos el tope de 25 000 caracteres
+  del prompt). `build_think` arma el endpoint BYO del proveedor del tenant
+  (Anthropic nativo para Claude, OpenAI-compatible para DeepSeek/OpenRouter).
+- **Se elimina `GET /api/public/llm-info`** (y sus consumidores comentados en
+  los `UserMenu` de ambos frontends): ya no hay un proveedor/modelo global que
+  informar.
+- **`POST /api/bots/validate-ius-config`** ahora exige `bot_id` cuando
+  `semantic=true`: el análisis semántico corre con el proveedor de IA del tenant
+  dueño del bot (`validate_semantics` recibe un servicio LLM, no un cliente
+  Anthropic). `frontend/src/services/iusValidation.service.ts` manda `bot_id`.
+- **`frontend-tenant/` migra a Tailwind CSS 4 (CSS-first)** — mismo stack que
+  `frontend/`. Se eliminan `tailwind.config.js` y `postcss.config.js`; el build
+  usa el plugin `@tailwindcss/vite` y `src/index.css` pasa a `@import
+  "tailwindcss"` + `@import "@mmanto/devbout-ui/tailwind.css"` + `tw-animate-css`
+  + `shadcn/tailwind.css`, con la escala tipográfica (`--fs-*`/`--fw-*`), la
+  paleta de marca y los tokens base-mira en `@theme inline`. Para que el
+  contenido de las páginas quede idéntico se restituyen en `@layer base`/`@theme`
+  los defaults de v3 que cambiaron en v4: `border-color` gray-200,
+  `::placeholder` gray-400, `--shadow-sm` y `cursor: pointer` en botones; el
+  único cambio de clase necesario fue `bg-opacity-50` → `bg-black/50` en
+  `pages/Users.tsx` (eliminada en v4). Ver ADR-037.
 
 ### Corregido
 - **El canal de voz no conectaba con Deepgram Agent**

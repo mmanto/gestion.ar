@@ -199,7 +199,16 @@ async def handle_telegram_text_message(telegram, message_data: Dict) -> Dict:
             canal="telegram",
         )
 
-        # Send response
+        # Sin respuesta del LLM (tenant sin proveedor de IA configurado,
+        # ADR-038) no se envía ni se registra nada: el turno queda con el
+        # mensaje del usuario y `llm=False`.
+        if turn.message is None:
+            return {
+                "status": "ok",
+                "message": "Proveedor de IA no configurado",
+                "skipped": True,
+            }
+
         await telegram.send_message(
             chat_id=chat_id,
             text=turn.message

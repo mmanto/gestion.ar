@@ -4,7 +4,6 @@ Public Router - Endpoints públicos sin autenticación para páginas de clientes
 
 import io
 import json
-import os
 from typing import Optional
 
 import qrcode
@@ -82,19 +81,6 @@ async def get_app_url(request: Request):
     scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
     host = request.headers.get("host", request.url.netloc)
     return {"url": f"{scheme}://{host}"}
-
-
-@router.get("/llm-info")
-async def get_llm_info():
-    """Devuelve el proveedor y modelo LLM activo."""
-    provider = os.getenv("LLM_PROVIDER", "claude").lower()
-    if provider == "ollama":
-        model = os.getenv("OLLAMA_MODEL", "qcwind/qwen3-8b-instruct-Q4-K-M:latest")
-    elif provider == "deepseek":
-        model = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash")
-    else:
-        model = os.getenv("CLAUDE_MODEL", "claude-3-5-sonnet-20241022")
-    return {"provider": provider, "model": model}
 
 
 @router.get("/channels/{channel_id}")

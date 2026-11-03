@@ -6,10 +6,10 @@ de Deepgram; el cliente solo transporta PCM. Ver CANAL_DE_VOZ_DEEPGRAM_PLAN.md
 y ADR-034.
 
 Decisiones:
-- `VOICE_THINK=auto` mapea `LLM_PROVIDER`; `ollama`/desconocidos caen al LLM
-  gestionado por Deepgram (que no puede alcanzar `localhost`).
-- Con LLM gestionado el prompt tiene un tope (`MANAGED_PROMPT_LIMIT`); con BYO
-  (deepseek/claude) no.
+- El LLM lo define la config del tenant (`tenant_llm_service`): Deepgram hace
+  de transporte y llama al endpoint BYO del proveedor elegido con la key del
+  tenant. No hay LLM gestionado por Deepgram ni `VOICE_THINK`/`VOICE_FALLBACK_LLM`
+  (ADR-038), así que tampoco hay tope de longitud del prompt.
 - Las tools son las contribuciones *sin estado* de `AgentService.build_tools`
   (calificación por semáforo + fuentes públicas) más RAG si `bot.config.use_rag`.
   Los interceptores pre-LLM y los widgets de módulos no aplican al canal de voz.
@@ -30,10 +30,11 @@ from app.claude_service import (
 from app.rag_service import get_rag_service
 from app.services.agent_service import get_agent_service
 from app.services.prospect_auto_qualify_service import QUALIFICATION_TOOL_NAME
+from app.services.tenant_llm_service import ResolvedLLMConfig
 
 DEEPGRAM_WS_URL = "wss://agent.deepgram.com/v1/agent/converse"
-MANAGED_PROMPT_LIMIT = 25_000  # chars, límite de Deepgram con LLM gestionado
-DEFAULT_MANAGED_LLM = "gpt-4o-mini"
+DEFAULT_DEEPSEEK_BASE_URL = "https://api.deepseek.com"
+DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 RAG_TOOL_NAME = "buscar_conocimiento"
 DEFER_UNTIL_EOT = {QUALIFICATION_TOOL_NAME}  # escribe en la DB
 _TOOL_NAME_RE = re.compile(r"[A-Za-z0-9_-]{1,64}")
@@ -55,65 +56,55 @@ def build_voice_prompt(bot) -> str:
     return build_effective_system_prompt(bot.config) + VOICE_STYLE_SUFFIX
 
 
-def build_think() -> dict:
-    """Bloque `agent.think` de la Settings (provider + endpoint BYO o gestionado)."""
-    mode = os.getenv("VOICE_THINK", "auto").strip().lower()
-    if mode == "auto":
-        provider = os.getenv("LLM_PROVIDER", "claude").strip().lower()
-        mode = provider if provider in ("claude", "deepseek") else "managed"
+def build_think(config: ResolvedLLMConfig) -> dict:
+    """Bloque `agent.think` (provider + endpoint BYO) del proveedor del tenant.
 
-    if mode == "deepseek":
-        key = os.getenv("DEEPSEEK_API_KEY", "").strip()
-        if not key:
-            raise VoiceConfigError("DEEPSEEK_API_KEY no configurada para voz")
-        base = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com").rstrip("/")
+    Deepgram sólo transporta el audio: el modelo, el endpoint y la key salen de
+    la config del tenant (ADR-038), igual que en el chat — no hay LLM propio de
+    Deepgram. `claude` usa el formato nativo de Anthropic; `deepseek` y
+    `openrouter` son OpenAI-compatibles.
+    """
+    if config.provider == "claude":
         return {
-            "provider": {
-                "type": "open_ai",
-                "model": os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash"),
-            },
-            "endpoint": {
-                "url": f"{base}/chat/completions",
-                "headers": {"authorization": f"Bearer {key}"},
-            },
-        }
-
-    if mode == "claude":
-        key = (os.getenv("CLAUDE_API_KEY") or os.getenv("ANTHROPIC_API_KEY") or "").strip()
-        if not key:
-            raise VoiceConfigError("CLAUDE_API_KEY no configurada para voz")
-        return {
-            "provider": {
-                "type": "anthropic",
-                "model": os.getenv("CLAUDE_MODEL", "claude-sonnet-4-5"),
-            },
+            "provider": {"type": "anthropic", "model": config.model},
             "endpoint": {
                 "url": "https://api.anthropic.com/v1/messages",
-                "headers": {"x-api-key": key, "anthropic-version": "2023-06-01"},
+                "headers": {
+                    "x-api-key": config.api_key,
+                    "anthropic-version": "2023-06-01",
+                },
             },
         }
 
-    # LLM gestionado por Deepgram: sin endpoint ni key propia.
+    if config.provider == "openrouter":
+        base = os.getenv(
+            "OPENROUTER_BASE_URL", DEFAULT_OPENROUTER_BASE_URL
+        ).rstrip("/")
+    elif config.provider == "deepseek":
+        base = os.getenv("DEEPSEEK_BASE_URL", DEFAULT_DEEPSEEK_BASE_URL).rstrip("/")
+    else:
+        raise VoiceConfigError(
+            f"Proveedor de IA no soportado en el canal de voz: {config.provider}"
+        )
+
     return {
-        "provider": {
-            "type": "open_ai",
-            "model": os.getenv("VOICE_FALLBACK_LLM", DEFAULT_MANAGED_LLM),
-        }
+        "provider": {"type": "open_ai", "model": config.model},
+        "endpoint": {
+            "url": f"{base}/chat/completions",
+            "headers": {"authorization": f"Bearer {config.api_key}"},
+        },
     }
 
 
-def build_voice_settings(bot, channel, history: list[dict], functions: list[dict]) -> dict:
+def build_voice_settings(
+    bot, channel, history: list[dict], functions: list[dict], config: ResolvedLLMConfig
+) -> dict:
     """`Settings` completo que se envía a Deepgram tras el `Welcome`."""
     from app.models.channel import VoiceConfig
 
     voice = channel.voice_config or VoiceConfig()
     prompt = build_voice_prompt(bot)
-    think = build_think()
-    if "endpoint" not in think and len(prompt) > MANAGED_PROMPT_LIMIT:
-        raise VoiceConfigError(
-            f"El prompt del bot ({len(prompt)} chars) supera el límite gestionado; "
-            "configurá VOICE_THINK=claude|deepseek"
-        )
+    think = build_think(config)
 
     agent: dict = {
         "greeting": get_effective_welcome_message(bot.config),

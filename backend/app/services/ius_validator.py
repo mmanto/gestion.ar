@@ -22,7 +22,6 @@ contradicciones internas del resto del contenido, que no es analizable con regla
 fijas.
 """
 
-import asyncio
 import json
 from typing import Any, Dict, List, TypedDict
 
@@ -455,23 +454,22 @@ Respondé ÚNICAMENTE con un JSON válido (sin markdown, sin texto adicional) co
 Si no encontrás problemas, respondé {"issues": []}."""
 
 
-async def validate_semantics(config: Dict[str, Any], claude_client) -> List[ValidationIssue]:
+async def validate_semantics(config: Dict[str, Any], llm) -> List[ValidationIssue]:
     """
     Analiza el JSON con un modelo de lenguaje en busca de contradicciones o
-    ambigüedades internas. `claude_client` es el cliente `anthropic.Anthropic`
-    (síncrono) ya inicializado por ClaudeService.
+    ambigüedades internas. `llm` es el servicio del tenant resuelto con
+    `get_llm_for_tenant` (Claude/DeepSeek/OpenRouter, ver ADR-038) — este
+    módulo no sabe qué proveedor es ni con qué key corre.
     """
     payload = json.dumps(config, ensure_ascii=False, indent=2)
 
     try:
-        response = await asyncio.to_thread(
-            claude_client.messages.create,
-            model="claude-haiku-4-5-20251001",
+        response = await llm.generate_response(
+            user_message=payload,
+            system_prompt=_SEMANTIC_AUDIT_PROMPT,
             max_tokens=1024,
-            system=_SEMANTIC_AUDIT_PROMPT,
-            messages=[{"role": "user", "content": payload}],
         )
-        text = response.content[0].text.strip()
+        text = (response.response or "").strip()
     except Exception as e:
         return [_issue("$", f"No se pudo ejecutar el análisis semántico: {e}", "error")]
 

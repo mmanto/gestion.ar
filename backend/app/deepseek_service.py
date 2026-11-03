@@ -35,10 +35,22 @@ class DeepSeekService:
         "deepseek-reasoner": {"input": 0.435, "output": 0.87},
     }
 
-    def __init__(self):
-        self.api_key = os.getenv("DEEPSEEK_API_KEY")
-        self.base_url = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com").rstrip("/")
-        self.model = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash")
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        model: Optional[str] = None,
+        base_url: Optional[str] = None,
+        quiet: bool = False,
+    ):
+        """`api_key`/`model`/`base_url` permiten credenciales por tenant (ver
+        tenant_llm_service.py); sin argumentos usa las del proceso. `quiet`
+        silencia el banner: el servicio por tenant se construye en cada turno.
+        """
+        self.api_key = api_key or os.getenv("DEEPSEEK_API_KEY")
+        self.base_url = (
+            base_url or os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+        ).rstrip("/")
+        self.model = model or os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash")
         self.timeout = float(os.getenv("DEEPSEEK_TIMEOUT", "90"))
         # "thinking" queda deshabilitado por default: si se omite, la API lo
         # habilita sola con reasoning_effort "high" y el modelo gasta el
@@ -53,9 +65,10 @@ class DeepSeekService:
                 "Por favor agrega tu API key en .env.dev (o .env.prod)"
             )
 
-        print("✅ DeepSeek Service inicializado")
-        print(f"🐋 Modelo: {self.model} (thinking={'enabled' if self.thinking_enabled else 'disabled'})")
-        print(f"🌐 URL: {self.base_url}")
+        if not quiet:
+            print("✅ DeepSeek Service inicializado")
+            print(f"🐋 Modelo: {self.model} (thinking={'enabled' if self.thinking_enabled else 'disabled'})")
+            print(f"🌐 URL: {self.base_url}")
 
     def calculate_cost(self, input_tokens: int, output_tokens: int) -> float:
         """Calcula el costo estimado de una llamada a la API"""

@@ -17,7 +17,9 @@ from app.services.module_service import get_module_service
 from app.services.ius_validator import validate_structure, validate_semantics
 from app.auth_service import User
 from app.dependencies.auth import get_current_user, require_role
-from app.claude_service import build_effective_system_prompt, get_claude_service
+from app.claude_service import build_effective_system_prompt
+from app.llm_errors import LLMNotConfiguredError
+from app.services.tenant_llm_service import get_llm_for_tenant
 
 router = APIRouter(
     prefix="/api/bots",
@@ -86,6 +88,9 @@ async def get_bots(
 class ValidateIusConfigRequest(BaseModel):
     config: Dict[str, Any]
     semantic: bool = False
+    # Requerido con semantic=True: el análisis semántico corre con el
+    # proveedor de IA del tenant dueño del bot (ADR-038).
+    bot_id: Optional[str] = None
 
 
 @router.post("/validate-ius-config", response_model=dict)
@@ -94,21 +99,42 @@ async def validate_ius_config(body: ValidateIusConfigRequest):
     Valida el JSON de configuración libre de un agente (ius_config) antes de
     guardarlo. Los chequeos estructurales (genéricos + campos conocidos por
     el runtime) siempre corren; el análisis semántico vía LLM es opcional
-    porque implica una llamada a la API de Claude.
+    porque implica una llamada al proveedor de IA del tenant (por eso exige
+    `bot_id`). Un bot inexistente o un tenant sin proveedor configurado se
+    devuelven como issue semántico, no como error del endpoint.
     """
     structural = validate_structure(body.config)
     semantic = []
     if body.semantic:
-        try:
-            claude_client = get_claude_service().client
-        except Exception as e:
+        llm = None
+        if not body.bot_id:
             semantic = [{
                 "field": "$",
-                "message": f"No se pudo inicializar el servicio de IA: {e}",
+                "message": (
+                    "Falta bot_id: el análisis semántico usa el proveedor de IA "
+                    "del tenant dueño del bot"
+                ),
                 "severity": "error",
             }]
         else:
-            semantic = await validate_semantics(body.config, claude_client)
+            bot = await get_bot_service().get_bot(body.bot_id)
+            if not bot:
+                semantic = [{
+                    "field": "$",
+                    "message": "Bot no encontrado: no se pudo resolver el proveedor de IA",
+                    "severity": "error",
+                }]
+            else:
+                try:
+                    llm = await get_llm_for_tenant(bot.tenant_id)
+                except LLMNotConfiguredError as e:
+                    semantic = [{
+                        "field": "$",
+                        "message": str(e),
+                        "severity": "error",
+                    }]
+        if llm is not None:
+            semantic = await validate_semantics(body.config, llm)
 
     return {"success": True, "structural": structural, "semantic": semantic}
 

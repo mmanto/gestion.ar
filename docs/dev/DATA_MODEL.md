@@ -286,8 +286,30 @@ no en el tenant.
 | `plan_id` | `TEXT` → FK `plans.plan_id` | Plan de suscripción al que está dado de alta el tenant |
 | `created_at` / `updated_at` | `TIMESTAMPTZ` | |
 
-Migraciones: `20261008_0000_add_tenant_settings.py` y
-`20261028_1300_add_tenant_api_key_hash.py`.
+Migraciones: `20261008_0000_add_tenant_settings.py`,
+`20261028_1300_add_tenant_api_key_hash.py` y
+`20261103_1200_add_tenant_llm_config.py`.
+
+### `tenant_llm_configs` (proveedor de IA del tenant, ADR-038)
+
+Una fila por tenant (PK = `tenant_id`). El proveedor, el modelo y la API key los
+carga un admin del tenant desde Ajustes › Proveedor de IA. **Sin fila el agente
+del tenant no responde**: no hay fallback a las keys globales de `.env`.
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `tenant_id` | `TEXT PK` → FK `tenants.tenant_id` `ON DELETE CASCADE` | |
+| `provider` | `TEXT NOT NULL` | `claude` / `deepseek` / `openrouter` (CHECK `ck_tenant_llm_configs_provider`) |
+| `model` | `TEXT NOT NULL` | Slug del modelo elegido (ej. `deepseek/deepseek-chat`) |
+| `api_key_encrypted` | `TEXT NOT NULL` | Token Fernet de la key. La clave sale de `ENCRYPTION_KEY` (Fernet directa o derivada con SHA-256) |
+| `api_key_hint` | `TEXT NOT NULL` | Últimos 4 caracteres, para mostrar que hay una key guardada |
+| `last_validated_at` | `TIMESTAMPTZ` (opt) | Última validación exitosa contra el proveedor |
+| `last_error` | `TEXT` (opt) | Último error de `POST /api/tenant/llm-config/validate` (truncado a 500 chars) |
+| `updated_by` | `TEXT` → FK `users.username` `ON DELETE SET NULL` | Admin que guardó la config |
+| `created_at` / `updated_at` | `TIMESTAMPTZ` | |
+
+Migración: `20261103_1200_add_tenant_llm_config.py` (sin backfill: cada tenant
+carga su config después del deploy).
 
 ### Módulos (entitlement): `modules`, `bot_modules`, `plan_modules`, `tenant_modules`
 

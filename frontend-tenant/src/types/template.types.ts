@@ -1,4 +1,4 @@
-export type TemplateId = 'default' | 'kero';
+export type TemplateId = 'default' | 'kero' | 'devbout';
 
 export interface TemplateOption {
   id: TemplateId;

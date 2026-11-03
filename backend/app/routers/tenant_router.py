@@ -10,6 +10,8 @@ general, ver bot_router.py/tenant_admin_router.py) — sólo puede:
    (auto_qualify_colors, ver prospect_auto_qualify_service.py).
 4. Gestionar (alta/edición) los usuarios de su propio tenant — nunca
    super_admin, y siempre scoped a current_user.tenant_id.
+5. Configurar su proveedor de IA (Claude/DeepSeek/OpenRouter) con modelo y
+   API key propia — ver tenant_llm_service.py y ADR-038.
 
 Ver estrategia multi-tenant en docs/dev/DECISIONS.md.
 """
@@ -22,7 +24,15 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, 
 from app.auth_service import User
 from app.dependencies.auth import get_current_user, require_role
 from app.models.bot import BotStatus, BotUpdate
-from app.models.tenant import AutoQualifyColorsUpdate, CustomFactsUpdate, ModuleEnableRequest, TenantOwnUserCreate, TenantUpdate, TenantUserOut, TenantUserUpdate
+from app.llm_errors import LLMNotConfiguredError, LLMProviderError
+from app.models.tenant import AutoQualifyColorsUpdate, CustomFactsUpdate, ModuleEnableRequest, TenantLLMConfigOut, TenantLLMConfigUpdate, TenantOwnUserCreate, TenantUpdate, TenantUserOut, TenantUserUpdate
+from app.services.secrets_service import SecretsConfigError
+from app.services.tenant_llm_service import (
+    delete_tenant_llm_config,
+    get_llm_config_out,
+    save_tenant_llm_config,
+    test_tenant_llm_config,
+)
 from app.models.channel import ChannelStatus
 from app.services.bot_service import get_bot_service
 from app.routers.upload_router import UPLOADS_DIR
@@ -46,8 +56,10 @@ MAX_LOGO_BYTES = 2 * 1024 * 1024  # 2MB
 # Temas visuales disponibles para el backoffice del tenant (ver
 # frontend-tenant/src/types/template.types.ts TemplateId) — 'kero' es el
 # default para tenants nuevos, 'default' queda solo por compatibilidad con
-# tenants que ya lo tenían elegido.
-VALID_TEMPLATE_IDS = {"default", "kero"}
+# tenants que ya lo tenían elegido. 'devbout' es el shell de
+# @mmanto/devbout-ui (sidebar colapsable + header de breadcrumb): cambia el
+# chrome, no el contenido de las páginas.
+VALID_TEMPLATE_IDS = {"default", "kero", "devbout"}
 
 # Rubro del tenant (branding.industry) -- eje de personalización de
 # contenido (labels del menú, contenido del Escritorio) DISTINTO del tema
@@ -441,3 +453,69 @@ async def delete_tenant_own_user(
             "Borrá primero sus agentes y canales relacionados.",
         )
     return {"success": True, "message": "Usuario eliminado"}
+
+
+# ── Proveedor de IA del tenant (ADR-038) ─────────────────────────────────────
+# Self-service: cada tenant carga su proveedor (Claude/DeepSeek/OpenRouter),
+# modelo y API key propia. La key se valida contra el proveedor antes de
+# guardarse y se persiste cifrada; nunca se devuelve por la API (sólo el hint
+# de los últimos 4 caracteres). Sin configuración el agente no responde — no
+# hay fallback a las keys globales de plataforma.
+
+@router.get("/llm-config", response_model=dict)
+async def get_tenant_llm_config_endpoint(
+    current_user: User = Depends(require_role("admin")),
+):
+    """Devuelve la config de IA del propio tenant (o `configured: false`)."""
+    config = await get_llm_config_out(current_user.tenant_id)
+    return {"success": True, "config": config.model_dump()}
+
+
+@router.put("/llm-config", response_model=dict)
+async def update_tenant_llm_config(
+    data: TenantLLMConfigUpdate,
+    current_user: User = Depends(require_role("admin")),
+):
+    """Valida contra el proveedor y guarda (upsert) la config del tenant.
+
+    Sin `api_key` se reusa la guardada cuando el proveedor no cambió. Si el
+    proveedor rechaza key/modelo la config vigente queda intacta.
+    """
+    try:
+        config = await save_tenant_llm_config(
+            current_user.tenant_id, data, updated_by=current_user.username
+        )
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+    except LLMProviderError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+    except SecretsConfigError as exc:
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, str(exc))
+    return {"success": True, "config": config.model_dump()}
+
+
+@router.post("/llm-config/validate", response_model=dict)
+async def validate_tenant_llm_config(
+    current_user: User = Depends(require_role("admin")),
+):
+    """Revalida la config guardada. Nunca falla por el proveedor: devuelve
+    `valid: false` + el motivo (también persistido en `last_error`)."""
+    try:
+        valid, error = await test_tenant_llm_config(current_user.tenant_id)
+    except LLMNotConfiguredError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc))
+    except SecretsConfigError as exc:
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, str(exc))
+    return {"success": True, "valid": valid, "error": error}
+
+
+@router.delete("/llm-config", response_model=dict)
+async def delete_tenant_llm_config_endpoint(
+    current_user: User = Depends(require_role("admin")),
+):
+    """Borra la config: el agente del tenant deja de responder."""
+    try:
+        deleted = await delete_tenant_llm_config(current_user.tenant_id)
+    except SecretsConfigError as exc:
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, str(exc))
+    return {"success": True, "deleted": deleted}

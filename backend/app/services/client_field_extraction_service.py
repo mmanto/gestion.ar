@@ -18,9 +18,10 @@ import json
 import re
 from typing import Any, Dict, Optional
 
-from app.claude_service import get_llm_service
+from app.llm_errors import LLMNotConfiguredError
 from app.models.client import ClientUpdate
 from app.services.client_service import get_client_service
+from app.services.tenant_llm_service import get_llm_for_tenant
 
 _JSON_BLOCK_RE = re.compile(r"\{.*\}", re.DOTALL)
 _EMPTY_PLACEHOLDERS = {"null", "none", "n/a", "-", ""}
@@ -57,13 +58,19 @@ def _parse_json(raw: str) -> Optional[dict]:
         return None
 
 
-async def capture_client_fields_from_message(client_id: str, user_text: str) -> Optional[Dict[str, Any]]:
+async def capture_client_fields_from_message(
+    client_id: str, user_text: str, tenant_id: str
+) -> Optional[Dict[str, Any]]:
     """
     Si al cliente le falta nombre, email, teléfono o DNI, le pide al LLM que
     extraiga -- SOLO si aparecen explícitamente en este mensaje -- los que
     falten, y actualiza el Client con lo encontrado. Nunca pisa datos ya
     cargados. Retorna los campos actualizados, o None si no había nada para
-    hacer (cliente ya completo, o el mensaje no menciona nada nuevo).
+    hacer (cliente ya completo, el mensaje no menciona nada nuevo, o el tenant
+    no tiene proveedor de IA configurado).
+
+    `tenant_id` es el del bot del canal: la extracción corre con la key del
+    tenant (ADR-038), no con la de plataforma.
     """
     client_service = get_client_service()
     client = await client_service.get_client(client_id)
@@ -85,7 +92,13 @@ async def capture_client_fields_from_message(client_id: str, user_text: str) -> 
         f"bloques de código markdown: {{{example_keys}}}"
     )
 
-    llm = get_llm_service()
+    try:
+        llm = await get_llm_for_tenant(tenant_id)
+    except LLMNotConfiguredError:
+        # Sin proveedor de IA no hay extracción: no es un error del mensaje y
+        # no debe romper el chat (el turno principal ya avisa al usuario).
+        return None
+
     response = await llm.generate_rag_response(
         user_message=user_text,
         rag_context="",

@@ -39,13 +39,23 @@ se usan para sustituir `${...}` dentro de `docker-compose.yml`/`docker-compose.p
 
 ---
 
-## LLM (Anthropic / Ollama / DeepSeek)
+## LLM por tenant (ADR-038) y LLM global de plataforma
+
+El proveedor de IA (Claude, DeepSeek u OpenRouter), el modelo y la API key los
+carga **cada tenant** desde su backoffice (Ajustes › Proveedor de IA) y se
+guardan cifrados en `tenant_llm_configs` (`POST /api/tenant/llm-config`, ver
+`docs/dev/API.md`). **Sin esa config el agente del tenant no responde**: no hay
+fallback a las keys de este archivo.
+
+Las variables de abajo sobreviven sólo para (a) bots legacy sin `tenant_id`,
+que siguen usando `LLM_PROVIDER`, y (b) Ollama, que no tiene API key. OpenRouter
+no existe como proveedor global: siempre es por tenant.
 
 | Variable | Requerida | Descripción | Ejemplo |
 |---|---|---|---|
-| `ANTHROPIC_API_KEY` | ✅* | API key de Anthropic | `sk-ant-api03-xxx` |
-| `CLAUDE_MODEL` | ❌ | Modelo Claude a usar | `claude-haiku-4-5-20251001` |
-| `LLM_PROVIDER` | ❌ | Proveedor de LLM | `claude` (default) / `ollama` / `deepseek` |
+| `ANTHROPIC_API_KEY` | ✅* | API key de Anthropic (fallback de plataforma) | `sk-ant-api03-xxx` |
+| `CLAUDE_MODEL` | ❌ | Modelo Claude por defecto del path global | `claude-haiku-4-5-20251001` |
+| `LLM_PROVIDER` | ❌ | Proveedor del path global | `claude` (default) / `ollama` / `deepseek` |
 | `OLLAMA_BASE_URL` | ✅* | URL de Ollama (si LLM_PROVIDER=ollama) | `http://ollama:11434` |
 | `OLLAMA_MODEL` | ❌ | Modelo Ollama a usar | `qcwind/qwen3-8b-instruct-Q4-K-M:latest` |
 | `OLLAMA_TIMEOUT` | ❌ | Timeout en segundos para Ollama | `120` |
@@ -54,6 +64,10 @@ se usan para sustituir `${...}` dentro de `docker-compose.yml`/`docker-compose.p
 | `DEEPSEEK_BASE_URL` | ❌ | URL base de la API de DeepSeek | `https://api.deepseek.com` (default) |
 | `DEEPSEEK_TIMEOUT` | ❌ | Timeout en segundos para DeepSeek | `90` (default) |
 | `DEEPSEEK_THINKING` | ❌ | Habilita el modo "thinking" (razonamiento) de DeepSeek | `disabled` (default) / `enabled` |
+| `OPENROUTER_BASE_URL` | ❌ | Base de la API OpenAI-compatible de OpenRouter | `https://openrouter.ai/api/v1` (default) |
+| `OPENROUTER_TIMEOUT` | ❌ | Timeout en segundos para el runtime de OpenRouter | `90` (default) |
+| `OPENROUTER_APP_URL` | ❌ | Header `HTTP-Referer` de atribución; vacío = no se envía | `https://ius.intellify.pro` |
+| `OPENROUTER_APP_TITLE` | ❌ | Header `X-OpenRouter-Title`; vacío = no se envía | `IUS` |
 
 > *Requerida según el `LLM_PROVIDER` elegido.
 >
@@ -62,18 +76,37 @@ se usan para sustituir `${...}` dentro de `docker-compose.yml`/`docker-compose.p
 
 ---
 
-## Canal de voz (Deepgram Agent, ADR-034)
+## Canal de voz (Deepgram Agent, ADR-034/ADR-038)
 
 | Variable | Requerida | Descripción | Ejemplo |
 |---|---|---|---|
 | `DEEPGRAM_API_KEY` | ✅* | API key de Deepgram; sólo la usa el backend en el proxy WS | — |
-| `VOICE_THINK` | ❌ | LLM del agente: `auto` (mapea `LLM_PROVIDER`; `ollama`/desconocidos → gestionado), `managed`, `deepseek` o `claude` | `auto` (default) |
-| `VOICE_FALLBACK_LLM` | ❌ | Modelo del LLM gestionado por Deepgram | `gpt-4o-mini` (default) |
-| `VOICE_COST_PER_MINUTE_USD` | ❌ | Costo estimado por minuto para `conversations.metadata` | `0.075` (default) |
+| `VOICE_COST_PER_MINUTE_USD` | ❌ | Costo estimado por minuto para `conversations/metadata` | `0.075` (default) |
 
-> *Requerida sólo si se habilita un canal `voice`. Con `VOICE_THINK=deepseek`
-> se usa `DEEPSEEK_API_KEY`; con `claude`, `CLAUDE_API_KEY`/`ANTHROPIC_API_KEY`.
-> El prompt con LLM gestionado tiene un tope de 25 000 caracteres.
+> *Requerida sólo si se habilita un canal `voice`. El LLM de la voz es el de la
+> config del tenant (ADR-038): Deepgram sólo transporta el audio y llama al
+> `endpoint` BYO del proveedor elegido con la key del tenant, así que **no**
+> existen `VOICE_THINK`/`VOICE_FALLBACK_LLM` ni LLM gestionado por Deepgram. Sin
+> config de IA cargada el WS cierra con error en vez de usar la key de
+> plataforma. Tampoco hay tope de longitud del prompt.
+
+---
+
+## Cifrado de secretos (ADR-038)
+
+| Variable | Requerida | Descripción | Ejemplo |
+|---|---|---|---|
+| `ENCRYPTION_KEY` | ✅ | Cifra las API keys de IA de cada tenant (`tenant_llm_configs.api_key_encrypted`). Acepta una clave Fernet válida (`Fernet.generate_key()`) o un string arbitrario (se deriva con SHA-256). Rotarla invalida las keys ya guardadas: hay que volver a cargarlas | `openssl rand -hex 32` |
+
+Generar una clave Fernet:
+
+```bash
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+Sin esta variable, `PUT /api/tenant/llm-config` devuelve **500** con
+`ENCRYPTION_KEY no configurada` (el proceso no se cae: el resto del agente sigue
+funcionando).
 
 ---
 

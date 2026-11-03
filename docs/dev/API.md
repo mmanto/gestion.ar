@@ -411,6 +411,8 @@ Vaciar toda la base de conocimiento de este agente. Requiere `?confirm=ELIMINAR`
 
 - `POST /api/chat` — 410 Gone. Usar `/ws/chat/{bot_id}` o `/ws/chat/channel/{channel_id}`.
 - `GET`/`POST /api/webhook` (WhatsApp legacy, sin `channel_id`) — 410 Gone. Usar `/api/webhook/whatsapp/meta/{channel_id}` o `/twilio/{channel_id}`.
+- `GET /api/public/llm-info` — **eliminado**. El proveedor/modelo ya no es global: cada tenant lo
+  configura en Ajustes › Proveedor de IA (`/api/tenant/llm-config`, ADR-038).
 - `POST /api/webhook/telegram` (sin `channel_id`) — **no deprecado** (bot de Telegram real en uso). Resuelve `bot_id` buscando un canal cuyo `telegram_config.bot_token` coincida con `TELEGRAM_BOT_TOKEN`; si no hay match, procesa el mensaje sin agente asociado (sin RAG, prompt genérico) y rechaza subida de documentos.
 
 ---
@@ -674,12 +676,26 @@ Subir el logo del tenant. Acepta multipart `file`.
 
 ### PATCH `/api/tenant/branding`
 
-Actualizar color principal y/o tagline. Ambos campos opcionales.
+Actualizar campos de marca. Todos opcionales (`null`/ausente = no se toca).
 
 **Request:**
 ```json
-{ "primary_color": "#ff5722", "tagline": "Justicia laboral" }
+{
+  "primary_color": "#ff5722",
+  "tagline": "Justicia laboral",
+  "template_id": "devbout",
+  "industry": "legal",
+  "sidebar_visible": true
+}
 ```
+
+- `template_id` — tema visual del panel: `default` («Clásico»), `kero` o
+  `devbout` («Panel», shell de `@mmanto/devbout-ui`). Cualquier otro valor
+  devuelve 400. El backend valida contra `VALID_TEMPLATE_IDS`
+  (`backend/app/routers/tenant_router.py`), que debe actualizarse junto con
+  `frontend-tenant/src/types/template.types.ts`.
+- `industry` — `legal` | `salud` | `generico` (`VALID_INDUSTRIES`).
+- `sidebar_visible` — booleano; oculta la barra lateral del panel.
 
 **Response 200:**
 ```json
@@ -854,6 +870,73 @@ creadas por autoregistro/gmail en desarrollo).
 **Response 200:**
 ```json
 { "success": true, "message": "Usuario eliminado" }
+```
+
+---
+
+## Tenant — Proveedor de IA
+
+Cada tenant carga **su** proveedor de IA (Claude, DeepSeek u OpenRouter), el
+modelo y su API key desde el backoffice (Ajustes › Proveedor de IA). La key se
+valida contra el proveedor antes de guardarse y queda **cifrada** con
+`ENCRYPTION_KEY`: la API nunca la devuelve, sólo `api_key_hint` (últimos 4
+caracteres). **Sin esta configuración el agente del tenant no responde** — no
+hay fallback a las keys de plataforma de `.env` (ADR-038).
+
+Todos requieren JWT y rol `admin` del tenant. El `tenant_id` sale siempre del
+usuario autenticado (nunca del body), así que un admin de otro tenant no puede
+leer ni modificar esta config.
+
+### GET `/api/tenant/llm-config`
+
+```json
+{
+  "success": true,
+  "config": {
+    "configured": true,
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-chat",
+    "api_key_hint": "1234",
+    "last_validated_at": "2026-11-03T14:02:11+00:00",
+    "last_error": null,
+    "updated_at": "2026-11-03T14:02:11+00:00",
+    "updated_by": "admin_ius"
+  }
+}
+```
+Sin config cargada: `{"configured": false}` y el resto de los campos en `null`.
+
+### PUT `/api/tenant/llm-config`
+
+**Request:**
+```json
+{ "provider": "openrouter", "model": "deepseek/deepseek-chat", "api_key": "sk-or-v1-…" }
+```
+- `provider`: `claude` | `deepseek` | `openrouter`.
+- `model`: 3–200 caracteres. Tiene que existir para ese proveedor.
+- `api_key`: 8–512 caracteres. **Opcional** sólo si se mantiene el mismo
+  proveedor: se reusa la key guardada. Al cambiar de proveedor es obligatoria.
+
+Valida key + modelo contra el proveedor **antes** de escribir: si falla, la
+config vigente queda intacta. Responde `{ "success": true, "config": {...} }`.
+- `400` con el mensaje del proveedor (key inválida, modelo inexistente, sin
+  crédito) o por falta de key al cambiar de proveedor.
+- `500` si falta `ENCRYPTION_KEY` en el servidor.
+
+### POST `/api/tenant/llm-config/validate`
+
+Revalida la config guardada. Nunca falla por el proveedor: persiste el motivo en
+`last_error` y lo devuelve.
+```json
+{ "success": true, "valid": false, "error": "DeepSeek: credit balance is too low" }
+```
+- `404` si el tenant todavía no tiene config.
+
+### DELETE `/api/tenant/llm-config`
+
+Borra la config; el agente deja de responder hasta que se cargue otra.
+```json
+{ "success": true, "deleted": true }
 ```
 
 ---

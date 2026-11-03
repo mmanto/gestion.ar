@@ -2,6 +2,7 @@ import path from 'node:path'
 import { defineConfig } from 'vite'
 import type { Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import { federation } from '@module-federation/vite'
 
 // Remote de turnos servido por devbout-appointments (ver ADR-009 en
@@ -65,6 +66,9 @@ const hmrClientPort = Number(process.env.VITE_HMR_CLIENT_PORT) || 5174
 export default defineConfig({
   plugins: [
     react(),
+    // Tailwind 4 CSS-first: el CSS se compila desde src/index.css (no hay
+    // tailwind.config.js ni postcss.config.js) — ver docs/design/DESIGN.md.
+    tailwindcss(),
     tenantConfigDevMiddleware(),
     federation({
       name: 'gestionar-frontend-tenant',

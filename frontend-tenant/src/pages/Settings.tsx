@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AiProviderSection } from '../components/settings/AiProviderSection';
 import { BrandingSection } from '../components/settings/BrandingSection';
 import { BiometricSection } from '../components/settings/BiometricSection';
 import { PasskeySection } from '../components/settings/PasskeySection';
@@ -110,6 +111,8 @@ export const Settings = () => {
           </Card>
 
           {user?.role === 'admin' && <BrandingSection />}
+
+          {user?.role === 'admin' && <AiProviderSection />}
 
           <BiometricSection />
 

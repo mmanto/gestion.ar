@@ -22,6 +22,9 @@ anthropic==0.120.2
 
 # PASO 4: Dependencias de Autenticación JWT
 python-jose[cryptography]==3.3.0
+# Cifrado de las API keys de IA por tenant (ADR-038) — antes llegaba sólo
+# transitivamente por python-jose[cryptography]; se declara explícito.
+cryptography==47.0.0
 # bcrypt ya viene con chromadb, usamos directamente sin passlib
 
 # PASO 5: QR Code para canal web

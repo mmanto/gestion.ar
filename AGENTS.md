@@ -38,7 +38,7 @@ Leer este archivo antes de realizar cualquier tarea.
 - **Backend:** FastAPI + Python 3.11+ (async)
 - **Base de datos:** MongoDB 7 + Redis 7 + ChromaDB (vector store)
 - **Frontend:** React + Vite + TypeScript + Tailwind CSS
-- **LLM:** Claude API (Anthropic) o Ollama (configurable via `LLM_PROVIDER`)
+- **LLM:** Claude (Anthropic), DeepSeek u OpenRouter **por tenant** con API key propia (`tenant_llm_configs`, ADR-038); `LLM_PROVIDER` + keys de `.env` quedan sólo para paths sin tenant (legacy) y Ollama
 - **Canales:** WhatsApp (Meta Cloud API + Twilio), Telegram, Web (WebSocket), PWA
 - **Infraestructura:** Docker Compose (dev) / VPS + Traefik (prod)
 - **Testing:** Pytest (backend)
@@ -53,8 +53,9 @@ Leer este archivo antes de realizar cualquier tarea.
 - Lógica de negocio en `app/services/`, nunca en routers
 - Webhooks de canales: `app/routers/whatsapp_webhook_router.py`, `telegram_webhook_router.py`, etc.
 - Un provider por canal externo en `app/providers/`
-- Configuración de LLM en `app/claude_service.py` (Claude) y `app/ollama_service.py` (Ollama)
-- La selección de LLM se hace via `get_llm_service()` en `app/claude_service.py`
+- Servicios de LLM en `app/claude_service.py` (Claude), `app/deepseek_service.py`, `app/openrouter_service.py` y `app/ollama_service.py`
+- El LLM de un tenant se resuelve con `get_llm_for_tenant(tenant_id)` (`app/services/tenant_llm_service.py`): proveedor + modelo + API key cifrada en `tenant_llm_configs`. Sin config, el tenant no responde (no hay fallback a las keys de plataforma)
+- `get_llm_service()` (`app/claude_service.py`) es el LLM **global/legacy**, sólo para bots sin tenant
 
 ### Frontend (React + Vite)
 - Componentes en `frontend/src/components/`

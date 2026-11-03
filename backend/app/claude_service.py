@@ -84,10 +84,20 @@ class ClaudeService:
         },
     }
 
-    def __init__(self):
-        """Inicializa el servicio de Claude"""
-        self.api_key = os.getenv("ANTHROPIC_API_KEY")
-        self.model = os.getenv("CLAUDE_MODEL", "claude-3-5-sonnet-20241022")
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        model: Optional[str] = None,
+        quiet: bool = False,
+    ):
+        """Inicializa el servicio de Claude.
+
+        `api_key`/`model` permiten credenciales por tenant (ver
+        tenant_llm_service.py); sin argumentos usa las del proceso. `quiet`
+        silencia el banner: el servicio por tenant se construye en cada turno.
+        """
+        self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
+        self.model = model or os.getenv("CLAUDE_MODEL", "claude-3-5-sonnet-20241022")
 
         if not self.api_key or self.api_key == "sk-ant-api03-YOUR_API_KEY_HERE":
             raise ValueError(
@@ -96,8 +106,9 @@ class ClaudeService:
             )
 
         self.client = Anthropic(api_key=self.api_key)
-        print("✅ Claude Service inicializado")
-        print(f"📱 Modelo: {self.model}")
+        if not quiet:
+            print("✅ Claude Service inicializado")
+            print(f"📱 Modelo: {self.model}")
 
     def calculate_cost(self, input_tokens: int, output_tokens: int) -> float:
         """
@@ -504,10 +515,13 @@ _llm_service = None
 
 def get_llm_service():
     """
-    Retorna el servicio LLM activo según LLM_PROVIDER:
+    Servicio LLM GLOBAL según LLM_PROVIDER — sólo para paths sin tenant (bots
+    legacy). Los turnos con tenant resuelven proveedor + key propios con
+    `get_llm_for_tenant` (ver tenant_llm_service.py, ADR-038):
       - 'claude'    → ClaudeService (Anthropic API, por defecto)
-      - 'ollama'    → OllamaService (modelo local)
+      - 'ollama'    → OllamaService (modelo local; única opción sin API key)
       - 'deepseek'  → DeepSeekService (API hosted de DeepSeek)
+    OpenRouter NO existe acá: no hay key de plataforma, siempre es por tenant.
     """
     global _llm_service
     if _llm_service is None:

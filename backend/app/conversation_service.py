@@ -93,6 +93,10 @@ class ConversationService:
             "conversation_id": row.conversation_id,
             "bot_id": row.bot_id,
             "client_id": row.client_id,
+            # Tenant de la conversación: lo usa el resumen (que corre con la
+            # key de IA del tenant, ADR-038) cuando la conversación no tiene
+            # bot asociado.
+            "tenant_id": row.tenant_id,
             "user_id": row.user_id,
             "channel": row.channel,
             "messages": messages,

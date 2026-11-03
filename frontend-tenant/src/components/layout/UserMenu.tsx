@@ -18,14 +18,9 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // const [llmModel, setLlmModel] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
   const menuRef = useRef<HTMLDivElement>(null);
-
-  // useEffect(() => {
-  //   publicService.getLlmInfo().then((info) => setLlmModel(info.model)).catch(() => { });
-  // }, []);
 
   // Cerrar dropdown al hacer click fuera
   useEffect(() => {

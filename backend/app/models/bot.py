@@ -121,8 +121,9 @@ class BotConfig(BaseModel):
         description=(
             "Fuerza el modo 'thinking' del LLM para este bot en particular, "
             "aunque DEEPSEEK_THINKING esté deshabilitado globalmente en el "
-            "servidor (solo tiene efecto con LLM_PROVIDER=deepseek; Claude y "
-            "Ollama lo ignoran). Pensado para bots con instrucciones densas "
+            "servidor (tiene efecto con los proveedores del tenant DeepSeek y "
+            "OpenRouter; Claude y Ollama lo ignoran). Pensado para bots con "
+            "instrucciones densas "
             "(ej. flows largos con reglas de prioridad superpuestas) donde el "
             "modo rápido sin razonamiento no sigue instrucciones sutiles de "
             "forma confiable."

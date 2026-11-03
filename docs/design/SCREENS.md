@@ -26,7 +26,7 @@
 | Pantalla | Ruta | Descripción |
 |---|---|---|
 | Registro "Crea tu cuenta" | `/registro` (alias `/register`) | Autoregistro público de un admin del tenant: plan mensual/anual, nombre/correo/contraseña y pago Mercado Pago. Réplica del bloque de la landing ius. |
-| Ajustes | `/settings` | Información de la cuenta, **Diseño** (template del panel: «Clásico» —default— o «Kero», guardado en el navegador), vistas de entidad y (solo `super_admin`) la sección **Apariencia**: preset de diseño (9 presets + base; por defecto **Cian** con títulos «Más grande» y barra de menú en tono Página), modo claro/oscuro, tonos de bloque y tamaño de títulos. |
+| Ajustes | `/settings` | Información de la cuenta; **Marca** (solo `admin`): logos, color primario, tagline, rubro (`branding.industry`), visibilidad de la barra lateral y **tema visual del panel** —«Clásico» (`default`), «Kero» (`kero`) o «Panel» (`devbout`, shell de `@mmanto/devbout-ui`)—, guardado por tenant en `branding.template_id`; **Proveedor de IA** (solo `admin`, ver ADR-038): proveedor (Claude/DeepSeek/OpenRouter), modelo, API key propia con estado configurado/sin configurar, botones Guardar / Probar conexión / Quitar configuración; biometría y passkeys. |
 | Compartir | `/compartir` | El staff comparte sus datos y su link de chat web propio con un cliente por WhatsApp: input de número + botón que abre `wa.me` con el mensaje armado. |
 
 ---
@@ -43,12 +43,19 @@
 
 ## Convenciones del dashboard
 
-- Layout: sidebar de navegación + área de contenido principal
-- **Navegación mobile (< `md`): la sidebar no se muestra — el menú del avatar
-  (UserMenu) ES el menú de la aplicación** y lleva los links de navegación del
-  panel (solo desktop: sidebar flotante/colapsable). Ajustes ya no expone la
-  opción de ocultar la barra lateral (el campo `sidebar_visible` del branding
-  queda en el modelo para tenants existentes, sin control en la UI).
+- Layout: sidebar de navegación + área de contenido principal. El chrome depende
+  del **tema visual** del tenant (`branding.template_id`, se elige en Ajustes ›
+  Marca):
+  - «Clásico» (`default`): Navbar oscura fija + sidebar propio colapsable.
+  - «Kero» (`kero`): topbar + sidebar flotante.
+  - «Panel» (`devbout`): shell de `@mmanto/devbout-ui` — sidebar colapsable a
+    iconos (`SidebarProvider`/`Sidebar`/`SidebarRail`), `SidebarInset` con header
+    de breadcrumb y `NavUser` en el pie. El contenido de las páginas es el mismo
+    en los tres temas.
+- **Navegación mobile (< `md`)**: en «Clásico» y «Kero» la sidebar no se muestra
+  —el menú del avatar (UserMenu) ES el menú de la aplicación—; en «Panel» el
+  sidebar pasa a `Sheet` (drawer) y el menú del avatar se reemplaza por el
+  `NavUser` del sidebar.
 - Framework: React + Vite + TypeScript
 - Estilos: Tailwind CSS
 - Estado servidor: React Query (TanStack Query)

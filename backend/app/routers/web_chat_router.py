@@ -51,11 +51,13 @@ async def _notify_staff(
     )
 
 
-async def _capture_client_fields_background(client_id: str, user_text: str) -> None:
+async def _capture_client_fields_background(
+    client_id: str, user_text: str, tenant_id: str
+) -> None:
     """Fire-and-forget: nunca debe tumbar el loop del websocket ni sumarle
     latencia a la respuesta del bot (ver client_field_extraction_service.py)."""
     try:
-        await capture_client_fields_from_message(client_id, user_text)
+        await capture_client_fields_from_message(client_id, user_text, tenant_id)
     except Exception:
         logger.exception("Error extrayendo datos del cliente en vivo (client_id=%s)", client_id)
 
@@ -189,7 +191,7 @@ async def websocket_chat(websocket: WebSocket, bot_id: str, device_id: Optional[
                 continue
 
             if web_client_id:
-                asyncio.create_task(_capture_client_fields_background(web_client_id, user_text))
+                asyncio.create_task(_capture_client_fields_background(web_client_id, user_text, bot.tenant_id))
 
             # Indicar que el bot está "escribiendo"
             await websocket.send_json({"type": "typing", "status": True})
@@ -406,7 +408,7 @@ async def websocket_chat_by_channel(websocket: WebSocket, channel_id: str, devic
                 continue
 
             if channel_client_id:
-                asyncio.create_task(_capture_client_fields_background(channel_client_id, user_text))
+                asyncio.create_task(_capture_client_fields_background(channel_client_id, user_text, bot.tenant_id))
 
             await websocket.send_json({"type": "typing", "status": True})
 

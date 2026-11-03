@@ -102,7 +102,13 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
     setIusValidating(semantic ? 'semantic' : 'structural');
     setIusValidationError(null);
     try {
-      const report = await validateIusConfig(formData.config.ius_config as JsonObject, semantic);
+      // El análisis semántico corre con el proveedor de IA del tenant dueño
+      // del bot: el backend necesita el bot_id (ADR-038).
+      const report = await validateIusConfig(
+        formData.config.ius_config as JsonObject,
+        semantic,
+        bot.bot_id
+      );
       setIusValidation(report);
     } catch (err) {
       setIusValidationError(err instanceof Error ? err.message : 'Error validando la configuración');

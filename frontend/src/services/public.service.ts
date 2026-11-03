@@ -22,11 +22,6 @@ export const publicService = {
     return res.data.url;
   },
 
-  async getLlmInfo(): Promise<{ provider: string; model: string }> {
-    const res = await axios.get(`${BASE_URL}/public/llm-info`);
-    return res.data;
-  },
-
   getQrCodeUrl(channelId: string, publicUrl?: string): string {
     const origin = encodeURIComponent(publicUrl || window.location.origin);
     return `${BASE_URL}/public/channels/${channelId}/qr-code?base_url=${origin}`;

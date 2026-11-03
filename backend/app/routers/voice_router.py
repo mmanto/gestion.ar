@@ -44,11 +44,14 @@ from app.auth_service import ALGORITHM, SECRET_KEY
 from app.claude_service import get_effective_welcome_message
 from app.connection_manager import notify_staff_of_client_message
 from app.conversation_service import get_conversation_service
+from app.llm_errors import LLMNotConfiguredError
+from app.services.secrets_service import SecretsConfigError
 from app.models.channel import Channel, ChannelStatus, ChannelType
 from app.models.tenant import Tenant
 from app.services.bot_service import get_bot_service
 from app.services.channel_service import get_channel_service
 from app.services.client_service import get_client_service
+from app.services.tenant_llm_service import get_llm_for_tenant
 from app.services.tenant_service import get_tenant_service
 from app.services.voice_session_service import (
     DEEPGRAM_WS_URL,
@@ -329,11 +332,13 @@ async def voice_websocket(
     greeting = get_effective_welcome_message(bot.config)
 
     try:
+        # El LLM de voz es el del tenant (ADR-038): sin config no hay sesión.
+        llm_config = await get_llm_for_tenant(bot.tenant_id)
         functions, dispatch = await build_voice_functions(
             bot, channel_client, channel_client.client_id
         )
-        settings = build_voice_settings(bot, channel, history, functions)
-    except VoiceConfigError as exc:
+        settings = build_voice_settings(bot, channel, history, functions, llm_config)
+    except (VoiceConfigError, LLMNotConfiguredError, SecretsConfigError) as exc:
         await websocket.send_json({"type": "error", "message": str(exc)})
         await websocket.close(code=1011)
         return

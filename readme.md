@@ -1,6 +1,6 @@
 # gestion.ar — Plataforma de chatbots conversacionales
 
-Bot multi-canal con IA (Claude API) y RAG para atención al cliente, gestión de leads y automatización de conversaciones.
+Bot multi-canal con IA (Claude, DeepSeek u OpenRouter — proveedor y API key por tenant) y RAG para atención al cliente, gestión de leads y automatización de conversaciones.
 
 ---
 
@@ -10,7 +10,7 @@ Bot multi-canal con IA (Claude API) y RAG para atención al cliente, gestión de
 |---|---|
 | Backend | FastAPI 0.100+ / Python 3.11 |
 | Base de datos | MongoDB 7 + Redis 7 + ChromaDB |
-| LLM | Claude API (Anthropic) / Ollama (configurable) |
+| LLM | Claude (Anthropic), DeepSeek u OpenRouter por tenant, con API key propia (`tenant_llm_configs`, ADR-038); Ollama como opción global sin key |
 | Frontend | React + Vite + TypeScript + Tailwind CSS |
 | Canales | WhatsApp (Meta + Twilio), Telegram, Web (WebSocket), PWA |
 | Contenedores | Docker + Docker Compose |
@@ -29,7 +29,9 @@ Bot multi-canal con IA (Claude API) y RAG para atención al cliente, gestión de
 │   │   ├── services/     # Lógica de negocio
 │   │   ├── providers/    # Proveedores de canales (Meta, Twilio)
 │   │   ├── main.py       # App FastAPI + endpoints principales
-│   │   ├── claude_service.py   # Integración Claude API + Ollama
+│   │   ├── claude_service.py   # Claude + factory del LLM global (legacy)
+│   │   ├── deepseek_service.py # DeepSeek (API hosted)
+│   │   ├── openrouter_service.py # OpenRouter (BYOK por tenant)
 │   │   ├── rag_service.py      # Sistema RAG (ChromaDB + embeddings)
 │   │   └── conversation_service.py
 │   ├── documents/        # Archivos subidos para RAG

@@ -17,13 +17,16 @@ from app.claude_service import ChatMessage, ChatResponse, build_user_message_wit
 class OllamaService:
     """Servicio para modelos locales corriendo en Ollama."""
 
-    def __init__(self):
+    def __init__(self, quiet: bool = False):
+        """`quiet` silencia el banner cuando el servicio se construye por turno
+        (ver get_llm_service/get_llm_for_tenant)."""
         self.base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
         self.model = os.getenv("OLLAMA_MODEL", "qcwind/qwen3-8b-instruct-Q4-K-M:latest")
         self.timeout = float(os.getenv("OLLAMA_TIMEOUT", "120"))
-        print("✅ Ollama Service inicializado")
-        print(f"🦙 Modelo: {self.model}")
-        print(f"🌐 URL: {self.base_url}")
+        if not quiet:
+            print("✅ Ollama Service inicializado")
+            print(f"🦙 Modelo: {self.model}")
+            print(f"🌐 URL: {self.base_url}")
 
     def calculate_cost(self, input_tokens: int, output_tokens: int) -> float:
         return 0.0

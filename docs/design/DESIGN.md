@@ -142,3 +142,59 @@ si son cortos (`select`/`color`/fecha)— dentro de un `@container`, no en una c
 ## Templates del admin
 
 `frontend/src/templates/registry.ts` expone dos shells conmutables desde Ajustes › «Diseño» (`frontend/src/pages/Settings.tsx`): `default` («Clásico», `templates/default/`, el default) y `kero` (`templates/kero/`). Cada página se envuelve a sí misma con `components/layout/AppLayout.tsx`, que despacha al `AppLayout` del template activo (`localStorage['gestionar-template']`). El `SidebarProvider` vive dentro de cada template para no envolver las rutas públicas.
+
+## Sistema de diseño del frontend de tenant (`frontend-tenant/`)
+
+El panel por tenant comparte vocabulario con el admin pero tiene su propia
+identidad (Montserrat, escalas `--fs-*`/`--fw-*` y paleta de marca), así que su
+CSS es un archivo aparte: `frontend-tenant/src/index.css`.
+
+- **Tailwind 4 CSS-first** (mismo stack que `frontend/`): plugin
+  `@tailwindcss/vite` en `frontend-tenant/vite.config.ts`; ya no existen
+  `tailwind.config.js` ni `postcss.config.js`. El bloque `@theme inline` mapea
+  la escala tipográfica (`--text-*` / `--font-weight-*`, con `initial` para
+  reproducir el reemplazo completo de la config v3), la paleta de marca
+  (`--color-primary-*`, `--color-secondary-*`, `--color-accent-*`,
+  `--color-gradient-*`) y los tokens base-mira (familia `--sidebar*`, `--border`,
+  `--ring`, …).
+- **Contrato del paquete**: importa `@mmanto/devbout-ui/tailwind.css` (hace
+  `@source` sobre su `dist`), `tw-animate-css` y `shadcn/tailwind.css`, igual
+  que el admin.
+- **primary/secondary/accent conservan la marca del tenant** (`#2793b4`,
+  `#37c88e`, `#a3dae2`) en vez de los neutros de devbout-ui: el contenido de
+  las páginas ya los usa como `bg-primary` / `text-primary` / `border-primary`.
+- **Paridad visual con la época de Tailwind 3** (el contenido de las páginas no
+  se migró): `border-color` por defecto = gray-200 (`*` en `@layer base`),
+  `::placeholder` = gray-400, `--shadow-sm` con el valor de v3 (en v4 `shadow-sm`
+  es la sombra que antes se llamaba `shadow`) y `cursor: pointer` en botones.
+- `.dark` está declarado con los neutros de devbout-ui, pero el backoffice del
+  tenant todavía no expone modo oscuro.
+
+### Tema «Panel» (shell de devbout-ui)
+
+`frontend-tenant/src/templates/devbout/` monta el shell completo con piezas del
+paquete — no hay copias locales de las primitivas:
+
+```
+AppLayout (templates/devbout/AppLayout.tsx)
+  SidebarProvider        → estado en cookie `sidebar_state` (utils/sidebarState.ts)
+    ShellSidebar         → Sidebar collapsible="icon" + marca del tenant (logos
+                           de Ajustes › Marca) + NavMain + NavUser + SidebarRail
+    SidebarInset
+      ShellHeader        → SidebarTrigger + Separator + Breadcrumb de la sección
+      {children}         → el contenido de cada página, tal cual
+```
+
+Reglas del tema:
+
+- El shell **no agrega padding ni título**: cada página ya trae su `PageHeader`
+  y su `p-*`, así el contenido es idéntico al de «Clásico».
+- La navegación sale del mismo manifiesto que el resto de los temas
+  (`config/navLinks.tsx`): `templates/devbout/navItems.tsx` filtra por rol,
+  resuelve los labels por rubro (`branding.industry`) y convierte los
+  separadores en grupos del sidebar.
+- `useSidebarVisible()` (Ajustes › Marca) sigue mandando: sin barra lateral, el
+  header muestra sólo el breadcrumb.
+- Mobile (< `md`): el paquete reemplaza el sidebar por un `Sheet`; el menú del
+  avatar de la Navbar deja de existir en este tema y sus acciones (Compartir,
+  Ajustes, Salir) viven en el `NavUser` del sidebar.

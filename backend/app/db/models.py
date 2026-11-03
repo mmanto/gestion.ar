@@ -82,6 +82,40 @@ class Tenant(Base):
     )
 
 
+class TenantLLMConfig(Base):
+    """Proveedor de IA del tenant (ADR-038): modelo + API key propia, cargados
+    desde Ajustes › Proveedor de IA por un admin del tenant.
+
+    Una fila por tenant (PK = tenant_id): OpenRouter/Claude/DeepSeek no son
+    servicios de plataforma, así que sin fila el agente del tenant no responde
+    (no hay fallback a las keys globales de `.env`). La key se guarda cifrada
+    (`secrets_service.encrypt_secret`); en claro sólo existe en memoria y nunca
+    se devuelve por la API — `api_key_hint` (últimos 4) es lo único visible.
+    """
+
+    __tablename__ = "tenant_llm_configs"
+
+    tenant_id = Column(Text, ForeignKey("tenants.tenant_id", ondelete="CASCADE"), primary_key=True)
+    provider = Column(Text, nullable=False)
+    model = Column(Text, nullable=False)
+    api_key_encrypted = Column(Text, nullable=False)
+    api_key_hint = Column(Text, nullable=False)
+    # Última validación exitosa contra el proveedor + último error (truncado a
+    # 500 chars) de `POST /api/tenant/llm-config/validate`.
+    last_validated_at = Column(DateTime(timezone=True), nullable=True)
+    last_error = Column(Text, nullable=True)
+    updated_by = Column(Text, ForeignKey("users.username", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    __table_args__ = (
+        CheckConstraint(
+            "provider IN ('claude', 'deepseek', 'openrouter')",
+            name="ck_tenant_llm_configs_provider",
+        ),
+    )
+
+
 class Module(Base):
     """Catálogo de módulos otorgables a un bot (ver bot_modules). Semilla vía
     migración — la modularización real del código sigue siendo trabajo

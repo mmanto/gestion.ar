@@ -19,20 +19,26 @@ contribuciones sin estado.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
 from app.claude_service import ChatMessage, build_effective_system_prompt, get_llm_service
+from app.llm_errors import LLMNotConfiguredError
+from app.services.secrets_service import SecretsConfigError
 from app.modules.agent_runtime import enabled_chat_extensions, resolve_callable
 from app.modules.manifest import ChatContribution
 from app.rag_service import get_rag_service
 from app.services.module_service import get_module_service
+from app.services.tenant_llm_service import get_llm_for_tenant
 from app.services.prospect_auto_qualify_service import (
     QUALIFICATION_TOOL_NAME,
     QUALIFICATION_TOOL_SPEC,
     build_qualification_tool_executor,
 )
 from app.services.public_sources_service import build_public_sources_tools
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_MAX_TOKENS = 1024
 
@@ -205,7 +211,38 @@ class AgentService:
             bot, client, client_id, canal, session, extensions
         )
 
-        response = await get_llm_service().generate_response(
+        # El proveedor de IA sale de la config del tenant (ADR-038) y se
+        # resuelve en cada turno: una key rotada aplica en el mensaje
+        # siguiente. Un bot legacy sin tenant sigue usando LLM_PROVIDER.
+        if bot is None:
+            llm = get_llm_service()
+        else:
+            try:
+                llm = await get_llm_for_tenant(bot.tenant_id)
+            except (LLMNotConfiguredError, SecretsConfigError) as exc:
+                # Sin proveedor configurado el agente NO responde (no hay
+                # fallback a las keys de plataforma). Se guarda el turno del
+                # usuario y se devuelve sin mensaje: cada canal decide qué
+                # hacer con `message=None` en vez de propagar una excepción.
+                not_configured = isinstance(exc, LLMNotConfiguredError)
+                logger.warning(
+                    "Tenant %s sin proveedor de IA utilizable (bot_id=%s, %s): "
+                    "el turno queda sin respuesta",
+                    bot.tenant_id,
+                    bot.bot_id,
+                    "sin configurar" if not_configured else f"error de cifrado: {exc}",
+                )
+                history.append(ChatMessage(role="user", content=user_text))
+                return TurnResult(
+                    message=None,
+                    history=history,
+                    metadata={
+                        "llm_error": "not_configured" if not_configured else "secrets_error"
+                    },
+                    llm=False,
+                )
+
+        response = await llm.generate_response(
             user_message=user_text,
             context=rag_context,
             system_prompt=build_effective_system_prompt(bot.config) if bot is not None else None,

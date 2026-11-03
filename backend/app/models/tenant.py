@@ -68,6 +68,35 @@ class TenantPublicInfo(BaseModel):
     settings: Dict[str, Any] = Field(default_factory=dict)
 
 
+#: Proveedores de IA que puede elegir un tenant (ADR-038). Ollama no está:
+#: es una opción global de plataforma porque no tiene API key.
+LLMProvider = Literal["claude", "deepseek", "openrouter"]
+
+
+class TenantLLMConfigUpdate(BaseModel):
+    """Alta/edición de la config de IA del tenant. `api_key` puede omitirse al
+    editar si se mantiene el mismo proveedor: en ese caso se reusa la key
+    guardada (ver tenant_llm_service.save_tenant_llm_config)."""
+
+    provider: LLMProvider
+    model: str = Field(..., min_length=3, max_length=200)
+    api_key: Optional[str] = Field(None, min_length=8, max_length=512)
+
+
+class TenantLLMConfigOut(BaseModel):
+    """Config de IA visible desde el backoffice — nunca incluye la key usable,
+    sólo el hint de los últimos 4 caracteres."""
+
+    configured: bool
+    provider: Optional[LLMProvider] = None
+    model: Optional[str] = None
+    api_key_hint: Optional[str] = None
+    last_validated_at: Optional[str] = None
+    last_error: Optional[str] = None
+    updated_at: Optional[str] = None
+    updated_by: Optional[str] = None
+
+
 class TenantUserCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=6)

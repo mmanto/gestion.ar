@@ -70,6 +70,13 @@ cd backend
 uvicorn app.main:app --reload --port 8000
 ```
 
+#### Dependencias del backend
+
+`requirements.txt` fija `anthropic`, `httpx`, `sqlalchemy`/`asyncpg` y
+`cryptography` (cifrado de las API keys de IA por tenant, ADR-038). Al agregar o
+cambiar una dependencia hay que rebuildear la imagen (`make build`/`make rebuild`)
+para que el contenedor la tenga.
+
 ### Frontend
 
 ```bash
@@ -100,6 +107,54 @@ cp dist-embed/register-embed.js ../sites/ius-landing/register-embed.js
 
 Reutiliza el mismo `src/components/auth/RegisterForm.tsx` que la página
 `/registro` del panel, así que la UI vive en un solo lugar.
+
+### Dependencias de `frontend-tenant/`
+
+- **Tailwind CSS 4 CSS-first** (`tailwindcss`, `@tailwindcss/vite`): el CSS
+  global es `src/index.css`; no hay `tailwind.config.js` ni `postcss.config.js`
+  (ADR-037). Cualquier clase nueva que necesite un valor propio (color, escala,
+  radio, sombra) se declara en el bloque `@theme inline` de ese archivo.
+- **`@mmanto/devbout-ui`** (+ sus pares `@base-ui/react`, `@hugeicons/*`,
+  `class-variance-authority`, `clsx`, `tailwind-merge`) aporta el shell del tema
+  «Panel» y las primitivas base-mira. El CSS del paquete entra por
+  `@import "@mmanto/devbout-ui/tailwind.css"`; además `tw-animate-css` y
+  `shadcn/tailwind.css` son obligatorios para las animaciones y las variantes
+  `data-open`/`data-closed` de `Sheet`/`Dropdown`/`Tooltip`.
+  Tras actualizar el paquete hay que rebuilder (`npm run build`) porque Tailwind
+  escanea su `dist/`.
+
+---
+
+## Configurar el proveedor de IA de un tenant (ADR-038)
+
+Cada tenant carga **su** proveedor, modelo y API key: Ajustes › Proveedor de IA
+(solo rol `admin`). También se puede por API:
+
+```bash
+# 1. Login como admin del tenant
+TOKEN=$(curl -s -X POST http://localhost:8000/api/auth/login \
+  -d "username=ius_admin&password=…" | jq -r .access_token)
+
+# 2. Ver el estado actual (configured=false la primera vez)
+curl -s http://localhost:8000/api/tenant/llm-config -H "Authorization: Bearer $TOKEN"
+
+# 3. Cargar proveedor + modelo + key (se valida contra el proveedor antes de guardar)
+curl -s -X PUT http://localhost:8000/api/tenant/llm-config \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"provider":"openrouter","model":"deepseek/deepseek-chat","api_key":"sk-or-v1-…"}'
+
+# 4. Revalidar / quitar
+curl -s -X POST http://localhost:8000/api/tenant/llm-config/validate -H "Authorization: Bearer $TOKEN"
+curl -s -X DELETE http://localhost:8000/api/tenant/llm-config -H "Authorization: Bearer $TOKEN"
+```
+
+Modelos de referencia por proveedor: `claude-haiku-4-5-20251001` (Claude),
+`deepseek-v4-flash` (DeepSeek), `deepseek/deepseek-chat` (OpenRouter).
+
+**Requisitos**: `ENCRYPTION_KEY` en `.env.dev`/`.env.prod` (ver `ENV.md`) y saldo
+en la cuenta del proveedor — la validación devuelve el error real del proveedor
+(`401` key inválida, `402` sin saldo, `404` modelo inexistente) y en ese caso no
+guarda nada. Sin config cargada el agente del tenant **no responde**.
 
 ---
 

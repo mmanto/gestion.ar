@@ -17,13 +17,14 @@ import json
 import re
 from typing import Any, Dict, List, Optional
 
-from app.claude_service import get_llm_service
 from app.conversation_service import get_conversation_service
+from app.llm_errors import LLMNotConfiguredError
 from app.models.bot import FlowStep
 from app.models.client import ClientUpdate
 from app.services.bot_service import get_bot_service
 from app.services.client_service import get_client_service
 from app.services.conversation_flow_service import map_captured_fields_to_client_update
+from app.services.tenant_llm_service import get_llm_for_tenant
 
 _JSON_BLOCK_RE = re.compile(r"\{.*\}", re.DOTALL)
 
@@ -124,7 +125,18 @@ async def generate_summary_and_update_client(conversation_id: str) -> Dict[str, 
     if bot and bot.config.flow and bot.config.flow.steps:
         steps = bot.config.flow.steps
 
-    llm = get_llm_service()
+    # El resumen corre con la key de IA del tenant del bot (o, si la
+    # conversación no tiene bot, la del tenant de la conversación). Sin config
+    # no se puede resumir: el endpoint ya devuelve 400 con este texto.
+    tenant_id = bot.tenant_id if bot else conversation.get("tenant_id")
+    try:
+        llm = await get_llm_for_tenant(tenant_id)
+    except LLMNotConfiguredError:
+        raise ValueError(
+            "El tenant no tiene configurado un proveedor de IA "
+            "(Ajustes › Proveedor de IA)"
+        )
+
     response = await llm.generate_rag_response(
         user_message=_transcript(messages),
         rag_context="",

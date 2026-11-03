@@ -2232,3 +2232,126 @@ descargando de Hugging Face).
   `cache_from`/`cache_to` en CI. También actualizar `langchain` (hoy 0.1.4 fija
   `numpy<2`) para dejar de vendorizar `numpy` cuando haya wheel cp313 de la
   versión compatible.
+
+---
+
+## ADR-037: El panel del tenant adopta Tailwind 4 y el shell de `@mmanto/devbout-ui` como tema «Panel»
+
+### Contexto
+
+`frontend-tenant/` (el backoffice multi-tenant que sirve a IUS y al resto de
+los tenants) seguía en **Tailwind 3** (config JS + `postcss.config.js`),
+mientras `frontend/` (admin) ya había migrado a Tailwind 4 CSS-first y consumía
+`@mmanto/devbout-ui` para grillas y vistas de entidad.
+
+El paquete `@mmanto/devbout-ui` expone las primitivas del shell
+(`SidebarProvider`, `Sidebar`, `SidebarInset`, `SidebarTrigger`, `SidebarRail`,
+`Breadcrumb*`, `DropdownMenu*`, `Sheet`, `Avatar`), pero su entrada de Tailwind
+es `@source "./dist"` y sus clases dependen de variantes v4 (`data-open:`,
+`group-has-data-[collapsible=icon]/sidebar-wrapper:`) más
+`tw-animate-css` y `shadcn/tailwind.css`. **No se puede compilar con Tailwind 3.**
+
+### Decisión
+
+1. `frontend-tenant/` migra a **Tailwind 4 CSS-first** con el plugin
+   `@tailwindcss/vite` (mismo stack que el admin): se eliminan
+   `tailwind.config.js` y `postcss.config.js`, y la config de v3 se traduce al
+   bloque `@theme inline` de `src/index.css`.
+2. Se agrega el tema **«Panel»** (`template_id = 'devbout'`) en
+   `frontend-tenant/src/templates/devbout/`, armado con las piezas del paquete
+   (sin copias locales de las primitivas).
+3. El **contenido de las páginas no se migra**: los temas se enchufan por el
+   `AppLayout` que cada página ya renderiza, así que «Panel» cambia sólo el
+   chrome (sidebar + header de breadcrumb) y reusa el mismo `ClientsGrid`.
+4. El backend acepta el nuevo valor en `VALID_TEMPLATE_IDS`
+   (`backend/app/routers/tenant_router.py`).
+
+### Paridad visual verificada antes de migrar
+
+Se compiló el set completo de clases de `frontend-tenant/src` con v3 y con v4
+sobre el tema traducido y se difearon los selectores generados. Resultado:
+
+- Único gap real: `bg-opacity-50` (2 usos en `pages/Users.tsx`), reemplazado por
+  `bg-black/50`.
+- `flex-shrink-0`, `bg-gradient-to-*`, `outline-none`, `space-y-*`, `ring-*`
+  siguen generándose en v4 (algunos con semántica equivalente).
+- Deltas de preflight que se compensan en `@layer base` / `@theme`:
+  color de borde por defecto (`currentColor` en v4 → gray-200 de v3),
+  `::placeholder` (v4 `currentColor` 50% → gray-400), `--shadow-sm` (en v4 pasó
+  a ser la sombra que antes era `shadow`) y `cursor: pointer` en botones.
+
+### Consecuencias
+
+- Un solo pipeline CSS en los dos frontends; los componentes del paquete se
+  pueden usar tal cual (grillas declarativas, vistas de entidad) también en el
+  panel del tenant.
+- `primary/secondary/accent` conservan la **marca** del tenant (`#2793b4`,
+  `#37c88e`, `#a3dae2`) en lugar de los neutros del design system: el contenido
+  de las páginas ya los usaba como `bg-primary`/`text-primary`. Los *shades*
+  (`primary-50..900`) siguen siendo los de marca.
+- Se mantiene la federación con `devbout-appointments` (ADR-009), que inyecta
+  CSS de Tailwind 3 sin capas. Es el mismo riesgo que llevó a desactivar el
+  remote en `frontend/` (ver CHANGELOG): si aparece un choque de preflight, la
+  salida es la misma —servir el widget sin CSS global—, no volver a v3.
+- Queda pendiente: migrar el resto de las pantallas del tenant a tokens
+  base-mira (hoy usan utilidades grises) y decidir si «Panel» pasa a ser el
+  default de los tenants nuevos.
+
+## ADR-038: El proveedor de LLM es por tenant (Claude, DeepSeek u OpenRouter) con key propia
+
+### Contexto
+
+Hasta acá el LLM era global: `LLM_PROVIDER` elegía entre `claude`, `deepseek` y
+`ollama`, y las keys vivían en `.env` (`ANTHROPIC_API_KEY`, `DEEPSEEK_API_KEY`).
+Todos los tenants compartían el mismo cliente, el mismo modelo y el mismo
+presupuesto — un tenant no podía elegir modelo, ni traer su propia cuenta, ni
+quedar aislado si otro agotaba el crédito. Además el costo real por tenant era
+imposible de atribuir.
+
+### Decisión
+
+1. **Proveedor + modelo + API key por tenant**, cargados desde el backoffice
+   (Ajustes › Proveedor de IA, solo rol `admin`). Tres opciones: `claude`
+   (Anthropic), `deepseek` (API hosted) y `openrouter` (BYOK multi-modelo).
+   Ollama queda sólo como opción global de plataforma porque no tiene key.
+2. **Sin configuración el agente del tenant NO responde.** No hay fallback a
+   las keys de plataforma: un tenant sin fila en `tenant_llm_configs` devuelve
+   un turno sin mensaje (`metadata.llm_error = "not_configured"`), y cada canal
+   decide qué hacer (web no manda nada, WhatsApp/Telegram no envían, la voz
+   cierra el WS con un error explícito).
+3. **Validación antes de guardar**: `PUT /api/tenant/llm-config` hace una
+   llamada mínima al proveedor (`/key` + un `chat/completions` corto en
+   OpenRouter, un ping de 1–16 tokens en Claude/DeepSeek) con timeout fijo de
+   20 s. Una key o modelo inválido no se persiste: la config vigente queda
+   intacta y el admin corrige en el mismo formulario.
+4. **La key se guarda cifrada** (`api_key_encrypted`, Fernet derivada de
+   `ENCRYPTION_KEY`) y nunca se devuelve por la API: sólo `api_key_hint`
+   (últimos 4). En claro existe únicamente en memoria del proceso. Rotar
+   `ENCRYPTION_KEY` invalida las keys guardadas — no se implementa re-cifrado
+   (haría falta la key vieja) y hay que volver a cargarlas.
+5. **Resolución por turno, sin caché**: `get_llm_for_tenant(tenant_id)` lee la
+   fila y construye el servicio en cada mensaje, así una rotación/revocación
+   aplica en el turno siguiente sin reiniciar el proceso. Los servicios se
+   construyen con `quiet=True` para no loguear un banner por mensaje.
+6. **`LLM_PROVIDER` + keys globales sobreviven sólo para paths sin tenant**
+   (bots legacy con `bot_id`/`tenant_id` nulo) y para Ollama. `get_llm_service()`
+   no agrega OpenRouter: no existe una key de plataforma para ese proveedor.
+7. El **canal de voz** usa la misma config: Deepgram hace de transporte y se le
+   pasa un `agent.think` con `provider` + `endpoint` BYO (Anthropic nativo para
+   `claude`, OpenAI-compatible para `deepseek`/`openrouter`) con la key del
+   tenant. Desaparecen `VOICE_THINK`, `VOICE_FALLBACK_LLM` y el límite de 25 000
+   caracteres del prompt gestionado.
+
+### Consecuencias
+
+- **Breaking change operativo**: tras el deploy ningún tenant responde hasta que
+  su admin cargue proveedor + modelo + key. No hay backfill en la migración.
+- `POST /api/public/llm-info` se elimina (dejó de tener sentido: no hay un
+  proveedor/modelo global).
+- El costo por turno ya es el real del proveedor del tenant: Claude/DeepSeek lo
+  estiman con su tabla local de precios; OpenRouter lo informa por respuesta
+  (`usage.cost`, sumado en `estimated_cost_usd`).
+- Las tareas auxiliares del agente (extracción de datos del cliente, resumen de
+  conversación, auditoría semántica del `ius_config`, calificación por semáforo)
+  también corren con la key del tenant: si no hay config simplemente no se
+  ejecutan (o devuelven 400/issue semántico) en vez de usar la key de plataforma.

@@ -1111,10 +1111,12 @@ async def startup_event():
     except Exception as e:
         print(f"⚠️  Error inicializando RAG: {e}")
 
-    # Inicializar servicio LLM (Claude o Ollama según LLM_PROVIDER)
+    # Calentar el LLM GLOBAL (LLM_PROVIDER): sólo lo usan los paths sin
+    # tenant. Cada tenant resuelve su propio proveedor + key en cada turno
+    # (ADR-038), así que fallar acá no impide que un tenant responda.
     try:
         get_llm_service()
-        print("✅ LLM Service inicializado")
+        print("✅ LLM Service (global/legacy) inicializado")
     except ValueError as e:
         print(f"⚠️  LLM no configurado: {e}")
         print("   Revisá LLM_PROVIDER y las credenciales en .env.dev (o .env.prod)")
