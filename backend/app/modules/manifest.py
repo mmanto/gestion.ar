@@ -158,6 +158,18 @@ MODULE_MANIFESTS: dict[str, ModuleManifest] = {
             interceptor="app.modules.lead_funnel_ext:intercept",
         ),
     ),
+    "padron": ModuleManifest(
+        module_key="padron",
+        name="Padrón electoral",
+        description="Consulta del padrón nacional con verificador resuelto por el usuario.",
+        version="1.0.0",
+        scope="entitled",
+        chat=ChatContribution(
+            tools_provider="app.modules.padron_ext:provide_tools",
+            interceptor="app.modules.padron_ext:intercept",
+            widget_types=("padron_captcha",),
+        ),
+    ),
 }
 
 
