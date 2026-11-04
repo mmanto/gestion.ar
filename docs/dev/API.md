@@ -1082,6 +1082,12 @@ endpoints propios: aporta dos tools y un interceptor al chat.
 El token se manda como cookie explícita: no hace falta conservar cookies del
 sitio entre turnos. Distrito por defecto: `2` (Buenos Aires).
 
+El `200` viene con claves de una letra (es lo que lee el renderer del sitio):
+`d` nombre, `b` documento, `h` establecimiento, `i` dirección, `t` localidad,
+`f` circuito, `g` sección, `n` mesa, `o` orden. Con el padrón provisional
+(`modo.provisorio`, hoy activo para 2027) `n` y `o` no vienen: el chat avisa que
+mesa y orden se publican con el padrón definitivo.
+
 **Flujo en el chat:** la tool baja el verificador y deja `ns["result"]` con el
 widget; el turno devuelve ese mensaje en lugar de la narración del LLM. El
 código que escribe el usuario lo toma el interceptor del módulo (el LLM no

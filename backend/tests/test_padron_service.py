@@ -93,6 +93,38 @@ def test_consultar_rechaza_200_que_no_es_objeto():
     }
 
 
+def test_formatear_resultado_usa_las_claves_cortas_del_sitio():
+    # Shape real del 200 (el renderer del sitio lee e.d, e.h, e.i, e.t, e.f,
+    # e.g, e.n, e.o — ver consulta-*.js).
+    texto = formatear_resultado(
+        {
+            "d": "PEREZ, JUAN",
+            "b": "12345678",
+            "c": "DNI",
+            "h": "ESCUELA N 1",
+            "i": "SAN MARTIN 100",
+            "t": "BOLIVAR",
+            "f": "12",
+            "g": "3",
+            "n": "42",
+            "o": "7",
+            "s": "M",
+        }
+    )
+    for esperado in ("PEREZ, JUAN", "ESCUELA N 1", "SAN MARTIN 100", "BOLIVAR", "42"):
+        assert esperado in texto
+    assert "Circuito: 12" in texto
+    assert "Orden: 7" in texto
+
+
+def test_formatear_resultado_avisa_si_el_padron_provisional_no_trae_mesa():
+    texto = formatear_resultado(
+        {"d": "PEREZ, JUAN", "h": "ESCUELA N 1", "i": "SAN MARTIN 100", "t": "BOLIVAR", "f": "12", "g": "3"}
+    )
+    assert "ESCUELA N 1" in texto
+    assert "definitivo" in texto.lower()
+
+
 def test_formatear_resultado_arma_texto_legible():
     texto = formatear_resultado(
         {

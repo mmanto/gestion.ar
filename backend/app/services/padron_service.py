@@ -131,26 +131,49 @@ def consultar(
     return {"status": "error", "data": None}
 
 
+# El sitio devuelve claves de una letra: su propio renderer lee e.d (nombre),
+# e.h (establecimiento), e.i (dirección), e.t (localidad), e.f (circuito),
+# e.g (sección), e.n (mesa) y e.o (orden) — ver consulta-*.js. Se aceptan
+# también los nombres largos por si alguna vez cambian el contrato.
+CAMPOS_RESULTADO = (
+    ("Elector/a", ("d", "nombre")),
+    ("Establecimiento", ("h", "establecimiento")),
+    ("Dirección", ("i", "direccion")),
+    ("Localidad", ("t", "localidad")),
+    ("Circuito", ("f", "circuito")),
+    ("Sección", ("g", "seccion")),
+    ("Mesa", ("n", "mesa")),
+    ("Orden", ("o", "orden")),
+)
+
+# `modo.provisorio` del sitio (hoy activo: "Elecciones nacionales 2027 —
+# publicación extraordinaria del padrón provisional") no trae mesa ni orden.
+NOTA_PROVISIONAL = (
+    "El padrón provisional todavía no informa mesa ni orden: se publican con el "
+    "padrón definitivo. Con el establecimiento y el circuito ya podés ubicar tu lugar."
+)
+
+
 def formatear_resultado(data: dict) -> str:
     """Texto para el chat. Sólo imprime los campos que el padrón devolvió."""
-    campos = (
-        ("nombre", "Elector/a"),
-        ("establecimiento", "Establecimiento"),
-        ("direccion", "Dirección"),
-        ("localidad", "Localidad"),
-        ("mesa", "Mesa"),
-        ("orden", "Orden"),
-    )
     lineas = []
-    for clave, etiqueta in campos:
-        valor = data.get(clave)
-        if valor in (None, ""):
-            continue
-        lineas.append(f"{etiqueta}: {valor}")
+    presentes = set()
+    for etiqueta, claves in CAMPOS_RESULTADO:
+        for clave in claves:
+            valor = data.get(clave)
+            if valor in (None, ""):
+                continue
+            presentes.add(etiqueta)
+            lineas.append(f"{etiqueta}: {valor}")
+            break
 
     if not lineas:
         return "El padrón no devolvió datos para esa consulta."
-    return "Según el padrón electoral:\n" + "\n".join(lineas)
+
+    texto = "Según el padrón electoral:\n" + "\n".join(lineas)
+    if "Mesa" not in presentes and "Orden" not in presentes:
+        texto += "\n\n" + NOTA_PROVISIONAL
+    return texto
 
 
 def captcha_widget(captcha: Captcha) -> dict:
