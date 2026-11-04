@@ -51,7 +51,7 @@ from app.models.tenant import Tenant
 from app.services.bot_service import get_bot_service
 from app.services.channel_service import get_channel_service
 from app.services.client_service import get_client_service
-from app.services.tenant_llm_service import get_llm_for_tenant
+from app.services.tenant_llm_service import get_tenant_llm_config
 from app.services.tenant_service import get_tenant_service
 from app.services.voice_session_service import (
     DEEPGRAM_WS_URL,
@@ -333,7 +333,12 @@ async def voice_websocket(
 
     try:
         # El LLM de voz es el del tenant (ADR-038): sin config no hay sesión.
-        llm_config = await get_llm_for_tenant(bot.tenant_id)
+        llm_config = await get_tenant_llm_config(bot.tenant_id)
+        if llm_config is None:
+            raise LLMNotConfiguredError(
+                "El tenant no tiene configurado un proveedor de IA "
+                "(Ajustes › Proveedor de IA)"
+            )
         functions, dispatch = await build_voice_functions(
             bot, channel_client, channel_client.client_id
         )
