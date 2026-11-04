@@ -1064,7 +1064,15 @@ Manifiesto de los módulos instalados, sin auth. Lo consumen las dos SPAs
 
 El módulo `padron` consulta `https://www.padron.gob.ar/` (Justicia Nacional
 Electoral), que no tiene API pública pero sí dos POST sin JavaScript. No agrega
-endpoints propios: aporta la tool `consultar_padron` y un interceptor al chat.
+endpoints propios: aporta dos tools y un interceptor al chat.
+
+- `solicitar_datos_padron(dni?, sexo?, distrito?)`: primer paso de cualquier
+  consulta. Con los datos incompletos pide en el chat el DNI y el sexo
+  registrado que falten, y los va completando con lo que el vecino escribe en
+  los turnos siguientes (o con `cancelar`). Con DNI y sexo presentes arranca el
+  captcha igual que la otra tool.
+- `consultar_padron(dni, sexo, distrito?)`: consulta directa cuando el LLM ya
+  tiene ambos datos; si falta alguno devuelve error y el agente usa la anterior.
 
 | Paso | Request | Respuesta |
 |---|---|---|

@@ -12,7 +12,10 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `padron.gob.ar` (Justicia Nacional Electoral) cuando preguntan dónde votan:
   muestra la imagen del captcha en el chat (`widget_type: padron_captcha`),
   el usuario escribe el código y el interceptor del módulo devuelve
-  establecimiento, dirección, mesa y orden. Sin navegador headless: dos POST
+  establecimiento, dirección, mesa y orden. Dos tools: `solicitar_datos_padron`
+  entiende el pedido y pregunta en el chat el DNI y el sexo registrado que
+  falten (los completa con el texto libre de los turnos siguientes), y
+  `consultar_padron` hace la consulta cuando ambos datos ya están. Sin navegador headless: dos POST
   con `httpx` y el token en la cookie `token`; reintento automático si el
   verificador vence (300 s) o el código es inválido, y derivación al enlace
   oficial si el sitio no responde. Sólo chat web (usa `session`); DNI, código

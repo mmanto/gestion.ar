@@ -23,6 +23,7 @@ import asyncio
 import logging
 import re
 import time
+import unicodedata
 from typing import Optional
 
 import httpx
@@ -31,6 +32,7 @@ from app.services import padron_service
 
 logger = logging.getLogger(__name__)
 
+SOLICITAR_TOOL_NAME = "solicitar_datos_padron"
 PADRON_TOOL_NAME = "consultar_padron"
 
 # El verificador del sitio es alfanumérico corto (4-8). El widget manda el
@@ -92,6 +94,35 @@ FALLBACK_MESSAGE = (
     "Podés consultarlo directamente en https://www.padron.gob.ar/"
 )
 
+SOLICITAR_TOOL_SPEC = {
+    "name": SOLICITAR_TOOL_NAME,
+    "description": (
+        "Inicia la consulta del padrón electoral (dónde vota una persona). Usala como PRIMER "
+        "paso siempre que pregunten por su lugar de votación, su mesa o su orden, aunque no "
+        "tengas ningún dato: pasale sólo lo que el vecino ya dijo y la tool le pide en el chat "
+        "lo que falte (DNI y sexo registrado). No inventes DNI ni sexo."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "dni": {
+                "type": "integer",
+                "description": "DNI sin puntos, sólo si el vecino ya lo dio.",
+            },
+            "sexo": {
+                "type": "string",
+                "enum": ["m", "f", "x"],
+                "description": "Sexo registrado, sólo si el vecino ya lo dijo: m (varón), f (mujer), x (no binario).",
+            },
+            "distrito": {
+                "type": "integer",
+                "description": "Distrito electoral, sólo si el vecino mencionó otra provincia. 2 = Buenos Aires.",
+            },
+        },
+        "required": [],
+    },
+}
+
 PADRON_TOOL_SPEC = {
     "name": PADRON_TOOL_NAME,
     "description": (
@@ -126,24 +157,106 @@ PADRON_TOOL_SPEC = {
 
 
 def _validar(args: dict) -> tuple[Optional[dict], Optional[str]]:
-    """Normaliza y valida los argumentos del LLM sin tocar la red."""
+    """Normaliza y valida los campos presentes, sin exigir que estén todos."""
+    campos: dict = {}
+
     dni_raw = args.get("dni")
-    if isinstance(dni_raw, str) and dni_raw.strip().isdigit():
-        dni_raw = int(dni_raw.strip())
-    if isinstance(dni_raw, bool) or not isinstance(dni_raw, int) or not 100_000 <= dni_raw <= 99_999_999:
-        return None, "El dni debe ser un número de 6 a 8 dígitos, sin puntos."
+    if dni_raw not in (None, ""):
+        if isinstance(dni_raw, str) and dni_raw.strip().isdigit():
+            dni_raw = int(dni_raw.strip())
+        if isinstance(dni_raw, bool) or not isinstance(dni_raw, int) or not 100_000 <= dni_raw <= 99_999_999:
+            return None, "El dni debe ser un número de 6 a 8 dígitos, sin puntos."
+        campos["dni"] = dni_raw
 
     sexo = str(args.get("sexo") or "").strip().lower()
-    if sexo not in {"m", "f", "x"}:
-        return None, "El sexo debe ser 'm', 'f' o 'x' (el registrado en el DNI)."
+    if sexo:
+        if sexo not in {"m", "f", "x"}:
+            return None, "El sexo debe ser 'm', 'f' o 'x' (el registrado en el DNI)."
+        campos["sexo"] = sexo
 
-    distrito = args.get("distrito", padron_service.DISTRITO_BUENOS_AIRES)
-    if isinstance(distrito, str) and distrito.strip().isdigit():
-        distrito = int(distrito.strip())
-    if not isinstance(distrito, int) or isinstance(distrito, bool) or distrito not in padron_service.DISTRITOS_VALIDOS:
-        return None, "El distrito no existe en el padrón nacional."
+    distrito = args.get("distrito")
+    if distrito is not None:
+        if isinstance(distrito, str) and distrito.strip().isdigit():
+            distrito = int(distrito.strip())
+        if (
+            not isinstance(distrito, int)
+            or isinstance(distrito, bool)
+            or distrito not in padron_service.DISTRITOS_VALIDOS
+        ):
+            return None, "El distrito no existe en el padrón nacional."
+        campos["distrito"] = distrito
 
-    return {"dni": dni_raw, "sexo": sexo, "distrito": distrito}, None
+    return campos, None
+
+
+PREGUNTA_AMBOS = (
+    "Para consultar el padrón necesito tu número de DNI (sin puntos) y el sexo que figura "
+    "en el documento: varón, mujer o no binario."
+)
+PREGUNTA_DNI = "¿Cuál es tu número de DNI? (sin puntos)"
+PREGUNTA_SEXO = "¿Qué sexo figura en tu documento? varón, mujer o no binario."
+CANCELADO = "Listo, cancelé la consulta del padrón. Si querés retomarla, pedímela de nuevo."
+
+CANCELAR = {
+    "cancelar",
+    "cancela",
+    "salir",
+    "dejalo",
+    "dejalo estar",
+    "no quiero",
+    "olvidalo",
+}
+
+DNI_RE = re.compile(r"\b(\d{6,8})\b")
+
+
+def _sin_tildes(texto: str) -> str:
+    sin_tildes = unicodedata.normalize("NFKD", texto.lower())
+    return "".join(c for c in sin_tildes if not unicodedata.combining(c))
+
+
+def _preguntar_faltantes(datos: dict) -> str:
+    falta_dni = "dni" not in datos
+    falta_sexo = "sexo" not in datos
+    if falta_dni and falta_sexo:
+        return PREGUNTA_AMBOS
+    if falta_dni:
+        return PREGUNTA_DNI
+    return PREGUNTA_SEXO
+
+
+def _extraer_dni(texto: str) -> Optional[int]:
+    match = DNI_RE.search(texto.replace(".", ""))
+    return int(match.group(1)) if match else None
+
+
+def _extraer_sexo(texto: str) -> Optional[str]:
+    """Reconoce el sexo escrito en lenguaje natural ("soy mujer", "varón", "x")."""
+    normalizado = _sin_tildes(texto).strip()
+    if normalizado in {"m", "f", "x"}:
+        return normalizado
+    if "no binari" in normalizado:
+        return "x"
+    if re.search(r"\b(mujer|femenin[oa])\b", normalizado):
+        return "f"
+    if re.search(r"\b(varon|hombre|masculin[oa])\b", normalizado):
+        return "m"
+    return None
+
+
+def _iniciar_solicitud(ns: dict, campos: dict) -> tuple[dict, str]:
+    """Con los datos completos baja el captcha; si faltan, los pide en el chat."""
+    if "dni" in campos and "sexo" in campos:
+        argumentos = {
+            "dni": campos["dni"],
+            "sexo": campos["sexo"],
+            "distrito": campos.get("distrito", padron_service.DISTRITO_BUENOS_AIRES),
+        }
+        ns.pop("collect", None)
+        return _iniciar(ns, argumentos, CAPTCHA_MESSAGE), "captcha_pendiente"
+
+    ns["collect"] = dict(campos)
+    return {"message": _preguntar_faltantes(campos), "widget": None}, "datos_pendientes"
 
 
 def _iniciar(ns: dict, args: dict, mensaje: str) -> dict:
@@ -183,30 +296,94 @@ def _derivar(ns: dict) -> dict:
 
 
 def provide_tools(bot, client, client_id, canal, ns: dict):
-    """Tool de inicio: el LLM decide cuándo consultar el padrón."""
+    """Tools del padrón: iniciar pidiendo datos y consultar con los datos completos."""
 
-    def _executor(tool_name: str, args: dict) -> dict:
-        parsed, error = _validar(args or {})
+    def _executor_solicitar(tool_name: str, args: dict) -> dict:
+        campos, error = _validar(args or {})
         if error:
             return {"error": error}
 
         try:
-            resultado = _iniciar(ns, parsed, CAPTCHA_MESSAGE)
+            resultado, status = _iniciar_solicitud(ns, campos)
         except Exception as exc:  # el loop del LLM nunca se corta por el sitio
             logger.warning("Padrón: no se pudo pedir el verificador (%s)", type(exc).__name__)
             ns["result"] = _derivar(ns)
             return {"status": "error"}
 
         ns["result"] = resultado
+        return {"status": status, "message": resultado["message"]}
+
+    def _executor_consultar(tool_name: str, args: dict) -> dict:
+        campos, error = _validar(args or {})
+        if error:
+            return {"error": error}
+        if "dni" not in campos or "sexo" not in campos:
+            return {"error": "Faltan datos: usá solicitar_datos_padron para pedirlos en el chat."}
+
+        try:
+            resultado = _iniciar(
+                ns,
+                {
+                    "dni": campos["dni"],
+                    "sexo": campos["sexo"],
+                    "distrito": campos.get("distrito", padron_service.DISTRITO_BUENOS_AIRES),
+                },
+                CAPTCHA_MESSAGE,
+            )
+        except Exception as exc:  # el loop del LLM nunca se corta por el sitio
+            logger.warning("Padrón: no se pudo pedir el verificador (%s)", type(exc).__name__)
+            ns["result"] = _derivar(ns)
+            return {"status": "error"}
+
+        ns.pop("collect", None)
+        ns["result"] = resultado
         return {"status": "captcha_pendiente"}
 
-    return [PADRON_TOOL_SPEC], {PADRON_TOOL_NAME: _executor}
+    return (
+        [SOLICITAR_TOOL_SPEC, PADRON_TOOL_SPEC],
+        {SOLICITAR_TOOL_NAME: _executor_solicitar, PADRON_TOOL_NAME: _executor_consultar},
+    )
+
+
+async def _resolver_datos(ns: dict, collect: dict, texto: str) -> dict:
+    """Completa los datos que el vecino escribe en el chat, uno o varios por turno."""
+    ns.pop("result", None)
+
+    if _sin_tildes(texto).strip() in CANCELAR:
+        ns.pop("collect", None)
+        return {"message": CANCELADO, "widget": None}
+
+    datos = dict(collect)
+    dni = _extraer_dni(texto)
+    if dni is not None and "dni" not in datos:
+        datos["dni"] = dni
+    sexo = _extraer_sexo(texto)
+    if sexo is not None and "sexo" not in datos:
+        datos["sexo"] = sexo
+
+    if "dni" in datos and "sexo" in datos:
+        ns.pop("collect", None)
+        try:
+            return await asyncio.to_thread(_iniciar, ns, {
+                "dni": datos["dni"],
+                "sexo": datos["sexo"],
+                "distrito": datos.get("distrito", padron_service.DISTRITO_BUENOS_AIRES),
+            }, CAPTCHA_MESSAGE)
+        except Exception as exc:
+            logger.warning("Padrón: no se pudo pedir el verificador (%s)", type(exc).__name__)
+            return _derivar(ns)
+
+    ns["collect"] = datos
+    return {"message": _preguntar_faltantes(datos), "widget": None}
 
 
 async def intercept(bot, client_id: Optional[str], user_text: str, ns: dict) -> Optional[dict]:
     """Resuelve el turno con el código del verificador, si hay uno pendiente."""
     pending = ns.get("pending")
     if not pending:
+        collect = ns.get("collect")
+        if collect is not None:
+            return await _resolver_datos(ns, collect, (user_text or "").strip())
         return None
 
     # Si el turno anterior dejó un `result` sin consumir, no debe reemplazar la

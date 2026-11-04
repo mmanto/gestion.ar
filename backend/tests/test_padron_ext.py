@@ -37,7 +37,7 @@ def test_tool_guarda_pendiente_y_widget(monkeypatch):
     monkeypatch.setattr(mod.padron_service, "fetch_captcha", lambda client: _captcha(1))
     ns = {}
     tools, executors = mod.provide_tools(_Bot(), None, None, "web", ns)
-    assert tools == [mod.PADRON_TOOL_SPEC]
+    assert [t["name"] for t in tools] == [mod.SOLICITAR_TOOL_NAME, mod.PADRON_TOOL_NAME]
     resultado = executors[mod.PADRON_TOOL_NAME](mod.PADRON_TOOL_NAME, {"dni": 12345678, "sexo": "m"})
     assert resultado["status"] == "captcha_pendiente"
     assert ns["pending"]["token"] == "tok1"
@@ -192,3 +192,88 @@ async def test_intercept_404_avisa_que_no_figura(monkeypatch):
     resultado = await mod.intercept(_Bot(), None, "ABCD", ns)
     assert "padrón" in resultado["message"]
     assert "pending" not in ns
+
+
+# --- Tool de inicio: entiende el pedido y solicita los datos que faltan ---
+
+
+def test_solicitar_sin_datos_pregunta_dni_y_sexo(monkeypatch):
+    llamado = []
+    monkeypatch.setattr(mod.padron_service, "fetch_captcha", lambda client: llamado.append(1))
+    ns = {}
+    tools, executors = mod.provide_tools(_Bot(), None, None, "web", ns)
+    assert mod.SOLICITAR_TOOL_NAME in [t["name"] for t in tools]
+    resultado = executors[mod.SOLICITAR_TOOL_NAME](mod.SOLICITAR_TOOL_NAME, {})
+    assert resultado["status"] == "datos_pendientes"
+    assert "dni" in resultado["message"].lower()
+    assert "sexo" in resultado["message"].lower()
+    assert ns["collect"] == {}
+    assert ns["result"]["widget"] is None
+    assert llamado == []
+
+
+def test_solicitar_con_dni_pide_solo_sexo(monkeypatch):
+    monkeypatch.setattr(mod.padron_service, "fetch_captcha", lambda client: _captcha(1))
+    ns = {}
+    _, executors = mod.provide_tools(_Bot(), None, None, "web", ns)
+    resultado = executors[mod.SOLICITAR_TOOL_NAME](mod.SOLICITAR_TOOL_NAME, {"dni": 12345678})
+    assert "sexo" in resultado["message"].lower()
+    assert "dni" not in resultado["message"].lower()
+    assert ns["collect"] == {"dni": 12345678}
+
+
+def test_solicitar_completo_baja_el_captcha(monkeypatch):
+    monkeypatch.setattr(mod.padron_service, "fetch_captcha", lambda client: _captcha(1))
+    ns = {}
+    _, executors = mod.provide_tools(_Bot(), None, None, "web", ns)
+    resultado = executors[mod.SOLICITAR_TOOL_NAME](mod.SOLICITAR_TOOL_NAME, {"dni": 12345678, "sexo": "f"})
+    assert resultado["status"] == "captcha_pendiente"
+    assert ns["pending"]["args"] == {"dni": 12345678, "sexo": "f", "distrito": 2}
+    assert "collect" not in ns
+    assert ns["result"]["widget"]["widget_type"] == "padron_captcha"
+
+
+@pytest.mark.asyncio
+async def test_intercept_completa_los_datos_desde_texto_libre(monkeypatch):
+    monkeypatch.setattr(mod.padron_service, "fetch_captcha", lambda client: _captcha(5))
+    ns = {"collect": {}}
+    resultado = await mod.intercept(_Bot(), None, "mi dni es 12.345.678 y soy mujer", ns)
+    assert resultado["widget"]["widget_type"] == "padron_captcha"
+    assert ns["pending"]["args"] == {"dni": 12345678, "sexo": "f", "distrito": 2}
+    assert "collect" not in ns
+
+
+@pytest.mark.asyncio
+async def test_intercept_con_dni_solo_repite_el_pedido_de_sexo(monkeypatch):
+    llamado = []
+    monkeypatch.setattr(mod.padron_service, "fetch_captcha", lambda client: llamado.append(1))
+    ns = {"collect": {}}
+    resultado = await mod.intercept(_Bot(), None, "12345678", ns)
+    assert "sexo" in resultado["message"].lower()
+    assert ns["collect"]["dni"] == 12345678
+    assert llamado == []
+
+
+@pytest.mark.asyncio
+async def test_intercept_entiende_sexo_suelto(monkeypatch):
+    monkeypatch.setattr(mod.padron_service, "fetch_captcha", lambda client: _captcha(6))
+    ns = {"collect": {"dni": 12345678}}
+    resultado = await mod.intercept(_Bot(), None, "varón", ns)
+    assert resultado["widget"]["widget_type"] == "padron_captcha"
+    assert ns["pending"]["args"]["sexo"] == "m"
+
+
+@pytest.mark.asyncio
+async def test_intercept_cancelar_limpia_el_pedido(monkeypatch):
+    ns = {"collect": {"dni": 12345678}}
+    resultado = await mod.intercept(_Bot(), None, "cancelar", ns)
+    assert "cancel" in resultado["message"].lower()
+    assert "collect" not in ns
+
+
+@pytest.mark.asyncio
+async def test_intercept_sin_datos_utiles_repregunta(monkeypatch):
+    ns = {"collect": {}}
+    resultado = await mod.intercept(_Bot(), None, "no sé", ns)
+    assert "dni" in resultado["message"].lower()
+    assert ns["collect"] == {}

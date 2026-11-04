@@ -82,8 +82,11 @@ No objetivos:
 
 `backend/app/modules/padron_ext.py` (nuevo):
 
-- `provide_tools(bot, client, client_id, canal, ns)` → tool
-  `consultar_padron(dni: int, sexo: "m"|"f"|"x", distrito: int = 2)`. El
+- `provide_tools(bot, client, client_id, canal, ns)` → dos tools:
+  `solicitar_datos_padron(dni?, sexo?, distrito?)`, que inicia el flujo y pide
+  en el chat los datos faltantes completándolos con el texto libre de los
+  turnos siguientes, y `consultar_padron(dni: int, sexo: "m"|"f"|"x",
+  distrito: int = 2)` para la consulta directa con ambos datos. El
   executor:
   1. valida argumentos (DNI 6-8 dígitos, sexo válido, distrito permitido);
   2. `fetch_captcha`;

@@ -38,7 +38,6 @@ from app.db.database import AsyncSessionLocal
 from app.db.models import Bot
 from app.db.models import BotModule as BotModuleModel
 from app.db.models import Module as ModuleModel
-from app.modules.padron_ext import PADRON_TOOL_NAME
 from app.services.padron_service import DISTRITO_BUENOS_AIRES
 
 # pachoteayuda.ar — único tenant de Pacho en prod (id verificado 2026-08-16).
@@ -50,13 +49,22 @@ MODULE_KEY = "padron"
 MODULE_NAME = "Padrón electoral"
 MODULE_DESCRIPTION = "Consulta del padrón nacional con verificador resuelto por el usuario"
 
-HERRAMIENTA_PADRON = {
-    "implementada": True,
-    "descripcion": (
-        "Consulta el padrón electoral nacional por DNI: establecimiento, dirección, mesa y orden. "
-        "El usuario resuelve el verificador (captcha) en el chat. Distrito por defecto: "
-        f"{DISTRITO_BUENOS_AIRES} (Buenos Aires)."
-    ),
+HERRAMIENTAS_PADRON = {
+    "solicitar_datos_padron": {
+        "implementada": True,
+        "descripcion": (
+            "Inicia la consulta del padrón electoral y pide en el chat el DNI y el sexo "
+            "registrado que falten. Es el primer paso de cualquier consulta del padrón."
+        ),
+    },
+    "consultar_padron": {
+        "implementada": True,
+        "descripcion": (
+            "Consulta el padrón electoral nacional por DNI: establecimiento, dirección, mesa y orden. "
+            "El usuario resuelve el verificador (captcha) en el chat. Distrito por defecto: "
+            f"{DISTRITO_BUENOS_AIRES} (Buenos Aires)."
+        ),
+    },
 }
 
 
@@ -114,13 +122,14 @@ async def main() -> None:
             ius_config = config.get("ius_config")
             herramientas = ius_config.get("estado_de_herramientas") if isinstance(ius_config, dict) else None
             if isinstance(herramientas, dict):
-                actual = herramientas.get(PADRON_TOOL_NAME)
-                if not isinstance(actual, dict) or any(
-                    actual.get(clave) != valor for clave, valor in HERRAMIENTA_PADRON.items()
-                ):
-                    herramientas[PADRON_TOOL_NAME] = dict(HERRAMIENTA_PADRON)
-                    cambios.append(f"ius_config.estado_de_herramientas.{PADRON_TOOL_NAME}")
-                    cambios_config = True
+                for nombre, entrada in HERRAMIENTAS_PADRON.items():
+                    actual = herramientas.get(nombre)
+                    if not isinstance(actual, dict) or any(
+                        actual.get(clave) != valor for clave, valor in entrada.items()
+                    ):
+                        herramientas[nombre] = dict(entrada)
+                        cambios.append(f"ius_config.estado_de_herramientas.{nombre}")
+                        cambios_config = True
 
             if cambios_config:
                 row.config = config
