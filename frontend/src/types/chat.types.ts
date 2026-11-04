@@ -37,8 +37,8 @@ export interface WsAssistantMessage {
   role: 'assistant';
   content: string;
   // Además de tokens_used/model, puede traer el shape de uno de los widgets
-  // de reserva de turnos (ver AppointmentWidget más abajo) — se mantiene
-  // laxo a nivel wire, el narrowing seguro se hace con parseAppointmentWidget.
+  // del chat (ver ChatWidgetData más abajo) — se mantiene laxo a nivel wire,
+  // el narrowing seguro se hace con parseChatWidget.
   metadata?: Record<string, unknown>;
 }
 
@@ -112,13 +112,24 @@ export type AppointmentWidget =
   | AppointmentConfirmWidget
   | AppointmentOptionsWidget;
 
+// --- Widget del padrón electoral (ver backend/app/modules/padron_ext.py) ---
+// El backend manda la imagen del verificador como data URL: el chat es texto
+// plano, así que sin widget no hay forma de mostrarla.
+
+export interface PadronCaptchaWidgetData {
+  widget_type: 'padron_captcha';
+  image: string;
+}
+
+export type ChatWidgetData = AppointmentWidget | PadronCaptchaWidgetData;
+
 /**
  * Narrowing defensivo del metadata laxo del wire. Devuelve null ante
  * cualquier shape inesperado — el caller simplemente no renderiza el widget
  * (queda el texto plano del mensaje como fallback), sin necesidad de
  * try/catch en el componente de render.
  */
-export function parseAppointmentWidget(metadata: Record<string, unknown> | undefined): AppointmentWidget | null {
+export function parseChatWidget(metadata: Record<string, unknown> | undefined): ChatWidgetData | null {
   if (!metadata || typeof metadata.widget_type !== 'string') return null;
 
   switch (metadata.widget_type) {
@@ -130,6 +141,8 @@ export function parseAppointmentWidget(metadata: Record<string, unknown> | undef
       return metadata.slot ? (metadata as unknown as AppointmentConfirmWidget) : null;
     case 'appointment_options':
       return Array.isArray(metadata.options) ? (metadata as unknown as AppointmentOptionsWidget) : null;
+    case 'padron_captcha':
+      return typeof metadata.image === 'string' ? (metadata as unknown as PadronCaptchaWidgetData) : null;
     default:
       return null;
   }

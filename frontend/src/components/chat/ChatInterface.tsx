@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useWebSocketChat } from '../../hooks/useWebSocketChat';
-import { parseAppointmentWidget } from '../../types/chat.types';
+import { parseChatWidget } from '../../types/chat.types';
 import { ChatHeader } from './ChatHeader';
 import { ChatInputBar } from './ChatInputBar';
 import { TypingIndicator } from './TypingIndicator';
@@ -66,7 +66,7 @@ export function ChatInterface({ botId, channelId }: ChatInterfaceProps) {
             );
           }
 
-          const widget = !isUser ? parseAppointmentWidget(msg.metadata) : null;
+          const widget = !isUser ? parseChatWidget(msg.metadata) : null;
 
           return (
             <div
