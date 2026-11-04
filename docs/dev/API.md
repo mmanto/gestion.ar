@@ -1091,7 +1091,10 @@ enlace oficial. Sólo chat web (usa `session`).
 ```
 
 El usuario puede mandar el código como texto, o `otro captcha` para pedir un
-verificador nuevo. DNI, código y resultado no se persisten.
+verificador nuevo. DNI, código y resultado no se cachean, no se envían a
+terceros y no se guardan en `metadata` ni en logs; el código y el resultado
+quedan en el historial de mensajes de la conversación como cualquier turno del
+chat.
 
 ### Módulos por tenant (ADR-029)
 

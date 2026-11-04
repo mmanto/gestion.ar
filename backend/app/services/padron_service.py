@@ -118,9 +118,14 @@ def consultar(
     status = response.status_code
     if status == 200:
         try:
-            return {"status": 200, "data": response.json()}
+            data = response.json()
         except ValueError:
             return {"status": "error", "data": None}
+        # Un 200 que no sea objeto (lista/string) no es un resultado del padrón:
+        # se trata como error para que el chat derive al enlace en vez de romper.
+        if not isinstance(data, dict):
+            return {"status": "error", "data": None}
+        return {"status": 200, "data": data}
     if status in STATUS_CONOCIDOS:
         return {"status": status, "data": None}
     return {"status": "error", "data": None}

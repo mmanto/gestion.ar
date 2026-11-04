@@ -2383,9 +2383,13 @@ agente sólo podía derivar al vecino al sitio.
 3. **Reintento explícito.** Token vencido (300 s) o `401`/`403` → verificador
    nuevo; el usuario nunca ve un error de sesión. `404`/`409` cierran el flujo
    con un mensaje claro; si el sitio no responde, se deriva al enlace oficial.
-4. **Datos personales fuera de logs y de la base.** DNI, código y resultado
-   viven únicamente en la memoria de la conexión; no se cachean ni se registran
-   en `conversations`.
+4. **Datos personales con minimización, no con omisión del historial.** DNI,
+   código y resultado no se cachean, no se mandan a terceros y no se guardan en
+   `metadata` ni en logs de aplicación. El código y el resultado quedan en el
+   historial de mensajes de la conversación (`conversations`), porque es el
+   mismo camino que usa cualquier turno del chat: excluirlos rompería la
+   continuidad al reconectar. La retención sigue la política de conversaciones
+   del tenant, no una regla especial de este módulo.
 
 ### Consecuencias
 

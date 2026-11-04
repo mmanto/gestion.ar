@@ -19,6 +19,7 @@ Sólo tiene sentido en canales con sesión (chat web): WhatsApp y Telegram llama
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 import time
@@ -35,6 +36,37 @@ PADRON_TOOL_NAME = "consultar_padron"
 # El verificador del sitio es alfanumérico corto (4-8). El widget manda el
 # texto tal cual, pero el usuario puede escribirlo a mano.
 CODIGO_RE = re.compile(r"^[A-Za-z0-9]{4,8}$")
+
+# El texto libre no siempre es el código: un "hola" de 4 letras matchea el
+# regex del verificador y, sin esta lista, gastaría el token en un POST que el
+# sitio responde 401. No se puede exigir dígito: el captcha del sitio puede ser
+# sólo letras.
+PALABRAS_DE_CHAT = frozenset({
+    "hola",
+    "holas",
+    "buenas",
+    "buen",
+    "dias",
+    "tardes",
+    "noches",
+    "gracias",
+    "dale",
+    "listo",
+    "okay",
+    "perfecto",
+    "genial",
+    "ayuda",
+    "menu",
+    "bueno",
+    "bien",
+    "claro",
+    "seguro",
+    "espera",
+    "momento",
+    "captcha",
+    "capcha",
+    "imagen",
+})
 
 PEDIR_OTRO = {
     "otro",
@@ -132,6 +164,19 @@ def _iniciar(ns: dict, args: dict, mensaje: str) -> dict:
     return {"message": mensaje, "widget": padron_service.captcha_widget(captcha)}
 
 
+def _consultar(pending: dict, texto: str, args: dict) -> dict:
+    """POST de la consulta con un cliente propio (corre en un hilo aparte)."""
+    with padron_service.nueva_sesion() as client:
+        return padron_service.consultar(
+            client,
+            token=pending["token"],
+            codigo=texto,
+            dni=args.get("dni"),
+            distrito=args.get("distrito", padron_service.DISTRITO_BUENOS_AIRES),
+            sexo=args.get("sexo"),
+        )
+
+
 def _derivar(ns: dict) -> dict:
     ns.pop("pending", None)
     return {"message": FALLBACK_MESSAGE, "widget": None}
@@ -173,31 +218,25 @@ async def intercept(bot, client_id: Optional[str], user_text: str, ns: dict) -> 
 
     if texto.lower() in PEDIR_OTRO:
         try:
-            return _iniciar(ns, args, CAPTCHA_MESSAGE)
+            return await asyncio.to_thread(_iniciar, ns, args, CAPTCHA_MESSAGE)
         except Exception as exc:
             logger.warning("Padrón: no se pudo refrescar el verificador (%s)", type(exc).__name__)
             return _derivar(ns)
 
-    if not CODIGO_RE.match(texto):
+    if texto.lower() in PALABRAS_DE_CHAT or not CODIGO_RE.match(texto):
         return {"message": NOT_A_CODE_MESSAGE, "widget": None}
 
     if time.monotonic() - pending.get("fetched_at", 0) >= pending.get("ttl", 0):
         try:
-            return _iniciar(ns, args, EXPIRED_MESSAGE)
+            return await asyncio.to_thread(_iniciar, ns, args, EXPIRED_MESSAGE)
         except Exception as exc:
             logger.warning("Padrón: no se pudo renovar el verificador (%s)", type(exc).__name__)
             return _derivar(ns)
 
     try:
-        with padron_service.nueva_sesion() as client:
-            resultado = padron_service.consultar(
-                client,
-                token=pending["token"],
-                codigo=texto,
-                dni=args.get("dni"),
-                distrito=args.get("distrito", padron_service.DISTRITO_BUENOS_AIRES),
-                sexo=args.get("sexo"),
-            )
+        # httpx es bloqueante y el interceptor corre en el event loop: el POST
+        # va a un hilo para no congelar el resto de los chats del worker.
+        resultado = await asyncio.to_thread(_consultar, pending, texto, args)
     except (padron_service.PadronError, httpx.HTTPError) as exc:
         logger.warning("Padrón: falló la consulta (%s)", type(exc).__name__)
         return _derivar(ns)
@@ -210,7 +249,7 @@ async def intercept(bot, client_id: Optional[str], user_text: str, ns: dict) -> 
 
     if status in (401, 403):
         try:
-            return _iniciar(ns, args, INVALID_CODE_MESSAGE)
+            return await asyncio.to_thread(_iniciar, ns, args, INVALID_CODE_MESSAGE)
         except Exception:
             return _derivar(ns)
 

@@ -16,7 +16,8 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   con `httpx` y el token en la cookie `token`; reintento automático si el
   verificador vence (300 s) o el código es inválido, y derivación al enlace
   oficial si el sitio no responde. Sólo chat web (usa `session`); DNI, código
-  y resultado no se persisten. Nuevo módulo `scope="entitled"` (migración
+  y resultado no se cachean ni se guardan en `metadata`/logs: quedan en el
+  historial de la conversación como cualquier mensaje. Nuevo módulo `scope="entitled"` (migración
   `20261104_1200_add_padron_module.py`) y `scripts/enable_pachoteayuda_padron.py`
   para habilitarlo en pachoteayuda.
 - **Proveedor de IA por tenant: Claude, DeepSeek u OpenRouter con key propia**

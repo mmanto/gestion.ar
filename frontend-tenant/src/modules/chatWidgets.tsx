@@ -1,5 +1,6 @@
 import { lazy, Component, type ComponentType, type ReactNode } from 'react';
-import type { AppointmentWidget } from '../types/chat.types';
+import { PadronCaptchaWidget } from '../components/chat/PadronCaptchaWidget';
+import type { ChatWidgetData } from '../types/chat.types';
 
 /**
  * Registry de widgets de chat: `widget_type` (el que manda el backend en el
@@ -22,7 +23,7 @@ export interface ChatWidgetHandlers {
 }
 
 export interface ChatWidgetProps extends ChatWidgetHandlers {
-  widget: AppointmentWidget;
+  widget: ChatWidgetData;
 }
 
 export type ChatWidgetComponent = ComponentType<ChatWidgetProps>;
@@ -33,6 +34,9 @@ export type ChatWidgetComponent = ComponentType<ChatWidgetProps>;
 const asChatWidget = (component: unknown) => component as ChatWidgetComponent;
 
 export const CHAT_WIDGETS: Record<string, ChatWidgetComponent> = {
+  // Local (sin Module Federation): el verificador del padrón no depende de
+  // ningún remote, así que no arrastra el problema de CSS global.
+  padron_captcha: PadronCaptchaWidget as unknown as ChatWidgetComponent,
   appointment_options: asChatWidget(lazy(() => import('appointments/AppointmentOptionsWidget'))),
   appointment_calendar: asChatWidget(lazy(() => import('appointments/AppointmentCalendarWidget'))),
   appointment_times: asChatWidget(lazy(() => import('appointments/AppointmentTimesWidget'))),

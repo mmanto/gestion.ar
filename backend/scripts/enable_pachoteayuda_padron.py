@@ -32,6 +32,7 @@ import sys
 from datetime import datetime, timezone
 
 from sqlalchemy import select
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.db.database import AsyncSessionLocal
 from app.db.models import Bot
@@ -108,6 +109,7 @@ async def main() -> None:
                     permiso.enabled = True
                     cambios.append("enabled")
 
+            cambios_config = False
             config = row.config if isinstance(row.config, dict) else {}
             ius_config = config.get("ius_config")
             herramientas = ius_config.get("estado_de_herramientas") if isinstance(ius_config, dict) else None
@@ -118,6 +120,14 @@ async def main() -> None:
                 ):
                     herramientas[PADRON_TOOL_NAME] = dict(HERRAMIENTA_PADRON)
                     cambios.append(f"ius_config.estado_de_herramientas.{PADRON_TOOL_NAME}")
+                    cambios_config = True
+
+            if cambios_config:
+                row.config = config
+                # JSONB: sin flag_modified la mutación anidada no entra en el
+                # UPDATE y el commit informa éxito igual (mismo bug documentado
+                # en enable_pachoteayuda_public_sources.py).
+                flag_modified(row, "config")
 
             if cambios:
                 await session.commit()

@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import type { AppointmentWidget } from '../../types/chat.types';
+import type { ChatWidgetData } from '../../types/chat.types';
 import { CHAT_WIDGETS, WidgetErrorBoundary, type ChatWidgetHandlers } from '../../modules/chatWidgets';
 
 // Los widgets disponibles salen del registry (../../modules/chatWidgets) en vez
@@ -7,7 +7,7 @@ import { CHAT_WIDGETS, WidgetErrorBoundary, type ChatWidgetHandlers } from '../.
 // que registrarlos ahí (y anunciar sus widget_types en su manifiesto del
 // backend).
 
-export type ChatWidgetProps = { widget: AppointmentWidget } & ChatWidgetHandlers;
+export type ChatWidgetProps = { widget: ChatWidgetData } & ChatWidgetHandlers;
 
 export function ChatWidget({ widget, ...handlers }: ChatWidgetProps) {
   const Widget = CHAT_WIDGETS[widget.widget_type];

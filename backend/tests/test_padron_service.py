@@ -85,6 +85,14 @@ def test_consultar_mapea_error_de_red():
     }
 
 
+def test_consultar_rechaza_200_que_no_es_objeto():
+    client = _Client(_Resp(200, "", ["no", "es", "un", "objeto"]))
+    assert consultar(client, token="t", codigo="AAAA", dni=1, distrito=2, sexo="m") == {
+        "status": "error",
+        "data": None,
+    }
+
+
 def test_formatear_resultado_arma_texto_legible():
     texto = formatear_resultado(
         {

@@ -10,6 +10,8 @@ verificador vencido a los 300 s, texto que no es un código, y el sitio caído
 
 import pytest
 
+import threading
+
 from app.modules import padron_ext as mod
 from app.services.padron_service import Captcha
 
@@ -90,6 +92,61 @@ async def test_intercept_repregunta_si_el_texto_no_es_codigo(monkeypatch):
     resultado = await mod.intercept(_Bot(), None, "hola, qué tal", ns)
     assert resultado["message"]
     assert "pending" in ns
+    assert llamado == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.asyncio
+async def test_intercept_saludo_no_consume_el_token(monkeypatch):
+    llamado = []
+    monkeypatch.setattr(mod.padron_service, "consultar", lambda *a, **k: llamado.append(1))
+    ns = {"pending": _pending()}
+    resultado = await mod.intercept(_Bot(), None, "hola", ns)
+    assert "código" in resultado["message"].lower()
+    assert "pending" in ns
+    assert llamado == []
+
+
+@pytest.mark.asyncio
+async def test_intercept_usa_un_hilo_aparte_para_la_red(monkeypatch):
+    visto = {}
+
+    def _consultar(*a, **k):
+        visto["thread"] = threading.current_thread()
+        return {"status": 200, "data": {"mesa": 1}}
+
+    monkeypatch.setattr(mod.padron_service, "consultar", _consultar)
+    ns = {"pending": _pending()}
+    await mod.intercept(_Bot(), None, "ABCD", ns)
+    assert visto["thread"] is not threading.main_thread()
+
+
+@pytest.mark.asyncio
+async def test_intercept_error_de_red_deriva_al_enlace(monkeypatch):
+    monkeypatch.setattr(mod.padron_service, "consultar", lambda *a, **k: {"status": "error", "data": None})
+    ns = {"pending": _pending()}
+    resultado = await mod.intercept(_Bot(), None, "ABCD", ns)
+    assert "padron.gob.ar" in resultado["message"]
+    assert "pending" not in ns
+
+
+def test_tool_rechaza_dni_de_tres_digitos(monkeypatch):
+    llamado = []
+    monkeypatch.setattr(mod.padron_service, "fetch_captcha", lambda client: llamado.append(1))
+    ns = {}
+    _, executors = mod.provide_tools(_Bot(), None, None, "web", ns)
+    resultado = executors[mod.PADRON_TOOL_NAME](mod.PADRON_TOOL_NAME, {"dni": 123, "sexo": "m"})
+    assert "dni" in resultado["error"].lower()
+    assert llamado == []
+
+
+def test_tool_rechaza_distrito_fuera_de_rango(monkeypatch):
+    llamado = []
+    monkeypatch.setattr(mod.padron_service, "fetch_captcha", lambda client: llamado.append(1))
+    ns = {}
+    _, executors = mod.provide_tools(_Bot(), None, None, "web", ns)
+    resultado = executors[mod.PADRON_TOOL_NAME](mod.PADRON_TOOL_NAME, {"dni": 12345678, "sexo": "m", "distrito": 99})
+    assert "distrito" in resultado["error"].lower()
     assert llamado == []
 
 
