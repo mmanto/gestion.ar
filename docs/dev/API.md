@@ -1060,6 +1060,39 @@ Manifiesto de los módulos instalados, sin auth. Lo consumen las dos SPAs
 
 **Errores:** no tiene (es un `GET` público sin parámetros).
 
+### Integración saliente: padrón electoral (módulo `padron`, ADR-039)
+
+El módulo `padron` consulta `https://www.padron.gob.ar/` (Justicia Nacional
+Electoral), que no tiene API pública pero sí dos POST sin JavaScript. No agrega
+endpoints propios: aporta la tool `consultar_padron` y un interceptor al chat.
+
+| Paso | Request | Respuesta |
+|---|---|---|
+| Verificador | `POST /padron-api/captcha.jpg` | `token\|ttl\|base64JPEG` (ttl 300 s) |
+| Consulta | `POST /padron-api/consulta`, form-urlencoded `c` (código), `m` (DNI), `d` (distrito), `s` (`m`/`f`/`x`), `e` (mail opcional), Cookie `token=<token>` | `200` resultado, `401` código inválido, `403` sesión expirada, `404` no figura, `409` distrito no habilitado |
+
+El token se manda como cookie explícita: no hace falta conservar cookies del
+sitio entre turnos. Distrito por defecto: `2` (Buenos Aires).
+
+**Flujo en el chat:** la tool baja el verificador y deja `ns["result"]` con el
+widget; el turno devuelve ese mensaje en lugar de la narración del LLM. El
+código que escribe el usuario lo toma el interceptor del módulo (el LLM no
+vuelve a intervenir). Si el token venció o el sitio devuelve `401`/`403`, el
+interceptor pide un verificador nuevo; si el sitio no responde, responde con el
+enlace oficial. Sólo chat web (usa `session`).
+
+**Widget `padron_captcha`** en `metadata` del mensaje del asistente:
+
+```json
+{
+  "widget_type": "padron_captcha",
+  "image": "data:image/jpeg;base64,..."
+}
+```
+
+El usuario puede mandar el código como texto, o `otro captcha` para pedir un
+verificador nuevo. DNI, código y resultado no se persisten.
+
 ### Módulos por tenant (ADR-029)
 
 El entitlement que no depende de que el tenant tenga agente.

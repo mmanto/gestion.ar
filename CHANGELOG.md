@@ -7,6 +7,18 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **Consulta del padrón electoral en el chat web, con verificador resuelto por
+  el vecino** (módulo `padron`, ADR-039). El agente consulta
+  `padron.gob.ar` (Justicia Nacional Electoral) cuando preguntan dónde votan:
+  muestra la imagen del captcha en el chat (`widget_type: padron_captcha`),
+  el usuario escribe el código y el interceptor del módulo devuelve
+  establecimiento, dirección, mesa y orden. Sin navegador headless: dos POST
+  con `httpx` y el token en la cookie `token`; reintento automático si el
+  verificador vence (300 s) o el código es inválido, y derivación al enlace
+  oficial si el sitio no responde. Sólo chat web (usa `session`); DNI, código
+  y resultado no se persisten. Nuevo módulo `scope="entitled"` (migración
+  `20261104_1200_add_padron_module.py`) y `scripts/enable_pachoteayuda_padron.py`
+  para habilitarlo en pachoteayuda.
 - **Proveedor de IA por tenant: Claude, DeepSeek u OpenRouter con key propia**
   (ADR-038). Cada tenant elige proveedor + modelo + API key desde **Ajustes ›
   Proveedor de IA** (solo `admin`) y el agente del tenant usa esa config en cada

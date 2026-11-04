@@ -2355,3 +2355,46 @@ imposible de atribuir.
   conversación, auditoría semántica del `ius_config`, calificación por semáforo)
   también corren con la key del tenant: si no hay config simplemente no se
   ejecutan (o devuelven 400/issue semántico) en vez de usar la key de plataforma.
+
+## ADR-039: El padrón electoral se consulta con el captcha resuelto por el usuario en el chat web
+
+### Contexto
+
+La consulta del padrón nacional (`padron.gob.ar`, Justicia Nacional Electoral)
+no tiene API pública, y la única vía es el formulario web, protegido por un
+captcha de imagen propio (token de 300 s, cookie `token`). El captcha existe
+para que lo resuelva una persona: automatizarlo (OCR o servicio externo) choca
+con los términos del sitio y con el propósito del control. Antes de este ADR el
+agente sólo podía derivar al vecino al sitio.
+
+### Decisión
+
+1. **Integración server-side con `httpx`, sin navegador headless.** El captcha
+   y la consulta son dos POST (`/padron-api/captcha.jpg` y
+   `/padron-api/consulta`) que no necesitan ejecutar JavaScript: alcanza con
+   mandar el token en la cookie `token`. Un browser headless agrega superficie
+   (y consumo) sin resolver nada.
+2. **El captcha lo resuelve el usuario en el chat.** Un módulo `padron`
+   (`app/modules/padron_ext.py`) aporta la tool `consultar_padron` y un
+   interceptor. La tool baja el verificador y lo muestra como widget
+   `padron_captcha`; el turno siguiente lo resuelve el interceptor con el texto
+   que escribió el usuario, sin pasar por el LLM. Estado sólo en `session`
+   (sólo chat web: WhatsApp y Telegram no tienen sesión de chat).
+3. **Reintento explícito.** Token vencido (300 s) o `401`/`403` → verificador
+   nuevo; el usuario nunca ve un error de sesión. `404`/`409` cierran el flujo
+   con un mensaje claro; si el sitio no responde, se deriva al enlace oficial.
+4. **Datos personales fuera de logs y de la base.** DNI, código y resultado
+   viven únicamente en la memoria de la conexión; no se cachean ni se registran
+   en `conversations`.
+
+### Consecuencias
+
+- Es una integración no oficial: si el sitio cambia endpoints o markup, el
+  módulo degrada a la derivación (no rompe el chat).
+- El WAF del sitio (cookie F5 `TS…`) puede empezar a pedir challenge a IPs de
+  datacenter; hay que verificar el endpoint desde el VPS antes de desplegar.
+- Un solo verificador pendiente por conexión: una segunda consulta reemplaza el
+  anterior.
+- El `ius_config` que tenga `estado_de_herramientas` debe listar
+  `consultar_padron` como implementada (lo aplica
+  `scripts/enable_pachoteayuda_padron.py`).
