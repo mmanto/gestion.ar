@@ -340,7 +340,7 @@ repo), por eso el nombre de marca tiene una clave por app.
 
 | Variable | Requerida | Descripción | Ejemplo |
 |---|---|---|---|
-| `ENABLED_MODULES` | ❌ | Lista CSV de `module_key` instalados en este deploy (ver `backend/app/modules/manifest.py` y ADR-028). Ausente o vacía = todos (`agent`, `rag`, `appointments`, `lead_funnel`). Un módulo cuyos `requires` no estén instalados corta el arranque, y sus routers no se montan. | `agent,rag,appointments` |
+| `ENABLED_MODULES` | ❌ | Lista CSV de `module_key` instalados en este deploy (ver `backend/app/modules/manifest.py` y ADR-028). Ausente o vacía = todos (`agent`, `rag`, `appointments`, `lead_funnel`, `padron`). Un módulo cuyos `requires` no estén instalados corta el arranque, y sus routers no se montan. | `agent,rag,appointments` |
 
 ---
 
