@@ -367,6 +367,15 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `pages/Users.tsx` (eliminada en v4). Ver ADR-037.
 
 ### Corregido
+- **El flujo del padrón trababa el chat: con la recolección de DNI/sexo abierta,
+  cualquier mensaje recibía el mismo pedido** (`backend/app/modules/padron_ext.py`).
+  Después de preguntar dónde vota, la tool `solicitar_datos_padron` deja
+  `ns["collect"]` abierto y el interceptor devolvía "necesito tu DNI y el sexo"
+  para **todos** los turnos siguientes — incluso "hola", "gracias" o una
+  consulta distinta, que nunca llegaban al LLM. Ahora el interceptor sólo se
+  queda con el turno si el texto aporta el DNI o el sexo (o cancela); cualquier
+  otro mensaje suelta `collect` y sigue al LLM, que puede volver a pedir los
+  datos si corresponde. **Requiere** rebuild + redeploy del servicio `app`.
 - **El chat del tenant quedaba mudo con OpenRouter: respuestas 200 OK con
   `content: ""`** (`backend/app/openrouter_service.py`,
   `backend/app/services/tenant_llm_service.py`). OpenRouter rutea cada request

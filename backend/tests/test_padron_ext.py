@@ -272,8 +272,21 @@ async def test_intercept_cancelar_limpia_el_pedido(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_intercept_sin_datos_utiles_repregunta(monkeypatch):
+async def test_intercept_sin_datos_utiles_cede_al_llm(monkeypatch):
+    """Un «no sé» no aporta ningún dato: no se queda repitiendo la pregunta."""
     ns = {"collect": {}}
     resultado = await mod.intercept(_Bot(), None, "no sé", ns)
-    assert "dni" in resultado["message"].lower()
-    assert ns["collect"] == {}
+    assert resultado is None
+    assert "collect" not in ns
+
+
+@pytest.mark.asyncio
+async def test_intercept_otra_consulta_no_queda_atrapada(monkeypatch):
+    """Con la recolección abierta, una pregunta distinta sigue al LLM en vez de
+    recibir otra vez el pedido de DNI/sexo."""
+    ns = {"collect": {"dni": 12345678}}
+    resultado = await mod.intercept(
+        _Bot(), None, "¿qué trámites puedo hacer en el municipio?", ns
+    )
+    assert resultado is None
+    assert "collect" not in ns

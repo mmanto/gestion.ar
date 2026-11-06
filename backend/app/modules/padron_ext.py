@@ -5,7 +5,9 @@ El LLM invoca la tool `consultar_padron` cuando el vecino pregunta dónde vota.
 Como el captcha lo resuelve una persona, la tool no puede completar la consulta
 dentro del mismo turno: baja el verificador, lo deja en un widget y guarda el
 token en el estado de la conexión. A partir de ahí el interceptor de los turnos
-siguientes conduce el resto sin volver a pasar por el LLM.
+siguientes conduce el resto sin volver a pasar por el LLM. Mientras junta el DNI
+y el sexo (`ns["collect"]`), sólo se queda con los turnos que aportan alguno de
+esos datos: cualquier otra consulta suelta la recolección y sigue al LLM.
 
 Estado por sesión de chat, en el namespace del módulo (`ns`):
 - `ns["pending"]`: `{"token", "ttl", "fetched_at", "args"}` de la consulta en
@@ -345,7 +347,9 @@ def provide_tools(bot, client, client_id, canal, ns: dict):
     )
 
 
-async def _resolver_datos(ns: dict, collect: dict, texto: str) -> dict:
+async def _resolver_datos(
+    ns: dict, collect: dict, texto: str
+) -> Optional[dict]:
     """Completa los datos que el vecino escribe en el chat, uno o varios por turno."""
     ns.pop("result", None)
 
@@ -360,6 +364,14 @@ async def _resolver_datos(ns: dict, collect: dict, texto: str) -> dict:
     sexo = _extraer_sexo(texto)
     if sexo is not None and "sexo" not in datos:
         datos["sexo"] = sexo
+
+    if dni is None and sexo is None:
+        # El mensaje no aporta ninguno de los datos que faltan: es otra consulta
+        # (o un "no sé"). Se suelta la recolección y el turno sigue al LLM, que
+        # puede volver a pedirlos; si no, el chat quedaría repitiendo la misma
+        # pregunta en cada mensaje y parecería trabado.
+        ns.pop("collect", None)
+        return None
 
     if "dni" in datos and "sexo" in datos:
         ns.pop("collect", None)

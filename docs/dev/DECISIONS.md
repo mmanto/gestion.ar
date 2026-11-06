@@ -2385,6 +2385,11 @@ agente sólo podía derivar al vecino al sitio.
    `padron_captcha`; el turno siguiente lo resuelve el interceptor con el texto
    que escribió el usuario, sin pasar por el LLM. Estado sólo en `session`
    (sólo chat web: WhatsApp y Telegram no tienen sesión de chat).
+   Mientras el interceptor junta el DNI y el sexo (`ns["collect"]`), sólo se
+   queda con los turnos que aportan alguno de esos datos (o cancelan): un
+   mensaje que no aporta nada suelta la recolección y sigue al LLM, que puede
+   volver a pedirlos. Si no, el chat repite el mismo pedido en cada mensaje y
+   parece trabado.
 3. **Reintento explícito.** Token vencido (300 s) o `401`/`403` → verificador
    nuevo; el usuario nunca ve un error de sesión. `404`/`409` cierran el flujo
    con un mensaje claro; si el sitio no responde, se deriva al enlace oficial.
