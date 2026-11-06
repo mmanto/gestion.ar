@@ -32,7 +32,7 @@ from app.deepseek_service import DeepSeekService
 from app.llm_errors import LLMNotConfiguredError, LLMProviderError
 from app.models.tenant import TenantLLMConfigOut, TenantLLMConfigUpdate
 from app.openrouter_service import DEFAULT_BASE_URL as OPENROUTER_DEFAULT_BASE_URL
-from app.openrouter_service import OpenRouterService
+from app.openrouter_service import OpenRouterService, choice_error
 from app.services.secrets_service import decrypt_secret, encrypt_secret
 
 #: Timeout fijo de la validación desde la UI (independiente de
@@ -101,6 +101,9 @@ def _validate_openrouter(api_key: str, model: str) -> None:
                     "messages": [{"role": "user", "content": "ping"}],
                     "max_tokens": 16,
                     "stream": False,
+                    # Sin esto un modelo/upstream que razona por default gasta
+                    # los 16 tokens en reasoning y el ping vuelve vacío.
+                    "reasoning": {"enabled": False},
                 },
             )
             if chat_response.is_error:
@@ -108,6 +111,18 @@ def _validate_openrouter(api_key: str, model: str) -> None:
                     f"OpenRouter (HTTP {chat_response.status_code}): "
                     f"{_openrouter_error_message(chat_response)}"
                 )
+
+            # OpenRouter puede devolver 200 con el error de ruteo en
+            # `choices[0].error` (modelo inexistente, sin proveedor, …): sin
+            # este chequeo una config rota se guardaba como válida y el chat
+            # moría recién en el primer turno.
+            try:
+                payload = chat_response.json()
+            except ValueError:
+                raise LLMProviderError("OpenRouter: respuesta inválida (no es JSON)")
+            error = choice_error(payload)
+            if error:
+                raise LLMProviderError(f"OpenRouter: {error}")
     except httpx.RequestError as exc:
         raise LLMProviderError(
             f"No se pudo contactar a OpenRouter: {exc}"

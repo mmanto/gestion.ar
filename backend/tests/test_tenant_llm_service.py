@@ -6,6 +6,7 @@ pegarle a ningún proveedor real.
 """
 
 from datetime import datetime, timezone
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -222,6 +223,38 @@ async def test_validate_persists_last_error_and_last_validated_at(store, monkeyp
 async def test_test_propagates_not_configured(store):
     with pytest.raises(LLMNotConfiguredError):
         await tenant_llm_service.test_tenant_llm_config("tenant_sin_config")
+
+
+async def test_openrouter_validation_rejects_error_inside_200(monkeypatch):
+    """OpenRouter devuelve 200 con `choices[0].error` cuando el modelo no tiene
+    proveedor: la validación tiene que rechazarlo, si no la config queda
+    guardada como válida y el chat muere en el primer turno."""
+    key_response = MagicMock()
+    key_response.status_code = 200
+
+    chat_response = MagicMock()
+    chat_response.is_error = False
+    chat_response.json.return_value = {
+        "choices": [{"error": {"message": "No endpoints found for model"}}]
+    }
+
+    client = MagicMock()
+    client.__enter__.return_value = client
+    client.__exit__.return_value = False
+    client.get.return_value = key_response
+    client.post.return_value = chat_response
+
+    monkeypatch.setattr(tenant_llm_service.httpx, "Client", lambda **kwargs: client)
+
+    with pytest.raises(LLMProviderError) as exc:
+        tenant_llm_service.validate_llm_credentials(
+            "openrouter", "sk-or-v1-test", "deepseek-v4-flash"
+        )
+
+    assert "No endpoints found for model" in str(exc.value)
+    assert "sk-or-v1-test" not in str(exc.value)
+    # El ping no deja que el razonamiento se coma los 16 tokens.
+    assert client.post.call_args.kwargs["json"]["reasoning"] == {"enabled": False}
 
 
 async def test_delete_removes_config(store, validated):

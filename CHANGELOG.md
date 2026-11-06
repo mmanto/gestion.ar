@@ -367,6 +367,23 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `pages/Users.tsx` (eliminada en v4). Ver ADR-037.
 
 ### Corregido
+- **El chat del tenant quedaba mudo con OpenRouter: respuestas 200 OK con
+  `content: ""`** (`backend/app/openrouter_service.py`,
+  `backend/app/services/tenant_llm_service.py`). OpenRouter rutea cada request
+  a un upstream distinto y varios de ellos razonan por default
+  (`deepseek-v4-flash` en Venice/GMICloud/Relace): los tokens de razonamiento
+  salen del mismo `max_tokens` del turno, así que con el presupuesto agotado la
+  respuesta llega vacía, `finish_reason="length"`, sin error. El agente devolvía
+  `message=""` y el WebSocket no enviaba nada (tampoco lo logueaba ni lo
+  persistía): el usuario veía el chat colgado. Ahora el payload manda
+  `reasoning: {"enabled": false}` explícito salvo que el bot tenga
+  `llm_thinking` prendido (mismo criterio que `DeepSeekService` con
+  `thinking`), reintenta una vez con más presupuesto si igual vuelve vacío y,
+  si sigue vacío, levanta `LLMProviderError` para que el canal muestre
+  `fallback_message` en vez de quedarse callado. La validación de credenciales
+  también rechaza el HTTP 200 con `choices[0].error` (modelo/ruteo inválido se
+  detecta al guardar, no en el primer mensaje).
+  **Requiere** rebuild + redeploy del servicio `app`.
 - **El canal de voz no conectaba con Deepgram Agent**
   (`backend/app/routers/voice_router.py`). El proxy abría el WebSocket del
   cliente, mandaba `meta` y cerraba con 1011

@@ -2323,7 +2323,12 @@ imposible de atribuir.
    llamada mínima al proveedor (`/key` + un `chat/completions` corto en
    OpenRouter, un ping de 1–16 tokens en Claude/DeepSeek) con timeout fijo de
    20 s. Una key o modelo inválido no se persiste: la config vigente queda
-   intacta y el admin corrige en el mismo formulario.
+   intacta y el admin corrige en el mismo formulario. En OpenRouter el HTTP 200
+   con el error de ruteo en `choices[0].error` (modelo inexistente, sin
+   proveedor disponible) también cuenta como inválido: sin ese chequeo la
+   config se guardaba como buena y el chat moría en el primer turno.
+   El ping va con `reasoning: {"enabled": false}` para que un upstream que
+   razona por default no se coma los tokens antes del texto.
 4. **La key se guarda cifrada** (`api_key_encrypted`, Fernet derivada de
    `ENCRYPTION_KEY`) y nunca se devuelve por la API: sólo `api_key_hint`
    (últimos 4). En claro existe únicamente en memoria del proceso. Rotar

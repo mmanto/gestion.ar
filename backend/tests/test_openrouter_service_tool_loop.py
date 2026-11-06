@@ -147,7 +147,7 @@ def test_exhausted_tool_loop_forces_final_plain_text_call():
     assert "tools" not in final_payload
 
 
-def test_thinking_adds_reasoning_only_when_enabled():
+def test_reasoning_is_explicitly_disabled_unless_thinking_enabled():
     service = _service()
     fake_client, _calls = _fake_client_returning([_text_response("ok")])
 
@@ -161,8 +161,56 @@ def test_thinking_adds_reasoning_only_when_enabled():
     with patch("app.openrouter_service.httpx.Client", return_value=fake_client2):
         service.sync_generate("sys", [{"role": "user", "content": "hola"}], 100)
 
+    # Explícito y no omitido: sin esto el upstream puede razonar por default y
+    # gastar `max_tokens` antes del texto visible (respuesta vacía, chat mudo).
     payload2 = fake_client2.post.call_args_list[-1].kwargs["json"]
-    assert "reasoning" not in payload2
+    assert payload2["reasoning"] == {"enabled": False}
+
+
+def _empty_response(finish_reason: str = "length") -> dict:
+    return {
+        "model": "deepseek/deepseek-chat",
+        "choices": [{
+            "finish_reason": finish_reason,
+            "message": {"role": "assistant", "content": "", "tool_calls": None},
+        }],
+        "usage": {"prompt_tokens": 10, "completion_tokens": 1024, "cost": 0.001},
+    }
+
+
+def test_empty_content_retries_once_with_more_budget():
+    service = _service()
+    fake_client, calls = _fake_client_returning(
+        [_empty_response(), _text_response("Ahí va la respuesta.", cost=0.003)]
+    )
+
+    with patch("app.openrouter_service.httpx.Client", return_value=fake_client):
+        result = service.sync_generate(
+            "sys", [{"role": "user", "content": "requisitos para habilitar un comercio"}], 1024
+        )
+
+    assert result["response"] == "Ahí va la respuesta."
+    assert calls["count"] == 2
+    first_payload = fake_client.post.call_args_list[0].kwargs["json"]
+    retry_payload = fake_client.post.call_args_list[1].kwargs["json"]
+    assert first_payload["max_tokens"] == 1024
+    assert retry_payload["max_tokens"] == 3072
+    assert retry_payload["reasoning"] == {"enabled": False}
+    # El costo suma las dos llamadas: el reintento no es gratis.
+    assert result["estimated_cost_usd"] == pytest.approx(0.004)
+
+
+def test_empty_content_after_retry_raises_instead_of_returning_empty():
+    service = _service()
+    fake_client, calls = _fake_client_returning([_empty_response(), _empty_response()])
+
+    with patch("app.openrouter_service.httpx.Client", return_value=fake_client):
+        with pytest.raises(LLMProviderError) as exc:
+            service.sync_generate("sys", [{"role": "user", "content": "hola"}], 1024)
+
+    assert calls["count"] == 2
+    assert "no devolvió texto" in str(exc.value)
+    assert "length" in str(exc.value)
 
 
 def test_http_error_is_wrapped_with_provider_message():

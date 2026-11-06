@@ -13,7 +13,11 @@ Diferencias con DeepSeek que importan acá:
 - El costo real viene por respuesta en `usage.cost` (USD) — se suma en lugar de
   estimarse con una tabla de precios local.
 - `reasoning` es opt-in por request (`{"enabled": true}`) y sólo si
-  `bot.config.llm_thinking` está prendido.
+  `bot.config.llm_thinking` está prendido. Sin el flag, OpenRouter rutea a
+  proveedores que razonan por default y esos tokens salen del mismo
+  `max_tokens`: la respuesta vuelve 200 OK con `content: ""` y el chat queda
+  mudo — por eso se manda `{"enabled": false}` explícito (mismo criterio que
+  `DeepSeekService` con `thinking`).
 - Los errores de ruteo/upstream pueden venir como HTTP 200 con
   `choices[0].error` en vez de un status de error.
 """
@@ -31,6 +35,27 @@ from app.llm_errors import LLMProviderError
 
 DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
 DEFAULT_TIMEOUT = 90.0
+
+#: Reintento único cuando el modelo devuelve 200 OK sin texto (el upstream
+#: gastó el presupuesto en razonamiento): más margen, tope duro.
+EMPTY_RETRY_MULTIPLIER = 3
+EMPTY_RETRY_MAX_TOKENS = 4096
+
+
+def choice_error(data: dict) -> Optional[str]:
+    """Mensaje de error que OpenRouter esconde en `choices[0].error` (HTTP 200).
+
+    Pasa cuando el upstream falla (modelo sin proveedor disponible, moderación,
+    …): el status es 200 y sin este chequeo se toma como una respuesta válida.
+    """
+    choices = data.get("choices") or []
+    first = choices[0] if choices else {}
+    error = first.get("error") if isinstance(first, dict) else None
+    if not error:
+        return None
+    if isinstance(error, dict):
+        return str(error.get("message") or "error del proveedor upstream")
+    return str(error)
 
 
 def _error_message(response: httpx.Response) -> str:
@@ -108,17 +133,10 @@ class OpenRouterService:
             )
         data = response.json()
 
-        choices = data.get("choices") or []
-        first = choices[0] if choices else {}
         # OpenRouter devuelve 200 con `choices[0].error` cuando el upstream
         # falla (modelo sin proveedor disponible, moderación, …).
-        choice_error = first.get("error") if isinstance(first, dict) else None
-        if choice_error:
-            message = (
-                choice_error.get("message")
-                if isinstance(choice_error, dict)
-                else str(choice_error)
-            ) or "error del proveedor upstream"
+        message = choice_error(data)
+        if message:
             raise LLMProviderError(f"OpenRouter: {message}")
         return data
 
@@ -160,17 +178,24 @@ class OpenRouterService:
         total_output_tokens = 0
         total_cost_usd = 0.0
         used_model = self.model
+        # Presupuesto visible del turno; el reintento por respuesta vacía lo
+        # amplía una sola vez.
+        budget = max_tokens
+        retried_empty = False
 
-        def _base_payload() -> dict:
-            payload = {
+        def _base_payload(tokens: int) -> dict:
+            return {
                 "model": self.model,
                 "messages": current_messages,
-                "max_tokens": max_tokens,
+                "max_tokens": tokens,
                 "stream": False,
+                # Explícito en ambos sentidos (mismo criterio que
+                # DeepSeekService con `thinking`): sin `enabled: false`
+                # OpenRouter puede rutear a un upstream que razona por default,
+                # y esos tokens salen del mismo `max_tokens` — la respuesta
+                # vuelve 200 OK con `content: ""` y el chat queda mudo.
+                "reasoning": {"enabled": thinking is True},
             }
-            if thinking is True:
-                payload["reasoning"] = {"enabled": True}
-            return payload
 
         def _accumulate(data: dict) -> dict:
             nonlocal total_input_tokens, total_output_tokens, total_cost_usd, used_model
@@ -193,7 +218,7 @@ class OpenRouterService:
             }
 
         for _ in range(3):
-            payload = _base_payload()
+            payload = _base_payload(budget)
             if openrouter_tools:
                 payload["tools"] = openrouter_tools
             data = self._post(payload)
@@ -202,7 +227,23 @@ class OpenRouterService:
             tool_calls = message.get("tool_calls")
             finish_reason = (data.get("choices") or [{}])[0].get("finish_reason")
             if not tool_calls or not tool_executor or finish_reason != "tool_calls":
-                return _result(message.get("content") or "")
+                text = (message.get("content") or "").strip()
+                if text:
+                    return _result(text)
+                if not retried_empty:
+                    # 200 OK sin texto: el upstream gastó `max_tokens` en
+                    # razonamiento oculto. Un único reintento con más margen;
+                    # si tampoco hay texto, se levanta para que el canal mande
+                    # su fallback en vez de dejar al usuario sin respuesta.
+                    retried_empty = True
+                    budget = min(
+                        max_tokens * EMPTY_RETRY_MULTIPLIER, EMPTY_RETRY_MAX_TOKENS
+                    )
+                    continue
+                raise LLMProviderError(
+                    "OpenRouter: el modelo no devolvió texto "
+                    f"(finish_reason={finish_reason or 'desconocido'})"
+                )
 
             current_messages.append(
                 {
@@ -228,9 +269,21 @@ class OpenRouterService:
                 )
 
         # Tope de vueltas agotado: última llamada sin tools para sintetizar.
-        data = self._post(_base_payload())
+        data = self._post(_base_payload(budget))
         message = _accumulate(data)
-        return _result(message.get("content") or "")
+        text = (message.get("content") or "").strip()
+        if not text and budget < EMPTY_RETRY_MAX_TOKENS:
+            retry_tokens = min(
+                budget * EMPTY_RETRY_MULTIPLIER, EMPTY_RETRY_MAX_TOKENS
+            )
+            data = self._post(_base_payload(retry_tokens))
+            message = _accumulate(data)
+            text = (message.get("content") or "").strip()
+        if not text:
+            raise LLMProviderError(
+                "OpenRouter: el modelo no devolvió texto al sintetizar la respuesta"
+            )
+        return _result(text)
 
     async def generate_response(
         self,
