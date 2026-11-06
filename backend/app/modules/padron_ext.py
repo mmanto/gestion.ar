@@ -4,10 +4,12 @@ Extensión de chat del módulo `padron` (consulta del padrón electoral).
 El LLM invoca la tool `consultar_padron` cuando el vecino pregunta dónde vota.
 Como el captcha lo resuelve una persona, la tool no puede completar la consulta
 dentro del mismo turno: baja el verificador, lo deja en un widget y guarda el
-token en el estado de la conexión. A partir de ahí el interceptor de los turnos
-siguientes conduce el resto sin volver a pasar por el LLM. Mientras junta el DNI
-y el sexo (`ns["collect"]`), sólo se queda con los turnos que aportan alguno de
-esos datos: cualquier otra consulta suelta la recolección y sigue al LLM.
+token en el estado de la conexión. A partir de ahí el interceptor resuelve el
+código de los turnos siguientes sin pasar por el LLM. Sólo se queda con los
+turnos que puede resolver: mientras junta el DNI y el sexo (`ns["collect"]`)
+necesita que el texto aporte alguno de esos datos (o cancele), y con el
+verificador pendiente necesita un código. Cualquier otro mensaje sigue al LLM —
+el chat no queda repitiendo el mismo pedido.
 
 Estado por sesión de chat, en el namespace del módulo (`ns`):
 - `ns["pending"]`: `{"token", "ttl", "fetched_at", "args"}` de la consulta en
@@ -42,9 +44,9 @@ PADRON_TOOL_NAME = "consultar_padron"
 CODIGO_RE = re.compile(r"^[A-Za-z0-9]{4,8}$")
 
 # El texto libre no siempre es el código: un "hola" de 4 letras matchea el
-# regex del verificador y, sin esta lista, gastaría el token en un POST que el
-# sitio responde 401. No se puede exigir dígito: el captcha del sitio puede ser
-# sólo letras.
+# regex del verificador y, sin esta lista, se gastaría el token en un POST que
+# el sitio responde 401. No se puede exigir dígito: el captcha del sitio puede
+# ser sólo letras.
 PALABRAS_DE_CHAT = frozenset({
     "hola",
     "holas",
@@ -88,7 +90,6 @@ CAPTCHA_MESSAGE = (
 )
 EXPIRED_MESSAGE = "El verificador venció. Te muestro uno nuevo: escribí el código que ves."
 INVALID_CODE_MESSAGE = "El código no era correcto. Te muestro otro verificador."
-NOT_A_CODE_MESSAGE = "Escribí el código que se ve en la imagen (letras y números, sin espacios)."
 NOT_FOUND_MESSAGE = "No encontré esos datos en el padrón. Revisá el número de DNI y el sexo registrado."
 DISTRITO_MESSAGE = "Ese distrito no está habilitado para la consulta del padrón."
 FALLBACK_MESSAGE = (
@@ -413,7 +414,11 @@ async def intercept(bot, client_id: Optional[str], user_text: str, ns: dict) -> 
             return _derivar(ns)
 
     if texto.lower() in PALABRAS_DE_CHAT or not CODIGO_RE.match(texto):
-        return {"message": NOT_A_CODE_MESSAGE, "widget": None}
+        # No es un código: es otra consulta (o un "hola", "gracias", "no se
+        # lee"). El verificador queda pendiente por si después lo escriben y el
+        # turno sigue al LLM — antes se contestaba siempre "escribí el código"
+        # y cualquier otro mensaje quedaba sin respuesta real.
+        return None
 
     if time.monotonic() - pending.get("fetched_at", 0) >= pending.get("ttl", 0):
         try:

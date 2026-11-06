@@ -85,24 +85,26 @@ async def test_intercept_sin_pendiente_no_interviene():
 
 
 @pytest.mark.asyncio
-async def test_intercept_repregunta_si_el_texto_no_es_codigo(monkeypatch):
+async def test_intercept_texto_que_no_es_codigo_cede_al_llm(monkeypatch):
+    """Con el verificador pendiente, una frase suelta sigue al LLM en vez de
+    recibir otra vez "escribí el código"; el token no se consume."""
     llamado = []
     monkeypatch.setattr(mod.padron_service, "consultar", lambda *a, **k: llamado.append(1))
     ns = {"pending": {"token": "t", "ttl": 300, "fetched_at": mod.time.monotonic(), "args": {}}}
     resultado = await mod.intercept(_Bot(), None, "hola, qué tal", ns)
-    assert resultado["message"]
+    assert resultado is None
     assert "pending" in ns
     assert llamado == []
 
 
 @pytest.mark.asyncio
-@pytest.mark.asyncio
 async def test_intercept_saludo_no_consume_el_token(monkeypatch):
+    """Un «hola» matchea el regex del código pero es un saludo: no va al POST."""
     llamado = []
     monkeypatch.setattr(mod.padron_service, "consultar", lambda *a, **k: llamado.append(1))
     ns = {"pending": _pending()}
     resultado = await mod.intercept(_Bot(), None, "hola", ns)
-    assert "código" in resultado["message"].lower()
+    assert resultado is None
     assert "pending" in ns
     assert llamado == []
 

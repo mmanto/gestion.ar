@@ -2388,8 +2388,10 @@ agente sólo podía derivar al vecino al sitio.
    Mientras el interceptor junta el DNI y el sexo (`ns["collect"]`), sólo se
    queda con los turnos que aportan alguno de esos datos (o cancelan): un
    mensaje que no aporta nada suelta la recolección y sigue al LLM, que puede
-   volver a pedirlos. Si no, el chat repite el mismo pedido en cada mensaje y
-   parece trabado.
+   volver a pedirlos. Con el verificador pendiente pasa lo mismo: sólo consume
+   el turno si el texto es un código (los saludos no gastan el token);
+   cualquier otra consulta sigue al LLM y el verificador queda pendiente. Si
+   no, el chat repite el mismo pedido en cada mensaje y parece trabado.
 3. **Reintento explícito.** Token vencido (300 s) o `401`/`403` → verificador
    nuevo; el usuario nunca ve un error de sesión. `404`/`409` cierran el flujo
    con un mensaje claro; si el sitio no responde, se deriva al enlace oficial.
