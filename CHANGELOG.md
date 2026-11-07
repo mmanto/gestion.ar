@@ -344,9 +344,11 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   (`devbout-docs/docs/design/DESIGN.md` §9.1) y se implementa con `FormGrid` +
   `Field` en `frontend/src/components/common/FormField.tsx`. El detalle del
   tenant suma un bloque **Datos generales** con la misma rejilla (nombre,
-  dominio, estado, plan y marca). Se actualiza
-  `@mmanto/devbout-ui` a `0.7.0`, así los formularios de entidad del paquete
-  (alta/edición de tenants y planes) usan la misma rejilla.
+  dominio, estado, plan y marca) y el detalle que abre la grilla
+  (`detail.surface`) usa `TenantSummary`, también con la rejilla canónica
+  (`DetailEntity` de `@mmanto/devbout-ui` 0.7.0 no aplica las variantes de
+  contenedor). Se mantiene `@mmanto/devbout-ui` 0.7.0: los tarballs de 0.7.1 y
+  0.7.2 no quedaron descargables en el registry.
 - **El backoffice de tenant escala la tipografía con la resolución.** Mientras
   hay un layout privado montado, `frontend-tenant` aplica
   `:root.backoffice { font-size: clamp(1rem, calc(100vw / 192 + 0.625rem), 1.25rem) }`:

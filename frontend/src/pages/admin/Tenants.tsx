@@ -13,6 +13,7 @@ import { AppLayout } from '../../components/layout/AppLayout';
 import { LoadingPage } from '../../components/common/Spinner';
 import { PageHeader } from '../../components/common/PageHeader';
 import { Alert } from '../../components/common/Alert';
+import { TenantSummary } from '../../components/tenants/TenantSummary';
 import tenantAdminService from '../../services/tenantAdmin.service';
 import type { Plan, Tenant, TenantStatus } from '../../types/tenant.types';
 
@@ -144,6 +145,7 @@ export const Tenants = () => {
       detail: {
         title: (tenant) => tenant.name,
         description: (tenant) => tenant.domain || 'sin dominio asignado',
+        surface: ({ row }) => <TenantSummary tenant={row} plans={plans} />,
       },
     });
 
