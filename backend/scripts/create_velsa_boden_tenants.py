@@ -316,7 +316,9 @@ async def ensure_tenant(spec: dict, api_key: str) -> None:
             TenantLLMConfigUpdate(
                 provider=LLM_PROVIDER, model=LLM_MODEL, api_key=api_key
             ),
-            updated_by="system",
+            # `tenant_llm_configs.updated_by` es FK a users.username: no
+            # existe un usuario de sistema, se firma con el admin del tenant.
+            updated_by=admin_username,
         )
 
         print("─" * 60)
