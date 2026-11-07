@@ -68,6 +68,15 @@ Fuente única: `frontend/src/index.css`. Para cambiar un color de la app se toca
 
 ---
 
+## Formularios
+
+- Rejilla canónica (canon del hub: `devbout-docs/docs/design/DESIGN.md` §9.1): `FormGrid` + `Field` en `frontend/src/components/common/FormField.tsx`, dentro de un contenedor `FORM_CLASSES` (`@container`).
+- 1 columna; 2 cuando el contenedor llega a 28rem (`@md`); 3 cuando llega a 42rem (`@2xl`). El reparto depende del ancho del contenedor (modal/drawer/página), no del viewport.
+- Los campos con `Textarea` ocupan 2 columnas; pasan a 3 cuando arrancan una fila y el siguiente campo también es multilínea (o no hay siguiente). No se agrupan en filas: se declaran en orden dentro de `FormGrid`.
+- Formularios legacy (bot y canal) usan las mismas clases de contenedor y el mismo ancho de `textarea`, sin `FormGrid`.
+
+---
+
 ## Paquete de UI compartido
 
 `frontend/` consume **`@mmanto/devbout-ui`** (npm, Apache-2.0) — el kit extraído de

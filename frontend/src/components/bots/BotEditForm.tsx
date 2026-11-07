@@ -236,12 +236,12 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
   const flowInactiveByJsonConfig = !!formData.config.ius_config;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="@container space-y-6">
       {/* Informacion Basica */}
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Informacion Basica</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 @md:grid-cols-2 @2xl:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1">
               Nombre *
@@ -276,7 +276,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
             )}
           </div>
 
-          <div className="md:col-span-2">
+          <div className="@md:col-span-2 @2xl:col-span-2">
             <label className="block text-sm font-medium text-gray-900 mb-1">
               Descripcion
             </label>
@@ -368,7 +368,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
           Configuracion del Modelo
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 @md:grid-cols-2 @2xl:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1">
               Max Tokens (1-4096)
@@ -474,7 +474,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Rate Limiting</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 @md:grid-cols-2 @2xl:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1">
               Limite de Mensajes
@@ -670,7 +670,7 @@ export const BotEditForm = ({ bot, onSave, onCancel, saving }: BotEditFormProps)
                         </button>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 @md:grid-cols-2 @2xl:grid-cols-3 gap-3">
                         <div>
                           <label className="block text-xs font-medium text-gray-800 mb-1">
                             Campo a capturar

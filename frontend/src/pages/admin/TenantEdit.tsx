@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/select';
-import { FORM_CLASSES, ROW_2, Field } from '../../components/common/FormField';
+import { FORM_CLASSES, FormGrid, Field } from '../../components/common/FormField';
 import tenantAdminService from '../../services/tenantAdmin.service';
 import type { Plan, Tenant, TenantStatus } from '../../types/tenant.types';
 
@@ -152,7 +152,7 @@ export const TenantEdit = () => {
         {error && <Alert variant="error">Error: {error}</Alert>}
 
         <form onSubmit={handleSubmit} className={FORM_CLASSES}>
-          <div className={ROW_2}>
+          <FormGrid>
             <Field label="Nombre" htmlFor="edit-tenant-name">
               <Input
                 id="edit-tenant-name"
@@ -175,9 +175,6 @@ export const TenantEdit = () => {
                 placeholder="ej. pachoteayuda.ar"
               />
             </Field>
-          </div>
-
-          <div className={ROW_2}>
             <Field label="Estado" htmlFor="edit-tenant-status">
               <Select
                 items={statusOptions}
@@ -210,9 +207,6 @@ export const TenantEdit = () => {
                 </SelectContent>
               </Select>
             </Field>
-          </div>
-
-          <div className={ROW_2}>
             <Field label="Logo horizontal">
               <AvatarPicker
                 value={logoH}
@@ -227,9 +221,6 @@ export const TenantEdit = () => {
                 fallbackLabel={tenant.name.charAt(0) || '?'}
               />
             </Field>
-          </div>
-
-          <div className={ROW_2}>
             <Field label="Color principal">
               <div className="flex h-7 items-center gap-2">
                 <input
@@ -250,7 +241,7 @@ export const TenantEdit = () => {
                 placeholder="Ej: Abogados de confianza"
               />
             </Field>
-          </div>
+          </FormGrid>
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => navigate('/admin/tenants')}>

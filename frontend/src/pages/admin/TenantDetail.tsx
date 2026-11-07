@@ -7,7 +7,7 @@ import { LoadingPage } from '../../components/common/Spinner';
 import { PageHeader } from '../../components/common/PageHeader';
 import { Alert } from '../../components/common/Alert';
 import { Button } from '../../components/common/Button';
-import { Field, FORM_CLASSES, ROW_2 } from '../../components/common/FormField';
+import { Field, FORM_CLASSES, FormGrid } from '../../components/common/FormField';
 import { useModules } from '../../modules/ModulesProvider';
 import type { ModuleManifest } from '../../modules/manifest';
 import { Input } from '../../components/ui/input';
@@ -517,8 +517,8 @@ export const TenantDetail = () => {
         <section className="grid gap-4">
           <h3 className={sectionTitle}>Módulos</h3>
           <div className={FORM_CLASSES}>
-            <div className={ROW_2}>
-              <Field label="Agregar módulo" htmlFor="tenant-module">
+            <FormGrid>
+              <Field label="Agregar módulo" htmlFor="tenant-module" wide>
                 <Select
                   items={grantableModules}
                   value=""
@@ -538,7 +538,7 @@ export const TenantDetail = () => {
                   </SelectContent>
                 </Select>
               </Field>
-            </div>
+            </FormGrid>
 
             <div className="grid gap-4">
               {grantedModules.length === 0 ? (
@@ -617,7 +617,7 @@ export const TenantDetail = () => {
           </DialogHeader>
 
           <form onSubmit={handleCreateUser} className={cn(FORM_CLASSES, 'overflow-y-auto')}>
-            <div className={ROW_2}>
+            <FormGrid>
               <Field label="Usuario" htmlFor="new-user-username">
                 <Input
                   id="new-user-username"
@@ -638,9 +638,6 @@ export const TenantDetail = () => {
                   autoComplete="new-password"
                 />
               </Field>
-            </div>
-
-            <div className={ROW_2}>
               <Field label="Email" htmlFor="new-user-email">
                 <Input
                   id="new-user-email"
@@ -669,9 +666,6 @@ export const TenantDetail = () => {
                   </SelectContent>
                 </Select>
               </Field>
-            </div>
-
-            <div className={ROW_2}>
               <Field label="Nombre" htmlFor="new-user-nombre">
                 <Input
                   id="new-user-nombre"
@@ -686,8 +680,6 @@ export const TenantDetail = () => {
                   onChange={(e) => setNewUser({ ...newUser, apellido: e.target.value })}
                 />
               </Field>
-            </div>
-
             <Field label="Avatar">
               <AvatarPicker
                 value={newUser.avatar_url}
@@ -695,6 +687,7 @@ export const TenantDetail = () => {
                 fallbackLabel={newUser.nombre || newUser.username}
               />
             </Field>
+            </FormGrid>
 
             <DialogFooter className="flex-row justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setShowUserModal(false)}>
@@ -718,7 +711,7 @@ export const TenantDetail = () => {
           </DialogHeader>
 
           <form onSubmit={handleSaveEdit} className={cn(FORM_CLASSES, 'overflow-y-auto')}>
-            <div className={ROW_2}>
+            <FormGrid>
               <Field label="Email" htmlFor="edit-user-email">
                 <Input
                   id="edit-user-email"
@@ -747,9 +740,6 @@ export const TenantDetail = () => {
                   </SelectContent>
                 </Select>
               </Field>
-            </div>
-
-            <div className={ROW_2}>
               <Field label="Nombre" htmlFor="edit-user-nombre">
                 <Input
                   id="edit-user-nombre"
@@ -764,8 +754,6 @@ export const TenantDetail = () => {
                   onChange={(e) => setEditForm({ ...editForm, apellido: e.target.value })}
                 />
               </Field>
-            </div>
-
             <Field label="Avatar">
               <AvatarPicker
                 value={editForm.avatar_url}
@@ -773,6 +761,7 @@ export const TenantDetail = () => {
                 fallbackLabel={editForm.nombre || editingUser?.username || ''}
               />
             </Field>
+            </FormGrid>
 
             <DialogFooter className="flex-row justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setEditingUser(null)}>

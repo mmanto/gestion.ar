@@ -335,6 +335,14 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   con la instrucción de la tool y las 3 decisiones de calificación.
 
 ### Cambiado
+- **Los formularios del admin usan una rejilla canónica de 3 columnas.** El
+  detalle/edición del tenant y los diálogos de usuario de su detalle, más los
+  formularios de agente y canal, reparten los campos en una sola rejilla: 1
+  columna por defecto, 2 desde 28rem de contenedor (`@md`) y 3 desde 42rem
+  (`@2xl`). Los campos multilínea (`Textarea`) ocupan 2 columnas y pasan a 3
+  cuando quedan solos en su fila. La regla queda documentada como canon visual
+  (`devbout-docs/docs/design/DESIGN.md` §9.1) y se implementa con `FormGrid` +
+  `Field` en `frontend/src/components/common/FormField.tsx`.
 - **El backoffice de tenant escala la tipografía con la resolución.** Mientras
   hay un layout privado montado, `frontend-tenant` aplica
   `:root.backoffice { font-size: clamp(1rem, calc(100vw / 192 + 0.625rem), 1.25rem) }`:

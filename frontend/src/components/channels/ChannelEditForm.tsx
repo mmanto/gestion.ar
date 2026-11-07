@@ -178,12 +178,12 @@ export const ChannelEditForm = ({ channel, tenantUsers, onSave, onCancel, saving
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="@container space-y-6">
       {/* Informacion Basica */}
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Informacion Basica</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 @md:grid-cols-2 @2xl:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1">
               Nombre *
@@ -243,7 +243,7 @@ export const ChannelEditForm = ({ channel, tenantUsers, onSave, onCancel, saving
             </p>
           </div>
 
-          <div className="md:col-span-2">
+          <div className="@md:col-span-2 @2xl:col-span-2">
             <label className="block text-sm font-medium text-gray-900 mb-1">
               Webhook URL
             </label>
