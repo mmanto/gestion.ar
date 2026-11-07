@@ -335,6 +335,13 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   con la instrucción de la tool y las 3 decisiones de calificación.
 
 ### Cambiado
+- **La pantalla de edición del tenant absorbe la gestión de usuarios, módulos y agente**
+  (`frontend/src/pages/admin/TenantEdit.tsx`). Se elimina la acción «Gestionar usuarios y
+  módulos» del menú de fila de Tenants y la pantalla de detalle
+  (`/admin/tenants/:id`, `TenantDetail.tsx`): `/admin/tenants/:id/editar` ahora reúne datos
+  generales y marca, agente asignado, grilla de usuarios y módulos otorgados, más la zona
+  de peligro. Guardar los datos ya no abandona la pantalla: refresca el tenant y muestra un
+  toast; las mutaciones de usuarios/módulos recargan sólo su sección.
 - **Los formularios del admin usan una rejilla canónica de 3 columnas.** El
   detalle/edición del tenant y los diálogos de usuario de su detalle, más los
   formularios de agente y canal, reparten los campos en una sola rejilla: 1

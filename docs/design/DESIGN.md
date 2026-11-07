@@ -50,7 +50,7 @@ Fuente única: `frontend/src/index.css`. Para cambiar un color de la app se toca
 - Claro/oscuro: `frontend/src/context/ThemeContext.tsx` + `frontend/src/lib/colorScheme.ts` (clase `.dark` y `color-scheme` en `<html>`, `localStorage['gestionar-theme']`, atajo de teclado `d`).
 - Ambos se aplican antes del primer render: `bootstrapThemePreset()` y `bootstrapColorScheme()` se llaman en `frontend/src/main.tsx`.
 - El tema es **global**: los tokens viven en `:root`/`.dark`, así que afectan a los dos templates y a las páginas públicas.
-- Límite conocido: varias páginas del admin todavía usan utilidades grises (`text-gray-900`, `bg-white`, `border-gray-300`) heredadas; en modo oscuro ese texto queda por debajo del contraste legible. Migrarlas a tokens está pendiente. Ya migradas: `pages/Settings.tsx` (cuenta + vistas de entidad + Apariencia) y `pages/admin/TenantDetail.tsx` («Gestionar usuarios y módulos») — tokens en toda la pantalla y, para los formularios, la misma receta que los formularios de entidad del paquete (`Dialog` + `Input`/`Select` con label `text-xs font-medium` arriba y pie cancelar/enviar a la derecha).
+- Límite conocido: varias páginas del admin todavía usan utilidades grises (`text-gray-900`, `bg-white`, `border-gray-300`) heredadas; en modo oscuro ese texto queda por debajo del contraste legible. Migrarlas a tokens está pendiente. Ya migradas: `pages/Settings.tsx` (cuenta + vistas de entidad + Apariencia) y `pages/admin/TenantEdit.tsx` (datos y marca, usuarios, módulos, agente y zona de peligro) — tokens en toda la pantalla y, para los formularios, la misma receta que los formularios de entidad del paquete (`Dialog` + `Input`/`Select` con label `text-xs font-medium` arriba y pie cancelar/enviar a la derecha).
 
 ---
 
@@ -125,29 +125,29 @@ Contrato de consumo (el detalle completo está en el README del paquete):
 La entidad tenant (`frontend/src/pages/admin/Tenants.tsx`) es la implementación de
 referencia: un `defineEntity` con los campos (nombre, dominio, estado con badge,
 plan) resuelve alta, edición y detalle de una sola declaración, `onSubmit` contra
-`POST`/`PATCH /api/admin/tenants` + refetch silencioso, `selectable: false` y una
-`rowAction` «Gestionar usuarios y módulos» a `/admin/tenants/:id`.
+`POST`/`PATCH /api/admin/tenants` + refetch silencioso y `selectable: false`. La
+edición (`edit.href`) apunta a la pantalla propia del tenant; el menú de la fila no
+tiene acciones extra.
 
 Los formularios que necesitan controles que el schema del paquete no cubre usan la misma
 receta a mano (`frontend/src/components/common/FormField.tsx`: `FORM_CLASSES` + `ROW_2` +
 `Field`, espejo de `ROW_CLASSES`/`FieldControl`): los campos van en **filas de dos** —tres
 si son cortos (`select`/`color`/fecha)— dentro de un `@container`, no en una columna.
 
-- `frontend/src/pages/admin/TenantDetail.tsx` («Gestionar usuarios y módulos»): la entidad
-  del tenant no se edita acá. La pantalla es la **grilla de usuarios** (el `DataTable` del
-  paquete, con buscador, columnas y menú de acciones de fila — *sin* `entity`: el alta y la
-  edición siguen en `Dialog` propios porque el schema no renderiza el `AvatarPicker` ni un
-  campo de contraseña, y el botón de alta va en el toolbar del `DataTable`
-  (`toolbarActions`), al lado del buscador), el **selector de módulos del tenant** y la
-  **zona de peligro** (oculta hasta que se pide verla), todo en tokens y sin tarjetas
-  contenedoras.
-- `frontend/src/pages/admin/TenantEdit.tsx` (`/admin/tenants/:id/editar`): edición del
-  tenant (nombre, dominio, estado, plan) **y su marca** (logos, color, tagline). Es la
-  superficie de edición de la entidad vía `edit.href`, en lugar del formulario del paquete,
-  porque el `AvatarPicker` de los logos no es uno de sus `kind`; el alta sí usa el
-  formulario del paquete (la marca se carga después de crear el tenant). Tradeoff: esa
-  edición es siempre pantalla completa — no sigue la preferencia de Ajustes › Vistas de
-  entidad (para eso el paquete necesitaría un `edit.surface`, como `detail.surface`).
+- `frontend/src/pages/admin/TenantEdit.tsx` (`/admin/tenants/:id/editar`): pantalla única
+  del tenant. Edita datos generales (nombre, dominio, estado, plan) **y su marca** (logos,
+  color, tagline) y debajo muestra el **agente** asignado, la **grilla de usuarios** (el
+  `DataTable` del paquete, con buscador, columnas y menú de acciones de fila — *sin*
+  `entity`: el alta y la edición siguen en `Dialog` propios porque el schema no renderiza
+  el `AvatarPicker` ni un campo de contraseña, y el botón de alta va en el toolbar del
+  `DataTable` (`toolbarActions`), al lado del buscador), el **selector de módulos del
+  tenant** y la **zona de peligro** (oculta hasta que se pide verla), todo en tokens y sin
+  tarjetas contenedoras. Es la superficie de edición de la entidad vía `edit.href`, en
+  lugar del formulario del paquete, porque el `AvatarPicker` de los logos no es uno de sus
+  `kind`; el alta sí usa el formulario del paquete (la marca se carga después de crear el
+  tenant). Tradeoff: esa edición es siempre pantalla completa — no sigue la preferencia de
+  Ajustes › Vistas de entidad (para eso el paquete necesitaría un `edit.surface`, como
+  `detail.surface`).
 
 ## Templates del admin
 

@@ -17,8 +17,7 @@
 | Knowledge Base | `/knowledge-base` | Gestión de documentos RAG |
 | Chat Web | `/chat/:botId` | Chat público embebible para canal web |
 | Chat Canal | `/chat/c/:channelId` | Chat público de un canal específico |
-| Editar tenant | `/admin/tenants/:id/editar` | Datos generales del tenant (nombre, dominio, estado, plan) y su marca (logos, color, tagline). Solo `super_admin` |
-| Detalle de tenant | `/admin/tenants/:id` | Usuarios, módulos otorgados y agente del tenant. Si tiene un agente asignado, muestra nombre/estado y enlaza a su configuración (`/bots/:id`). Solo `super_admin` |
+| Editar tenant | `/admin/tenants/:id/editar` | Pantalla única de administración del tenant: datos generales (nombre, dominio, estado, plan) y marca (logos, color, tagline), agente asignado (nombre/estado y enlace a `/bots/:id`), grilla de usuarios y módulos otorgados, más zona de peligro. Solo `super_admin` |
 | Planes | `/admin/plans` | Grilla (`DataTable`) de planes con buscador, columnas y paginación; alta/edición por `defineEntity` (nombre, descripción, monto, periodicidad) y borrado con confirmación. Solo `super_admin` |
 
 **Frontend de tenant (`frontend-tenant/`, un panel por tenant):**

@@ -199,15 +199,8 @@ export const Tenants = () => {
           ),
         },
       ],
-      rowActions: [
-        {
-          id: 'manage',
-          label: 'Gestionar usuarios y módulos',
-          run: (tenant) => navigate(`/admin/tenants/${tenant.tenant_id}`),
-        },
-      ],
     });
-  }, [plans, fetchTenants, navigate]);
+  }, [plans, fetchTenants]);
 
   if (loading) {
     return <LoadingPage />;

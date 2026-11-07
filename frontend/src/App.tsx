@@ -21,7 +21,6 @@ import { ModulesProvider, useModulesState } from './modules/ModulesProvider';
 import { ModuleGate } from './modules/ModuleGate';
 import { moduleRoutes } from './modules/registry';
 import { Tenants } from './pages/admin/Tenants';
-import { TenantDetail } from './pages/admin/TenantDetail';
 import { TenantEdit } from './pages/admin/TenantEdit';
 import { Plans } from './pages/admin/Plans';
 import { Settings } from './pages/Settings';
@@ -71,14 +70,6 @@ function AppRoutes() {
                       element={
                         <ProtectedRoute roles={['super_admin']}>
                           <Tenants />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/admin/tenants/:tenantId"
-                      element={
-                        <ProtectedRoute roles={['super_admin']}>
-                          <TenantDetail />
                         </ProtectedRoute>
                       }
                     />
