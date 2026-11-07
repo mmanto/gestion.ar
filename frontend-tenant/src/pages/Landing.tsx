@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTenant } from '../hooks/useTenant';
 import { resolveAssetUrl } from '../utils/assetUrl';
+import { ChatInterface } from '../components/chat/ChatInterface';
 
 /**
  * Landing pública de este tenant — cada contenedor de frontend-tenant sirve a
@@ -30,6 +31,32 @@ export const Landing: React.FC = () => {
   }
 
   const primaryColor = tenant.branding.primary_color || '#25357a';
+
+  // Landing chat-only (tenant.settings.chat_channel_id): sin bloque de marca
+  // ni marketing — sólo el chat del agente y el acceso al backoffice.
+  const chatChannelId =
+    typeof tenant.settings?.chat_channel_id === 'string'
+      ? tenant.settings.chat_channel_id
+      : null;
+
+  if (chatChannelId) {
+    return (
+      <div className="h-screen flex flex-col bg-white">
+        <header className="flex items-center justify-end border-b border-gray-200 px-4 py-2">
+          <Link
+            to="/login"
+            className="text-sm font-medium hover:underline"
+            style={{ color: primaryColor }}
+          >
+            Ingresar al backoffice
+          </Link>
+        </header>
+        <div className="flex-1 min-h-0">
+          <ChatInterface channelId={chatChannelId} className="h-full" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-white">

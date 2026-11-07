@@ -37,6 +37,8 @@ export interface TenantPublicInfo {
   settings?: {
     stats_two_cols_mobile?: boolean;
     free_signup?: boolean;
+    /** Si existe, la landing muestra ese canal de chat en vez del bloque de marca. */
+    chat_channel_id?: string;
     /** Pantalla de inicio por rol (p. ej. `{ operativo: "/reclamos" }`). */
     home_paths?: Record<string, string>;
   };

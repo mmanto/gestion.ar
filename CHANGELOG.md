@@ -7,6 +7,18 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **Landing chat-only por tenant** (`tenant.settings.chat_channel_id`). Si el
+  tenant declara el ID de un canal web, la landing pública del dominio muestra
+  únicamente el chat de ese canal y un enlace «Ingresar al backoffice», sin
+  bloque de marca ni tagline. Sin ese setting la landing actual no cambia
+  (`frontend-tenant/src/pages/Landing.tsx`, `ChatInterface` acepta
+  `className`). El `ChatHeader` ya no cae al logo de IUS cuando el tenant no
+  tiene logo: muestra la inicial del nombre sobre el color primario. Alta de
+  los tenants demo productivos VELSA (`velsa.intellify.pro`) y BÖDEN SEED
+  (`boden.intellify.pro`) con `backend/scripts/create_velsa_boden_tenants.py`
+  (idempotente: tenant, admin, bot con prompt de venta, canal web y
+  `tenant_llm_configs` OpenRouter) y sus routers en
+  `docker-compose.tenants.prod.yml`.
 - **Consulta del padrón electoral en el chat web, con verificador resuelto por
   el vecino** (módulo `padron`, ADR-039). El agente consulta
   `padron.gob.ar` (Justicia Nacional Electoral) cuando preguntan dónde votan:

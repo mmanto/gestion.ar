@@ -116,6 +116,22 @@ services:
       - "traefik.http.routers.tenant-openpadel.service=tenant-openpadel"
       - "traefik.http.services.tenant-openpadel.loadbalancer.server.port=80"
 
+      # ── velsa ───────────────────────────────────────────────────────────
+      - "traefik.http.routers.tenant-velsa.rule=Host(`velsa.intellify.pro`)"
+      - "traefik.http.routers.tenant-velsa.entrypoints=websecure"
+      - "traefik.http.routers.tenant-velsa.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.tenant-velsa.priority=1"
+      - "traefik.http.routers.tenant-velsa.service=tenant-velsa"
+      - "traefik.http.services.tenant-velsa.loadbalancer.server.port=80"
+
+      # ── boden ───────────────────────────────────────────────────────────
+      - "traefik.http.routers.tenant-boden.rule=Host(`boden.intellify.pro`)"
+      - "traefik.http.routers.tenant-boden.entrypoints=websecure"
+      - "traefik.http.routers.tenant-boden.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.tenant-boden.priority=1"
+      - "traefik.http.routers.tenant-boden.service=tenant-boden"
+      - "traefik.http.services.tenant-boden.loadbalancer.server.port=80"
+
   # Un único contenedor sirve todas las landings: el sitio se elige por Host
   # (map $http_host $landing_root en sites/nginx.conf). Cada router de Traefik
   # de abajo matchea "/", las páginas .html y los assets propios de ESA landing

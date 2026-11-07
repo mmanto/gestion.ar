@@ -2,7 +2,6 @@ import { useTenant } from '../../hooks/useTenant';
 import { resolveAssetUrl } from '../../utils/assetUrl';
 
 const FALLBACK_COLOR = '#25357a';
-const FALLBACK_LOGO = '/img/logo_vertical_ius.svg';
 
 interface ChatHeaderProps {
   isConnected: boolean;
@@ -34,7 +33,13 @@ export function ChatHeader({ isConnected }: ChatHeaderProps) {
           contenedor solo queda visible detrás de logos con transparencia;
           para imágenes opacas (foto-avatar) no se ve ningún borde. */}
       <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center shrink-0 overflow-hidden">
-        <img src={logo || FALLBACK_LOGO} alt={tenantName} className="w-9 h-9 rounded-full object-cover" />
+        {logo ? (
+          <img src={logo} alt={tenantName} className="w-9 h-9 rounded-full object-cover" />
+        ) : (
+          <span className="text-sm font-semibold" style={{ color: primaryColor }}>
+            {tenantName.charAt(0).toUpperCase()}
+          </span>
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm truncate">{tenantName}</p>

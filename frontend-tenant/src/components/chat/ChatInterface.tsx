@@ -14,9 +14,13 @@ interface ChatInterfaceProps {
    * sesión nueva → el flujo vuelve a pedir los datos del paciente/ciudadano).
    * Ver BotConfig.blank_chat_on_load. */
   blankOnLoad?: boolean;
+  /** Clases del contenedor raíz; por defecto `h-screen` (chat a pantalla
+   * completa). La landing chat-only pasa `h-full` porque el alto lo fija su
+   * contenedor flex. */
+  className?: string;
 }
 
-export function ChatInterface({ botId, channelId, blankOnLoad = false }: ChatInterfaceProps) {
+export function ChatInterface({ botId, channelId, blankOnLoad = false, className }: ChatInterfaceProps) {
   const id = channelId ?? botId ?? '';
   const mode = channelId ? 'channel' : 'bot';
   const { messages, isConnected, isTyping, error, sendMessage } =
@@ -29,7 +33,7 @@ export function ChatInterface({ botId, channelId, blankOnLoad = false }: ChatInt
   }, [messages, isTyping]);
 
   return (
-    <div className="flex flex-col h-screen max-w-2xl mx-auto w-full bg-white shadow-xl">
+    <div className={`flex flex-col max-w-2xl mx-auto w-full bg-white shadow-xl ${className ?? 'h-screen'}`}>
       <ChatHeader isConnected={isConnected} />
 
       {/* Error banner */}
