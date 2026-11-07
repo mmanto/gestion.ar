@@ -335,13 +335,26 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   con la instrucción de la tool y las 3 decisiones de calificación.
 
 ### Cambiado
-- **La pantalla de edición del tenant absorbe la gestión de usuarios, módulos y agente**
+- **La pantalla de edición del tenant absorbe la gestión de usuarios y agente**
   (`frontend/src/pages/admin/TenantEdit.tsx`). Se elimina la acción «Gestionar usuarios y
   módulos» del menú de fila de Tenants y la pantalla de detalle
   (`/admin/tenants/:id`, `TenantDetail.tsx`): `/admin/tenants/:id/editar` ahora reúne datos
-  generales y marca, agente asignado, grilla de usuarios y módulos otorgados, más la zona
-  de peligro. Guardar los datos ya no abandona la pantalla: refresca el tenant y muestra un
-  toast; las mutaciones de usuarios/módulos recargan sólo su sección.
+  generales y marca, agente asignado, grilla de usuarios y zona de peligro. El bloque de
+  módulos del tenant se quita de la pantalla: los módulos se administran en el agente.
+  Guardar los datos ya no abandona la pantalla: refresca el tenant y muestra un toast; las
+  mutaciones de usuarios recargan sólo esa grilla.
+- **Los agentes del tenant pasan a una grilla canónica con alta desde la misma pantalla**
+  (`TenantEdit.tsx`). El bloque de tarjetas se reemplaza por un `DataTable`
+  (`defineTableDTO`, como usuarios y tenants) con columnas Agente / Estado / Tipo de
+  negocio, buscador, paginación y acción «Abrir configuración». El toolbar suma «Nuevo
+  agente» (`Dialog` con nombre, tipo de negocio, descripción y módulos iniciales); el
+  tenant queda fijado por la pantalla y el alta se puede repetir para sumar varios agentes.
+- **Reordenamiento del formulario de datos generales del tenant**
+  (`TenantEdit.tsx`, `FormField.tsx`). Tagline pasa a la fila de Plan (ocupa las dos
+  columnas libres a su derecha) y logos + color principal quedan juntos en la última fila,
+  dentro de un bloque con `bg-primary/5` (tinte tenue del primario). `Field` gana
+  `reserveHint` —reserva dos líneas de ayuda— y `content-start`, para que los campos de una
+  fila queden alineados aunque uno tenga ayuda de varias líneas.
 - **Los formularios del admin usan una rejilla canónica de 3 columnas.** El
   detalle/edición del tenant y los diálogos de usuario de su detalle, más los
   formularios de agente y canal, reparten los campos en una sola rejilla: 1

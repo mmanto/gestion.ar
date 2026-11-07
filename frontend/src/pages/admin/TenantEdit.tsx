@@ -9,6 +9,7 @@ import { Alert } from '../../components/common/Alert';
 import { Button } from '../../components/common/Button';
 import { AvatarPicker } from '../../components/common/AvatarPicker';
 import { Input } from '../../components/ui/input';
+import { Textarea } from '../../components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -35,13 +36,11 @@ import {
 import { cn } from '../../lib/utils';
 import tenantAdminService from '../../services/tenantAdmin.service';
 import botsService from '../../services/bots.service';
-import { useModules } from '../../modules/ModulesProvider';
 import { useToast } from '../../hooks/useToast';
-import type { ModuleManifest } from '../../modules/manifest';
 import type {
+  ModuleInfo,
   Plan,
   Tenant,
-  TenantModuleInfo,
   TenantStatus,
   TenantUser,
   TenantUserRole,
@@ -83,6 +82,8 @@ const roleOptions: { value: TenantUserRole; label: string }[] = [
   { value: 'broker', label: 'Broker' },
 ];
 
+const emptyBotForm = { name: '', business_type: '', description: '' };
+
 const emptyUserForm = {
   username: '',
   password: '',
@@ -102,8 +103,9 @@ const sectionTitle = 'font-heading heading-section font-medium text-foreground';
 
 /**
  * Pantalla única de administración de un tenant (`/admin/tenants/:id/editar`):
- * datos generales y marca, agente asignado, usuarios y módulos otorgados, más
- * la zona de peligro. Es la superficie de edición de la entidad (`edit.href` en
+ * datos generales y marca, agente asignado y usuarios, más la zona de peligro.
+ * Los módulos se administran en el agente, no acá. Es la superficie de edición
+ * de la entidad (`edit.href` en
  * `Tenants.tsx`) y absorbe la que antes era la pantalla de detalle
  * («Gestionar usuarios y módulos»), ya que el schema del paquete no puede
  * renderizar el uploader de los logos. El alta sigue usando el formulario del
@@ -113,18 +115,15 @@ export const TenantEdit = () => {
   const { tenantId } = useParams<{ tenantId: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const moduleManifests = useModules();
 
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [users, setUsers] = useState<TenantUser[]>([]);
   const [bots, setBots] = useState<Bot[]>([]);
-  const [tenantModules, setTenantModules] = useState<TenantModuleInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [modulesUpdating, setModulesUpdating] = useState<string | null>(null);
   // La zona de peligro arranca oculta: se muestra sólo si el admin la pide.
   const [showDanger, setShowDanger] = useState(false);
 
@@ -137,6 +136,12 @@ export const TenantEdit = () => {
   const [logoV, setLogoV] = useState<string | undefined>();
   const [color, setColor] = useState('#25357a');
   const [tagline, setTagline] = useState('');
+
+  const [showBotModal, setShowBotModal] = useState(false);
+  const [creatingBot, setCreatingBot] = useState(false);
+  const [newBot, setNewBot] = useState(emptyBotForm);
+  const [botModules, setBotModules] = useState<ModuleInfo[]>([]);
+  const [selectedBotModules, setSelectedBotModules] = useState<string[]>([]);
 
   const [showUserModal, setShowUserModal] = useState(false);
   const [creatingUser, setCreatingUser] = useState(false);
@@ -175,18 +180,21 @@ export const TenantEdit = () => {
     if (!tenantId) return;
     try {
       setLoading(true);
-      const [tenantData, plansData, usersData, botsData, modulesData] = await Promise.all([
+      const [tenantData, plansData, usersData, botsData] = await Promise.all([
         tenantAdminService.getTenant(tenantId),
         tenantAdminService.listPlans(),
         tenantAdminService.listUsers(tenantId, 1, 100),
         botsService.getBots({ tenant_id: tenantId, limit: 100 }),
-        tenantAdminService.getTenantModules(tenantId),
       ]);
       applyTenant(tenantData);
       setPlans(plansData);
       setUsers(usersData.users);
       setBots(botsData.bots);
-      setTenantModules(modulesData);
+      // Catálogo para el alta de agentes: si falla, la pantalla sigue usable.
+      tenantAdminService
+        .listModules()
+        .then(setBotModules)
+        .catch(() => {});
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error cargando el tenant');
     } finally {
@@ -204,10 +212,41 @@ export const TenantEdit = () => {
     setUsers(usersData.users);
   }, [tenantId]);
 
-  const reloadModules = useCallback(async () => {
+  const reloadBots = useCallback(async () => {
     if (!tenantId) return;
-    setTenantModules(await tenantAdminService.getTenantModules(tenantId));
+    const botsData = await botsService.getBots({ tenant_id: tenantId, limit: 100 });
+    setBots(botsData.bots);
   }, [tenantId]);
+
+  const toggleBotModule = (moduleKey: string) => {
+    setSelectedBotModules((prev) =>
+      prev.includes(moduleKey) ? prev.filter((key) => key !== moduleKey) : [...prev, moduleKey],
+    );
+  };
+
+  const handleCreateBot = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!tenantId || !newBot.name.trim() || !newBot.business_type.trim()) return;
+    try {
+      setCreatingBot(true);
+      await botsService.createBot({
+        tenant_id: tenantId,
+        name: newBot.name.trim(),
+        business_type: newBot.business_type.trim(),
+        description: newBot.description.trim() || undefined,
+        module_keys: selectedBotModules,
+      });
+      setShowBotModal(false);
+      setNewBot(emptyBotForm);
+      setSelectedBotModules([]);
+      await reloadBots();
+      showToast('Agente creado', 'success');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo crear el agente');
+    } finally {
+      setCreatingBot(false);
+    }
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -350,37 +389,6 @@ export const TenantEdit = () => {
     [reloadUsers],
   );
 
-  // Módulos del tenant (no por bot): `granted` es lo que administración general
-  // otorga; un módulo sin pantallas propias sólo funciona a través del chat, así
-  // que un tenant sin agente no lo puede usar todavía.
-  const handleGrantTenantModule = useCallback(
-    async (moduleKey: string) => {
-      if (!tenantId || !moduleKey) return;
-      setModulesUpdating(moduleKey);
-      try {
-        await tenantAdminService.grantTenantModule(tenantId, moduleKey);
-        await reloadModules();
-      } finally {
-        setModulesUpdating(null);
-      }
-    },
-    [tenantId, reloadModules],
-  );
-
-  const handleRevokeTenantModule = useCallback(
-    async (moduleKey: string) => {
-      if (!tenantId) return;
-      setModulesUpdating(moduleKey);
-      try {
-        await tenantAdminService.revokeTenantModule(tenantId, moduleKey);
-        await reloadModules();
-      } finally {
-        setModulesUpdating(null);
-      }
-    },
-    [tenantId, reloadModules],
-  );
-
   // Alta de usuario: el botón lo renderiza el toolbar del `DataTable`
   // (`toolbarActions`) con la misma primitiva y forma que el alta de entidad,
   // así ambas grillas heredan el mismo toolbar. El formulario sigue en un
@@ -520,26 +528,87 @@ export const TenantEdit = () => {
     [plans, handleApproveUserPlan, handleDeleteUser, handleToggleDisabled, openEditUser, toolbarButton],
   );
 
-  const modulesByKey = useMemo(() => {
-    const map: Record<string, ModuleManifest> = {};
-    for (const manifest of moduleManifests) map[manifest.module_key] = manifest;
-    return map;
-  }, [moduleManifests]);
-
-  const grantableModules = useMemo(
-    () =>
-      tenantModules
-        .filter((module) => !module.granted)
-        .map((module) => ({
-          value: module.module_key,
-          label: module.module_name || module.module_key,
-        })),
-    [tenantModules],
+  // Alta de agentes: mismo patrón que la grilla de usuarios. El tenant está
+  // fijado por la pantalla; el alta se puede repetir para sumar más agentes.
+  const botToolbarButton = useMemo(
+    () => (
+      <UiButton onClick={() => setShowBotModal(true)}>
+        <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} />
+        Nuevo agente
+      </UiButton>
+    ),
+    [],
   );
 
-  const grantedModules = useMemo(
-    () => tenantModules.filter((module) => module.granted),
-    [tenantModules],
+  const botsDto = useMemo<TableDTO<Bot>>(
+    () =>
+      defineTableDTO<Bot>({
+        toolbarActions: botToolbarButton,
+        header: (rows) => (
+          <h3 className={sectionTitle}>Agentes ({rows.length})</h3>
+        ),
+        selectable: false,
+        onDataChange: setBots,
+        search: { columnId: 'name', placeholder: 'Buscar agente' },
+        columnLabels: {
+          name: 'Agente',
+          status: 'Estado',
+          business_type: 'Tipo de negocio',
+        },
+        labels: {
+          searchAction: 'Buscar',
+          rowsPerPage: 'Filas por página',
+          columns: 'Columnas',
+          noResults: 'Sin agentes todavía.',
+          previous: 'Anterior',
+          next: 'Siguiente',
+          openRowMenu: 'Abrir acciones de la fila',
+        },
+        columns: [
+          {
+            id: 'name',
+            accessorKey: 'name',
+            header: 'Agente',
+            cell: ({ row }) => (
+              <div className="grid">
+                <Link
+                  to={`/bots/${row.original.bot_id}`}
+                  className="font-medium text-foreground hover:underline"
+                >
+                  {row.original.name}
+                </Link>
+                {row.original.description && (
+                  <span className="text-xs text-muted-foreground">
+                    {row.original.description}
+                  </span>
+                )}
+              </div>
+            ),
+          },
+          {
+            id: 'status',
+            header: 'Estado',
+            cell: ({ row }) => (
+              <Badge variant={botStatusVariants[row.original.status]}>
+                {botStatusLabels[row.original.status]}
+              </Badge>
+            ),
+          },
+          {
+            id: 'business_type',
+            accessorKey: 'business_type',
+            header: 'Tipo de negocio',
+          },
+        ],
+        rowActions: [
+          {
+            id: 'open',
+            label: 'Abrir configuración',
+            run: (bot) => navigate(`/bots/${bot.bot_id}`),
+          },
+        ],
+      }),
+    [navigate, botToolbarButton],
   );
 
   if (loading) return <LoadingPage />;
@@ -572,7 +641,7 @@ export const TenantEdit = () => {
 
         <PageHeader
           title={`Editar ${tenant.name}`}
-          description="Datos generales y marca, agente, usuarios y módulos del tenant"
+          description="Datos generales y marca, agente y usuarios del tenant"
         />
 
         {error && <Alert variant="error">Error: {error}</Alert>}
@@ -581,7 +650,7 @@ export const TenantEdit = () => {
         <form onSubmit={handleSubmit} className={FORM_CLASSES}>
           <h3 className={sectionTitle}>Datos generales y marca</h3>
           <FormGrid>
-            <Field label="Nombre" htmlFor="edit-tenant-name">
+            <Field label="Nombre" htmlFor="edit-tenant-name" reserveHint>
               <Input
                 id="edit-tenant-name"
                 value={name}
@@ -595,6 +664,7 @@ export const TenantEdit = () => {
               label="Dominio propio"
               htmlFor="edit-tenant-domain"
               hint="Dominio propio del tenant (ej. pachoteayuda.ar) — no un subdominio de intellify.pro."
+              reserveHint
             >
               <Input
                 id="edit-tenant-domain"
@@ -603,7 +673,7 @@ export const TenantEdit = () => {
                 placeholder="ej. pachoteayuda.ar"
               />
             </Field>
-            <Field label="Estado" htmlFor="edit-tenant-status">
+            <Field label="Estado" htmlFor="edit-tenant-status" reserveHint>
               <Select
                 items={statusOptions}
                 value={status}
@@ -635,32 +705,9 @@ export const TenantEdit = () => {
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Logo horizontal">
-              <AvatarPicker
-                value={logoH}
-                onChange={setLogoH}
-                fallbackLabel={tenant.name.charAt(0) || '?'}
-              />
-            </Field>
-            <Field label="Logo vertical">
-              <AvatarPicker
-                value={logoV}
-                onChange={setLogoV}
-                fallbackLabel={tenant.name.charAt(0) || '?'}
-              />
-            </Field>
-            <Field label="Color principal">
-              <div className="flex h-7 items-center gap-2">
-                <input
-                  type="color"
-                  value={color}
-                  onChange={(e) => setColor(e.target.value)}
-                  className="h-7 w-10 cursor-pointer rounded-sm border border-input p-0.5"
-                />
-                <span className="font-mono text-xs text-muted-foreground">{color}</span>
-              </div>
-            </Field>
-            <Field label="Tagline" htmlFor="edit-tenant-tagline">
+            {/* `wide`: ocupa las dos columnas libres a la derecha de Plan, así
+                los logos y el color quedan juntos en la última fila. */}
+            <Field label="Tagline" htmlFor="edit-tenant-tagline" wide>
               <Input
                 id="edit-tenant-tagline"
                 value={tagline}
@@ -670,6 +717,37 @@ export const TenantEdit = () => {
               />
             </Field>
           </FormGrid>
+
+          {/* Identidad visual: última fila, con un tinte muy tenue del primario. */}
+          <div className="rounded-xl bg-primary/5 p-4">
+            <FormGrid>
+              <Field label="Logo horizontal">
+                <AvatarPicker
+                  value={logoH}
+                  onChange={setLogoH}
+                  fallbackLabel={tenant.name.charAt(0) || '?'}
+                />
+              </Field>
+              <Field label="Logo vertical">
+                <AvatarPicker
+                  value={logoV}
+                  onChange={setLogoV}
+                  fallbackLabel={tenant.name.charAt(0) || '?'}
+                />
+              </Field>
+              <Field label="Color principal">
+                <div className="flex h-7 items-center gap-2">
+                  <input
+                    type="color"
+                    value={color}
+                    onChange={(e) => setColor(e.target.value)}
+                    className="h-7 w-10 cursor-pointer rounded-sm border border-input p-0.5"
+                  />
+                  <span className="font-mono text-xs text-muted-foreground">{color}</span>
+                </div>
+              </Field>
+            </FormGrid>
+          </div>
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => navigate('/admin/tenants')}>
@@ -681,115 +759,14 @@ export const TenantEdit = () => {
           </div>
         </form>
 
-        {/* Agente(s) del tenant: acceso directo a la configuración del bot */}
+        {/* Agentes del tenant: grilla canónica con alta propia */}
         <section className="grid gap-3">
-          <h3 className={sectionTitle}>Agente</h3>
-          {bots.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              Este tenant no tiene un agente asignado.
-            </p>
-          ) : (
-            <div className="grid gap-2">
-              {bots.map((bot) => (
-                <div
-                  key={bot.bot_id}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-3"
-                >
-                  <div className="grid gap-1">
-                    <span className="font-medium text-foreground">{bot.name}</span>
-                    <span className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Badge variant={botStatusVariants[bot.status]}>
-                        {botStatusLabels[bot.status]}
-                      </Badge>
-                      {bot.business_type && <span>{bot.business_type}</span>}
-                    </span>
-                  </div>
-                  <UiButton
-                    variant="outline"
-                    size="sm"
-                    render={<Link to={`/bots/${bot.bot_id}`} />}
-                  >
-                    Ver agente
-                  </UiButton>
-                </div>
-              ))}
-            </div>
-          )}
+          <DataTable dto={botsDto} data={bots} />
         </section>
 
         {/* Usuarios */}
         <section className="grid gap-3">
           <DataTable dto={usersDto} data={users} />
-        </section>
-
-        {/* Módulos del tenant (independientes del agente) */}
-        <section className="grid gap-4">
-          <h3 className={sectionTitle}>Módulos</h3>
-          <div className={FORM_CLASSES}>
-            <FormGrid>
-              <Field label="Agregar módulo" htmlFor="tenant-module" wide>
-                <Select
-                  items={grantableModules}
-                  value=""
-                  onValueChange={(next) => {
-                    if (next) void handleGrantTenantModule(next);
-                  }}
-                >
-                  <SelectTrigger id="tenant-module" className="w-full">
-                    <SelectValue placeholder="Elegí un módulo disponible" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {grantableModules.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-            </FormGrid>
-
-            <div className="grid gap-4">
-              {grantedModules.length === 0 ? (
-                <p className="text-xs text-muted-foreground">
-                  Este tenant no tiene módulos otorgados.
-                </p>
-              ) : (
-                grantedModules.map((module) => (
-                  <div
-                    key={module.module_key}
-                    className="flex items-start justify-between gap-3"
-                  >
-                    <div className="grid gap-1">
-                      <span className="font-medium text-foreground">
-                        {module.module_name || module.module_key}
-                      </span>
-                      {module.module_description && (
-                        <span className="text-xs text-muted-foreground">
-                          {module.module_description}
-                        </span>
-                      )}
-                      {bots.length === 0 &&
-                        (modulesByKey[module.module_key]?.tenant?.nav?.length ?? 0) === 0 && (
-                          <span className="text-xs text-warning">
-                            Sin agente queda sin interfaz: este módulo sólo se usa por el chat o
-                            dentro de un agente.
-                          </span>
-                        )}
-                    </div>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      disabled={modulesUpdating === module.module_key}
-                      onClick={() => void handleRevokeTenantModule(module.module_key)}
-                    >
-                      Revocar
-                    </Button>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
         </section>
 
         {/* Zona de peligro — oculta hasta que se pida verla */}
@@ -978,6 +955,90 @@ export const TenantEdit = () => {
               </Button>
               <Button type="submit" loading={savingEdit}>
                 Guardar cambios
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showBotModal} onOpenChange={setShowBotModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Nuevo agente</DialogTitle>
+            <DialogDescription>
+              Crea un agente de este tenant. Podés repetir el alta para sumar más agentes.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateBot} className={cn(FORM_CLASSES, 'overflow-y-auto')}>
+            <FormGrid>
+              <Field label="Nombre del agente" htmlFor="new-bot-name">
+                <Input
+                  id="new-bot-name"
+                  value={newBot.name}
+                  onChange={(e) => setNewBot({ ...newBot, name: e.target.value })}
+                  placeholder="Ej: Asistente IUS"
+                  required
+                />
+              </Field>
+              <Field label="Tipo de negocio" htmlFor="new-bot-business-type">
+                <Input
+                  id="new-bot-business-type"
+                  value={newBot.business_type}
+                  onChange={(e) => setNewBot({ ...newBot, business_type: e.target.value })}
+                  placeholder="Ej: legal, restaurante, clínica"
+                  required
+                />
+              </Field>
+              <Field label="Descripción" htmlFor="new-bot-description" wide>
+                <Textarea
+                  id="new-bot-description"
+                  value={newBot.description}
+                  onChange={(e) => setNewBot({ ...newBot, description: e.target.value })}
+                  placeholder="Descripción opcional del agente"
+                  rows={3}
+                />
+              </Field>
+            </FormGrid>
+
+            {botModules.length > 0 && (
+              <div className="grid gap-2">
+                <span className="text-xs font-medium">Módulos a otorgar</span>
+                <div className="grid gap-2">
+                  {botModules.map((module) => (
+                    <label
+                      key={module.module_key}
+                      className="flex items-start gap-2 text-sm text-foreground"
+                    >
+                      <input
+                        type="checkbox"
+                        className="mt-1 accent-primary"
+                        checked={selectedBotModules.includes(module.module_key)}
+                        onChange={() => toggleBotModule(module.module_key)}
+                      />
+                      <span>
+                        {module.name}
+                        {module.description && (
+                          <span className="block text-xs text-muted-foreground">
+                            {module.description}
+                          </span>
+                        )}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  El tenant sólo podrá habilitar/deshabilitar los módulos otorgados acá.
+                </p>
+              </div>
+            )}
+
+            <DialogFooter className="flex-row justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setShowBotModal(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" loading={creatingBot}>
+                Crear agente
               </Button>
             </DialogFooter>
           </form>

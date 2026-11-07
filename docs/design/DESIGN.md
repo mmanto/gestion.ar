@@ -135,14 +135,19 @@ receta a mano (`frontend/src/components/common/FormField.tsx`: `FORM_CLASSES` + 
 si son cortos (`select`/`color`/fecha)— dentro de un `@container`, no en una columna.
 
 - `frontend/src/pages/admin/TenantEdit.tsx` (`/admin/tenants/:id/editar`): pantalla única
-  del tenant. Edita datos generales (nombre, dominio, estado, plan) **y su marca** (logos,
-  color, tagline) y debajo muestra el **agente** asignado, la **grilla de usuarios** (el
+  del tenant. Edita datos generales (nombre, dominio, estado, plan, tagline) **y su marca**
+  (logos, color) y debajo muestra la **grilla de agentes** (mismo `DataTable`; el alta va
+  en `toolbarActions` con un `Dialog` propio —tenant fijado y módulos iniciales— y se puede
+  repetir para sumar más agentes), la **grilla de usuarios** (el
   `DataTable` del paquete, con buscador, columnas y menú de acciones de fila — *sin*
   `entity`: el alta y la edición siguen en `Dialog` propios porque el schema no renderiza
   el `AvatarPicker` ni un campo de contraseña, y el botón de alta va en el toolbar del
-  `DataTable` (`toolbarActions`), al lado del buscador), el **selector de módulos del
-  tenant** y la **zona de peligro** (oculta hasta que se pide verla), todo en tokens y sin
-  tarjetas contenedoras. Es la superficie de edición de la entidad vía `edit.href`, en
+  `DataTable` (`toolbarActions`), al lado del buscador) y la **zona de peligro** (oculta
+  hasta que se pide verla), todo en tokens y sin tarjetas contenedoras. Los módulos no se
+  editan acá: se administran en el agente. La fila de identidad visual (logos + color) va
+  en un bloque con `bg-primary/5`; los campos con ayuda declaran `reserveHint` en `Field`
+  para reservar la misma área de ayuda y que la fila no quede desfasada. Es la superficie
+  de edición de la entidad vía `edit.href`, en
   lugar del formulario del paquete, porque el `AvatarPicker` de los logos no es uno de sus
   `kind`; el alta sí usa el formulario del paquete (la marca se carga después de crear el
   tenant). Tradeoff: esa edición es siempre pantalla completa — no sigue la preferencia de

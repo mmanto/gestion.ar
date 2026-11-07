@@ -115,24 +115,35 @@ export function Field({
   label,
   htmlFor,
   hint,
+  reserveHint,
   className,
   children,
 }: {
   label: string;
   htmlFor?: string;
   hint?: string;
+  /**
+   * Reserva el área de ayuda (dos líneas) aunque el campo no tenga texto, para
+   * que los campos de su misma fila queden alineados aunque la ayuda de uno
+   * ocupe más de una línea.
+   */
+  reserveHint?: boolean;
   /** Ancho de 2 columnas aunque el control no sea multilínea. */
   wide?: boolean;
   className?: string;
   children: ReactNode;
 }) {
   return (
-    <div className={cn('grid gap-2', className)}>
+    <div className={cn('grid content-start gap-2', className)}>
       <label htmlFor={htmlFor} className="text-xs font-medium">
         {label}
       </label>
       {children}
-      {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
+      {hint || reserveHint ? (
+        <p className={cn('text-xs text-muted-foreground', reserveHint && 'min-h-8')}>
+          {hint || '\u00A0'}
+        </p>
+      ) : null}
     </div>
   );
 }
