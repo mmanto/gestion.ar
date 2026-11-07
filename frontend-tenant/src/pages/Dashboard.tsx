@@ -87,11 +87,11 @@ export const Dashboard = () => {
               {/* Encabezado del menú — replica dashboard_clientes.html */}
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-[20px] text-[#2f6fed] mb-1">Hola,</p>
-                  <h1 className="text-[34px] font-bold text-[#0b1f3a] leading-[1.1]">{pageTitle}</h1>
+                  <p className="text-[1.25rem] text-[#2f6fed] mb-1">Hola,</p>
+                  <h1 className="text-[2.125rem] font-bold text-[#0b1f3a] leading-[1.1]">{pageTitle}</h1>
                 </div>
               </div>
-              <p className="text-[15px] text-[#7a7f8a] mt-[6px] mb-[26px]">Gestioná tus clientes y oportunidades</p>
+              <p className="text-[0.9375rem] text-[#7a7f8a] mt-[6px] mb-[26px]">Gestioná tus clientes y oportunidades</p>
               <StatsCards colorStats={colorStats} selectedColor={selectedColor} onSelectColor={handleSelectColor} />
             </>
           ) : (

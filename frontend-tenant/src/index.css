@@ -274,6 +274,17 @@
     font-weight: var(--fw-normal);
   }
 
+  /* Escala del backoffice. Toda la UI (Tailwind y el shell de devbout-ui) usa
+     rem, así que subir el font-size raíz equivale a un zoom proporcional:
+     escala tipografía, espaciado y ancho del sidebar a la vez. Se aplica sólo
+     con la clase `.backoffice` que monta AppLayout, para no tocar las páginas
+     públicas (landing, login, chat). La curva va de 16 px en notebooks chicas
+     a 20 px (125% de 16) en 1920 px: 1366 → 17 px, 1536 → 18 px. Arriba de
+     1920 se queda en 20 px, igual que un zoom 125% sobre un viewport mayor. */
+  :root.backoffice {
+    font-size: clamp(1rem, calc(100vw / 192 + 0.625rem), 1.25rem);
+  }
+
   body {
     @apply text-gray-900 antialiased;
     background-color: #f8f9fd;

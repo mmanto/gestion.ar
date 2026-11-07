@@ -55,7 +55,7 @@ export const KeroSidebar: React.FC = () => {
        avatar (KeroTopbar/UserMenu), no hay drawer de aplicación. */
     <aside
       className={`hidden md:flex md:flex-col fixed left-6 top-6 bottom-6 rounded-[1.4rem] bg-[#F8F9FD] z-40 overflow-hidden transition-all duration-300 ${
-        collapsed ? 'w-[88px]' : 'w-[280px]'
+        collapsed ? 'w-[5.5rem]' : 'w-[17.5rem]'
       }`}
     >
       <div
@@ -65,7 +65,7 @@ export const KeroSidebar: React.FC = () => {
       >
         <Link to="/dashboard" className="flex items-center gap-2">
           {!collapsed && logoH ? (
-            <img src={logoH} alt={tenantName} className="h-16 max-w-[360px] object-contain" />
+            <img src={logoH} alt={tenantName} className="h-16 max-w-[22.5rem] object-contain" />
           ) : collapsed && logoV ? (
             <img src={logoV} alt={tenantName} className="h-16 w-16 object-contain" />
           ) : (

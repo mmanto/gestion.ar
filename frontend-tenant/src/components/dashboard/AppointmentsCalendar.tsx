@@ -199,7 +199,7 @@ export const AppointmentsCalendar = () => {
           <div className="min-w-0">
             <div className="grid grid-cols-7 gap-0.5 mb-1">
               {WEEKDAY_LABELS.map((d) => (
-                <div key={d} className="text-center text-[10px] font-semibold uppercase tracking-wide text-[#8a9483] py-1">
+                <div key={d} className="text-center text-[0.625rem] font-semibold uppercase tracking-wide text-[#8a9483] py-1">
                   {d}
                 </div>
               ))}
@@ -220,7 +220,7 @@ export const AppointmentsCalendar = () => {
                     } ${!inMonth ? 'opacity-30' : ''}`}
                   >
                     <span
-                      className={`absolute top-1 left-1.5 text-[11px] leading-none ${
+                      className={`absolute top-1 left-1.5 text-[0.6875rem] leading-none ${
                         selected ? 'text-white' : isToday(day) ? 'font-bold text-[#4a6741]' : 'text-gray-800'
                       }`}
                     >
@@ -228,7 +228,7 @@ export const AppointmentsCalendar = () => {
                     </span>
                     {dayAppointments.length > 0 && (
                       <span
-                        className={`absolute bottom-1 right-1 inline-flex items-center justify-center min-w-[15px] h-[15px] px-0.5 text-[9px] font-semibold rounded-full ${
+                        className={`absolute bottom-1 right-1 inline-flex items-center justify-center min-w-[0.9375rem] h-[0.9375rem] px-0.5 text-[0.5625rem] font-semibold rounded-full ${
                           selected ? 'bg-white text-[#4a6741]' : 'bg-[#4a6741] text-white'
                         }`}
                       >
@@ -270,7 +270,7 @@ export const AppointmentsCalendar = () => {
                       </p>
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0">
-                      <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[appt.status]}`}>
+                      <span className={`text-[0.6875rem] font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[appt.status]}`}>
                         {STATUS_LABELS[appt.status]}
                       </span>
                       {appt.status === 'pending' && (

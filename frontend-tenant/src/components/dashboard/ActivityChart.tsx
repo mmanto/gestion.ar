@@ -30,11 +30,11 @@ const ActivityChart = ({ timeline }: ActivityChartProps) => {
               <XAxis
                 dataKey="date"
                 stroke="#6b7280"
-                style={{ fontSize: '12px' }}
+                style={{ fontSize: '0.75rem' }}
               />
               <YAxis
                 stroke="#6b7280"
-                style={{ fontSize: '12px' }}
+                style={{ fontSize: '0.75rem' }}
               />
               <Tooltip
                 contentStyle={{

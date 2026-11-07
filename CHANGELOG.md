@@ -335,6 +335,13 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   con la instrucción de la tool y las 3 decisiones de calificación.
 
 ### Cambiado
+- **El backoffice de tenant escala la tipografía con la resolución.** Mientras
+  hay un layout privado montado, `frontend-tenant` aplica
+  `:root.backoffice { font-size: clamp(1rem, calc(100vw / 192 + 0.625rem), 1.25rem) }`:
+  16 px en notebooks chicas, 18 px a 1536 px y 20 px (125% de 16) desde 1920 px.
+  Como la UI usa `rem`, también escalan espaciado y sidebar; las páginas
+  públicas (Landing/Login/Chat) siguen en 16 px. Las medidas sueltas en `px` del
+  backoffice se pasaron a `rem` para no quedar desproporcionadas.
 - **BREAKING (operativo): el LLM deja de ser global.** `LLM_PROVIDER` +
   `ANTHROPIC_API_KEY`/`DEEPSEEK_API_KEY` quedan sólo para paths sin tenant
   (bots legacy) y para Ollama. **Sin config de IA propia el agente del tenant no

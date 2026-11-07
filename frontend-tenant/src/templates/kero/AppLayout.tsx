@@ -13,7 +13,7 @@ interface KeroAppLayoutProps {
 export function KeroAppLayout({ children }: KeroAppLayoutProps) {
   const { collapsed } = useSidebar();
   const sidebarVisible = useSidebarVisible();
-  const contentPadding = !sidebarVisible ? 'md:pl-0' : collapsed ? 'md:pl-[112px]' : 'md:pl-[304px]';
+  const contentPadding = !sidebarVisible ? 'md:pl-0' : collapsed ? 'md:pl-[7rem]' : 'md:pl-[19rem]';
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: KERO_PAGE_BG }}>

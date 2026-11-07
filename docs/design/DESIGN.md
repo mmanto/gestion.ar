@@ -30,6 +30,7 @@ Fuente única: `frontend/src/index.css`. Para cambiar un color de la app se toca
 - **Radios:** `--radius` (0.625rem) y derivados `--radius-sm..4xl`.
 - **Títulos:** `--title-size`/`--title-leading` consumidos por las utilidades `heading-screen` y `heading-section`; `--font-heading-font` define la familia de los encabezados.
 - **Escala raíz:** `html { font-size: clamp(1rem, 100vw/120, 1.75rem) }` — todas las medidas en `rem` escalan con el viewport.
+- **Escala del backoffice de tenant:** `frontend-tenant/src/index.css` agrega `:root.backoffice { font-size: clamp(1rem, calc(100vw / 192 + 0.625rem), 1.25rem) }`, activa sólo mientras hay un layout privado montado (`components/layout/AppLayout.tsx`). Da 16 px en notebooks chicas, 18 px a 1536 px y 20 px (125% de 16) desde 1920 px; las rutas públicas (Landing/Login/Chat) conservan 16 px. Las medidas sueltas en px del backoffice se expresaron en `rem` para que acompañen la escala.
 - `* { border-color: var(--border) }` en `@layer base`: un `border` sin color usa el token.
 
 ## Marca

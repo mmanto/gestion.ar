@@ -109,7 +109,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'dark' }) => {
             </div>
 
             {user?.plan_name && (
-              <span className={`mt-3 inline-flex items-center text-[11px] font-semibold rounded-full px-2.5 py-1 ${
+              <span className={`mt-3 inline-flex items-center text-[0.6875rem] font-semibold rounded-full px-2.5 py-1 ${
                 user.subscription_status === 'pending'
                   ? 'bg-amber-400/95 text-amber-950'
                   : 'bg-green-100 text-green-900 ring-1 ring-green-300'

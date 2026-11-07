@@ -138,25 +138,25 @@ const TrendStatCard = ({
 
   const content = (
     <div className="flex flex-col h-full" style={{ background: palette.gradient }}>
-      <div className="pt-[26px] px-5 pb-[18px]">
+      <div className="pt-[1.625rem] px-5 pb-[1.125rem]">
         <span
-          className="inline-block px-[15px] py-[9px] rounded-full text-white text-[8.5px] font-semibold uppercase tracking-[0.1px] whitespace-nowrap mb-[26px]"
+          className="inline-block px-[0.9375rem] py-[0.5625rem] rounded-full text-white text-[0.53125rem] font-semibold uppercase tracking-[0.1px] whitespace-nowrap mb-[1.625rem]"
           style={{ backgroundColor: palette.accent, boxShadow: palette.badgeShadow }}
         >
           {title}
         </span>
 
-        <p className="text-[15.5px] leading-[1.32] text-[#0b1f3a] mb-[26px] min-h-[90px]">{description}</p>
+        <p className="text-[0.96875rem] leading-[1.32] text-[#0b1f3a] mb-[1.625rem] min-h-[5.625rem]">{description}</p>
 
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[44px] font-bold leading-none" style={{ color: palette.accent }}>
+            <p className="text-[2.75rem] font-bold leading-none" style={{ color: palette.accent }}>
               {value}
             </p>
-            {caption && <p className="text-[13.5px] text-[#9a9fa8] mt-[6px]">{caption}</p>}
+            {caption && <p className="text-[0.84375rem] text-[#9a9fa8] mt-[6px]">{caption}</p>}
           </div>
           <span
-            className="w-[72px] h-[72px] flex-shrink-0 flex items-center justify-center"
+            className="w-[4.5rem] h-[4.5rem] flex-shrink-0 flex items-center justify-center"
             style={{ color: palette.accent }}
           >
             {icon}
@@ -182,11 +182,11 @@ const TrendStatCard = ({
       </div>
 
       <div
-        className="mt-auto flex items-center justify-between px-[22px] py-[18px]"
+        className="mt-auto flex items-center justify-between px-[1.375rem] py-[1.125rem]"
         style={{ backgroundColor: palette.footerBg, color: palette.footerText }}
       >
         <span className="text-base font-semibold">{footerLabel}</span>
-        <ArrowRight className="w-[18px] h-[14px] flex-shrink-0 transition-transform duration-150 group-hover:translate-x-[3px]" />
+        <ArrowRight className="w-[1.125rem] h-[0.875rem] flex-shrink-0 transition-transform duration-150 group-hover:translate-x-[3px]" />
       </div>
     </div>
   );

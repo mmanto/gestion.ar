@@ -86,11 +86,11 @@ const ChartsSection = ({ stats, timeline }: ChartsSectionProps) => {
                 <XAxis
                   dataKey="date"
                   stroke="#6b7280"
-                  style={{ fontSize: '12px' }}
+                  style={{ fontSize: '0.75rem' }}
                 />
                 <YAxis
                   stroke="#6b7280"
-                  style={{ fontSize: '12px' }}
+                  style={{ fontSize: '0.75rem' }}
                   tickFormatter={(value) => `$${value}`}
                 />
                 <Tooltip

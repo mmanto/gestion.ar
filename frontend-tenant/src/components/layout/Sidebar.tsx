@@ -41,7 +41,7 @@ export const Sidebar: React.FC = () => {
           <Link to="/dashboard" className="flex items-center gap-2">
             {/* Logo horizontal — visible solo expandido */}
             {!collapsed && logoH ? (
-              <img src={logoH} alt={tenantName} className="h-8 max-w-[120px] object-contain" />
+              <img src={logoH} alt={tenantName} className="h-8 max-w-[7.5rem] object-contain" />
             ) : null}
             {/* Logo vertical — visible solo colapsado */}
             {collapsed && logoV ? (
