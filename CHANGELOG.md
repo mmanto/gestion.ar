@@ -342,7 +342,9 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   (`@2xl`). Los campos multilínea (`Textarea`) ocupan 2 columnas y pasan a 3
   cuando quedan solos en su fila. La regla queda documentada como canon visual
   (`devbout-docs/docs/design/DESIGN.md` §9.1) y se implementa con `FormGrid` +
-  `Field` en `frontend/src/components/common/FormField.tsx`. Se actualiza
+  `Field` en `frontend/src/components/common/FormField.tsx`. El detalle del
+  tenant suma un bloque **Datos generales** con la misma rejilla (nombre,
+  dominio, estado, plan y marca). Se actualiza
   `@mmanto/devbout-ui` a `0.7.0`, así los formularios de entidad del paquete
   (alta/edición de tenants y planes) usan la misma rejilla.
 - **El backoffice de tenant escala la tipografía con la resolución.** Mientras

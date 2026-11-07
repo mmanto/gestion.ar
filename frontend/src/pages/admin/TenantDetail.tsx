@@ -41,6 +41,7 @@ import type {
   Plan,
   Tenant,
   TenantModuleInfo,
+  TenantStatus,
   TenantUser,
   TenantUserRole,
 } from '../../types/tenant.types';
@@ -86,6 +87,16 @@ const emptyUserForm = {
  * docs/design/DESIGN.md).
  */
 const sectionTitle = 'font-heading heading-section font-medium text-foreground';
+
+/** Estado del tenant en el resumen del detalle (mismo texto que la edición). */
+const statusBadges: Record<
+  TenantStatus,
+  { label: string; variant: 'success' | 'warning' | 'destructive' }
+> = {
+  active: { label: 'Activo', variant: 'success' },
+  trial: { label: 'Prueba', variant: 'warning' },
+  suspended: { label: 'Suspendido', variant: 'destructive' },
+};
 
 export const TenantDetail = () => {
   const { tenantId } = useParams<{ tenantId: string }>();
@@ -471,6 +482,69 @@ export const TenantDetail = () => {
         />
 
         {error && <Alert variant="error">Error: {error}</Alert>}
+
+        {/* Datos generales: misma rejilla canónica que el formulario de edición */}
+        <section className="grid gap-4">
+          <h3 className={sectionTitle}>Datos generales</h3>
+          <div className={FORM_CLASSES}>
+            <FormGrid>
+              <Field label="Nombre">
+                <p className="text-sm font-medium text-foreground">{tenant.name}</p>
+              </Field>
+              <Field label="Dominio propio">
+                <p className="text-sm text-foreground">{tenant.domain || '—'}</p>
+              </Field>
+              <Field label="Estado">
+                <div>
+                  <Badge variant={statusBadges[tenant.status].variant}>
+                    {statusBadges[tenant.status].label}
+                  </Badge>
+                </div>
+              </Field>
+              <Field label="Plan">
+                <p className="text-sm text-foreground">
+                  {plans.find((plan) => plan.plan_id === tenant.plan_id)?.name || '—'}
+                </p>
+              </Field>
+              <Field label="Logo horizontal">
+                {tenant.branding?.logo_url_horizontal ? (
+                  <img
+                    src={tenant.branding.logo_url_horizontal}
+                    alt="Logo horizontal"
+                    className="h-8 max-w-40 object-contain"
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground">Sin logo</p>
+                )}
+              </Field>
+              <Field label="Logo vertical">
+                {tenant.branding?.logo_url_vertical ? (
+                  <img
+                    src={tenant.branding.logo_url_vertical}
+                    alt="Logo vertical"
+                    className="h-8 max-w-40 object-contain"
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground">Sin logo</p>
+                )}
+              </Field>
+              <Field label="Color principal">
+                <div className="flex h-7 items-center gap-2">
+                  <span
+                    className="size-5 rounded-sm border border-input"
+                    style={{ backgroundColor: tenant.branding?.primary_color }}
+                  />
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {tenant.branding?.primary_color || '—'}
+                  </span>
+                </div>
+              </Field>
+              <Field label="Tagline">
+                <p className="text-sm text-foreground">{tenant.branding?.tagline || '—'}</p>
+              </Field>
+            </FormGrid>
+          </div>
+        </section>
 
         {/* Agente(s) del tenant: acceso directo a la configuración del bot */}
         <section className="grid gap-3">
