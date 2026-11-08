@@ -1195,6 +1195,41 @@ para abrir el WebSocket y no como sesión de usuario.
 Errores: `401` key inválida/tenant inactivo, `409` sin canal o varios sin
 `channel_id`, `403` canal inactivo.
 
+### POST `/api/public/voice/text`
+
+Header `Authorization: Bearer tk_live_…`. Turno **escrito** del canal de voz:
+corre el mismo agente del bot (prompt, tools, RAG e historial) sin abrir sesión
+de Deepgram (ni STT, ni TTS, ni minutos de agente) — ver ADR-040. Es la ruta del
+modo texto del APK; sustituye al frame `{"type":"text"}` del WebSocket de voz.
+
+Body:
+```json
+{ "device_id": "uuid-del-dispositivo", "content": "¿Qué trámite necesito?" }
+```
+`content` se recorta y tiene tope de 4000 caracteres; `channel_id` es opcional
+igual que en `/session`.
+
+Respuesta:
+```json
+{
+  "conversation_id": "dev-123_2026-11-08T12:00:00",
+  "device_id": "dev-123",
+  "reply": "Necesitás el DNI y el formulario de inicio.",
+  "model": "deepseek-chat",
+  "tokens_used": 812,
+  "estimated_cost_usd": 0.00042
+}
+```
+
+Reutiliza la última conversación del `device_id` (bot + canal) para reanudar el
+historial, y persiste los dos turnos con `source="text"`; avisa al staff por
+WebSocket/push como cualquier mensaje de cliente. Si no hay conversación previa
+la crea con `channel="voice"`.
+
+Errores: `401` key inválida/tenant inactivo, `409` sin canal o varios sin
+`channel_id`, `403` canal inactivo, `404` bot no encontrado, `422` mensaje vacío
+y `503` tenant sin proveedor de IA configurado.
+
 ### GET `/api/voice/channels/{channel_id}/config`
 
 Config pública del canal (PWA/QR). `404`/`400`/`403` igual que arriba.
@@ -1213,7 +1248,9 @@ Frames servidor → cliente: `meta` (`conversation_id`, `bot_name`,
 `tenant_name`, `greeting`), `SettingsApplied`, `ConversationText`,
 `UserStartedSpeaking`, `AgentThinking`, `AgentStartedSpeaking`,
 `AgentAudioDone`, `Error`, `Warning`, y tramas binarias PCM16 24 kHz.
-Cliente → servidor: binario PCM16 16 kHz o `{"type":"text","content":"…"}`.
+Cliente → servidor: binario PCM16 16 kHz o `{"type":"text","content":"…"}`
+(este frame se traduce a `InjectUserMessage` de Deepgram: sigue gastando la
+sesión de voz, así que el APK en modo texto usa `POST /api/public/voice/text`).
 `Settings`/`UpdateThink`/`UpdatePrompt`/`UpdateSpeak` se ignoran: el servidor
 es dueño de la configuración.
 

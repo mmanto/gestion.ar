@@ -2414,3 +2414,60 @@ agente sólo podía derivar al vecino al sitio.
 - El `ius_config` que tenga `estado_de_herramientas` debe listar
   `consultar_padron` como implementada (lo aplica
   `scripts/enable_pachoteayuda_padron.py`).
+
+---
+
+## ADR-040: El modo texto del canal de voz no pasa por Deepgram
+
+**Estado:** Aceptado
+**Fecha:** 2026-11-08
+
+### Contexto
+El APK del canal de voz sumó un selector **Voz | Texto**. La primera versión del
+modo texto mandaba `{"type":"text","content":"…"}` por el WebSocket de voz, que
+el proxy traduce a `InjectUserMessage` de Deepgram (ADR-034). Deepgram sigue
+abriendo sesión de agente con STT/TTS aunque nadie hable: se facturan los
+minutos del agente, se sintetiza una voz que el cliente descarta y el turno
+depende de un socket que se cae por `CLIENT_MESSAGE_TIMEOUT` si el usuario no
+manda audio.
+
+El agente real (prompt, tools, RAG e historial) ya existe fuera de Deepgram:
+`AgentService.run_turn` es el turno que usan web, WhatsApp y Telegram con el LLM
+del tenant (ADR-038).
+
+### Opciones consideradas
+1. **Seguir usando el WS de voz** — cero cambios, pero gasta minutos de agente,
+   sintetiza audio que se tira y no funciona sin micrófono/audio.
+2. **`UpdateSpeak` para apagar el TTS** — el proxy es dueño de la `Settings` y
+   las ignora a propósito (ADR-034); además seguiría pagando la sesión.
+3. **Endpoint HTTP aparte con el mismo agente** — sin Deepgram: sólo el LLM del
+   tenant. Costo por token (no por minuto) y el turno no depende de un socket.
+   Desventaja: no hay streaming de tokens (el LLM devuelve la respuesta
+   completa, igual que en los demás canales de texto).
+
+### Decisión
+Opción 3. `POST /api/public/voice/text` (Bearer de tenant) corre
+`AgentService.run_turn` con `canal="voice"` y `session=None` (sólo las
+contribuciones sin estado del agente, como el canal de voz) y:
+
+- reutiliza la última conversación del `device_id` (bot + canal) para reanudar
+  el historial, o crea una con `channel="voice"`;
+- persiste los dos turnos con `metadata["source"] = "text"` y el costo por
+  tokens del LLM;
+- notifica al staff y suma el contador del cliente igual que `_bridge` con cada
+  `ConversationText`.
+
+El APK deja de abrir el WebSocket en modo texto: al cambiar de modo cierra la
+sesión de Deepgram (soltar el handle cierra el socket) y al volver a Voz pide un
+ticket nuevo. La burbuja del usuario en modo texto es local, porque el endpoint
+devuelve sólo la respuesta.
+
+### Consecuencias
+- Modo texto sin minutos de agente, sin TTS y sin micrófono: funciona con el
+  permiso de micrófono denegado.
+- Dos caminos de turno conviven en el canal de voz: `_bridge` (voz, Deepgram) y
+  `voice_text_service` (texto, LLM directo). Comparten prompt, tools e
+  historial, pero el modo texto no tiene STT (no hay transcripción que corregir)
+  ni widgets de módulos, igual que la voz.
+- El frame `{"type":"text"}` del WebSocket sigue soportado para otros clientes;
+  el APK ya no lo usa.

@@ -13,6 +13,10 @@ Dos superficies:
 
 La key de Deepgram, el prompt y las tools viven en el backend; el cliente solo
 transporta PCM (ver ADR-034/ADR-035).
+
+Además, el modo **texto** del canal (`POST /api/public/voice/text`) corre el
+turno con el mismo agente sin abrir sesión de Deepgram: ni STT ni TTS ni
+minutos de agente (ADR-040).
 """
 
 from __future__ import annotations
@@ -61,6 +65,7 @@ from app.services.voice_session_service import (
     execute_function,
     history_messages,
 )
+from app.services.voice_text_service import TextTurnError, run_text_turn
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +79,12 @@ DEFAULT_COST_PER_MINUTE = 0.075
 
 
 class VoiceSessionRequest(BaseModel):
+    device_id: Optional[str] = Field(None, max_length=200)
+    channel_id: Optional[str] = Field(None, description="Solo si el tenant tiene más de un canal de voz")
+
+
+class VoiceTextRequest(BaseModel):
+    content: str = Field(..., max_length=4000, description="Mensaje escrito por el usuario")
     device_id: Optional[str] = Field(None, max_length=200)
     channel_id: Optional[str] = Field(None, description="Solo si el tenant tiene más de un canal de voz")
 
@@ -216,6 +227,33 @@ async def create_voice_session(
     """Resuelve tenant → canal y devuelve el ticket para el WebSocket."""
     channel = await _resolve_voice_channel(tenant, data.channel_id)
     return await _bootstrap_payload(tenant, channel, data.device_id)
+
+
+@router.post("/api/public/voice/text")
+async def send_voice_text(
+    data: VoiceTextRequest,
+    tenant: Tenant = Depends(_tenant_from_key),
+):
+    """Turno escrito del canal de voz: mismo agente, sin sesión de Deepgram.
+
+    El modo texto del APK usa esto en vez del WebSocket de voz (ADR-040): el
+    turno corre con `AgentService.run_turn` y se persiste/notifica igual que un
+    `ConversationText`, con `source="text"` en los metadatos.
+    """
+    content = data.content.strip()
+    if not content:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Mensaje vacío")
+
+    channel = await _resolve_voice_channel(tenant, data.channel_id)
+    bot = await get_bot_service().get_bot(channel.bot_id)
+    if not bot:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Bot no encontrado")
+
+    device_id = (data.device_id or "").strip() or str(uuid.uuid4())
+    try:
+        return await run_text_turn(bot, channel, device_id, content)
+    except TextTurnError as exc:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc))
 
 
 @router.get("/api/voice/channels/{channel_id}/config")

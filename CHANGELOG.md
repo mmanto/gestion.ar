@@ -7,6 +7,13 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **El modo texto del canal de voz ya no pasa por Deepgram**
+  (`POST /api/public/voice/text`, ADR-040). El APK abre el selector
+  Voz | Texto; en Texto corre el mismo agente del bot (prompt, tools, RAG e
+  historial del `device_id`) sin sesión de Deepgram, así que no hay minutos de
+  agente, ni TTS que descartar, ni dependencia de micrófono. El turno se
+  persiste con `source="text"` y avisa al staff como cualquier mensaje de
+  cliente. Cambiar de modo cierra/abre la sesión de voz.
 - **La edición de un usuario en la pantalla del tenant permite cambiar la
   contraseña** (`frontend/src/pages/admin/TenantEdit.tsx`). El diálogo «Editar
   usuario» suma el campo Contraseña (vacío = conservar la actual); el backend
