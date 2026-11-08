@@ -412,6 +412,7 @@ async def update_tenant_own_user(
         avatar_url=data.avatar_url,
         broker_username=data.broker_username,
         clear_broker=data.clear_broker,
+        password=data.password,
     )
 
     # El admin del tenant modifica el estado de la suscripción del plan

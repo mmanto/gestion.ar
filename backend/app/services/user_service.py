@@ -664,6 +664,7 @@ class UserService:
         avatar_url: Optional[str] = None,
         broker_username: Optional[str] = None,
         clear_broker: bool = False,
+        password: Optional[str] = None,
     ) -> Optional[UserInDB]:
         """Actualiza rol/estado/email/nombre de un usuario (super_admin). El
         rol nunca lo puede fijar el propio usuario — sólo administración
@@ -671,6 +672,9 @@ class UserService:
 
         clear_broker: pasar True para desasociar a un operativo de su broker
         (broker_username=None no alcanza — indistinguible de "no tocar").
+
+        password: nueva contraseña en texto plano (se hashea acá). None deja
+        la actual intacta; la validación de longitud la hace TenantUserUpdate.
         """
         async with AsyncSessionLocal() as session:
             row = await session.get(UserModel, username)
@@ -688,6 +692,8 @@ class UserService:
                 row.apellido = apellido
             if avatar_url is not None:
                 row.avatar_url = avatar_url
+            if password is not None:
+                row.hashed_password = get_password_hash(password)
             if clear_broker:
                 row.broker_username = None
             elif broker_username is not None:

@@ -138,6 +138,9 @@ class TenantUserUpdate(BaseModel):
     nombre: Optional[str] = None
     apellido: Optional[str] = None
     avatar_url: Optional[str] = None
+    #: Nueva contraseña en texto plano (se hashea en user_service.update_user).
+    #: Omitirla deja la actual intacta.
+    password: Optional[str] = Field(None, min_length=6, max_length=128)
     # Estado de la suscripción del plan asociado al usuario. El admin del
     # tenant puede aprobar un plan pendiente (pending -> approved/active).
     subscription_status: Optional[SubscriptionStatus] = None

@@ -154,12 +154,14 @@ export const TenantEdit = () => {
     apellido: string;
     avatar_url: string;
     role: TenantUserRole;
+    password: string;
   }>({
     email: '',
     nombre: '',
     apellido: '',
     avatar_url: '',
     role: 'operativo',
+    password: '',
   });
   const [savingEdit, setSavingEdit] = useState(false);
 
@@ -352,6 +354,7 @@ export const TenantEdit = () => {
       apellido: user.apellido || '',
       avatar_url: user.avatar_url || '',
       role: (user.role as TenantUserRole) || 'operativo',
+      password: '',
     });
   }, []);
 
@@ -366,9 +369,12 @@ export const TenantEdit = () => {
         apellido: editForm.apellido || undefined,
         avatar_url: editForm.avatar_url || undefined,
         role: editForm.role,
+        // Vacío = conservar la contraseña actual (el backend sólo hashea si viene).
+        password: editForm.password || undefined,
       });
       setEditingUser(null);
       await reloadUsers();
+      showToast('Usuario actualizado', 'success');
     } catch (err) {
       console.error('Error updating user:', err);
     } finally {
@@ -892,7 +898,7 @@ export const TenantEdit = () => {
           <DialogHeader>
             <DialogTitle>Editar {editingUser?.username}</DialogTitle>
             <DialogDescription>
-              Actualiza los datos del usuario. La contraseña no se cambia desde acá.
+              Actualiza los datos del usuario. Dejá la contraseña vacía para conservar la actual.
             </DialogDescription>
           </DialogHeader>
 
@@ -904,6 +910,22 @@ export const TenantEdit = () => {
                   type="email"
                   value={editForm.email}
                   onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                />
+              </Field>
+              <Field
+                label="Contraseña"
+                htmlFor="edit-user-password"
+                hint="Dejala vacía para conservar la actual."
+                reserveHint
+              >
+                <Input
+                  id="edit-user-password"
+                  type="password"
+                  value={editForm.password}
+                  onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                  minLength={6}
+                  autoComplete="new-password"
+                  placeholder="Nueva contraseña"
                 />
               </Field>
               <Field label="Rol" htmlFor="edit-user-role">

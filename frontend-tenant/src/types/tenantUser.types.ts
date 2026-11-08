@@ -38,6 +38,8 @@ export interface TenantUserUpdate {
   nombre?: string;
   apellido?: string;
   avatar_url?: string;
+  /** Nueva contraseña; omitirla conserva la actual. */
+  password?: string;
   subscription_status?: TenantSubscriptionStatus;
 }
 

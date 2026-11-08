@@ -657,6 +657,23 @@ Revoca la key. Los clientes que la usan pasan a `401`.
 
 ---
 
+## Administración general — Usuarios
+
+Gestión de usuarios de cualquier tenant por el `super_admin`. Requieren JWT
+con rol `super_admin`.
+
+### PATCH `/api/admin/users/{username}`
+
+Edita un usuario de cualquier tenant. Body opcional: `role`, `disabled`,
+`email`, `nombre`, `apellido`, `avatar_url`, `broker_username`,
+`clear_broker` y `password`.
+
+- `password`: 6–128 caracteres; se hashea antes de guardarse. Si se omite, la
+  contraseña actual queda intacta.
+- `role: "super_admin"` responde **400**.
+
+---
+
 ## Tenant — Branding
 
 Endpoints para que el admin del tenant gestione su marca (logo, color, tagline).
@@ -846,16 +863,19 @@ acepta en el body). Rol: `admin` | `operativo` (nunca `super_admin`).
 
 ### PATCH `/api/tenant/users/{username}`
 
-Edita un usuario del tenant (email, nombre, apellido, avatar, rol, estado) y el
-**estado de la suscripción** del plan asociado (`subscription_status`:
-`pending` | `approved` | `active`) — el admin del tenant puede aprobar un plan
-pendiente, de acuerdo al flujo de ADR-013. El usuario debe pertenecer al tenant
-del admin autenticado.
+Edita un usuario del tenant (email, nombre, apellido, avatar, rol, estado,
+**contraseña**) y el **estado de la suscripción** del plan asociado
+(`subscription_status`: `pending` | `approved` | `active`) — el admin del
+tenant puede aprobar un plan pendiente, de acuerdo al flujo de ADR-013. El
+usuario debe pertenecer al tenant del admin autenticado.
 
 **Request (JSON, solo se envían los campos a cambiar):**
 ```json
-{ "subscription_status": "active" }
+{ "subscription_status": "active", "password": "nueva_clave" }
 ```
+
+- `password`: 6–128 caracteres; se hashea antes de guardarse. Si se omite, la
+  contraseña actual queda intacta.
 
 ### DELETE `/api/tenant/users/{username}`
 

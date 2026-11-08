@@ -272,6 +272,7 @@ async def update_tenant_user(username: str, data: TenantUserUpdate):
         avatar_url=data.avatar_url,
         broker_username=data.broker_username,
         clear_broker=data.clear_broker,
+        password=data.password,
     )
     if not user:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado")

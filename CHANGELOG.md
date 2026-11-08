@@ -7,6 +7,12 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **La edición de un usuario en la pantalla del tenant permite cambiar la
+  contraseña** (`frontend/src/pages/admin/TenantEdit.tsx`). El diálogo «Editar
+  usuario» suma el campo Contraseña (vacío = conservar la actual); el backend
+  la hashea en `user_service.update_user` y `TenantUserUpdate` la acepta tanto
+  en `PATCH /api/admin/users/{username}` como en
+  `PATCH /api/tenant/users/{username}` (6–128 caracteres).
 - **Landing chat-only por tenant** (`tenant.settings.chat_channel_id`). Si el
   tenant declara el ID de un canal web, la landing pública del dominio muestra
   únicamente el chat de ese canal y un enlace «Ingresar al backoffice», sin
