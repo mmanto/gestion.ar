@@ -360,6 +360,16 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   con la instrucción de la tool y las 3 decisiones de calificación.
 
 ### Cambiado
+- **BÖDEN SEED actualiza su propuesta de venta (ajustes del 9 de noviembre)**
+  (`backend/scripts/create_velsa_boden_tenants.py`). El agente se presenta como
+  Reina, el producto pasa a ser KING F1 Full Shield HR con su bloque de
+  beneficios (paquete de resistencias Full Shield HR, producción constante
+  hasta 14 meses, frutos XL uniformes, firmes y de larga vida de anaquel,
+  adaptabilidad de clima y suelo) y las certificaciones GSSP, SAGARPA,
+  SENASICA y COFEPRIS; el saludo de la landing es el texto nuevo del cliente y
+  queda prohibido llamar «Don» al productor. Se ofrece como ideal para
+  invernadero y adaptable a campo abierto, sin afirmar que no sirve en campo
+  abierto. VELSA no cambia. Se aplica re-ejecutando el script idempotente.
 - **La pantalla de edición del tenant absorbe la gestión de usuarios y agente**
   (`frontend/src/pages/admin/TenantEdit.tsx`). Se elimina la acción «Gestionar usuarios y
   módulos» del menú de fila de Tenants y la pantalla de detalle
