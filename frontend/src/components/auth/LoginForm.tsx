@@ -69,7 +69,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
 
       {/* Descripción */}
       <p className="text-sm" style={{ color: MUTED_FG }}>
-        Acceso para administración general de la plataforma.
+        Acceso para administración general y partners de la plataforma.
       </p>
 
       {/* Error */}

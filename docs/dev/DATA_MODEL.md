@@ -33,11 +33,16 @@ Usuarios del dashboard (propietarios de bots).
 | `auth_provider` / `provider_user_id` | `TEXT` (opt) | Identidad de login social (Nango) |
 | `google_id` | `TEXT` (opt) | Legacy, login Google directo |
 | `nango_connection_id` / `gmail_sender_email` | `TEXT` (opt) | Conexión de email vía Nango (envío, no login) |
+| `tenant_id` | `TEXT` (opt) → FK `tenants.tenant_id` | Tenant del usuario. `NULL` sólo para `super_admin`; un `partner` lo tiene siempre (es su **tenant base**) |
+| `role` | `TEXT NOT NULL` | `super_admin` / `admin` / `operativo` / `broker` / **`partner`** (responsable de tenants derivados, ADR-041) |
 | `requested_plan_id` | `TEXT` (opt) → FK `plans.plan_id` | Plan que el usuario eligió al darse de alta (autoregistro/gmail); su plan de suscripción |
 | `subscription_status` | `TEXT NOT NULL` | `pending` / `approved` / `active` — estado del plan del usuario; `pending` al registrarse, el pase es manual (ADR-013) |
 | `created_at` | `TIMESTAMPTZ` | Fecha de creación |
 
-Índices: `google_id` único parcial (`WHERE google_id IS NOT NULL`), `email`, `(auth_provider, provider_user_id)`.
+Índices: `google_id` único parcial (`WHERE google_id IS NOT NULL`), `email`, `(auth_provider, provider_user_id)`, `tenant_id`.
+
+CHECKs de rol: `ck_users_role` (enum de roles) y `ck_users_role_tenant_consistency`
+(`super_admin` sin tenant; cualquier otro rol con tenant).
 
 Cada usuario suscribe su propio plan. `PATCH /api/admin/users/{username}/plan-request`
 (super_admin) aprueba la solicitud pendiente → `approved`/`active` (ver ADR-013).
@@ -284,11 +289,20 @@ no en el tenant.
 | `settings` | `JSONB` | Flags de runtime por tenant (p. ej. `{"stats_two_cols_mobile": true}`). Antes se inyectaban por contenedor (`STATS_TWO_COLS_MOBILE`); ahora viajan en el response de `/api/public/tenants/current` |
 | `api_key_hash` | `TEXT` UNIQUE (opt) | **SHA-256** de la API key del tenant (`tk_live_…`); la key en claro se muestra una sola vez al emitirla. Resuelve el tenant en `/api/public/voice/*` (ADR-035). Múltiples `NULL` permitidos |
 | `plan_id` | `TEXT` → FK `plans.plan_id` | Plan de suscripción al que está dado de alta el tenant |
+| `parent_tenant_id` | `TEXT` (opt) → FK `tenants.tenant_id` | Tenant base del que se derivó (ADR-041). `NULL` = tenant raíz; sólo hay un nivel de anidamiento. Un tenant con derivados no se puede borrar |
 | `created_at` / `updated_at` | `TIMESTAMPTZ` | |
 
 Migraciones: `20261008_0000_add_tenant_settings.py`,
-`20261028_1300_add_tenant_api_key_hash.py` y
-`20261103_1200_add_tenant_llm_config.py`.
+`20261028_1300_add_tenant_api_key_hash.py`,
+`20261103_1200_add_tenant_llm_config.py` y
+`20261111_1200_add_partner_role_and_tenant_parent.py` (rol `partner` +
+`parent_tenant_id`).
+
+El alta de un tenant derivado (`POST /api/partner/tenants`) **clona** agentes
+(`bots` con la misma `config`, sin `channel_ids` ni contadores), `bot_modules` y
+`tenant_modules` del base. No copia `tenant_llm_configs`, canales, clientes,
+conversaciones, push subscriptions ni `api_key_hash`: el tenant nuevo carga su
+proveedor de IA en Ajustes › Proveedor de IA.
 
 ### `tenant_llm_configs` (proveedor de IA del tenant, ADR-038)
 

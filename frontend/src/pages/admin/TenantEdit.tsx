@@ -36,21 +36,32 @@ import {
 import { cn } from '../../lib/utils';
 import tenantAdminService from '../../services/tenantAdmin.service';
 import botsService from '../../services/bots.service';
+import partnerService from '../../services/partner.service';
+import { tenantScopeApi } from '../../services/tenantScope.service';
+import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import type {
+  BotModuleInfo,
   ModuleInfo,
   Plan,
   Tenant,
+  TenantBotSummary,
   TenantStatus,
   TenantUser,
   TenantUserRole,
 } from '../../types/tenant.types';
-import type { Bot, BotStatus } from '../../types/bot.types';
+import type { BotStatus } from '../../types/bot.types';
 
 const statusLabels: Record<TenantStatus, string> = {
   active: 'Activo',
   suspended: 'Suspendido',
   trial: 'Prueba',
+};
+
+const statusVariants: Record<TenantStatus, 'success' | 'destructive' | 'warning'> = {
+  active: 'success',
+  suspended: 'destructive',
+  trial: 'warning',
 };
 
 const statusOptions = (Object.keys(statusLabels) as TenantStatus[]).map((s) => ({
@@ -62,6 +73,7 @@ const roleLabels: Record<TenantUserRole, string> = {
   admin: 'UsuarioAdmin',
   operativo: 'Usuario',
   broker: 'Broker',
+  partner: 'Partner',
 };
 
 const botStatusLabels: Record<BotStatus, string> = {
@@ -76,11 +88,20 @@ const botStatusVariants: Record<BotStatus, 'success' | 'secondary' | 'warning'> 
   maintenance: 'warning',
 };
 
-const roleOptions: { value: TenantUserRole; label: string }[] = [
+type RoleOption = { value: TenantUserRole; label: string };
+
+/** Roles que el admin del tenant delega habitualmente. */
+const BASE_ROLE_OPTIONS: RoleOption[] = [
   { value: 'admin', label: 'UsuarioAdmin' },
   { value: 'operativo', label: 'Usuario (operativo)' },
   { value: 'broker', label: 'Broker' },
 ];
+
+/** Rol del responsable de tenants derivados (ver ADR-041). */
+const PARTNER_ROLE_OPTION: RoleOption = {
+  value: 'partner',
+  label: 'Partner (responsable de tenants)',
+};
 
 const emptyBotForm = { name: '', business_type: '', description: '' };
 
@@ -115,11 +136,23 @@ export const TenantEdit = () => {
   const { tenantId } = useParams<{ tenantId: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { user } = useAuth();
+
+  // El partner administra su tenant base y los derivados (ADR-041): misma
+  // pantalla, otra API y menos superficie — no elige plan, no crea agentes ni
+  // abre su configuración técnica, y de los módulos sólo prende/apaga los ya
+  // otorgados.
+  const isPartner = user?.role === 'partner';
+  const api = useMemo(() => tenantScopeApi(user?.role ?? 'super_admin'), [user?.role]);
+  // Roles asignables: el partner lo nombra administración general.
+  const roleOptions = isPartner
+    ? BASE_ROLE_OPTIONS
+    : [...BASE_ROLE_OPTIONS, PARTNER_ROLE_OPTION];
 
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [users, setUsers] = useState<TenantUser[]>([]);
-  const [bots, setBots] = useState<Bot[]>([]);
+  const [bots, setBots] = useState<TenantBotSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -143,6 +176,11 @@ export const TenantEdit = () => {
   const [botModules, setBotModules] = useState<ModuleInfo[]>([]);
   const [selectedBotModules, setSelectedBotModules] = useState<string[]>([]);
 
+  // Diálogo de módulos del agente (sólo partner): toggle de lo ya otorgado.
+  const [moduleBot, setModuleBot] = useState<TenantBotSummary | null>(null);
+  const [moduleRows, setModuleRows] = useState<BotModuleInfo[]>([]);
+  const [moduleUpdating, setModuleUpdating] = useState<string | null>(null);
+
   const [showUserModal, setShowUserModal] = useState(false);
   const [creatingUser, setCreatingUser] = useState(false);
   const [newUser, setNewUser] = useState(emptyUserForm);
@@ -165,6 +203,10 @@ export const TenantEdit = () => {
   });
   const [savingEdit, setSavingEdit] = useState(false);
 
+  // Tenant base = el propio tenant del partner: no se suspende ni se elimina
+  // desde este panel (eso lo hace administración general).
+  const isBaseTenant = isPartner && tenant?.tenant_id === user?.tenant_id;
+
   /** Vuelca el tenant en el formulario de datos generales y marca. */
   const applyTenant = useCallback((data: Tenant) => {
     setTenant(data);
@@ -183,15 +225,18 @@ export const TenantEdit = () => {
     try {
       setLoading(true);
       const [tenantData, plansData, usersData, botsData] = await Promise.all([
-        tenantAdminService.getTenant(tenantId),
-        tenantAdminService.listPlans(),
-        tenantAdminService.listUsers(tenantId, 1, 100),
-        botsService.getBots({ tenant_id: tenantId, limit: 100 }),
+        api.getTenant(tenantId),
+        // Los planes son de administración general: el partner hereda el plan
+        // del tenant base y no lo edita.
+        isPartner ? Promise.resolve<Plan[]>([]) : tenantAdminService.listPlans(),
+        api.listUsers(tenantId, 1, 100),
+        api.listBots(tenantId),
       ]);
       applyTenant(tenantData);
       setPlans(plansData);
       setUsers(usersData.users);
       setBots(botsData.bots);
+      if (isPartner) return;
       // Catálogo para el alta de agentes: si falla, la pantalla sigue usable.
       tenantAdminService
         .listModules()
@@ -202,7 +247,7 @@ export const TenantEdit = () => {
     } finally {
       setLoading(false);
     }
-  }, [tenantId, applyTenant]);
+  }, [api, tenantId, isPartner, applyTenant]);
 
   useEffect(() => {
     load();
@@ -210,15 +255,15 @@ export const TenantEdit = () => {
 
   const reloadUsers = useCallback(async () => {
     if (!tenantId) return;
-    const usersData = await tenantAdminService.listUsers(tenantId, 1, 100);
+    const usersData = await api.listUsers(tenantId, 1, 100);
     setUsers(usersData.users);
-  }, [tenantId]);
+  }, [api, tenantId]);
 
   const reloadBots = useCallback(async () => {
     if (!tenantId) return;
-    const botsData = await botsService.getBots({ tenant_id: tenantId, limit: 100 });
+    const botsData = await api.listBots(tenantId);
     setBots(botsData.bots);
-  }, [tenantId]);
+  }, [api, tenantId]);
 
   const toggleBotModule = (moduleKey: string) => {
     setSelectedBotModules((prev) =>
@@ -256,22 +301,35 @@ export const TenantEdit = () => {
     setSaving(true);
     setError(null);
     try {
-      const updated = await tenantAdminService.updateTenant(tenantId, {
-        name: name.trim(),
-        domain: domain.trim() || undefined,
-        status,
-        plan_id: planId,
-        // El backend reemplaza el dict completo de `branding`: se preservan las
-        // claves que esta pantalla no edita (p. ej. el `logo_url` legacy o
-        // `sidebar_visible` que siguen en los datos de algunos tenants).
-        branding: {
-          ...(tenant.branding ?? {}),
-          logo_url_horizontal: logoH || undefined,
-          logo_url_vertical: logoV || undefined,
-          primary_color: color,
-          tagline: tagline || undefined,
-        },
-      });
+      // El backend reemplaza el dict completo de `branding`: se preservan las
+      // claves que esta pantalla no edita (p. ej. el `logo_url` legacy o
+      // `sidebar_visible` que siguen en los datos de algunos tenants).
+      const branding = {
+        ...(tenant.branding ?? {}),
+        logo_url_horizontal: logoH || undefined,
+        logo_url_vertical: logoV || undefined,
+        primary_color: color,
+        tagline: tagline || undefined,
+      };
+      // El partner no toca el plan, y el estado de su tenant base tampoco
+      // (suspender el base es de administración general).
+      const updated = await api.updateTenant(
+        tenantId,
+        isPartner
+          ? {
+              name: name.trim(),
+              domain: domain.trim() || undefined,
+              branding,
+              ...(isBaseTenant ? {} : { status }),
+            }
+          : {
+              name: name.trim(),
+              domain: domain.trim() || undefined,
+              status,
+              plan_id: planId,
+              branding,
+            },
+      );
       applyTenant(updated);
       showToast('Cambios guardados', 'success');
     } catch (err) {
@@ -286,7 +344,7 @@ export const TenantEdit = () => {
     if (!confirm(`¿Eliminar el tenant "${tenant?.name || tenantId}"? Esta acción no se puede deshacer.`)) return;
     setDeleting(true);
     try {
-      await tenantAdminService.deleteTenant(tenantId);
+      await api.deleteTenant(tenantId);
       window.location.href = '/admin/tenants';
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo eliminar el tenant');
@@ -299,9 +357,8 @@ export const TenantEdit = () => {
     if (!tenantId || !newUser.username || !newUser.password) return;
     try {
       setCreatingUser(true);
-      await tenantAdminService.createUser({
+      await api.createUser(tenantId, {
         ...newUser,
-        tenant_id: tenantId,
         email: newUser.email || undefined,
         nombre: newUser.nombre || undefined,
         apellido: newUser.apellido || undefined,
@@ -321,15 +378,20 @@ export const TenantEdit = () => {
   // en cada render, el `useMemo` del DTO se recrearía y la tabla perdería su
   // estado (orden, columnas visibles).
   const handleToggleDisabled = useCallback(
-    async (user: TenantUser) => {
+    async (target: TenantUser) => {
+      if (!tenantId) return;
+      if (isPartner && target.role === 'partner') {
+        showToast('El usuario partner lo administra administración general.', 'error');
+        return;
+      }
       try {
-        await tenantAdminService.updateUser(user.username, { disabled: !user.disabled });
+        await api.updateUser(tenantId, target.username, { disabled: !target.disabled });
         await reloadUsers();
       } catch {
         // El interceptor de la API ya muestra el motivo.
       }
     },
-    [reloadUsers],
+    [api, tenantId, isPartner, showToast, reloadUsers],
   );
 
   // Aprueba (manual) el plan que un usuario pidió al darse de alta por
@@ -346,24 +408,34 @@ export const TenantEdit = () => {
     [reloadUsers],
   );
 
-  const openEditUser = useCallback((user: TenantUser) => {
-    setEditingUser(user);
-    setEditForm({
-      email: user.email || '',
-      nombre: user.nombre || '',
-      apellido: user.apellido || '',
-      avatar_url: user.avatar_url || '',
-      role: (user.role as TenantUserRole) || 'operativo',
-      password: '',
-    });
-  }, []);
+  const openEditUser = useCallback(
+    (target: TenantUser) => {
+      // El partner no administra cuentas partner (la suya incluida): el menú de
+      // fila del DataTable no soporta acciones por fila, así que se corta acá
+      // con el mismo criterio y mensaje que la API.
+      if (isPartner && target.role === 'partner') {
+        showToast('El usuario partner lo administra administración general.', 'error');
+        return;
+      }
+      setEditingUser(target);
+      setEditForm({
+        email: target.email || '',
+        nombre: target.nombre || '',
+        apellido: target.apellido || '',
+        avatar_url: target.avatar_url || '',
+        role: (target.role as TenantUserRole) || 'operativo',
+        password: '',
+      });
+    },
+    [isPartner, showToast],
+  );
 
   const handleSaveEdit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!editingUser) return;
+    if (!tenantId || !editingUser) return;
     try {
       setSavingEdit(true);
-      await tenantAdminService.updateUser(editingUser.username, {
+      await api.updateUser(tenantId, editingUser.username, {
         email: editForm.email || undefined,
         nombre: editForm.nombre || undefined,
         apellido: editForm.apellido || undefined,
@@ -384,16 +456,61 @@ export const TenantEdit = () => {
 
   // La confirmación la hace la grilla (variante destructiva del DTO).
   const handleDeleteUser = useCallback(
-    async (user: TenantUser) => {
+    async (target: TenantUser) => {
+      if (!tenantId) return;
+      if (isPartner && target.role === 'partner') {
+        showToast('El usuario partner lo administra administración general.', 'error');
+        return;
+      }
       try {
-        await tenantAdminService.deleteUser(user.username);
+        await api.deleteUser(tenantId, target.username);
         await reloadUsers();
       } catch {
         // El interceptor de la API ya muestra el motivo (p. ej. bots asociados).
       }
     },
-    [reloadUsers],
+    [api, tenantId, isPartner, showToast, reloadUsers],
   );
+
+  // ── Módulos del agente (partner) ──────────────────────────────────────────
+  // El partner sólo prende/apaga lo que administración general ya otorgó: el
+  // catálogo completo y el grant/revoke siguen en /api/admin/*.
+  const openBotModules = useCallback(
+    async (bot: TenantBotSummary) => {
+      if (!tenantId) return;
+      setModuleBot(bot);
+      setModuleRows([]);
+      try {
+        const rows = await partnerService.getBotModules(tenantId, bot.bot_id);
+        setModuleRows(rows.filter((m) => m.granted));
+      } catch {
+        // El interceptor de la API ya muestra el motivo.
+      }
+    },
+    [tenantId],
+  );
+
+  const toggleBotModuleEnabled = async (moduleKey: string, enabled: boolean) => {
+    if (!tenantId || !moduleBot) return;
+    setModuleUpdating(moduleKey);
+    try {
+      const updated = await partnerService.setBotModuleEnabled(
+        tenantId,
+        moduleBot.bot_id,
+        moduleKey,
+        enabled,
+      );
+      // El PATCH devuelve el grant sin nombre/descripción: se conservan los
+      // del catálogo que ya tenía la fila.
+      setModuleRows((prev) =>
+        prev.map((row) => (row.module_key === moduleKey ? { ...row, ...updated } : row)),
+      );
+    } catch {
+      // 403 si el módulo no está otorgado — el interceptor muestra el motivo.
+    } finally {
+      setModuleUpdating(null);
+    }
+  };
 
   // Alta de usuario: el botón lo renderiza el toolbar del `DataTable`
   // (`toolbarActions`) con la misma primitiva y forma que el alta de entidad,
@@ -495,35 +612,41 @@ export const TenantEdit = () => {
               </Badge>
             ),
           },
-          {
-            id: 'plan',
-            header: 'Plan',
-            accessorFn: (u) =>
-              plans.find((p) => p.plan_id === u.requested_plan_id)?.name ?? '',
-            cell: ({ row }) => {
-              const u = row.original;
-              if (!u.requested_plan_id) {
-                return <span className="text-muted-foreground">—</span>;
-              }
-              return (
-                <div className="flex items-center gap-2">
-                  {plans.find((p) => p.plan_id === u.requested_plan_id)?.name ?? 'Plan'}
-                  {u.subscription_status === 'pending' && (
-                    <>
-                      <Badge variant="warning">Pendiente</Badge>
-                      <Button
-                        variant="link"
-                        size="xs"
-                        onClick={() => handleApproveUserPlan(u.username, 'active')}
-                      >
-                        Aprobar
-                      </Button>
-                    </>
-                  )}
-                </div>
-              );
-            },
-          },
+          // El plan de cada usuario es de administración general: el partner
+          // no ve la columna ni puede aprobar un plan pendiente.
+          ...(isPartner
+            ? []
+            : [
+                {
+                  id: 'plan',
+                  header: 'Plan',
+                  accessorFn: (u: TenantUser) =>
+                    plans.find((p) => p.plan_id === u.requested_plan_id)?.name ?? '',
+                  cell: ({ row }: { row: { original: TenantUser } }) => {
+                    const u = row.original;
+                    if (!u.requested_plan_id) {
+                      return <span className="text-muted-foreground">—</span>;
+                    }
+                    return (
+                      <div className="flex items-center gap-2">
+                        {plans.find((p) => p.plan_id === u.requested_plan_id)?.name ?? 'Plan'}
+                        {u.subscription_status === 'pending' && (
+                          <>
+                            <Badge variant="warning">Pendiente</Badge>
+                            <Button
+                              variant="link"
+                              size="xs"
+                              onClick={() => handleApproveUserPlan(u.username, 'active')}
+                            >
+                              Aprobar
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    );
+                  },
+                },
+              ]),
         ],
         rowActions: [
           { id: 'edit', label: 'Editar', run: openEditUser },
@@ -531,7 +654,15 @@ export const TenantEdit = () => {
           { id: 'delete', label: 'Eliminar', variant: 'destructive', run: handleDeleteUser },
         ],
       }),
-    [plans, handleApproveUserPlan, handleDeleteUser, handleToggleDisabled, openEditUser, toolbarButton],
+    [
+      isPartner,
+      plans,
+      handleApproveUserPlan,
+      handleDeleteUser,
+      handleToggleDisabled,
+      openEditUser,
+      toolbarButton,
+    ],
   );
 
   // Alta de agentes: mismo patrón que la grilla de usuarios. El tenant está
@@ -546,10 +677,11 @@ export const TenantEdit = () => {
     [],
   );
 
-  const botsDto = useMemo<TableDTO<Bot>>(
+  const botsDto = useMemo<TableDTO<TenantBotSummary>>(
     () =>
-      defineTableDTO<Bot>({
-        toolbarActions: botToolbarButton,
+      defineTableDTO<TenantBotSummary>({
+        // El partner no crea agentes ni abre su configuración técnica.
+        toolbarActions: isPartner ? undefined : botToolbarButton,
         header: (rows) => (
           <h3 className={sectionTitle}>Agentes ({rows.length})</h3>
         ),
@@ -575,21 +707,33 @@ export const TenantEdit = () => {
             id: 'name',
             accessorKey: 'name',
             header: 'Agente',
-            cell: ({ row }) => (
-              <div className="grid">
-                <Link
-                  to={`/bots/${row.original.bot_id}`}
-                  className="font-medium text-foreground hover:underline"
-                >
-                  {row.original.name}
-                </Link>
-                {row.original.description && (
-                  <span className="text-xs text-muted-foreground">
-                    {row.original.description}
-                  </span>
-                )}
-              </div>
-            ),
+            cell: ({ row }) =>
+              isPartner ? (
+                // Sin link: la configuración del agente es sólo de
+                // administración general.
+                <div className="grid">
+                  <span className="font-medium text-foreground">{row.original.name}</span>
+                  {row.original.description && (
+                    <span className="text-xs text-muted-foreground">
+                      {row.original.description}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <div className="grid">
+                  <Link
+                    to={`/bots/${row.original.bot_id}`}
+                    className="font-medium text-foreground hover:underline"
+                  >
+                    {row.original.name}
+                  </Link>
+                  {row.original.description && (
+                    <span className="text-xs text-muted-foreground">
+                      {row.original.description}
+                    </span>
+                  )}
+                </div>
+              ),
           },
           {
             id: 'status',
@@ -606,15 +750,17 @@ export const TenantEdit = () => {
             header: 'Tipo de negocio',
           },
         ],
-        rowActions: [
-          {
-            id: 'open',
-            label: 'Abrir configuración',
-            run: (bot) => navigate(`/bots/${bot.bot_id}`),
-          },
-        ],
+        rowActions: isPartner
+          ? [{ id: 'modules', label: 'Gestionar módulos', run: openBotModules }]
+          : [
+              {
+                id: 'open',
+                label: 'Abrir configuración',
+                run: (bot) => navigate(`/bots/${bot.bot_id}`),
+              },
+            ],
       }),
-    [navigate, botToolbarButton],
+    [navigate, botToolbarButton, isPartner, openBotModules],
   );
 
   if (loading) return <LoadingPage />;
@@ -679,38 +825,55 @@ export const TenantEdit = () => {
                 placeholder="ej. pachoteayuda.ar"
               />
             </Field>
-            <Field label="Estado" htmlFor="edit-tenant-status" reserveHint>
-              <Select
-                items={statusOptions}
-                value={status}
-                onValueChange={(next) => setStatus((next as TenantStatus) ?? 'trial')}
-              >
-                <SelectTrigger id="edit-tenant-status" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Plan" htmlFor="edit-tenant-plan">
-              <Select items={planItems} value={planId} onValueChange={(next) => setPlanId(next ?? '')}>
-                <SelectTrigger id="edit-tenant-plan" className="w-full">
-                  <SelectValue placeholder="Elegí un plan" />
-                </SelectTrigger>
-                <SelectContent>
-                  {planItems.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
+            {/* El estado del tenant base del partner lo maneja administración
+                general: acá se muestra de sólo lectura. Sobre un derivado, el
+                partner sí puede suspenderlo o reactivarlo. */}
+            {isPartner && isBaseTenant ? (
+              <Field label="Estado" reserveHint>
+                <div className="flex h-7 items-center">
+                  <Badge variant={statusVariants[tenant.status]}>
+                    {statusLabels[tenant.status]}
+                  </Badge>
+                </div>
+              </Field>
+            ) : (
+              <Field label="Estado" htmlFor="edit-tenant-status" reserveHint>
+                <Select
+                  items={statusOptions}
+                  value={status}
+                  onValueChange={(next) => setStatus((next as TenantStatus) ?? 'trial')}
+                >
+                  <SelectTrigger id="edit-tenant-status" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            )}
+            {/* El plan es de administración general: el derivado hereda el del
+                tenant base. */}
+            {!isPartner && (
+              <Field label="Plan" htmlFor="edit-tenant-plan">
+                <Select items={planItems} value={planId} onValueChange={(next) => setPlanId(next ?? '')}>
+                  <SelectTrigger id="edit-tenant-plan" className="w-full">
+                    <SelectValue placeholder="Elegí un plan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {planItems.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            )}
             {/* `wide`: ocupa las dos columnas libres a la derecha de Plan, así
                 los logos y el color quedan juntos en la última fila. */}
             <Field label="Tagline" htmlFor="edit-tenant-tagline" wide>
@@ -775,8 +938,10 @@ export const TenantEdit = () => {
           <DataTable dto={usersDto} data={users} />
         </section>
 
-        {/* Zona de peligro — oculta hasta que se pida verla */}
-        <section className="grid gap-3 border-t border-border pt-6">
+        {/* Zona de peligro — oculta hasta que se pida verla. El tenant base del
+            partner no se elimina desde este panel. */}
+        {(!isPartner || !isBaseTenant) && (
+          <section className="grid gap-3 border-t border-border pt-6">
           <div className="flex items-center justify-between gap-2">
             <h3 className={cn(sectionTitle, 'text-destructive')}>Zona de peligro</h3>
             <Button variant="outline" size="sm" onClick={() => setShowDanger((shown) => !shown)}>
@@ -786,8 +951,9 @@ export const TenantEdit = () => {
           {showDanger && (
             <>
               <p className="text-xs text-muted-foreground">
-                Elimina permanentemente el tenant. Requiere que no tenga bots, usuarios, canales,
-                clientes ni conversaciones asociados.
+                {isPartner
+                  ? 'Elimina permanentemente el tenant y sus agentes clonados. Requiere que no tenga usuarios, canales, clientes ni conversaciones asociados.'
+                  : 'Elimina permanentemente el tenant. Requiere que no tenga bots, usuarios, canales, clientes ni conversaciones asociados.'}
               </p>
               <div className="flex">
                 <Button variant="destructive" onClick={handleDeleteTenant} loading={deleting}>
@@ -796,7 +962,8 @@ export const TenantEdit = () => {
               </div>
             </>
           )}
-        </section>
+          </section>
+        )}
       </div>
 
       <Dialog open={showUserModal} onOpenChange={setShowUserModal}>
@@ -1064,6 +1231,55 @@ export const TenantEdit = () => {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+      {/* Módulos del agente (partner): toggle de lo que administración general
+          ya otorgó — el partner no otorga ni revoca. */}
+      <Dialog open={moduleBot !== null} onOpenChange={(open) => !open && setModuleBot(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Módulos de {moduleBot?.name}</DialogTitle>
+            <DialogDescription>
+              El partner sólo puede prender o apagar módulos ya otorgados.
+            </DialogDescription>
+          </DialogHeader>
+
+          {moduleRows.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Este agente no tiene módulos otorgados.
+            </p>
+          ) : (
+            <div className="grid gap-2">
+              {moduleRows.map((module) => (
+                <label
+                  key={module.module_key}
+                  className="flex items-start gap-2 text-sm text-foreground"
+                >
+                  <input
+                    type="checkbox"
+                    className="mt-1 accent-primary"
+                    checked={module.enabled}
+                    disabled={moduleUpdating === module.module_key}
+                    onChange={(e) => toggleBotModuleEnabled(module.module_key, e.target.checked)}
+                  />
+                  <span>
+                    {module.module_name ?? module.module_key}
+                    {module.module_description && (
+                      <span className="block text-xs text-muted-foreground">
+                        {module.module_description}
+                      </span>
+                    )}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+
+          <DialogFooter className="flex-row justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => setModuleBot(null)}>
+              Cerrar
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </AppLayout>

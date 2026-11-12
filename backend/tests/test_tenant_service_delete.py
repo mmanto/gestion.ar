@@ -107,3 +107,13 @@ async def test_delete_refuses_when_has_conversations(service):
     set_session(session)
     assert await svc.delete_tenant(row.tenant_id) is False
     assert session.deleted == []
+
+async def test_delete_refuses_when_has_child_tenants(service):
+    """Un tenant base con derivados no se borra: los derivados quedarían
+    huérfanos (ver ADR-041)."""
+    svc, set_session = service
+    row = _tenant_row()
+    session = FakeSession({row.tenant_id: row}, {"tenants": 1})
+    set_session(session)
+    assert await svc.delete_tenant(row.tenant_id) is False
+    assert session.deleted == []

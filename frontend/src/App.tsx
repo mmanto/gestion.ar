@@ -64,11 +64,13 @@ function AppRoutes() {
                     <Route path="/chat/:botId" element={<ChatPage />} />
                     <Route path="/u/:username" element={<UserLandingPage />} />
 
-                    {/* Administración general — sólo super_admin */}
+                    {/* Administración de tenants — super_admin y partners (el
+                        partner sólo ve su tenant base y sus derivados, ver
+                        ADR-041) */}
                     <Route
                       path="/admin/tenants"
                       element={
-                        <ProtectedRoute roles={['super_admin']}>
+                        <ProtectedRoute roles={['super_admin', 'partner']}>
                           <Tenants />
                         </ProtectedRoute>
                       }
@@ -76,7 +78,7 @@ function AppRoutes() {
                     <Route
                       path="/admin/tenants/:tenantId/editar"
                       element={
-                        <ProtectedRoute roles={['super_admin']}>
+                        <ProtectedRoute roles={['super_admin', 'partner']}>
                           <TenantEdit />
                         </ProtectedRoute>
                       }

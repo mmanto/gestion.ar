@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Blocks, Bot, Building2, CreditCard } from 'lucide-react';
 import { useModules } from '../modules/ModulesProvider';
+import { useAuth } from '../hooks/useAuth';
 import type { ModuleManifest } from '../modules/manifest';
 
 export interface NavLink {
@@ -35,19 +36,32 @@ const CORE_LINKS: NavLink[] = [
   },
 ];
 
+/** Links de la consola que sólo ve administración general. */
+const SUPER_ADMIN_ONLY_LINKS: Record<string, true> = { '/admin/plans': true };
+
 /**
  * Navegación de la consola: los links core + los que aporta cada módulo
  * instalado (`admin.nav` del manifiesto). Apariencia vive en Ajustes, no acá.
+ *
+ * El partner (ADR-041) sólo administra tenants: no ve Planes ni las pantallas
+ * de los módulos (su configuración técnica es de super_admin).
  */
-export function buildNavLinks(modules: ModuleManifest[]): NavLink[] {
-  const moduleLinks: NavLink[] = modules
-    .map((manifest) => manifest.admin?.nav)
-    .filter((nav): nav is NonNullable<typeof nav> => Boolean(nav))
-    .map((nav) => ({ to: nav.to, label: nav.label, icon: iconFor(nav.icon) }));
+export function buildNavLinks(modules: ModuleManifest[], isSuperAdmin: boolean): NavLink[] {
+  const coreLinks = isSuperAdmin
+    ? CORE_LINKS
+    : CORE_LINKS.filter((link) => !SUPER_ADMIN_ONLY_LINKS[link.to]);
 
-  return [...CORE_LINKS, ...moduleLinks];
+  const moduleLinks: NavLink[] = isSuperAdmin
+    ? modules
+        .map((manifest) => manifest.admin?.nav)
+        .filter((nav): nav is NonNullable<typeof nav> => Boolean(nav))
+        .map((nav) => ({ to: nav.to, label: nav.label, icon: iconFor(nav.icon) }))
+    : [];
+
+  return [...coreLinks, ...moduleLinks];
 }
 
 export function useNavLinks(): NavLink[] {
-  return buildNavLinks(useModules());
+  const { user } = useAuth();
+  return buildNavLinks(useModules(), user?.role === 'super_admin');
 }

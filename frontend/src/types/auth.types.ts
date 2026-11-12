@@ -1,5 +1,5 @@
 export type AuthProvider = 'google' | 'microsoft';
-export type UserRole = 'super_admin' | 'admin' | 'operativo';
+export type UserRole = 'super_admin' | 'admin' | 'operativo' | 'partner';
 
 export interface User {
   username: string;

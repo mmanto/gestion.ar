@@ -47,6 +47,7 @@ from app.routers.tenant_oauth_router import router as tenant_oauth_router
 from app.modules.registry import module_routers
 from app.routers.tenant_admin_router import router as tenant_admin_router
 from app.routers.tenant_router import router as tenant_router
+from app.routers.partner_router import router as partner_router
 from app.routers.upload_router import router as upload_router, UPLOADS_DIR
 from app.routers.biometric_router import router as biometric_router
 from app.routers.tenant_passkey_router import router as tenant_passkey_router
@@ -98,6 +99,7 @@ for _module_key, _module_router in module_routers():
 
 app.include_router(tenant_admin_router)      # Administración general: tenants, usuarios, módulos
 app.include_router(tenant_router)            # Backoffice de tenant: bots (read-only), módulos, entrenamiento
+app.include_router(partner_router)           # Rol partner: tenants derivados de su tenant base, módulos y usuarios
 app.include_router(upload_router)            # Subida de archivos (avatares)
 app.include_router(biometric_router)         # Login biométrico con huella (dispositivos)
 app.include_router(tenant_passkey_router)    # Login con passkeys WebAuthn (rostro/huella/llave) de usuarios de tenant

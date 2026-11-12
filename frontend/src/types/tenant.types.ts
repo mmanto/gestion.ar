@@ -2,10 +2,12 @@
  * Tenant types - administración general (tenants, usuarios, módulos)
  */
 
+import type { BotStatus } from './bot.types';
+
 export type TenantStatus = 'active' | 'suspended' | 'trial';
 /** Roles de un usuario de tenant — espejo de `UserRole` en el backend
  * (`app/models/tenant.py`), sin `super_admin` (no se puede crear con tenant). */
-export type TenantUserRole = 'admin' | 'operativo' | 'broker';
+export type TenantUserRole = 'admin' | 'operativo' | 'broker' | 'partner';
 export type PlanPeriodicity = 'monthly' | 'annual';
 // Estado de la solicitud de plan del tenant: 'pending' al darse de alta por
 // autoregistro/gmail; el pase a approved/active lo hace super_admin (ADR-013).
@@ -50,8 +52,19 @@ export interface Tenant {
   status: TenantStatus;
   branding: TenantBranding;
   plan_id: string;
+  /** Tenant base del que se derivó (NULL/ausente = tenant raíz). Ver ADR-041. */
+  parent_tenant_id?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/**
+ * Alta de un tenant derivado por un partner: plan, estado, settings y marca
+ * salen del tenant base, así que sólo se eligen nombre y dominio.
+ */
+export interface PartnerTenantCreate {
+  name: string;
+  domain?: string;
 }
 
 export interface TenantCreate {
@@ -120,6 +133,27 @@ export interface TenantUserUpdate {
 export interface TenantUsersResponse {
   success: boolean;
   users: TenantUser[];
+  total: number;
+  page: number;
+  pages: number;
+  limit: number;
+}
+
+/**
+ * Resumen read-only de un agente de un tenant (lo único que ve el partner: no
+ * edita su configuración técnica, ver ADR-041).
+ */
+export interface TenantBotSummary {
+  bot_id: string;
+  name: string;
+  description?: string | null;
+  status: BotStatus;
+  business_type: string;
+}
+
+export interface TenantBotsResponse {
+  success: boolean;
+  bots: TenantBotSummary[];
   total: number;
   page: number;
   pages: number;

@@ -12,6 +12,7 @@ const roleLabels: Record<UserRole, string> = {
   super_admin: 'Administración general',
   admin: 'Administrador',
   operativo: 'Operativo',
+  partner: 'Partner',
 };
 
 const viewModes: { value: EntityViewMode; label: string; description: string }[] = [

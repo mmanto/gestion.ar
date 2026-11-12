@@ -15,6 +15,8 @@ import { PageHeader } from '../../components/common/PageHeader';
 import { Alert } from '../../components/common/Alert';
 import { TenantSummary } from '../../components/tenants/TenantSummary';
 import tenantAdminService from '../../services/tenantAdmin.service';
+import { tenantScopeApi } from '../../services/tenantScope.service';
+import { useAuth } from '../../hooks/useAuth';
 import type { Plan, Tenant, TenantStatus } from '../../types/tenant.types';
 
 const statusLabels: Record<TenantStatus, string> = {
@@ -31,6 +33,13 @@ const statusVariants: Record<TenantStatus, 'success' | 'destructive' | 'warning'
 
 export const Tenants = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  // El partner administra su tenant base y los derivados (ADR-041): misma
+  // pantalla, otra API (`/api/partner/*`) y sin planes — el alta de un
+  // derivado hereda el plan del base.
+  const isPartner = user?.role === 'partner';
+  const api = useMemo(() => tenantScopeApi(user?.role ?? 'super_admin'), [user?.role]);
+
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,22 +48,26 @@ export const Tenants = () => {
   const fetchTenants = useCallback(async (options?: { silent?: boolean }) => {
     try {
       if (!options?.silent) setLoading(true);
-      const result = await tenantAdminService.listTenants(1, 100);
+      const result = await api.listTenants(1, 100);
       setTenants(result.tenants);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error cargando tenants');
     } finally {
       if (!options?.silent) setLoading(false);
     }
-  }, []);
+  }, [api]);
 
   useEffect(() => {
     fetchTenants();
+    if (isPartner) {
+      setPlans([]);
+      return;
+    }
     tenantAdminService
       .listPlans()
       .then(setPlans)
       .catch(() => {});
-  }, [fetchTenants]);
+  }, [fetchTenants, isPartner]);
 
   /**
    * DTO de la grilla: el paquete resuelve buscador, orden, visibilidad de
@@ -94,6 +107,9 @@ export const Tenants = () => {
             label: 'Estado',
             defaultValue: 'trial',
             display: 'badge',
+            // El partner no elige estado ni plan: el derivado hereda ambos del
+            // tenant base (ADR-041).
+            formHidden: isPartner,
             options: (Object.keys(statusLabels) as TenantStatus[]).map((status) => ({
               value: status,
               label: statusLabels[status],
@@ -105,6 +121,7 @@ export const Tenants = () => {
             name: 'plan_id',
             label: 'Plan',
             options: planOptions,
+            formHidden: isPartner,
           },
           {
             // Derivado por el backend: se muestra en el detalle, no se edita.
@@ -132,12 +149,20 @@ export const Tenants = () => {
         // Sólo el alta pasa por acá: la edición va a la pantalla propia
         // (`edit.href`), que además edita la marca (logos, color, tagline) con el
         // uploader de la app.
-        await tenantAdminService.createTenant({
-          name: values.name.trim(),
-          domain: values.domain.trim() || undefined,
-          status: values.status as TenantStatus,
-          plan_id: values.plan_id,
-        });
+        if (isPartner) {
+          // El derivado hereda plan, estado y settings del tenant base.
+          await api.createTenant({
+            name: values.name.trim(),
+            domain: values.domain.trim() || undefined,
+          });
+        } else {
+          await api.createTenant({
+            name: values.name.trim(),
+            domain: values.domain.trim() || undefined,
+            status: values.status as TenantStatus,
+            plan_id: values.plan_id,
+          });
+        }
         await fetchTenants({ silent: true });
       },
       create: { variant: 'default' },
@@ -200,7 +225,7 @@ export const Tenants = () => {
         },
       ],
     });
-  }, [plans, fetchTenants]);
+  }, [api, plans, isPartner, fetchTenants]);
 
   if (loading) {
     return <LoadingPage />;

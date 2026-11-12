@@ -20,6 +20,9 @@ class UserRole(str, Enum):
     ADMIN = "admin"
     OPERATIVO = "operativo"
     BROKER = "broker"
+    #: Responsable de un tenant base: construye y administra tenants derivados
+    #: desde el panel general (ver ADR-041).
+    PARTNER = "partner"
 
 
 class TenantCreate(BaseModel):
@@ -38,6 +41,22 @@ class TenantUpdate(BaseModel):
     plan_id: Optional[str] = None
 
 
+class PartnerTenantCreate(BaseModel):
+    """Alta de un tenant derivado: el plan, estado, settings y marca base
+    salen del tenant base; sólo se eligen nombre y dominio."""
+    name: str = Field(..., min_length=2, max_length=100)
+    domain: Optional[str] = None
+    branding: Dict[str, Any] = Field(default_factory=dict)
+
+
+class PartnerTenantUpdate(BaseModel):
+    """Edición permitida al partner. `status` sólo aplica a tenants derivados."""
+    name: Optional[str] = Field(None, min_length=2, max_length=100)
+    domain: Optional[str] = None
+    status: Optional[TenantStatus] = None
+    branding: Optional[Dict[str, Any]] = None
+
+
 class Tenant(BaseModel):
     tenant_id: str
     name: str
@@ -46,6 +65,8 @@ class Tenant(BaseModel):
     branding: Dict[str, Any] = Field(default_factory=dict)
     settings: Dict[str, Any] = Field(default_factory=dict)
     plan_id: str
+    #: Tenant base del que se derivó este tenant (NULL = tenant raíz).
+    parent_tenant_id: Optional[str] = None
     created_at: str
     updated_at: str
 

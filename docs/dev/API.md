@@ -631,8 +631,8 @@ Editar un tenant. Todos los campos opcionales: `name`, `domain`, `status`
 ### DELETE `/api/admin/tenants/{tenant_id}`
 
 Eliminar un tenant. **409** si el tenant no existe o tiene datos asociados
-(bots, usuarios, canales, clientes, conversaciones) que deben eliminarse
-primero — nunca borra en cascada datos de negocio.
+(bots, usuarios, canales, clientes, conversaciones, tenants derivados) que
+deben eliminarse primero — nunca borra en cascada datos de negocio.
 
 ### GET `/api/admin/tenants/{tenant_id}/api-key`
 
@@ -671,6 +671,102 @@ Edita un usuario de cualquier tenant. Body opcional: `role`, `disabled`,
 - `password`: 6–128 caracteres; se hashea antes de guardarse. Si se omite, la
   contraseña actual queda intacta.
 - `role: "super_admin"` responde **400**.
+
+---
+
+## Partner — construcción de tenants
+
+Panel general del rol `partner` (ADR-041). Requieren JWT con rol `partner`
+(`require_role("partner")`). El alcance es **su tenant base** — el de su
+`users.tenant_id` — y los **tenants derivados** de él
+(`tenants.parent_tenant_id`): fuera de eso todo responde **404** (no se filtra
+qué tenants existen).
+
+Un partner **no** puede: crear agentes, editar su configuración técnica
+(`system_prompt`, `ius_config`, `flow`, parámetros del modelo, canales,
+entrenamiento), otorgar/revocar módulos, ver ni asignar planes, suspender o
+eliminar su tenant base, ni administrar cuentas `partner`/`super_admin`.
+
+### GET `/api/partner/tenants?page=1&limit=20`
+
+Tenant base + derivados, del más nuevo al más viejo. Mismo shape que
+`GET /api/admin/tenants`.
+
+### POST `/api/partner/tenants`
+
+Alta de un tenant derivado. Body:
+```json
+{ "name": "Cliente Partner", "domain": "cliente-partner.test" }
+```
+`branding` (opcional) se mezcla sobre el del tenant base. El resto **no** se
+elige: `status`, `plan_id` y `settings` se copian del base, junto con sus
+agentes (misma `config`, sin `channel_ids` ni contadores) y sus módulos (con
+`granted`/`enabled` tal como estaban). No se copia `tenant_llm_configs`, ni
+canales, clientes o conversaciones.
+
+- **201** `{"success": true, "tenant": {...}}` (incluye `parent_tenant_id`).
+- **403** si el tenant base está suspendido.
+- **409** si ya existe un tenant con ese dominio.
+
+### GET `/api/partner/tenants/{tenant_id}`
+
+Detalle (base o derivado). **404** fuera de alcance.
+
+### PATCH `/api/partner/tenants/{tenant_id}`
+
+Edita `name`, `domain`, `status` y `branding`. **400** si se intenta cambiar
+`status` del tenant base; **404** fuera de alcance.
+
+### DELETE `/api/partner/tenants/{tenant_id}`
+
+Elimina un tenant derivado junto con sus **agentes clonados** (`bots` y sus
+`bot_modules`; los `tenant_modules` y la config de IA caen por FK). **400**
+sobre el tenant base; **409** si todavía tiene usuarios, canales, clientes,
+conversaciones o push subscriptions — esos datos operativos se limpian primero
+y nunca se borran en cascada.
+
+### GET `/api/partner/tenants/{tenant_id}/bots?page=1&limit=20`
+
+Resumen read-only de los agentes (`bot_id`, `name`, `description`, `status`,
+`business_type`) — mismo shape que `/api/tenant/bots`.
+
+### GET `/api/partner/tenants/{tenant_id}/bots/{bot_id}/modules`
+
+Módulos del agente con `granted`/`enabled`/`available`. **404** si el agente no
+es de ese tenant.
+
+### PATCH `/api/partner/tenants/{tenant_id}/bots/{bot_id}/modules/{module_key}`
+
+```json
+{ "enabled": false }
+```
+Prende/apaga el módulo. **403** si el módulo no está otorgado (`granted=false`):
+el partner no otorga ni revoca.
+
+### GET `/api/partner/tenants/{tenant_id}/users?page=1&limit=50`
+
+Usuarios del tenant; mismo shape que `/api/admin/users`.
+
+### POST `/api/partner/tenants/{tenant_id}/users`
+
+Alta desde el panel del partner (el `tenant_id` va en la ruta). Body:
+`username`, `password`, `email`, `nombre`, `apellido`, `avatar_url`, `role`
+(`admin`|`operativo`|`broker`), `broker_username`.
+
+- **201** `{"success": true, "user": {...}}`.
+- **400** si `role` es `partner` o `super_admin`.
+
+### PATCH `/api/partner/tenants/{tenant_id}/users/{username}`
+
+Mismos campos que `PATCH /api/tenant/users/{username}`.
+
+- **400** al asignar `partner`/`super_admin`.
+- **403** si el usuario objetivo es `partner` (lo administra administración general).
+- **404** si el usuario no es de ese tenant.
+
+### DELETE `/api/partner/tenants/{tenant_id}/users/{username}`
+
+Mismas guardas; **409** si el usuario tiene agentes u otros recursos asociados.
 
 ---
 

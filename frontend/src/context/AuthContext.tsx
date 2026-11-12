@@ -6,12 +6,14 @@ import authService from '../services/auth.service';
 // eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Esta app (panel principal) es de uso exclusivo de administración general
-// (ver ProtectedRoute). Un usuario 'admin'/'operativo' de tenant que loguea
-// acá válidamente pero no puede acceder a ninguna ruta protegida generaba un
-// loop infinito Login -> /admin/tenants -> Login (pantalla en blanco) — por
-// eso el rol se valida acá, antes de establecer la sesión.
-const ALLOWED_ROLE = 'super_admin';
+// Esta app (panel principal) es de administración general y de los partners
+// (ver ProtectedRoute): un partner administra los tenants derivados de su
+// tenant base, no la configuración técnica de los agentes (ADR-041). Un
+// usuario 'admin'/'operativo' de tenant que loguea acá válidamente pero no
+// puede acceder a ninguna ruta protegida generaba un loop infinito Login ->
+// /admin/tenants -> Login (pantalla en blanco) — por eso el rol se valida acá,
+// antes de establecer la sesión.
+const ALLOWED_ROLES: User['role'][] = ['super_admin', 'partner'];
 const ROLE_NOT_ALLOWED_MESSAGE =
   'Esta cuenta no tiene acceso a este panel. Ingresá desde el backoffice de tu organización.';
 
@@ -39,7 +41,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Verificar que el token sigue siendo válido
         try {
           const verifiedUser = await authService.verifyToken();
-          if (verifiedUser.role !== ALLOWED_ROLE) {
+          if (!ALLOWED_ROLES.includes(verifiedUser.role)) {
             throw new Error(ROLE_NOT_ALLOWED_MESSAGE);
           }
           setToken(storedToken);
@@ -71,7 +73,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await authService.login(credentials);
 
-      if (response.user.role !== ALLOWED_ROLE) {
+      if (!ALLOWED_ROLES.includes(response.user.role)) {
         throw new Error(ROLE_NOT_ALLOWED_MESSAGE);
       }
 
@@ -94,7 +96,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     authService.saveToken(appToken);
     // El finalize no devuelve el usuario completo; lo obtenemos de /auth/me.
     const verifiedUser = await authService.verifyToken();
-    if (verifiedUser.role !== ALLOWED_ROLE) {
+    if (!ALLOWED_ROLES.includes(verifiedUser.role)) {
       authService.clearAuth();
       throw new Error(ROLE_NOT_ALLOWED_MESSAGE);
     }

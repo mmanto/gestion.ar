@@ -25,7 +25,7 @@ from app.auth_service import User
 from app.dependencies.auth import get_current_user, require_role
 from app.models.bot import BotStatus, BotUpdate
 from app.llm_errors import LLMNotConfiguredError, LLMProviderError
-from app.models.tenant import AutoQualifyColorsUpdate, CustomFactsUpdate, ModuleEnableRequest, TenantLLMConfigOut, TenantLLMConfigUpdate, TenantOwnUserCreate, TenantUpdate, TenantUserOut, TenantUserUpdate
+from app.models.tenant import AutoQualifyColorsUpdate, CustomFactsUpdate, ModuleEnableRequest, TenantLLMConfigOut, TenantLLMConfigUpdate, TenantOwnUserCreate, TenantUpdate, TenantUserUpdate, UserRole
 from app.services.secrets_service import SecretsConfigError
 from app.services.tenant_llm_service import (
     delete_tenant_llm_config,
@@ -38,7 +38,7 @@ from app.services.bot_service import get_bot_service
 from app.routers.upload_router import UPLOADS_DIR
 from app.services.tenant_service import get_tenant_service
 from app.services.module_service import get_module_service
-from app.services.user_service import get_user_service
+from app.services.user_service import get_user_service, to_tenant_user_out
 from app.services.channel_service import get_channel_service
 
 router = APIRouter(prefix="/api/tenant", tags=["tenant"])
@@ -320,22 +320,6 @@ async def update_auto_qualify_colors(
 # UsuarioAdmin no puede ver ni tocar usuarios de otro tenant, ni crear un
 # super_admin.
 
-def _user_out(user_in_db) -> TenantUserOut:
-    return TenantUserOut(
-        username=user_in_db.username,
-        email=user_in_db.email,
-        nombre=user_in_db.nombre,
-        apellido=user_in_db.apellido,
-        avatar_url=user_in_db.avatar_url,
-        tenant_id=user_in_db.tenant_id,
-        role=user_in_db.role,
-        disabled=user_in_db.disabled,
-        requested_plan_id=getattr(user_in_db, "requested_plan_id", None),
-        subscription_status=getattr(user_in_db, "subscription_status", "active"),
-        broker_username=user_in_db.broker_username,
-    )
-
-
 @router.get("/users", response_model=dict)
 async def get_tenant_users(
     page: int = Query(1, ge=1),
@@ -349,7 +333,7 @@ async def get_tenant_users(
     )
     return {
         "success": True,
-        "users": [_user_out(u).model_dump() for u in result["users"]],
+        "users": [to_tenant_user_out(u).model_dump() for u in result["users"]],
         "total": result["total"],
         "page": result["page"],
         "pages": result["pages"],
@@ -366,6 +350,10 @@ async def create_tenant_own_user(
     usuario autenticado — no se acepta tenant_id en el body."""
     if data.role == "super_admin":
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "No se puede crear un super_admin desde el tenant")
+    # El partner lo da de alta administración general, que es quien lo asigna
+    # a un tenant base (ver ADR-041).
+    if data.role == UserRole.PARTNER:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "No se puede crear un partner desde el tenant")
 
     user_service = get_user_service()
     try:
@@ -383,7 +371,7 @@ async def create_tenant_own_user(
     except ValueError as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e))
 
-    return {"success": True, "user": _user_out(user).model_dump()}
+    return {"success": True, "user": to_tenant_user_out(user).model_dump()}
 
 
 @router.patch("/users/{username}", response_model=dict)
@@ -396,11 +384,19 @@ async def update_tenant_own_user(
     estado y estado de la suscripción del plan)."""
     if data.role == "super_admin":
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "No se puede asignar el rol super_admin desde el tenant")
+    if data.role == UserRole.PARTNER:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "No se puede asignar el rol partner desde el tenant")
 
     user_service = get_user_service()
     existing = await user_service.get_user_by_username(username)
     if not existing or existing.tenant_id != current_user.tenant_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado")
+    # El partner de este tenant lo administra administración general: el admin
+    # del tenant no puede cambiarle el rol ni deshabilitarlo.
+    if existing.role == UserRole.PARTNER.value:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "El usuario partner lo administra administración general"
+        )
 
     user = await user_service.update_user(
         username,
@@ -421,7 +417,7 @@ async def update_tenant_own_user(
     if data.subscription_status is not None:
         user = await user_service.approve_plan_request(username, data.subscription_status.value)
 
-    return {"success": True, "user": _user_out(user).model_dump()}
+    return {"success": True, "user": to_tenant_user_out(user).model_dump()}
 
 
 @router.delete("/users/{username}", response_model=dict)
@@ -445,6 +441,10 @@ async def delete_tenant_own_user(
     existing = await user_service.get_user_by_username(username)
     if not existing or existing.tenant_id != current_user.tenant_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado")
+    if existing.role == UserRole.PARTNER.value:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "El usuario partner lo administra administración general"
+        )
 
     deleted = await user_service.delete_user(username)
     if not deleted:

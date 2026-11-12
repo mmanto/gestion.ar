@@ -68,11 +68,20 @@ class Tenant(Base):
     # facturación) — FK a plans, no nullable (se backfillea en la migración
     # que introduce esta columna).
     plan_id = Column(Text, ForeignKey("plans.plan_id"), nullable=False)
+    # Tenant base del que este tenant se derivó (NULL = tenant raíz). Sólo hay
+    # un nivel: lo escribe el alta de un partner y no se propaga después — el
+    # clon es una foto (ver ADR-041).
+    parent_tenant_id = Column(Text, ForeignKey("tenants.tenant_id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     __table_args__ = (
         Index("ix_tenants_domain", "domain", unique=True, postgresql_where=text("domain IS NOT NULL")),
+        Index("ix_tenants_parent_tenant_id", "parent_tenant_id"),
+        CheckConstraint(
+            "parent_tenant_id IS NULL OR parent_tenant_id <> tenant_id",
+            name="ck_tenants_parent_not_self",
+        ),
         # Postgres permite múltiples NULL en un índice único: solo las keys
         # emitidas quedan restringidas a un tenant.
         Index("ix_tenants_api_key_hash", "api_key_hash", unique=True),
@@ -229,10 +238,13 @@ class User(Base):
         ),
         Index("ix_users_tenant_id", "tenant_id"),
         Index("ix_users_broker_username", "broker_username"),
-        CheckConstraint("role IN ('super_admin', 'admin', 'operativo', 'broker')", name="ck_users_role"),
+        CheckConstraint(
+            "role IN ('super_admin', 'admin', 'operativo', 'broker', 'partner')",
+            name="ck_users_role",
+        ),
         CheckConstraint(
             "(role = 'super_admin' AND tenant_id IS NULL) OR "
-            "(role IN ('admin', 'operativo', 'broker') AND tenant_id IS NOT NULL)",
+            "(role IN ('admin', 'operativo', 'broker', 'partner') AND tenant_id IS NOT NULL)",
             name="ck_users_role_tenant_consistency",
         ),
         CheckConstraint(

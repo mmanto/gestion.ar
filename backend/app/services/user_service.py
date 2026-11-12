@@ -12,6 +12,7 @@ from app.db.database import AsyncSessionLocal
 from app.db.models import PasskeyCredential as PasskeyCredentialModel
 from app.db.models import Tenant as TenantModel
 from app.db.models import User as UserModel
+from app.models.tenant import TenantUserOut
 from devbout_oauth import PasskeyCredential, PasskeyUser
 
 
@@ -57,6 +58,28 @@ def _to_user_in_db(row: UserModel) -> UserInDB:
         requested_plan_id=row.requested_plan_id,
         subscription_status=row.subscription_status,
         broker_username=row.broker_username,
+    )
+
+
+def to_tenant_user_out(user_in_db) -> TenantUserOut:
+    """Serializa un usuario para las superficies que lo administran
+    (`/api/admin/users`, `/api/tenant/users`, `/api/partner/tenants/{id}/users`).
+
+    Una sola definición: antes estaba duplicada igual en tenant_admin_router y
+    tenant_router, y el partner la necesita igual (sin `hashed_password`, con
+    el plan solicitado y el broker)."""
+    return TenantUserOut(
+        username=user_in_db.username,
+        email=user_in_db.email,
+        nombre=user_in_db.nombre,
+        apellido=user_in_db.apellido,
+        avatar_url=user_in_db.avatar_url,
+        tenant_id=user_in_db.tenant_id,
+        role=user_in_db.role,
+        disabled=user_in_db.disabled,
+        requested_plan_id=getattr(user_in_db, "requested_plan_id", None),
+        subscription_status=getattr(user_in_db, "subscription_status", "active"),
+        broker_username=user_in_db.broker_username,
     )
 
 

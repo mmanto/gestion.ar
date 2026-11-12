@@ -2471,3 +2471,87 @@ devuelve sólo la respuesta.
   ni widgets de módulos, igual que la voz.
 - El frame `{"type":"text"}` del WebSocket sigue soportado para otros clientes;
   el APK ya no lo usa.
+
+---
+
+## ADR-041: Rol Partner con tenant base y tenants derivados
+
+**Estado:** Aceptado
+**Fecha:** 2026-11-11
+
+### Contexto
+El panel general (`frontend/`) era de uso exclusivo de `super_admin`, y los
+tenants eran planos: nadie podía armar y administrar tenants "hijos" de un
+cliente grande sin pasar por administración general. Un caso real es un
+socio/partner que vende la plataforma a sus propios clientes: necesita crear
+esos tenants, cargarles usuarios y prender/apagar módulos, pero **no** tocar la
+configuración técnica del agente (prompt, `ius_config`, `flow`, modelo, canales,
+entrenamiento) ni el plan.
+
+Tampoco hay tabla de partners ni jerarquía de tenants.
+
+### Opciones consideradas
+1. **Tabla `partners` + tabla de relación** — modela el partner como entidad
+   propia; suma una migración, servicios y un join en cada request sin agregar
+   información: el partner es, en la práctica, un usuario de un tenant.
+2. **`super_admin` acotado por flags** — permisos condicionales dentro de
+   `/api/admin/*`; mezcla el alcance de dos roles en un router cuya razón de ser
+   es "sin restricciones" y expone endpoints de planes/configuración.
+3. **Rol `partner` con `users.tenant_id` = tenant base** — el partner es un
+   usuario más con su tenant; el vínculo base → derivados es
+   `tenants.parent_tenant_id`. El alcance se decide en un solo lugar
+   (`PartnerService`), con una superficie (`/api/partner/*`) que no expone nada
+   de configuración técnica.
+
+### Decisión
+Opción 3.
+
+- **Identidad:** `users.role = 'partner'` + `users.tenant_id` (su *tenant base*).
+  Lo crea/asigna administración general desde `/api/admin/users`; el CHECK
+  `ck_users_role_tenant_consistency` garantiza que un partner siempre tenga
+  tenant. El admin del tenant ya no puede crear ni modificar cuentas `partner`
+  (400/403).
+- **Jerarquía:** `tenants.parent_tenant_id` → FK a `tenants.tenant_id`, un solo
+  nivel. El alcance de un partner es `tenant_id = base OR parent_tenant_id = base`.
+- **Alta de derivados:** `POST /api/partner/tenants` **clona en el momento del
+  alta** el agente y los módulos del tenant base:
+  - tenant nuevo: `status`, `plan_id` y `settings` (deep copy) del base, más
+    `branding` base mezclado con el del alta;
+  - cada `bot`: nueva `bot_id`, misma `config` (deep copy), **sin**
+    `channel_ids`, con counters en 0 y `metadata` vacía;
+  - `bot_modules` y `tenant_modules`: se copian con su `granted`/`enabled` y su
+    `granted_by`/`granted_at`;
+  - **no** se copia `tenant_llm_configs`, ni canales, clientes, conversaciones,
+    push subscriptions o `api_key_hash`.
+
+  Es una **foto**: los cambios posteriores en el base no se propagan (si el
+  producto lo pide, se hace en un cambio aparte reaplicando por
+  `parent_tenant_id`).
+- **Superficie:** `/api/partner/*` (router propio, `require_role("partner")`).
+  El partner gestiona datos/marca de sus tenants, prende/apaga **módulos ya
+  otorgados** (`granted=true`; no otorga ni revoca) y administra usuarios
+  `admin`/`operativo`/`broker` de sus tenants. No crea agentes, no edita su
+  configuración técnica y no ve planes.
+- **Baja de derivados:** el borrado de un tenant derivado elimina también sus
+  agentes clonados (`bots` + `bot_modules`) — son la copia, no datos de
+  negocio. Usuarios, canales, clientes, conversaciones y push subscriptions
+  siguen bloqueando el borrado (409) y se limpian primero, igual que en
+  `delete_tenant` de administración general.
+- **Tenant base:** se incluye en su listado (administra su agente y sus
+  módulos) pero **no** se suspende ni se elimina desde el panel del partner.
+- **Frontend:** mismo par de pantallas (`Tenants`, `TenantEdit`) resueltas por
+  un adapter (`tenantScope.service.ts`) según el rol, en vez de duplicarlas.
+
+### Consecuencias
+- Sin config de IA copiada, el agente del tenant derivado **no responde** hasta
+  que su admin cargue el proveedor en Ajustes › Proveedor de IA (ADR-038): es
+  intencional, cada tenant paga su propia key.
+- Un tenant con derivados no se puede borrar (`delete_tenant` devuelve False →
+  409), ni siquiera desde administración general.
+- `partner` no puede operar `/api/tenant/*` como admin: los endpoints con
+  `require_role("admin")` lo rechazan y los de sólo autenticación quedan
+  limitados a su propio tenant.
+- El alcance `tenant_id = base OR parent_tenant_id = base` también funciona si
+  en el futuro un partner se asigna a un tenant que ya era derivado.
+- Delegar un tenant existente es sólo cambiar `users.role` a `partner` sobre su
+  tenant: no hace falta migrar datos.

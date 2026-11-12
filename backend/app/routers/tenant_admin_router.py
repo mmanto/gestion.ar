@@ -17,36 +17,19 @@ from app.models.tenant import (
     TenantCreate,
     TenantUpdate,
     TenantUserCreate,
-    TenantUserOut,
     TenantUserUpdate,
 )
 from app.services.bot_service import get_bot_service
 from app.services.module_service import get_module_service
 from app.services.plan_service import get_plan_service
 from app.services.tenant_service import get_tenant_service
-from app.services.user_service import get_user_service
+from app.services.user_service import get_user_service, to_tenant_user_out
 
 router = APIRouter(
     prefix="/api/admin",
     tags=["admin"],
     dependencies=[Depends(require_role("super_admin"))],
 )
-
-
-def _user_out(user_in_db) -> TenantUserOut:
-    return TenantUserOut(
-        username=user_in_db.username,
-        email=user_in_db.email,
-        nombre=user_in_db.nombre,
-        apellido=user_in_db.apellido,
-        avatar_url=user_in_db.avatar_url,
-        tenant_id=user_in_db.tenant_id,
-        role=user_in_db.role,
-        disabled=user_in_db.disabled,
-        requested_plan_id=getattr(user_in_db, "requested_plan_id", None),
-        subscription_status=getattr(user_in_db, "subscription_status", "active"),
-        broker_username=user_in_db.broker_username,
-    )
 
 
 # ── Planes ───────────────────────────────────────────────────────────────────
@@ -200,7 +183,7 @@ async def approve_user_plan_request(username: str, data: UserPlanApproval):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e)) from e
     if not user:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado")
-    return {"success": True, "user": _user_out(user).model_dump()}
+    return {"success": True, "user": to_tenant_user_out(user).model_dump()}
 
 
 # ── Usuarios (UsuarioAdmin / Usuario) de cualquier tenant ───────────────────
@@ -233,7 +216,7 @@ async def create_tenant_user(data: TenantUserCreate):
     except ValueError as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e))
 
-    return {"success": True, "user": _user_out(user).model_dump()}
+    return {"success": True, "user": to_tenant_user_out(user).model_dump()}
 
 
 @router.get("/users", response_model=dict)
@@ -246,7 +229,7 @@ async def list_tenant_users(
     result = await get_user_service().list_users(tenant_id=tenant_id, skip=skip, limit=limit)
     return {
         "success": True,
-        "users": [_user_out(u).model_dump() for u in result["users"]],
+        "users": [to_tenant_user_out(u).model_dump() for u in result["users"]],
         "total": result["total"],
         "page": result["page"],
         "pages": result["pages"],
@@ -276,7 +259,7 @@ async def update_tenant_user(username: str, data: TenantUserUpdate):
     )
     if not user:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado")
-    return {"success": True, "user": _user_out(user).model_dump()}
+    return {"success": True, "user": to_tenant_user_out(user).model_dump()}
 
 
 @router.delete("/users/{username}", response_model=dict)

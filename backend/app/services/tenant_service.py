@@ -31,7 +31,7 @@ from app.services.device_service import sha256_hex
 LOCALHOST_SUFFIX = ".localhost"
 
 
-def _to_tenant(row: TenantModel) -> Tenant:
+def to_tenant(row: TenantModel) -> Tenant:
     return Tenant(
         tenant_id=row.tenant_id,
         name=row.name,
@@ -40,6 +40,7 @@ def _to_tenant(row: TenantModel) -> Tenant:
         branding=row.branding or {},
         settings=row.settings or {},
         plan_id=row.plan_id,
+        parent_tenant_id=row.parent_tenant_id,
         created_at=row.created_at.isoformat(),
         updated_at=row.updated_at.isoformat(),
     )
@@ -60,18 +61,18 @@ class TenantService:
             session.add(row)
             await session.commit()
             await session.refresh(row)
-            return _to_tenant(row)
+            return to_tenant(row)
 
     async def get_tenant(self, tenant_id: str) -> Optional[Tenant]:
         async with AsyncSessionLocal() as session:
             row = await session.get(TenantModel, tenant_id)
-            return _to_tenant(row) if row else None
+            return to_tenant(row) if row else None
 
     async def get_tenant_by_domain(self, domain: str) -> Optional[Tenant]:
         async with AsyncSessionLocal() as session:
             result = await session.execute(select(TenantModel).where(TenantModel.domain == domain))
             row = result.scalars().first()
-            return _to_tenant(row) if row else None
+            return to_tenant(row) if row else None
 
     async def get_tenant_by_host(self, host: str) -> Optional[Tenant]:
         """Tenant que sirve `host` (incluye el alias de dev `<dominio>.localhost`).
@@ -100,7 +101,7 @@ class TenantService:
             rows = result.scalars().all()
 
         return {
-            "tenants": [_to_tenant(r) for r in rows],
+            "tenants": [to_tenant(r) for r in rows],
             "total": total,
             "page": (skip // limit) + 1 if limit > 0 else 1,
             "pages": (total + limit - 1) // limit if limit > 0 else 0,
@@ -122,7 +123,7 @@ class TenantService:
                     setattr(row, k, v)
             await session.commit()
             await session.refresh(row)
-            return _to_tenant(row)
+            return to_tenant(row)
 
     # ── API key del tenant (canal de voz / clientes server-side) ──────────
     #
@@ -185,7 +186,7 @@ class TenantService:
             row = result.scalars().first()
             if not row or row.status != TenantStatus.ACTIVE.value:
                 return None
-            return _to_tenant(row)
+            return to_tenant(row)
 
     async def delete_tenant(self, tenant_id: str) -> bool:
         """Elimina un tenant. Falla (devuelve False) si tiene datos asociados
@@ -203,6 +204,16 @@ class TenantService:
         async with AsyncSessionLocal() as session:
             row = await session.get(TenantModel, tenant_id)
             if not row:
+                return False
+
+            # Un tenant con derivados no se borra: quedarían huérfanos (el FK
+            # `fk_tenants_parent_tenant_id` lo impediría con un error; acá se
+            # mantiene el contrato "devuelve False" → 409 en la API).
+            child_count = (await session.execute(
+                select(func.count()).select_from(TenantModel)
+                .where(TenantModel.parent_tenant_id == tenant_id)
+            )).scalar_one()
+            if child_count > 0:
                 return False
 
             for label, model in dependents.items():

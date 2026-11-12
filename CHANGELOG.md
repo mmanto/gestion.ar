@@ -7,6 +7,26 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **Rol `partner`: backoffice general para construir tenants derivados**
+  (ADR-041). Un partner es un usuario con `role='partner'` asignado a un
+  **tenant base** (`users.tenant_id`, se crea desde `/api/admin/users`). Entra
+  al panel general y desde `/api/partner/*`:
+  - crea tenants derivados (`tenants.parent_tenant_id`) que **clonan** el
+    agente (`bots.config`), sus `bot_modules` y los `tenant_modules` del base —
+    sin canales, datos operativos, ni config de IA (cada tenant carga su key en
+    Ajustes › Proveedor de IA);
+  - edita nombre/dominio/marca y suspende o elimina sus derivados — la baja
+    borra también los agentes clonados, y se niega (409) si el tenant ya tiene
+    usuarios, canales, clientes o conversaciones; el tenant base no se
+    suspende ni se elimina desde acá;
+  - prende/apaga módulos **ya otorgados** de sus agentes (otorgar/revocar sigue
+    siendo de `super_admin`);
+  - administra usuarios `admin`/`operativo`/`broker` de sus tenants.
+
+  No crea agentes ni edita su configuración técnica, ni ve planes. En el
+  frontend, `Tenants` y `TenantEdit` se reutilizan para ambos roles vía
+  `tenantScope.service.ts`; la navegación oculta Planes y módulos al partner.
+  Un tenant con derivados ya no se puede borrar (409).
 - **El modo texto del canal de voz ya no pasa por Deepgram**
   (`POST /api/public/voice/text`, ADR-040). El APK abre el selector
   Voz | Texto; en Texto corre el mismo agente del bot (prompt, tools, RAG e
