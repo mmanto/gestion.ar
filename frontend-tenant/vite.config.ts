@@ -86,6 +86,17 @@ export default defineConfig({
         'react-dom': { singleton: true, requiredVersion: '^19.2.0' },
         'date-fns': { singleton: true, requiredVersion: '^4.1.0' },
       },
+      // Sin preload del remote. Con la estrategia por defecto (`version-first`)
+      // el bootstrap del host descarga el `remoteEntry.js` de `appointments` y
+      // TODOS sus chunks en cada página del SPA —aunque el tenant no tenga el
+      // módulo de turnos—, y ese `await` retrasa el primer render: si el remote
+      // está caído, la landing y el chat de pachoteayuda (que no usan turnos)
+      // pagan el timeout. Con `loaded-first` el remote no se precarga: se baja
+      // recién cuando `React.lazy` monta un widget `appointment_*` (ver
+      // src/modules/chatWidgets.tsx), que es exactamente cuando el flujo del bot
+      // lo pide. Además loadShare usa el React ya cargado por el host
+      // (singleton), en vez de bajar el del remote.
+      shareStrategy: 'loaded-first',
     }),
   ],
   // .env.dev / .env.prod viven en la raíz del repo (npm run dev/build pasan

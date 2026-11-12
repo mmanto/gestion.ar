@@ -482,6 +482,29 @@ host:
   build-time (son dos builds separados) — solo en runtime. Mismo trade-off
   ya señalado para el cliente HTTP `devbout-appointments`↔`gestion.ar`
   backend en ADR-008.
+
+### Addendum (2026-11-12): el remote no se precarga
+
+Con la estrategia de shares por defecto (`version-first`), `@module-federation/vite`
+inyecta en el bootstrap del host un `__mfPreloadRemote` por remote usado y hace
+`await Promise.allSettled(...)` antes del primer render. Efecto medido en
+`frontend-tenant`: **18 requests** a `appointments-widgets.intellify.pro`
+(`remoteEntry.js` + todos los chunks de los 4 widgets + CSS) en *cualquier*
+página, incluida la landing/login de un tenant que no vende turnos
+(pachoteayuda). Con el remote caído, esas páginas pagan el timeout/latencia de
+un servicio que no usan.
+
+`frontend-tenant/vite.config.ts` declara `shareStrategy: 'loaded-first'`. Con eso
+el plugin no precarga ningún remote (`resolveRemoteInitMode` →
+`loaded-first-client`): cada `import('appointments/...')` de
+`src/modules/chatWidgets.tsx` (ya envuelto en `React.lazy` + `WidgetErrorBoundary`)
+crea un proxy diferido y el `remoteEntry.js` se descarga recién cuando se monta
+un widget `appointment_*`, es decir cuando el flujo del bot lo pide. Además
+`loadShare` reusa el React ya cargado por el host en vez de bajar el del remote.
+
+Verificado en dev y en `vite build`: página sin turnos → 0 requests al remote;
+`__mfPreloadRemote` ausente del chunk `mf-entry-bootstrap`; al forzar la
+resolución del proxy diferido, el remote baja y resuelve.
 ---
 
 ## ADR-010: Re-activar autoregistro público de admin para un tenant (flujo "Crea tu cuenta")

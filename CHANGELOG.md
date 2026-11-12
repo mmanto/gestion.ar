@@ -489,6 +489,15 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `pages/Users.tsx` (eliminada en v4). Ver ADR-037.
 
 ### Corregido
+- **Los tenants sin turnos ya no descargan el remote de `appointments`** (ADR-009,
+  addendum). Con la estrategia de shares por defecto, el bootstrap de
+  `frontend-tenant` precargaba `https://appointments-widgets.intellify.pro`
+  (entry + todos los chunks de los widgets) en **cada** página, incluso en la
+  landing/login de un tenant que no usa reservas — y ese `await` bloqueaba el
+  primer render mientras el remote estaba caído, que es lo que se veía en
+  `pachoteayuda.ar` con toda la consola llena de errores CORS. Ahora
+  `vite.config.ts` usa `shareStrategy: 'loaded-first'`: el remote se descarga
+  sólo cuando se monta un widget `appointment_*` (chat con el módulo de turnos).
 - **El flujo del padrón trababa el chat: con la consulta a medio armar, todos
   los mensajes recibían la misma respuesta** (`backend/app/modules/padron_ext.py`).
   Con la recolección de DNI/sexo abierta (`ns["collect"]`), el interceptor
