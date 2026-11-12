@@ -210,7 +210,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       } else if (e.request) {
         setError('Error de conexión. Verifica tu conexión a internet');
       } else {
-        setError('Error inesperado. Intenta nuevamente');
+        // Errores del propio cliente (p. ej. el guard de tenant de AuthContext,
+        // que rechaza credenciales de otra organización): el mensaje ya es
+        // apto para mostrar.
+        setError(err instanceof Error && err.message ? err.message : 'Error inesperado. Intenta nuevamente');
       }
     } finally {
       setLoading(false);

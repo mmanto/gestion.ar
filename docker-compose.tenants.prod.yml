@@ -11,7 +11,9 @@
 # (p. ej. stats_two_cols_mobile) viven en tenants.settings (ver ADR en
 # docs/dev/DECISIONS.md).
 #
-# Alta de un tenant nuevo (subdominio *.intellify.pro):
+# Alta de un tenant nuevo: apenas se crea la fila el tenant ya es accesible en la
+# URL interna https://intellify.pro/<slug>/ (router `tenant-internal` de abajo,
+# un único router para todos los tenants). Para darle un dominio propio:
 #   1. Crear el tenant (plan, tenant, usuario admin, bot, canal, módulos) desde
 #      https://admin.intellify.pro. Asegurarse de setear `domain` al host real
 #      (es lo que usa la resolución por Host).
@@ -49,6 +51,18 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_public"
+
+      # ── intellify.pro (nombre interno de cada tenant) ───────────────────
+      # El apex sirve el SPA bajo el path del tenant (`/<slug>/…`): un tenant
+      # recién creado es accesible apenas existe la fila, sin DNS, router ni
+      # certificado propios. El sitio de marketing se movió a www.intellify.pro
+      # (Caddy) y por eso acá no hay router de landing para el apex.
+      - "traefik.http.routers.tenant-internal.rule=Host(`intellify.pro`)"
+      - "traefik.http.routers.tenant-internal.entrypoints=websecure"
+      - "traefik.http.routers.tenant-internal.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.tenant-internal.priority=1"
+      - "traefik.http.routers.tenant-internal.service=tenant-internal"
+      - "traefik.http.services.tenant-internal.loadbalancer.server.port=80"
 
       # ── ius ─────────────────────────────────────────────────────────────
       - "traefik.http.routers.tenant-ius.rule=Host(`ius.intellify.pro`)"

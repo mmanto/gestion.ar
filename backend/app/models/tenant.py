@@ -6,7 +6,9 @@ general y el catálogo de módulos (ver estrategia multi-tenant).
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from app.tenant_slug import validate_tenant_slug
 
 
 class TenantStatus(str, Enum):
@@ -25,34 +27,63 @@ class UserRole(str, Enum):
     PARTNER = "partner"
 
 
-class TenantCreate(BaseModel):
+class TenantSlugInput(BaseModel):
+    """Normaliza `slug` en los schemas de alta y edición.
+
+    Vacío/blanco → `None` (el backend autogenera el nombre interno del nombre
+    del tenant); si viene, se valida con `validate_tenant_slug` y un valor
+    inválido sale como 422 de FastAPI.
+    """
+
+    @field_validator("slug", mode="before", check_fields=False)
+    @classmethod
+    def _clean_slug(cls, value: Any) -> Optional[str]:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            stripped = value.strip()
+            if not stripped:
+                return None
+            return validate_tenant_slug(stripped)
+        return value
+
+
+class TenantCreate(TenantSlugInput):
     name: str = Field(..., min_length=2, max_length=100)
     domain: Optional[str] = Field(None, description="Dominio propio del tenant, ej. ius.com.mx")
+    #: Nombre interno de la URL del apex (`intellify.pro/<slug>`). Si se omite
+    #: se autogenera del nombre (con sufijo `-2`, `-3`… si está tomado).
+    slug: Optional[str] = None
     status: TenantStatus = TenantStatus.ACTIVE
     branding: Dict[str, Any] = Field(default_factory=dict)
     plan_id: str = Field(..., description="Plan de suscripción al que queda dado de alta el tenant")
 
 
-class TenantUpdate(BaseModel):
+class TenantUpdate(TenantSlugInput):
     name: Optional[str] = Field(None, min_length=2, max_length=100)
     domain: Optional[str] = None
+    #: Cambiarlo cambia la URL interna; la anterior deja de resolver (no hay
+    #: redirect ni historial de slugs).
+    slug: Optional[str] = None
     status: Optional[TenantStatus] = None
     branding: Optional[Dict[str, Any]] = None
     plan_id: Optional[str] = None
 
 
-class PartnerTenantCreate(BaseModel):
+class PartnerTenantCreate(TenantSlugInput):
     """Alta de un tenant derivado: el plan, estado, settings y marca base
     salen del tenant base; sólo se eligen nombre y dominio."""
     name: str = Field(..., min_length=2, max_length=100)
     domain: Optional[str] = None
+    slug: Optional[str] = None
     branding: Dict[str, Any] = Field(default_factory=dict)
 
 
-class PartnerTenantUpdate(BaseModel):
+class PartnerTenantUpdate(TenantSlugInput):
     """Edición permitida al partner. `status` sólo aplica a tenants derivados."""
     name: Optional[str] = Field(None, min_length=2, max_length=100)
     domain: Optional[str] = None
+    slug: Optional[str] = None
     status: Optional[TenantStatus] = None
     branding: Optional[Dict[str, Any]] = None
 
@@ -61,6 +92,9 @@ class Tenant(BaseModel):
     tenant_id: str
     name: str
     domain: Optional[str] = None
+    #: Nombre interno (`intellify.pro/<slug>`); `None` en tenants creados por
+    #: los scripts históricos.
+    slug: Optional[str] = None
     status: TenantStatus
     branding: Dict[str, Any] = Field(default_factory=dict)
     settings: Dict[str, Any] = Field(default_factory=dict)
@@ -84,6 +118,8 @@ class TenantPublicInfo(BaseModel):
     """Info pública de un tenant (sin PII) — para landing/login del frontend-tenant."""
     tenant_id: str
     name: str
+    #: Nombre interno con el que la SPA resuelve el tenant desde el path.
+    slug: Optional[str] = None
     status: TenantStatus
     branding: Dict[str, Any] = Field(default_factory=dict)
     settings: Dict[str, Any] = Field(default_factory=dict)

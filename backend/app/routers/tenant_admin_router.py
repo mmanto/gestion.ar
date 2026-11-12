@@ -25,6 +25,7 @@ from app.services.module_service import get_module_service
 from app.services.plan_service import get_plan_service
 from app.services.tenant_service import get_tenant_service
 from app.services.user_service import get_user_service, to_tenant_user_out
+from app.tenant_slug import TenantSlugConflict
 
 router = APIRouter(
     prefix="/api/admin",
@@ -84,7 +85,10 @@ async def delete_plan(plan_id: str):
 
 @router.post("/tenants", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_tenant(data: TenantCreate):
-    tenant = await get_tenant_service().create_tenant(data)
+    try:
+        tenant = await get_tenant_service().create_tenant(data)
+    except TenantSlugConflict as e:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(e))
     return {"success": True, "tenant": tenant.model_dump()}
 
 
@@ -112,7 +116,10 @@ async def get_tenant(tenant_id: str):
 
 @router.patch("/tenants/{tenant_id}", response_model=dict)
 async def update_tenant(tenant_id: str, data: TenantUpdate):
-    tenant = await get_tenant_service().update_tenant(tenant_id, data)
+    try:
+        tenant = await get_tenant_service().update_tenant(tenant_id, data)
+    except TenantSlugConflict as e:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(e))
     if not tenant:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Tenant no encontrado")
     return {"success": True, "tenant": tenant.model_dump()}

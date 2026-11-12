@@ -6,6 +6,7 @@ Sin base de datos: `build_cloned_rows` es una función pura sobre filas
 atributos. Ver ADR-041 (docs/dev/DECISIONS.md).
 """
 
+from datetime import datetime, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -17,10 +18,16 @@ from app.services.partner_service import PartnerService, build_cloned_rows
 def _base_tenant():
     return SimpleNamespace(
         tenant_id="tenant_base",
+        name="Tenant Base",
+        domain="base.test",
+        slug="tenant-base",
         status="active",
         plan_id="pro",
         settings={"free_signup": True, "nested": {"flag": True}},
         branding={"primary_color": "#111111", "tagline": "tagline del base"},
+        parent_tenant_id=None,
+        created_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        updated_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
     )
 
 
@@ -74,6 +81,7 @@ def _clone(branding=None):
         name="Cliente Partner",
         domain="cliente-partner.test",
         branding=branding if branding is not None else {"primary_color": "#222222"},
+        slug="cliente-partner",
     ), base, bot
 
 
@@ -145,7 +153,15 @@ def test_clone_is_a_snapshot_not_a_reference():
 def test_clone_without_bots_yields_no_agents():
     base = _base_tenant()
     tenant_row, bot_rows, bot_modules, tenant_modules = build_cloned_rows(
-        base, [], {}, [], new_tenant_id="tenant_hijo", name="Sin agente", domain=None, branding={}
+        base,
+        [],
+        {},
+        [],
+        new_tenant_id="tenant_hijo",
+        name="Sin agente",
+        domain=None,
+        branding={},
+        slug="sin-agente",
     )
 
     assert bot_rows == []
@@ -153,6 +169,7 @@ def test_clone_without_bots_yields_no_agents():
     assert tenant_modules == []
     assert tenant_row.parent_tenant_id == base.tenant_id
     assert tenant_row.domain is None
+    assert tenant_row.slug == "sin-agente"
 
 
 def test_is_managed_covers_base_and_direct_children_only():
@@ -224,6 +241,7 @@ def _tenant_row(tenant_id, parent_tenant_id):
         tenant_id=tenant_id,
         name=tenant_id,
         domain=None,
+        slug=tenant_id,
         status="active",
         branding={},
         settings={},

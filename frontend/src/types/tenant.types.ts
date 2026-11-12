@@ -49,6 +49,8 @@ export interface Tenant {
   tenant_id: string;
   name: string;
   domain?: string | null;
+  /** Nombre interno de la URL del apex (`intellify.pro/<slug>`). */
+  slug?: string | null;
   status: TenantStatus;
   branding: TenantBranding;
   plan_id: string;
@@ -65,11 +67,14 @@ export interface Tenant {
 export interface PartnerTenantCreate {
   name: string;
   domain?: string;
+  slug?: string;
 }
 
 export interface TenantCreate {
   name: string;
   domain?: string;
+  /** Vacío = se genera del nombre (con sufijo si ya está tomado). */
+  slug?: string;
   status?: TenantStatus;
   branding?: TenantBranding;
   plan_id: string;
@@ -78,6 +83,7 @@ export interface TenantCreate {
 export interface TenantUpdate {
   name?: string;
   domain?: string;
+  slug?: string;
   status?: TenantStatus;
   branding?: TenantBranding;
   plan_id?: string;

@@ -8,6 +8,7 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { useNativeBackButton } from './hooks/useNativeBackButton';
 import { useNativeStaffPush } from './hooks/useNativeStaffPush';
 import { useAuth } from './hooks/useAuth';
+import { tenantBasePath } from './config/internalTenant';
 
 // Pages
 import { Landing } from './pages/Landing';
@@ -41,7 +42,10 @@ function App() {
   useNativeBackButton();
 
   return (
-    <Router>
+    // En la URL interna del apex (`intellify.pro/<slug>/…`) el SPA se monta con
+    // ese prefijo como basename: todos los Link/useNavigate existentes quedan
+    // prefijados sin tocarlos. En los dominios por Host el basename es undefined.
+    <Router basename={tenantBasePath() || undefined}>
       <TenantProvider>
         <AuthProvider>
           <TemplateProvider>

@@ -242,7 +242,7 @@ clave pública y el contador de firmas (`passkey_credentials`).
 | Variable | Requerida | Descripción | Ejemplo |
 |---|---|---|---|
 | `WEBAUTHN_RP_NAME` | ❌ | Nombre que muestra el navegador/OS al crear la passkey | `Gestion.ar` |
-| `WEBAUTHN_ORIGINS` | ❌ | Origins extra permitidos, separados por coma. Solo para dev (el dev-server de Vite en `localhost` con el tenant forzado por `?tenant=<id>`): en prod el dominio de la página sale del origen de cada request | `http://localhost:5174` |
+| `WEBAUTHN_ORIGINS` | ❌ | Origins extra permitidos, separados por coma. Los hosts de página que **no** son `tenants.domain`: el dev-server de Vite (`localhost` con el tenant forzado por `?tenant=<id>`, y `http://intellify.pro.localhost:5174` para la URL interna) y, en prod, **el apex** (`https://intellify.pro`), porque la URL interna de los tenants no es el dominio de ninguno. Sin esa línea el backend rechaza la ceremonia con 400 (`Passkeys no disponibles en este dominio`) | `http://localhost:5174` / `https://intellify.pro` |
 | `WEBAUTHN_USER_VERIFICATION` | ❌ | `preferred` (default) o `required` (exige autenticador que verifique al usuario) | `preferred` |
 
 > **El RP ID no se configura: se deriva del dominio de la página** (el
@@ -252,6 +252,11 @@ clave pública y el contador de firmas (`passkey_credentials`).
 > `FRONTEND_URL`) el navegador bloquea la ceremonia en todos los demás con
 > `SecurityError` ("El navegador bloqueó la passkey…"). Ver ADR-032 en
 > docs/dev/DECISIONS.md.
+>
+> **URL interna (`https://intellify.pro/<slug>/`)**: el RP ID es
+> `intellify.pro` para todos los tenants, distinto del de su dominio externo. Una
+> passkey creada en `ius.intellify.pro` **no** se ofrece en la URL interna (es
+> otro RP ID) y viceversa: son credenciales distintas sobre la misma cuenta.
 >
 > Consecuencias: una passkey creada en un dominio **no** sirve en otro
 > (inherente a WebAuthn; cada tenant tiene su propio login), la página tiene que

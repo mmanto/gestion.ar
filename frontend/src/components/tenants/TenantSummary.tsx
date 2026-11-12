@@ -1,6 +1,7 @@
 import { Badge } from '../ui/badge';
 import { Field, FORM_CLASSES, FormGrid } from '../common/FormField';
 import type { Plan, Tenant, TenantStatus } from '../../types/tenant.types';
+import { tenantInternalUrl } from '../../lib/platform';
 
 const statusBadges: Record<
   TenantStatus,
@@ -19,6 +20,7 @@ const statusBadges: Record<
  */
 export function TenantSummary({ tenant, plans }: { tenant: Tenant; plans: Plan[] }) {
   const status = statusBadges[tenant.status] ?? statusBadges.trial;
+  const internalUrl = tenantInternalUrl(tenant.slug);
   const planName = plans.find((plan) => plan.plan_id === tenant.plan_id)?.name;
   const created = tenant.created_at
     ? new Date(tenant.created_at).toLocaleDateString('es-AR', {
@@ -33,6 +35,20 @@ export function TenantSummary({ tenant, plans }: { tenant: Tenant; plans: Plan[]
       <FormGrid>
         <Field label="Nombre">
           <p className="text-sm font-medium text-foreground">{tenant.name}</p>
+        </Field>
+        <Field label="Nombre interno">
+          {internalUrl ? (
+            <a
+              href={internalUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm text-foreground hover:underline"
+            >
+              {internalUrl}
+            </a>
+          ) : (
+            <p className="text-sm text-foreground">—</p>
+          )}
         </Field>
         <Field label="Dominio propio">
           <p className="text-sm text-foreground">{tenant.domain || '—'}</p>

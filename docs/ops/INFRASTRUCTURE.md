@@ -171,11 +171,33 @@ esos 2 servicios (no service blocks ni contenedores por tenant).
 | pachoteayuda | pachoteayuda.ar | `sites/pachoteayuda-landing/` | `tenant-pachoteayuda`, `landing-pachoteayuda` |
 | openpadel | openpadel.pro | `sites/openpadel-landing/` | `tenant-openpadel`, `landing-openpadel` |
 | urbanvoice | urbanvoice.intellify.pro | `sites/urbanvoice/` | `landing-urbanvoice` (todavía sin tenant — ver abajo) |
+| *(URL interna)* | `intellify.pro/<slug>` | — | `tenant-internal` (un único router para todos los tenants; ver abajo) |
 
 > DNS: para dominios propios del cliente (`erma.com.ar`, `pachoteayuda.ar`,
 > `openpadel.pro`), el cliente crea un registro A/CNAME apuntando a la IP de
 > este servidor. Traefik emite el certificado TLS-ALPN-01 la primera vez que
 > recibe tráfico HTTPS en ese `Host()`.
+
+### Apex `intellify.pro`: URL interna de los tenants
+
+El apex **no** es el sitio de marketing: va al contenedor `frontend-tenant` por
+el router `tenant-internal` (`Host(\`intellify.pro\`)`, label de
+`docker-compose.tenants.prod.yml`) y sirve el SPA de cada tenant bajo
+`https://intellify.pro/<slug>/…`. Es la vía de acceso que no necesita DNS,
+router ni certificado por tenant: el tenant se resuelve por el primer segmento
+del path (`GET /api/public/tenants/by-slug/{slug}`), no por Host. El apex sin
+slug (`https://intellify.pro/`, `/login`) redirige al panel de administración.
+
+| Host | IP | Sirve |
+|---|---|---|
+| `intellify.pro` | `147.79.86.54` (Traefik) | SPA de tenant en modo path + `/api`, `/ws` |
+| `www.intellify.pro` | `89.116.111.245` (Caddy) | Sitio de marketing |
+| `api.intellify.pro` | `147.79.86.54` (Traefik) | API del backend |
+| `<tenant>.intellify.pro`, dominios de clientes | `147.79.86.54` | SPA del tenant por Host (+ landing) |
+
+El `A` de `www` tiene que existir **antes** de mover el del apex: si el apex
+apunta al Traefik y `www` sigue siendo un `CNAME` al apex, el marketing deja de
+servirse (procedimiento completo en `docs/ops/DEPLOYMENT.md`).
 
 ---
 

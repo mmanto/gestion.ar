@@ -588,17 +588,42 @@ router de Traefik lo matchea.
 {
   "tenant_id": "tenant_17d505040583",
   "name": "ius",
+  "slug": "ius",
   "status": "active",
   "branding": { "primary_color": "#25357a" },
   "settings": { "stats_two_cols_mobile": true }
 }
 ```
 
+### GET `/api/public/tenants/by-slug/{slug}`
+
+Resuelve el tenant por su **nombre interno** (`tenants.slug`). Es la resolución
+paralela a `/tenants/current` para la URL interna `https://intellify.pro/<slug>/…`:
+en el apex todos los tenants comparten Host, así que el que los distingue es el
+primer segmento del path. Mismo shape de response que `/tenants/current`; **404**
+si ningún tenant tiene ese nombre interno.
+
+El slug se genera del nombre al dar de alta el tenant (`IUS Legal` → `ius-legal`,
+con `-2`, `-3`… si está tomado) y se puede editar desde el panel. Cambiarlo
+invalida la URL anterior: no hay redirect ni historial. Formato: 2-50 caracteres,
+minúsculas, números y guiones; hay nombres reservados por la app (`api`, `login`,
+`chat`, `admin`, …). Ver `backend/app/tenant_slug.py`.
+
 ### GET `/api/public/tenants/{tenant_id}`
 
 Info pública de un tenant por id (sin PII) — mismo shape que el de arriba.
 Usado por el fallback de desarrollo `?tenant=<id>` y por los builds nativos
 (Capacitor), donde no hay Host que matchee un dominio.
+
+### GET `/api/public/channels/{channel_id}/manifest.webmanifest?base_path=<prefijo>`
+
+Manifest PWA dinámico del chat de un canal (es el único manifest instalable).
+`base_path` es opcional: el prefijo del tenant cuando la página vive bajo la URL
+interna del apex (`https://intellify.pro/<slug>/chat/c/<channel_id>`). Se valida
+contra el formato del nombre interno —si no lo es, **400** `base_path inválido`—
+y se aplica a `id`, `start_url` y `scope` (`/<slug>/chat/c/<canal>`,
+`/<slug>/chat/`). Sin `base_path` las URLs son las de siempre
+(`/chat/c/<canal>`, scope `/chat/`), que es lo que usan los dominios por Host.
 
 ---
 
@@ -611,9 +636,18 @@ CRUD de tenants para el `super_admin` (panel admin). Requieren JWT con rol
 
 Crear un tenant. Body:
 ```json
-{ "name": "pachoteayuda", "domain": "pachoteayuda.ar", "plan_id": "plan_000000000000" }
+{
+  "name": "pachoteayuda",
+  "domain": "pachoteayuda.ar",
+  "slug": "pachoteayuda",
+  "plan_id": "plan_000000000000"
+}
 ```
-`status` (opcional, default `active`) y `branding` (opcional).
+`status` (opcional, default `active`), `branding` (opcional) y `slug` (opcional:
+el **nombre interno** de la URL del apex). Sin `slug` se genera del nombre y se
+desambigua con `-2`, `-3`…; con `slug` explícito se respeta y, si ya existe,
+responde **409** (`Ya existe un tenant con ese nombre interno`). Un slug con
+formato inválido o reservado es **422** (validación de Pydantic).
 
 ### GET `/api/admin/tenants?page=1&limit=20`
 
@@ -625,8 +659,10 @@ Detalle de un tenant.
 
 ### PATCH `/api/admin/tenants/{tenant_id}`
 
-Editar un tenant. Todos los campos opcionales: `name`, `domain`, `status`
-(`active`|`suspended`|`trial`), `branding`, `plan_id`.
+Editar un tenant. Todos los campos opcionales: `name`, `domain`, `slug`,
+`status` (`active`|`suspended`|`trial`), `branding`, `plan_id`. Cambiar `slug`
+cambia la URL interna del tenant (la anterior deja de resolver) y **409** si ya
+lo usa otro tenant.
 
 ### DELETE `/api/admin/tenants/{tenant_id}`
 

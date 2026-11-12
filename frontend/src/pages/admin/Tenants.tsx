@@ -14,6 +14,7 @@ import { LoadingPage } from '../../components/common/Spinner';
 import { PageHeader } from '../../components/common/PageHeader';
 import { Alert } from '../../components/common/Alert';
 import { TenantSummary } from '../../components/tenants/TenantSummary';
+import { tenantInternalUrl } from '../../lib/platform';
 import tenantAdminService from '../../services/tenantAdmin.service';
 import { tenantScopeApi } from '../../services/tenantScope.service';
 import { useAuth } from '../../hooks/useAuth';
@@ -96,6 +97,14 @@ export const Tenants = () => {
             rules: { maxLength: 80 },
           },
           {
+            // Sin `required`: vacío = el backend lo genera del nombre (y le suma
+            // -2, -3… si ya está tomado). Cambiarlo invalida la URL anterior.
+            kind: 'text',
+            name: 'slug',
+            label: 'Nombre interno (URL)',
+            placeholder: 'se genera del nombre',
+          },
+          {
             kind: 'text',
             name: 'domain',
             label: 'Dominio propio',
@@ -149,16 +158,19 @@ export const Tenants = () => {
         // Sólo el alta pasa por acá: la edición va a la pantalla propia
         // (`edit.href`), que además edita la marca (logos, color, tagline) con el
         // uploader de la app.
+        const slug = (values.slug ?? '').trim().toLowerCase() || undefined;
         if (isPartner) {
           // El derivado hereda plan, estado y settings del tenant base.
           await api.createTenant({
             name: values.name.trim(),
             domain: values.domain.trim() || undefined,
+            slug,
           });
         } else {
           await api.createTenant({
             name: values.name.trim(),
             domain: values.domain.trim() || undefined,
+            slug,
             status: values.status as TenantStatus,
             plan_id: values.plan_id,
           });
@@ -169,7 +181,7 @@ export const Tenants = () => {
       edit: { href: (tenant) => `/admin/tenants/${tenant.tenant_id}/editar` },
       detail: {
         title: (tenant) => tenant.name,
-        description: (tenant) => tenant.domain || 'sin dominio asignado',
+        description: (tenant) => tenantInternalUrl(tenant.slug) || tenant.domain || 'sin dominio asignado',
         surface: ({ row }) => <TenantSummary tenant={row} plans={plans} />,
       },
     });
@@ -192,6 +204,7 @@ export const Tenants = () => {
       search: { columnId: 'name', placeholder: 'Buscar tenant' },
       columnLabels: {
         name: 'Tenant',
+        internal: 'URL interna',
         domain: 'Dominio',
         status: 'Estado',
       },
@@ -206,6 +219,26 @@ export const Tenants = () => {
       },
       columns: [
         { id: 'name', accessorKey: 'name', header: 'Tenant' },
+        {
+          id: 'internal',
+          header: 'URL interna',
+          cell: ({ row }) => {
+            const url = tenantInternalUrl(row.original.slug);
+            if (!url) {
+              return <span className="italic text-muted-foreground">—</span>;
+            }
+            return (
+              <a
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-foreground hover:underline"
+              >
+                /{row.original.slug}
+              </a>
+            );
+          },
+        },
         {
           id: 'domain',
           header: 'Dominio',

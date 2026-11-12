@@ -34,6 +34,7 @@ import {
   DialogTitle,
 } from '../../components/ui/dialog';
 import { cn } from '../../lib/utils';
+import { getErrorMessage } from '../../utils/errorMessage';
 import tenantAdminService from '../../services/tenantAdmin.service';
 import botsService from '../../services/bots.service';
 import partnerService from '../../services/partner.service';
@@ -161,6 +162,7 @@ export const TenantEdit = () => {
   const [showDanger, setShowDanger] = useState(false);
 
   const [name, setName] = useState('');
+  const [slug, setSlug] = useState('');
   const [domain, setDomain] = useState('');
   const [status, setStatus] = useState<TenantStatus>('trial');
   const [planId, setPlanId] = useState('');
@@ -211,6 +213,7 @@ export const TenantEdit = () => {
   const applyTenant = useCallback((data: Tenant) => {
     setTenant(data);
     setName(data.name);
+    setSlug(data.slug || '');
     setDomain(data.domain || '');
     setStatus(data.status);
     setPlanId(data.plan_id);
@@ -243,7 +246,7 @@ export const TenantEdit = () => {
         .then(setBotModules)
         .catch(() => {});
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error cargando el tenant');
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -289,7 +292,7 @@ export const TenantEdit = () => {
       await reloadBots();
       showToast('Agente creado', 'success');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo crear el agente');
+      setError(getErrorMessage(err));
     } finally {
       setCreatingBot(false);
     }
@@ -313,18 +316,23 @@ export const TenantEdit = () => {
       };
       // El partner no toca el plan, y el estado de su tenant base tampoco
       // (suspender el base es de administración general).
+      // Vacío = no se toca el nombre interno actual (el backend autogenera sólo
+      // en el alta). Cambiarlo invalida la URL anterior: no hay redirect.
+      const slugValue = slug.trim().toLowerCase() || undefined;
       const updated = await api.updateTenant(
         tenantId,
         isPartner
           ? {
               name: name.trim(),
               domain: domain.trim() || undefined,
+              slug: slugValue,
               branding,
               ...(isBaseTenant ? {} : { status }),
             }
           : {
               name: name.trim(),
               domain: domain.trim() || undefined,
+              slug: slugValue,
               status,
               plan_id: planId,
               branding,
@@ -333,7 +341,7 @@ export const TenantEdit = () => {
       applyTenant(updated);
       showToast('Cambios guardados', 'success');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo guardar el tenant');
+      setError(getErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -347,7 +355,7 @@ export const TenantEdit = () => {
       await api.deleteTenant(tenantId);
       window.location.href = '/admin/tenants';
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo eliminar el tenant');
+      setError(getErrorMessage(err));
       setDeleting(false);
     }
   };
@@ -810,6 +818,20 @@ export const TenantEdit = () => {
                 minLength={2}
                 maxLength={100}
                 required
+              />
+            </Field>
+            <Field
+              label="Nombre interno (URL)"
+              htmlFor="edit-tenant-slug"
+              hint="Minúsculas, números y guiones (2-50). Es la URL interna: cambiarlo invalida la anterior."
+              reserveHint
+            >
+              <Input
+                id="edit-tenant-slug"
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
+                maxLength={50}
+                placeholder="ej. ius-legal"
               />
             </Field>
             <Field

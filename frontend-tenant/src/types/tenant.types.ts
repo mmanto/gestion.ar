@@ -31,6 +31,8 @@ export type TenantStatus = 'active' | 'suspended' | 'trial';
 export interface TenantPublicInfo {
   tenant_id: string;
   name: string;
+  /** Nombre interno de la URL del apex (`intellify.pro/<slug>`). */
+  slug?: string | null;
   status: TenantStatus;
   branding: TenantBranding;
   /** Flags de runtime por tenant (p. ej. stats_two_cols_mobile), ver Tenant.settings. */

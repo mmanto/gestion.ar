@@ -2,6 +2,7 @@ import { Capacitor } from '@capacitor/core';
 import type { NavigateFunction } from 'react-router-dom';
 import type { User } from '../types/auth.types';
 import type { TenantPublicInfo } from '../types/tenant.types';
+import { getInternalTenantSlug } from '../config/internalTenant';
 
 /**
  * A qué pantalla mandar al usuario después de iniciar sesión.
@@ -45,6 +46,13 @@ export function goToHome(
   tenant: TenantPublicInfo | null,
   navigate: NavigateFunction,
 ): void {
+  // URL interna (`intellify.pro/<slug>/…`): siempre al panel. `?next=` y
+  // `settings.home_paths` apuntan a pantallas de la landing por dominio, que en
+  // este host no existen (el apex sirve sólo el SPA).
+  if (getInternalTenantSlug()) {
+    navigate('/dashboard');
+    return;
+  }
   // El `next` explícito gana sobre el home del rol: lo pidió la página de la
   // que venía el usuario (navegación completa, la sirve la landing).
   const next = resolveNextPath();

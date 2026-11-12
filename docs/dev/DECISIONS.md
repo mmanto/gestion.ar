@@ -2555,3 +2555,72 @@ Opción 3.
   en el futuro un partner se asigna a un tenant que ya era derivado.
 - Delegar un tenant existente es sólo cambiar `users.role` a `partner` sobre su
   tenant: no hace falta migrar datos.
+
+---
+
+## ADR-042: Nombre interno de tenant en el apex (`intellify.pro/<slug>/`)
+
+**Estado:** Aceptado
+**Fecha:** 2026-11-12
+
+### Contexto
+Un tenant sólo se resolvía por el `Host` de la request contra `tenants.domain`
+(`GET /api/public/tenants/current`). Cada tenant nuevo exigía, además del alta
+en el panel: un registro DNS, un router de Traefik (`tenant-<slug>`) y la
+emisión de un certificado TLS-ALPN propio. Un tenant recién creado no era
+accesible hasta que esas tres cosas estuvieran hechas en el servidor, y probar
+un alta en dev requería `/etc/hosts` o `?tenant=<id>`.
+
+### Opciones consideradas
+1. **Mantener sólo la resolución por Host** — cero cambios, pero cada alta
+   sigue dependiendo de infraestructura y de una espera de certificado.
+2. **Subdominio por tenant (`<slug>.intellify.pro`) generado automáticamente** —
+   sigue necesitando el `Host()` por tenant y su certificado (el certresolver es
+   TLS-ALPN-01, no emite wildcard): no elimina el trabajo manual, sólo el DNS.
+3. **Nombre interno en el path del apex** (`https://intellify.pro/<slug>/…`), un
+   único `Host()` en Traefik para todos los tenants y el tenant resuelto por el
+   primer segmento del path.
+
+### Decisión
+Opción 3, manteniendo el dominio externo (`tenants.domain`) sin cambios como
+vía de acceso principal de cada tenant.
+
+- **Datos:** `tenants.slug` (`TEXT`, único por índice parcial `ix_tenants_slug`).
+  Se genera del `name` en el alta (`IUS Legal` → `ius-legal`), se desambigua con
+  `-2`, `-3`… y se puede editar desde el panel. Formato 2-50, minúsculas,
+  números y guiones, con nombres reservados por la app (`api`, `login`, `chat`,
+  `admin`, `icons`, …). Fuente de verdad: `backend/app/tenant_slug.py`, replicada
+  en `frontend-tenant/src/config/internalTenant.ts` e `index.html`.
+- **Resolución:** `GET /api/public/tenants/by-slug/{slug}`. `get_tenant_by_host`
+  no cambia: el slug **no** participa de la resolución por Host (salvo que un
+  tenant declare ese dominio a mano).
+- **SPA:** React Router monta con `basename = '/<slug>'`, así los `Link` y
+  `useNavigate` existentes quedan prefijados. `getPublicUrl()` devuelve
+  `<origen>/<slug>` (QR, links de chat) y el manifest PWA recibe `base_path`
+  para que el `start_url`/`scope` del chat instalado abran bajo el prefijo.
+- **Sesión:** en el apex todos los tenants comparten origen, así que el storage
+  de la sesión se prefija con el `tenant_id` (`tenantStorageScope`) y
+  `AuthContext` rechaza iniciar sesión con un usuario de otra organización (el
+  login por contraseña es global por username).
+- **Passkeys:** el apex entra como host de página válido por
+  `WEBAUTHN_ORIGINS=https://intellify.pro`. El RP ID es `intellify.pro` para
+  todos los tenants de la URL interna, distinto del de su dominio externo: una
+  passkey creada en `ius.intellify.pro` no se ofrece en el apex (WebAuthn no
+  cruza dominios). El login por contraseña y el OAuth siguen igual.
+- **Apex:** pasa a ser de la app (SPA de tenant en modo path). El sitio de
+  marketing se sirve en `www.intellify.pro`; el `A` de `www` se crea **antes** de
+  mover el del apex (ver `docs/ops/DEPLOYMENT.md`).
+
+### Consecuencias
+- Un tenant es accesible apenas existe la fila, sin DNS, router ni certificado:
+  el router `tenant-<slug>` sigue siendo necesario sólo para el dominio externo.
+- Cambiar el slug invalida la URL anterior sin redirect ni historial: es
+  intencional (evita mantener una tabla de alias).
+- Los tenants creados por los scripts históricos (`backend/scripts/create_*_tenant.py`)
+  pueden tener `slug = NULL`; no son accesibles por la URL interna hasta que se
+  les asigne uno desde el panel.
+- El slug es público (viaja en `TenantPublicInfo`) y no contiene PII: es el
+  equivalente del Host actual.
+- El login OAuth de tenant (Nango) no cambia en código, pero el origen
+  `https://intellify.pro` tiene que estar permitido en la configuración de Nango
+  para usarlo desde la URL interna.

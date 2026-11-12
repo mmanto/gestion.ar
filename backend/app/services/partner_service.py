@@ -42,7 +42,14 @@ from app.models.tenant import (
 )
 from app.services.bot_service import get_bot_service
 from app.services.module_service import get_module_service
-from app.services.tenant_service import get_tenant_service, to_tenant
+from app.services.tenant_service import (
+    SLUG_CONSTRAINT,
+    get_tenant_service,
+    integrity_constraint_name,
+    taken_slugs,
+    to_tenant,
+)
+from app.tenant_slug import TenantSlugConflict, next_tenant_slug, tenant_slug_base
 
 
 #: Datos operativos que bloquean el borrado de un tenant derivado: el partner
@@ -67,6 +74,7 @@ def build_cloned_rows(
     name: str,
     domain: Optional[str],
     branding: Dict,
+    slug: str,
 ) -> tuple[TenantModel, List[BotModel], List[BotModuleModel], List[TenantModuleModel]]:
     """Arma las filas del tenant derivado a partir del base (sin persistir).
 
@@ -83,11 +91,14 @@ def build_cloned_rows(
       tal como estaban: el partner no otorga ni revoca.
     - Nunca se copian `api_key_hash`, canales, clientes, conversaciones ni
       `tenant_llm_configs`.
+    - El nombre interno (`slug`, URL del apex) lo resuelve `provision_tenant`:
+      no se hereda del base, que ya tiene el suyo.
     """
     tenant_row = TenantModel(
         tenant_id=new_tenant_id,
         name=name,
         domain=domain,
+        slug=slug,
         status=base.status,
         plan_id=base.plan_id,
         settings=copy.deepcopy(base.settings or {}),
@@ -198,6 +209,7 @@ class PartnerService:
             LookupError: el tenant base no existe.
             PermissionError: el tenant base está suspendido.
             ValueError: ya existe un tenant con ese dominio.
+            TenantSlugConflict: ya existe un tenant con ese nombre interno.
         """
         new_tenant_id = f"tenant_{uuid.uuid4().hex[:12]}"
         async with AsyncSessionLocal() as session:
@@ -222,6 +234,19 @@ class PartnerService:
                 select(TenantModuleModel).where(TenantModuleModel.tenant_id == base_tenant_id)
             )).scalars().all()
 
+            if data.slug:
+                taken = (await session.execute(
+                    select(TenantModel.tenant_id).where(TenantModel.slug == data.slug)
+                )).first()
+                if taken:
+                    raise TenantSlugConflict()
+                slug = data.slug
+            else:
+                slug = next_tenant_slug(
+                    tenant_slug_base(data.name, new_tenant_id),
+                    await taken_slugs(session),
+                )
+
             tenant_row, bot_rows, bot_module_rows, tenant_module_rows = build_cloned_rows(
                 base,
                 bots,
@@ -231,6 +256,7 @@ class PartnerService:
                 name=data.name,
                 domain=data.domain,
                 branding=data.branding or {},
+                slug=slug,
             )
             try:
                 # Los FKs son auto-referenciales en `tenants` (parent_tenant_id),
@@ -245,6 +271,10 @@ class PartnerService:
             except IntegrityError as e:
                 await session.rollback()
                 if getattr(e.orig, "sqlstate", None) == "23505":
+                    # Dos índices únicos compiten en el `flush` del tenant: el
+                    # del dominio (comportamiento previo) y el del nombre interno.
+                    if integrity_constraint_name(e) == SLUG_CONSTRAINT:
+                        raise TenantSlugConflict() from e
                     raise ValueError("Ya existe un tenant con ese dominio")
                 raise
             await session.refresh(tenant_row)

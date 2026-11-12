@@ -53,6 +53,12 @@ class Tenant(Base):
     # gestion.ar, cada proyecto gestionado tiene su propio dominio (ver
     # docs/dev/DECISIONS.md, estrategia multi-tenant).
     domain = Column(Text, nullable=True)
+    # Nombre interno del tenant: primer segmento de https://intellify.pro/<slug>/
+    # (ver app/tenant_slug.py). Distinto de `domain`: el slug se resuelve por
+    # path y no necesita DNS, router Traefik ni certificado propios. Nullable
+    # porque los scripts históricos de alta (`backend/scripts/create_*_tenant.py`)
+    # insertan tenants sin slug; toda alta desde la API lo completa.
+    slug = Column(Text, nullable=True)
     status = Column(Text, nullable=False, default="active", server_default="active")
     branding = Column(JSONB, nullable=False, default=dict, server_default="{}")
     # Flags de runtime por tenant (p. ej. {"stats_two_cols_mobile": true}).
@@ -77,6 +83,9 @@ class Tenant(Base):
 
     __table_args__ = (
         Index("ix_tenants_domain", "domain", unique=True, postgresql_where=text("domain IS NOT NULL")),
+        # Un slug por tenant; los NULL (tenants viejos o creados por script)
+        # no compiten, igual que `ix_tenants_domain`.
+        Index("ix_tenants_slug", "slug", unique=True, postgresql_where=text("slug IS NOT NULL")),
         Index("ix_tenants_parent_tenant_id", "parent_tenant_id"),
         CheckConstraint(
             "parent_tenant_id IS NULL OR parent_tenant_id <> tenant_id",

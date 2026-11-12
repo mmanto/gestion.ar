@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { PublicChannelInfo, PublicUserInfo } from '../types/public.types';
+import { getInternalTenantSlug, tenantUrl } from '../config/internalTenant';
 
 // BASE_URL ya incluye /api (ej: http://localhost:8000/api o /api en prod)
 const BASE_URL = import.meta.env.VITE_API_URL?.startsWith('http')
@@ -18,6 +19,12 @@ export const publicService = {
   },
 
   async getPublicUrl(): Promise<string> {
+    // URL interna del apex: la base pública es `<origen>/<slug>`, no el Host (que
+    // es el mismo para todos los tenants) — no hace falta preguntarle al backend.
+    if (getInternalTenantSlug()) {
+      return tenantUrl();
+    }
+
     // En el APK nativo (Capacitor) todas las llamadas van directo al backend
     // (VITE_API_URL, ej. https://api.intellify.pro), así que el Host de la
     // request no es el dominio público del tenant (ej. ius.intellify.pro) y

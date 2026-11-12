@@ -63,7 +63,11 @@ const partnerScope: TenantScopeApi = {
   listTenants: (page, limit) => partnerService.listTenants(page, limit),
   getTenant: (tenantId) => partnerService.getTenant(tenantId),
   createTenant: (data) =>
-    partnerService.createTenant({ name: data.name.trim(), domain: data.domain?.trim() || undefined }),
+    partnerService.createTenant({
+      name: data.name.trim(),
+      domain: data.domain?.trim() || undefined,
+      slug: data.slug?.trim() || undefined,
+    }),
   updateTenant: (tenantId, data) => partnerService.updateTenant(tenantId, data),
   deleteTenant: (tenantId) => partnerService.deleteTenant(tenantId),
   listBots: (tenantId) => partnerService.listBots(tenantId, 1, 100),

@@ -18,6 +18,7 @@ from app.models.channel import ChannelStatus, ChannelType
 from app.models.bot import BotStatus
 from app.models.tenant import TenantPublicInfo
 from app.modules.manifest import enabled_manifests
+from app.tenant_slug import SLUG_RE
 
 router = APIRouter(prefix="/api/public", tags=["public"])
 
@@ -42,6 +43,29 @@ async def get_current_tenant(request: Request):
     return TenantPublicInfo(
         tenant_id=tenant.tenant_id,
         name=tenant.name,
+        slug=tenant.slug,
+        status=tenant.status,
+        branding=tenant.branding,
+        settings=tenant.settings,
+    )
+
+
+@router.get("/tenants/by-slug/{slug}", response_model=TenantPublicInfo)
+async def get_tenant_by_slug_info(slug: str):
+    """Resuelve el tenant por su nombre interno (URL `https://intellify.pro/<slug>/`).
+
+    Es la resolución paralela a `/tenants/current`: en el apex todos los
+    tenants comparten Host, así que el Host no alcanza para distinguirlos y el
+    primer segmento del path es el que identifica a la organización.
+    """
+    tenant = await get_tenant_service().get_tenant_by_slug(slug)
+    if not tenant:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant no encontrado")
+
+    return TenantPublicInfo(
+        tenant_id=tenant.tenant_id,
+        name=tenant.name,
+        slug=tenant.slug,
         status=tenant.status,
         branding=tenant.branding,
         settings=tenant.settings,
@@ -61,6 +85,7 @@ async def get_public_tenant_info(tenant_id: str):
     return TenantPublicInfo(
         tenant_id=tenant.tenant_id,
         name=tenant.name,
+        slug=tenant.slug,
         status=tenant.status,
         branding=tenant.branding,
         settings=tenant.settings,
@@ -174,12 +199,35 @@ async def get_public_qr_code(
     return Response(content=buf.read(), media_type="image/png")
 
 
+def _tenant_base_path(base_path: str) -> str:
+    """Prefijo `/<slug>` cuando el chat se sirve en la URL interna del apex.
+
+    Vacío en los dominios por Host (comportamiento histórico). Con valor tiene
+    que ser un único segmento con forma de slug: el manifest arma URLs
+    absolutas a partir de él, así que cualquier otra cosa rompería la
+    instalación de la PWA.
+    """
+    if "//" in base_path:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="base_path inválido")
+    segment = base_path.strip().strip("/")
+    if not segment:
+        return ""
+    if not SLUG_RE.match(segment):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="base_path inválido")
+    return f"/{segment}"
+
+
 @router.get("/channels/{channel_id}/manifest.webmanifest")
-async def get_channel_manifest(channel_id: str):
+async def get_channel_manifest(channel_id: str, base_path: str = ""):
     """
     Genera un PWA manifest dinámico específico al canal/bot.
     Permite instalar el chat del cliente como una app independiente.
+
+    `base_path` (opcional) es el prefijo del tenant cuando la página vive bajo
+    `https://intellify.pro/<slug>/…`: el `start_url`, el `id` y el `scope` se
+    arman con ese prefijo para que la app instalada abra el chat correcto.
     """
+    prefix = _tenant_base_path(base_path)
     channel_service = get_channel_service()
     channel = await channel_service.get_channel(channel_id)
 
@@ -195,12 +243,12 @@ async def get_channel_manifest(channel_id: str):
     short_name = bot.name[:12] if len(bot.name) > 12 else bot.name
 
     manifest = {
-        "id": f"/chat/c/{channel_id}",
+        "id": f"{prefix}/chat/c/{channel_id}",
         "name": bot.name,
         "short_name": short_name,
         "description": bot.description or f"Chat con {bot.name}",
-        "start_url": f"/chat/c/{channel_id}",
-        "scope": "/chat/",
+        "start_url": f"{prefix}/chat/c/{channel_id}",
+        "scope": f"{prefix}/chat/",
         "display": "standalone",
         "background_color": "#ffffff",
         "theme_color": "#4f46e5",

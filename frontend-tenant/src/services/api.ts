@@ -1,6 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import type { InternalAxiosRequestConfig } from 'axios';
 import { tokenStorage } from './tokenStorage';
+import { stripTenantBase, tenantPath } from '../config/internalTenant';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -40,7 +41,9 @@ api.interceptors.response.use(
       await tokenStorage.removeItem('token');
       await tokenStorage.removeItem('user');
 
-      const path = window.location.pathname;
+      // `stripTenantBase` quita el prefijo del tenant de la URL interna
+      // (`/acme/login` -> `/login`) para comparar contra las rutas del Router.
+      const path = stripTenantBase(window.location.pathname);
       const isPublicRoute =
         path === '/' ||
         path === '/login' ||
@@ -49,7 +52,9 @@ api.interceptors.response.use(
         path.startsWith('/chat/') ||
         path.startsWith('/u/');
       if (!isPublicRoute) {
-        window.location.href = '/login';
+        // Navegación completa (no `navigate`): el interceptor no vive dentro del
+        // Router y acá no hay acceso al basename; `tenantPath` lo repone.
+        window.location.href = tenantPath('/login');
       }
     }
     return Promise.reject(error);

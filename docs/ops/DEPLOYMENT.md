@@ -335,11 +335,42 @@ docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod
   -f docker-compose.tenants.prod.yml up -d --build frontend-tenant landing
 ```
 
+### URL interna del tenant (`https://intellify.pro/<slug>/`)
+
+Además del dominio (`tenants.domain`, resolución por Host), cada tenant tiene un
+**nombre interno** (`tenants.slug`) que se resuelve por el primer segmento del
+path del apex. Apenas se crea la fila, el tenant es accesible en
+`https://intellify.pro/<slug>/…` con branding, login y PWA funcionando: **sin
+DNS, sin router de Traefik y sin certificado nuevo**. El apex entero va al
+contenedor `frontend-tenant` por el router `tenant-internal` (label de
+`docker-compose.tenants.prod.yml`); el `slug` se autogenera del nombre al dar de
+alta y se puede editar en el panel (cambiarlo invalida la URL anterior).
+
+Cutover del apex (una sola vez, **en este orden**):
+
+1. Desplegar backend + `frontend-tenant` con el cambio y correr
+   `alembic upgrade head` (migración `20261112_1200_add_tenant_slug.py`: agrega
+   `tenants.slug` y lo backfillea desde el nombre).
+2. En el DNS de `intellify.pro`: crear el `A` de `www` → `89.116.111.245` (el
+   Caddy del sitio de marketing) y **después** cambiar el `A` del apex a
+   `147.79.86.54` (Traefik de la app). Si el apex se cambia primero, el sitio de
+   marketing queda apuntando al Traefik y deja de servirse.
+3. Auditar el HTML del marketing: todo link/asset interno debe ser relativo o
+   apuntar a `https://www.intellify.pro/…` (una URL absoluta al apex deja de
+   existir).
+4. `api.intellify.pro` y los subdominios de tenants no se tocan.
+
+Passkeys: el apex es un host de página válido para WebAuthn (`WEBAUTHN_ORIGINS`
+en `.env.prod`). El RP ID es `intellify.pro`, distinto del de cada dominio
+externo: una passkey creada en `ius.intellify.pro` no se ofrece en la URL
+interna (WebAuthn no cruza dominios).
+
 ### Dar de alta un tenant nuevo (subdominio `*.intellify.pro`)
 
 1. Crear el tenant (plan, tenant, usuario admin, bot, canal, módulos) desde
-   `https://admin.intellify.pro`. Asegurarse de setear `domain` al host real
-   (`<slug>.intellify.pro`) — es lo que usa la resolución por Host.
+   `https://admin.intellify.pro`. El tenant ya queda accesible en su URL interna
+   (`https://intellify.pro/<slug>/`). Para el dominio propio, setear `domain` al
+   host real (`<slug>.intellify.pro`) — es lo que usa la resolución por Host.
 2. Agregar el router `tenant-<slug>` al servicio `frontend-tenant` de
    `docker-compose.tenants.prod.yml` (un bloque de labels `Host(\`<slug>.intellify.pro\`)`,
    `entrypoints=websecure`, `tls.certresolver=letsencrypt`, `priority=1`,

@@ -7,6 +7,22 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **Nombre interno de tenant: la organización ya es accesible en
+  `https://intellify.pro/<slug>/` apenas se crea** (ADR-042). Cada tenant tiene
+  `tenants.slug` —se genera del nombre al dar de alta (`IUS Legal` →
+  `ius-legal`, con `-2`, `-3`… si está tomado) y se puede editar en el alta y en
+  la edición—, resuelto por `GET /api/public/tenants/by-slug/{slug}` en vez de
+  por Host. El apex `intellify.pro` pasa a servir el SPA (router
+  `tenant-internal`) y el sitio de marketing a `www.intellify.pro`; los
+  dominios externos de cada tenant (`tenants.domain`) no cambian. En el panel
+  admin, `Tenants` suma el campo **Nombre interno (URL)** y la columna **URL
+  interna**, y `TenantEdit` lo permite editar (cambiarlo invalida la URL
+  anterior). En el SPA del tenant: React Router monta con `basename` del slug,
+  los links de chat/QR usan `<origen>/<slug>`, el manifest PWA recibe
+  `base_path` y la sesión se aísla por tenant (un usuario de otra organización
+  no puede iniciar sesión en la URL de un tenant distinto). Requiere la
+  migración `20261112_1200_add_tenant_slug.py` y `WEBAUTHN_ORIGINS=https://intellify.pro`
+  en `.env.prod` para las passkeys del apex.
 - **ABM global de usuarios en el backoffice principal** (`/admin/users`, solo
   `super_admin`). Nueva pantalla `frontend/src/pages/admin/Users.tsx` con la
   grilla de todas las cuentas (usuario, nombre, email, rol, tenant, estado),

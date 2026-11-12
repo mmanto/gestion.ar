@@ -6,6 +6,7 @@ import api from '../services/api';
 import { tokenStorage } from '../services/tokenStorage';
 import { biometricService } from '../services/biometric.service';
 import { loginWithPasskey as passkeyLogin, signupWithPasskey as passkeySignup } from '../services/passkey.service';
+import { useTenant } from '../hooks/useTenant';
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,13 +20,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [token, setToken] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const { tenant, isLoading: isTenantLoading } = useTenant();
 
-  // Verificar autenticación al cargar la app
+  // Verificar autenticación al cargar la app. Se espera a que el tenant esté
+  // resuelto: el storage de sesión está prefijado por tenant (en la URL interna
+  // del apex todos comparten origen) y sin tenant no hay a quién pertenecer.
   useEffect(() => {
+    if (isTenantLoading) return;
     checkAuth();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTenantLoading]);
+
+  /**
+   * La sesión pertenece al tenant de esta página.
+   *
+   * El login por usuario/contraseña es global (el username es único en toda la
+   * plataforma), así que sin este guard las credenciales de un tenant abrirían
+   * sesión en la URL de otro — el backend valida el tenant del usuario contra el
+   * de la página en los flujos de passkey, pero no en el login con contraseña.
+   * `super_admin` no tiene tenant y entra desde cualquier URL.
+   */
+  const assertSameTenant = (candidate: User) => {
+    if (!tenant?.tenant_id) return;
+    if (candidate.role === 'super_admin') return;
+    if (candidate.tenant_id !== tenant.tenant_id) {
+      throw new Error(
+        'Este usuario pertenece a otra organización. Entrá desde la URL de tu organización.',
+      );
+    }
+  };
 
   const checkAuth = async () => {
+    if (!tenant) {
+      // Sin tenant no hay organización a la que pertenecer (apex sin slug, ruta
+      // reservada o tenant inexistente): no se consulta la API.
+      setToken(null);
+      setUser(null);
+      setIsAuthenticated(false);
+      setIsLoading(false);
+      return;
+    }
     try {
       const storedToken = await authService.getToken();
       const storedUser = await authService.getUser();
@@ -34,6 +68,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Verificar que el token sigue siendo válido
         try {
           const verifiedUser = await authService.verifyToken();
+          assertSameTenant(verifiedUser);
           setToken(storedToken);
           setUser(verifiedUser);
           setIsAuthenticated(true);
@@ -62,6 +97,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (credentials: LoginCredentials) => {
     try {
       const response = await authService.login(credentials);
+      // Antes de tocar el storage: si el usuario es de otra organización, no se
+      // guarda nada.
+      assertSameTenant(response.user);
 
       // Guardar token y usuario
       await authService.saveToken(response.access_token);
@@ -94,6 +132,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (payload: RegisterPayload): Promise<RegisterResponse> => {
     try {
       const response = await authService.register(payload);
+      assertSameTenant(response.user);
       await authService.saveToken(response.access_token);
       await authService.saveUser(response.user);
       await tokenStorage.setItem('lastUsername', response.user.username);
@@ -133,6 +172,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const applySession = async (appToken: string): Promise<User> => {
     await authService.saveToken(appToken);
     const verifiedUser = await authService.verifyToken();
+    try {
+      assertSameTenant(verifiedUser);
+    } catch (error) {
+      // El token es válido pero de otra organización: no se deja sesión abierta.
+      await authService.clearAuth();
+      throw error;
+    }
     await authService.saveUser(verifiedUser);
     await tokenStorage.setItem('lastUsername', verifiedUser.username);
     setToken(appToken);
@@ -177,6 +223,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         device_id: deviceId,
         secret,
       });
+      assertSameTenant(data.user);
       await authService.saveToken(data.access_token);
       await authService.saveUser(data.user);
       setToken(data.access_token);

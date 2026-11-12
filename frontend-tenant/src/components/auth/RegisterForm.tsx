@@ -3,6 +3,7 @@ import { KeyRound } from 'lucide-react';
 import type { AuthProvider, RegisterPayload, RegisterPlan } from '../../types/auth.types';
 import { isPasskeySupported, PasskeyCancelled } from '../../services/passkey.service';
 import { Spinner } from '../common/Spinner';
+import { tenantPath } from '../../config/internalTenant';
 
 /**
  * Tarjeta de autoregistro "Crea tu cuenta" (plan + Google + formulario),
@@ -90,7 +91,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ tenantId, branding, 
     setPasskeyLoading(true);
     try {
       await passkey(tenantId, freeSignup ? undefined : plan, nombre.trim());
-      window.location.href = '/dashboard';
+      window.location.href = tenantPath('/dashboard');
     } catch (err: unknown) {
       if (!(err instanceof PasskeyCancelled)) {
         setError(err instanceof Error && err.message ? err.message : 'No se pudo crear la cuenta con passkey.');
@@ -108,7 +109,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ tenantId, branding, 
     setOauthLoading('google');
     try {
       await google(tenantId, freeSignup ? undefined : plan);
-      window.location.href = '/dashboard';
+      window.location.href = tenantPath('/dashboard');
     } catch (err: unknown) {
       const message = err instanceof Error && err.message !== 'cancelled' ? err.message : 'No se pudo completar el registro con Google.';
       setError(message);
@@ -145,7 +146,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ tenantId, branding, 
       });
       // Alta gratuita (sin plan) → directo al panel; si hay plan, al pago de
       // Mercado Pago del plan elegido (paridad con la landing ius).
-      window.location.href = paymentUrl || '/dashboard';
+      window.location.href = paymentUrl || tenantPath('/dashboard');
     } catch (err: unknown) {
       let detail: string | undefined;
       if (err && typeof err === 'object' && 'response' in err) {

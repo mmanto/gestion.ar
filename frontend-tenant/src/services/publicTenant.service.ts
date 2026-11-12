@@ -18,6 +18,13 @@ const publicTenantService = {
     const res = await axios.get(`${BASE_URL}/public/tenants/current`);
     return res.data;
   },
+
+  // Resuelve el tenant por su nombre interno (URL `https://intellify.pro/<slug>/`):
+  // en el apex todos los tenants comparten Host y el que distingue es el path.
+  async getTenantBySlug(slug: string): Promise<TenantPublicInfo> {
+    const res = await axios.get(`${BASE_URL}/public/tenants/by-slug/${encodeURIComponent(slug)}`);
+    return res.data;
+  },
 };
 
 export default publicTenantService;

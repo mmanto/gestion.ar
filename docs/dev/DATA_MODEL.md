@@ -284,6 +284,7 @@ no en el tenant.
 | `tenant_id` | `TEXT PK` | |
 | `name` | `TEXT NOT NULL` | Nombre del tenant |
 | `domain` | `TEXT (opt)` | Dominio propio, único cuando no es null |
+| `slug` | `TEXT` UNIQUE (opt) | **Nombre interno** del tenant: primer segmento de la URL interna `https://intellify.pro/<slug>/…`. Se genera del `name` al dar de alta (con sufijo `-2`, `-3`… si está tomado) y se puede editar; la migración `20261112_1200_add_tenant_slug.py` lo backfillea para las filas existentes. Único por índice parcial (`ix_tenants_slug`), así los `NULL` —tenants creados por los scripts históricos de alta— no compiten. Formato y reservados: `backend/app/tenant_slug.py` |
 | `status` | `TEXT NOT NULL` | `active` / `suspended` / `trial` |
 | `branding` | `JSONB` | Marca (logo, color, tagline) |
 | `settings` | `JSONB` | Flags de runtime por tenant (p. ej. `{"stats_two_cols_mobile": true}`). Antes se inyectaban por contenedor (`STATS_TWO_COLS_MOBILE`); ahora viajan en el response de `/api/public/tenants/current` |
@@ -294,9 +295,10 @@ no en el tenant.
 
 Migraciones: `20261008_0000_add_tenant_settings.py`,
 `20261028_1300_add_tenant_api_key_hash.py`,
-`20261103_1200_add_tenant_llm_config.py` y
+`20261103_1200_add_tenant_llm_config.py`,
 `20261111_1200_add_partner_role_and_tenant_parent.py` (rol `partner` +
-`parent_tenant_id`).
+`parent_tenant_id`) y `20261112_1200_add_tenant_slug.py` (`slug` + backfill
+desde `name`).
 
 El alta de un tenant derivado (`POST /api/partner/tenants`) **clona** agentes
 (`bots` con la misma `config`, sin `channel_ids` ni contadores), `bot_modules` y

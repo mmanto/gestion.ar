@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { getInternalTenantSlug } from '../config/internalTenant';
 
 /**
  * Hook que inyecta dinámicamente un manifest PWA específico al canal en el <head>.
@@ -10,7 +11,11 @@ export function usePwaManifest(channelId: string | undefined) {
   useEffect(() => {
     if (!channelId) return;
 
-    const targetHref = `/api/public/channels/${channelId}/manifest.webmanifest`;
+    // En la URL interna del apex el chat vive bajo `/<slug>/chat/c/<id>`: el
+    // prefijo viaja como `base_path` para que el manifest instalado abra ahí.
+    const slug = getInternalTenantSlug();
+    const targetHref = `/api/public/channels/${channelId}/manifest.webmanifest`
+      + (slug ? `?base_path=${encodeURIComponent(`/${slug}`)}` : '');
     const link = document.getElementById('app-manifest') as HTMLLinkElement | null
       ?? document.querySelector('link[rel="manifest"]') as HTMLLinkElement | null;
 

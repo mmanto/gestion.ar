@@ -28,6 +28,7 @@ from app.models.tenant import (
 )
 from app.services.partner_service import get_partner_service
 from app.services.user_service import get_user_service, to_tenant_user_out
+from app.tenant_slug import TenantSlugConflict
 
 router = APIRouter(
     prefix="/api/partner",
@@ -86,6 +87,7 @@ async def create_tenant(data: PartnerTenantCreate, current_user: User = Depends(
     except PermissionError as e:
         raise HTTPException(status.HTTP_403_FORBIDDEN, str(e))
     except ValueError as e:
+        # `TenantSlugConflict` hereda de ValueError: el alta ya responde 409.
         raise HTTPException(status.HTTP_409_CONFLICT, str(e))
     except LookupError:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Tenant base no encontrado")
@@ -108,6 +110,9 @@ async def update_tenant(
         tenant = await get_partner_service().update_managed_tenant(_base(current_user), tenant_id, data)
     except LookupError:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Tenant no encontrado")
+    except TenantSlugConflict as e:
+        # Un nombre interno ya usado es conflicto, no un pedido inválido.
+        raise HTTPException(status.HTTP_409_CONFLICT, str(e))
     except ValueError as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e))
     if not tenant:
