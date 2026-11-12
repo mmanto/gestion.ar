@@ -6,6 +6,14 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 
 ## [Sin versión] - En desarrollo
 
+### Corregido
+- **Vaciar el dominio propio de un tenant ya funciona** (`/admin/tenants →
+  TenantEdit` y panel de partner): antes borrar el campo no tenía efecto porque
+  el frontend omitía la clave y el backend nunca seteaba `NULL`. Ahora vaciarlo
+  manda `domain: null`, el backend lo acepta explícitamente
+  (`TenantService.update_tenant`) y el tenant vuelve a resolverse por su URL
+  interna (`intellify.pro/<slug>`).
+
 ### Agregado
 - **Acción «Sitio» en la grilla de tenants** (`/admin/tenants`): el desplegable de
   cada fila abre el sitio del tenant en otra pestaña. Prioriza el dominio externo

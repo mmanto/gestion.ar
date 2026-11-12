@@ -319,19 +319,22 @@ export const TenantEdit = () => {
       // Vacío = no se toca el nombre interno actual (el backend autogenera sólo
       // en el alta). Cambiarlo invalida la URL anterior: no hay redirect.
       const slugValue = slug.trim().toLowerCase() || undefined;
+      // Vacío = se borra el dominio propio (`null` explícito, no `undefined`):
+      // el tenant vuelve a resolverse por su URL interna.
+      const domainValue = domain.trim() || null;
       const updated = await api.updateTenant(
         tenantId,
         isPartner
           ? {
               name: name.trim(),
-              domain: domain.trim() || undefined,
+              domain: domainValue,
               slug: slugValue,
               branding,
               ...(isBaseTenant ? {} : { status }),
             }
           : {
               name: name.trim(),
-              domain: domain.trim() || undefined,
+              domain: domainValue,
               slug: slugValue,
               status,
               plan_id: planId,

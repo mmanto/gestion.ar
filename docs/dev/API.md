@@ -664,6 +664,10 @@ Editar un tenant. Todos los campos opcionales: `name`, `domain`, `slug`,
 cambia la URL interna del tenant (la anterior deja de resolver) y **409** si ya
 lo usa otro tenant.
 
+`domain: null` (o `""`) **borra** el dominio propio: el tenant vuelve a
+resolverse por su URL interna (`intellify.pro/<slug>`). Omitir `domain` no lo
+toca; en el resto de los campos `null` también significa "no tocar".
+
 ### DELETE `/api/admin/tenants/{tenant_id}`
 
 Eliminar un tenant. **409** si el tenant no existe o tiene datos asociados
@@ -779,8 +783,9 @@ Detalle (base o derivado). **404** fuera de alcance.
 
 ### PATCH `/api/partner/tenants/{tenant_id}`
 
-Edita `name`, `domain`, `status` y `branding`. **400** si se intenta cambiar
-`status` del tenant base; **404** fuera de alcance.
+Edita `name`, `domain`, `status` y `branding`. `domain: null` (o `""`) borra el
+dominio propio y el tenant vuelve a su URL interna; omitirlo no lo toca. **400**
+si se intenta cambiar `status` del tenant base; **404** fuera de alcance.
 
 ### DELETE `/api/partner/tenants/{tenant_id}`
 

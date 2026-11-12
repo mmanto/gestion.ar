@@ -28,11 +28,15 @@ class UserRole(str, Enum):
 
 
 class TenantSlugInput(BaseModel):
-    """Normaliza `slug` en los schemas de alta y edición.
+    """Normaliza `slug` y `domain` en los schemas de alta y edición.
 
-    Vacío/blanco → `None` (el backend autogenera el nombre interno del nombre
-    del tenant); si viene, se valida con `validate_tenant_slug` y un valor
-    inválido sale como 422 de FastAPI.
+    `slug`: vacío/blanco → `None` (el backend autogenera el nombre interno del
+    nombre del tenant); si viene, se valida con `validate_tenant_slug` y un
+    valor inválido sale como 422 de FastAPI.
+
+    `domain`: blanco → `None`, que en la edición significa "vaciar el dominio
+    propio" (el tenant vuelve a resolverse por su URL interna). Ver
+    `TenantService.update_tenant`.
     """
 
     @field_validator("slug", mode="before", check_fields=False)
@@ -45,6 +49,13 @@ class TenantSlugInput(BaseModel):
             if not stripped:
                 return None
             return validate_tenant_slug(stripped)
+        return value
+
+    @field_validator("domain", mode="before", check_fields=False)
+    @classmethod
+    def _clean_domain(cls, value: Any) -> Optional[str]:
+        if isinstance(value, str):
+            return value.strip() or None
         return value
 
 

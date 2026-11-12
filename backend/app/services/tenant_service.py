@@ -44,6 +44,10 @@ _SLUG_ASSIGN_ATTEMPTS = 10
 #: Índice único parcial que protege el nombre interno (ver db/models.Tenant).
 SLUG_CONSTRAINT = "ix_tenants_slug"
 
+#: Campos de `TenantUpdate` donde `null` explícito significa "vaciar" y no
+#: "no tocar". Hoy sólo `domain`: vaciarlo devuelve al tenant a su URL interna.
+_CLEARABLE_FIELDS = frozenset({"domain"})
+
 #: `duplicate key value violates unique constraint "ix_tenants_slug"` (el nombre
 #: también aparece así en violaciones de FK). Ver `integrity_constraint_name`.
 _CONSTRAINT_NAME_RE = re.compile(r'constraint "([^"]+)"')
@@ -217,6 +221,10 @@ class TenantService:
         """Edita el tenant. Si viene `slug` (ya validado por Pydantic) se
         reemplaza: la URL interna anterior deja de resolver (no hay redirect).
 
+        `domain: null` (o blanco) vacía el dominio propio: el tenant vuelve a
+        resolverse sólo por su URL interna. En el resto de los campos opcionales
+        `None` significa "no tocar".
+
         Raises:
             TenantSlugConflict: el nombre interno pedido ya lo usa otro tenant.
         """
@@ -232,6 +240,8 @@ class TenantService:
             for k, v in update_dict.items():
                 if v is not None:
                     setattr(row, k, v)
+                elif k in _CLEARABLE_FIELDS:
+                    setattr(row, k, None)
             try:
                 await session.commit()
             except IntegrityError as e:

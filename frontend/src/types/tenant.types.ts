@@ -82,7 +82,8 @@ export interface TenantCreate {
 
 export interface TenantUpdate {
   name?: string;
-  domain?: string;
+  /** `null` explícito vacía el dominio propio; ausente = no se toca. */
+  domain?: string | null;
   slug?: string;
   status?: TenantStatus;
   branding?: TenantBranding;
