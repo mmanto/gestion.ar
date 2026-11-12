@@ -122,6 +122,11 @@ Reutiliza el mismo `src/components/auth/RegisterForm.tsx` que la página
   `data-open`/`data-closed` de `Sheet`/`Dropdown`/`Tooltip`.
   Tras actualizar el paquete hay que rebuilder (`npm run build`) porque Tailwind
   escanea su `dist/`.
+- **`terser`** (devDependency) es el minificador del build de producción
+  (`build.minify: 'terser'` en `vite.config.ts`). Es obligatorio: con el esbuild
+  por defecto, los chunks de shares de `@module-federation/vite` quedan
+  inconsistentes y el bundle revienta al cargar con `ReferenceError: … is not
+  defined` (ver ADR-009, addendum 2). No quitarlo sin volver a probar el build.
 
 ---
 

@@ -505,6 +505,35 @@ un widget `appointment_*`, es decir cuando el flujo del bot lo pide. Además
 Verificado en dev y en `vite build`: página sin turnos → 0 requests al remote;
 `__mfPreloadRemote` ausente del chunk `mf-entry-bootstrap`; al forzar la
 resolución del proxy diferido, el remote baja y resuelve.
+
+### Addendum 2 (2026-11-12): el build de producción salía inválido con esbuild
+
+Síntoma: en prod **todas** las rutas del SPA de tenant (login, dashboard, chat)
+quedaban en blanco con `ReferenceError: $m is not defined` en el chunk de
+entrada. En el bundle emitido, ese chunk usaba `$m` (una función privada de
+`react-dom/client`) tres veces, pero la definición vivía en el chunk de share
+`…__loadShare__react_mf_2_dom_mf_1_client__loadShare__.js` que genera
+`@module-federation/vite`: **esbuild**, el minificador por defecto de Vite,
+renombra identificadores por chunk, así que el nombre de un chunk no coincidía
+con el del otro y el módulo explotaba al evaluarse.
+
+A/B sobre la misma config (`shareStrategy: 'loaded-first'`, remote de
+`appointments`):
+
+| `build.minify` | Resultado |
+|---|---|
+| `false` | ejecuta (pero bundle enorme) |
+| `'esbuild'` (default de Vite) | `ReferenceError` y pantalla en blanco |
+| `'terser'` | ejecuta |
+
+`shared: {}` también ejecuta, pero rompe el singleton de React entre host y
+remote (el widget llamaría hooks de otra copia) — descartado.
+
+Decisión: `frontend-tenant/vite.config.ts` fija `build.minify: 'terser'` y
+`terser` pasa a `devDependencies`. No es un problema de `loaded-first`: se
+reproduce igual con `version-first` y con `@module-federation/vite` 1.23.11.
+Al tocar el minificador o el split de shares, el chequeo barato es build de
+producción + abrir el SPA y confirmar que `#root` renderiza sin `pageerror`.
 ---
 
 ## ADR-010: Re-activar autoregistro público de admin para un tenant (flujo "Crea tu cuenta")

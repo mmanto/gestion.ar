@@ -498,6 +498,14 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   `pachoteayuda.ar` con toda la consola llena de errores CORS. Ahora
   `vite.config.ts` usa `shareStrategy: 'loaded-first'`: el remote se descarga
   sólo cuando se monta un widget `appointment_*` (chat con el módulo de turnos).
+- **El build de producción del SPA de tenant salía inválido** (ADR-009, addendum
+  2): el chunk de entrada quedaba con referencias a un identificador privado
+  (`$m`, de `react-dom/client`) que esbuild había renombrado dentro del chunk de
+  shares de `@module-federation/vite`, así que **todas** las rutas (`/login`,
+  `/dashboard`, el chat de pachoteayuda) cargaban en blanco con
+  `ReferenceError: $m is not defined`. `vite.config.ts` pasa a minificar con
+  `terser` (nueva devDependency), que mantiene los nombres entre chunks y deja
+  el bundle ejecutable.
 - **El flujo del padrón trababa el chat: con la consulta a medio armar, todos
   los mensajes recibían la misma respuesta** (`backend/app/modules/padron_ext.py`).
   Con la recolección de DNI/sexo abierta (`ns["collect"]`), el interceptor

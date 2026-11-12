@@ -64,6 +64,16 @@ const hmrClientPort = Number(process.env.VITE_HMR_CLIENT_PORT) || 5174
 // Puerto 5174 (distinto del frontend-admin en 5173) para poder correr ambas
 // apps en paralelo durante desarrollo local.
 export default defineConfig({
+  // Minificador: terser, NO el esbuild por defecto. Con esbuild, los chunks de
+  // shares que genera @module-federation/vite quedan inconsistentes: el chunk
+  // de entrada referencia un identificador privado (p. ej. `$m`, una función de
+  // react-dom/client) renombrado por esbuild en OTRO chunk, y el bundle revienta
+  // al cargar con `ReferenceError: $m is not defined` (pantalla en blanco en
+  // todo el SPA). Sin minificar el mismo build funciona, así que el problema es
+  // del renombrado por-chunk de esbuild sobre el split de shares. Terser
+  // conserva los nombres entre chunks y el bundle ejecuta. Verificado con
+  // `shareStrategy: 'loaded-first'` + widgets de `appointments` diferidos.
+  build: { minify: 'terser' },
   plugins: [
     react(),
     // Tailwind 4 CSS-first: el CSS se compila desde src/index.css (no hay
