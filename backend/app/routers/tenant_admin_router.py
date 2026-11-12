@@ -18,6 +18,7 @@ from app.models.tenant import (
     TenantUpdate,
     TenantUserCreate,
     TenantUserUpdate,
+    UserRole,
 )
 from app.services.bot_service import get_bot_service
 from app.services.module_service import get_module_service
@@ -190,15 +191,30 @@ async def approve_user_plan_request(username: str, data: UserPlanApproval):
 
 @router.post("/users", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_tenant_user(data: TenantUserCreate):
-    tenant = await get_tenant_service().get_tenant(data.tenant_id)
-    if not tenant:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Tenant no encontrado")
+    """Alta de usuario desde administración general.
 
-    if data.role == "super_admin":
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            "No se puede crear un super_admin con tenant asociado",
-        )
+    `super_admin` es el único rol sin tenant (ver
+    ck_users_role_tenant_consistency); el resto exige un tenant existente.
+    """
+    role = data.role.value if hasattr(data.role, "value") else data.role
+
+    if role == UserRole.SUPER_ADMIN.value:
+        if data.tenant_id:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                "Un super_admin no pertenece a ningún tenant",
+            )
+        tenant_id = None
+    else:
+        if not data.tenant_id:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                "Elegí el tenant del usuario para este rol",
+            )
+        tenant = await get_tenant_service().get_tenant(data.tenant_id)
+        if not tenant:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Tenant no encontrado")
+        tenant_id = data.tenant_id
 
     user_service = get_user_service()
     try:
@@ -209,8 +225,8 @@ async def create_tenant_user(data: TenantUserCreate):
             nombre=data.nombre,
             apellido=data.apellido,
             avatar_url=data.avatar_url,
-            tenant_id=data.tenant_id,
-            role=data.role.value if hasattr(data.role, "value") else data.role,
+            tenant_id=tenant_id,
+            role=role,
             broker_username=data.broker_username,
         )
     except ValueError as e:
@@ -239,13 +255,26 @@ async def list_tenant_users(
 
 @router.patch("/users/{username}", response_model=dict)
 async def update_tenant_user(username: str, data: TenantUserUpdate):
-    if data.role == "super_admin":
+    user_service = get_user_service()
+    existing = await user_service.get_user_by_username(username)
+    if not existing:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado")
+
+    # El rol está atado a la existencia de tenant (ck_users_role_tenant_consistency):
+    # este endpoint no mueve usuarios entre tenants ni les asigna uno.
+    new_role = data.role.value if data.role else None
+    if new_role == UserRole.SUPER_ADMIN.value and existing.tenant_id:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            "Usá /api/admin/users para crear un super_admin directamente, sin tenant",
+            "Un usuario con tenant no puede pasar a super_admin: creá una cuenta nueva",
+        )
+    if new_role is not None and new_role != UserRole.SUPER_ADMIN.value and not existing.tenant_id:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Un super_admin no puede pasar a otro rol: creá el usuario dentro del tenant",
         )
 
-    user = await get_user_service().update_user(
+    user = await user_service.update_user(
         username,
         role=data.role.value if data.role and hasattr(data.role, "value") else data.role,
         disabled=data.disabled,

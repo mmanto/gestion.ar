@@ -659,8 +659,28 @@ Revoca la key. Los clientes que la usan pasan a `401`.
 
 ## Administración general — Usuarios
 
-Gestión de usuarios de cualquier tenant por el `super_admin`. Requieren JWT
-con rol `super_admin`.
+ABM global de cuentas de la plataforma. Requieren JWT con rol `super_admin`;
+el panel principal los expone en la pantalla **Usuarios** (`/admin/users`).
+
+Regla del modelo: el rol está atado a la existencia de tenant
+(`ck_users_role_tenant_consistency`) — `super_admin` es el único rol sin
+`tenant_id`, y todo el resto lo exige.
+
+### GET `/api/admin/users?tenant_id=&page=1&limit=50`
+
+Lista paginada. `tenant_id` filtra por tenant; sin parámetro devuelve todas
+las cuentas, incluidos los `super_admin` (con `tenant_id: null`).
+
+### POST `/api/admin/users`
+
+Alta. Body: `username`, `password` (6+), `email`, `nombre`, `apellido`,
+`avatar_url`, `role`, `tenant_id`, `broker_username`.
+
+- `role: "super_admin"` **no** lleva `tenant_id` (**400** si viene).
+- Cualquier otro rol exige `tenant_id` de un tenant existente (**400** si falta,
+  **404** si el tenant no existe).
+- `broker_username` sólo aplica a `role: "operativo"`.
+- **201** `{"success": true, "user": {...}}`.
 
 ### PATCH `/api/admin/users/{username}`
 
@@ -670,7 +690,16 @@ Edita un usuario de cualquier tenant. Body opcional: `role`, `disabled`,
 
 - `password`: 6–128 caracteres; se hashea antes de guardarse. Si se omite, la
   contraseña actual queda intacta.
-- `role: "super_admin"` responde **400**.
+- Un usuario con tenant no puede pasar a `super_admin` (**400**): creá una
+  cuenta nueva. Tampoco se puede degradar un `super_admin` a otro rol, porque
+  quedaría sin tenant (**400**).
+- El `tenant_id` no se edita: mover una cuenta entre tenants rompería sus
+  agentes y clientes.
+
+### DELETE `/api/admin/users/{username}`
+
+Elimina la cuenta. **409** si no existe o si tiene recursos asociados
+(`bots.owner_id`) que deben reasignarse primero.
 
 ---
 

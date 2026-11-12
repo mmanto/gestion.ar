@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Blocks, Bot, Building2, CreditCard } from 'lucide-react';
+import { Blocks, Bot, Building2, CreditCard, Users } from 'lucide-react';
 import { useModules } from '../modules/ModulesProvider';
 import { useAuth } from '../hooks/useAuth';
 import type { ModuleManifest } from '../modules/manifest';
@@ -30,6 +30,11 @@ const CORE_LINKS: NavLink[] = [
     icon: <Building2 size={20} className="shrink-0" />,
   },
   {
+    to: '/admin/users',
+    label: 'Usuarios',
+    icon: <Users size={20} className="shrink-0" />,
+  },
+  {
     to: '/admin/plans',
     label: 'Planes',
     icon: <CreditCard size={20} className="shrink-0" />,
@@ -37,7 +42,10 @@ const CORE_LINKS: NavLink[] = [
 ];
 
 /** Links de la consola que sólo ve administración general. */
-const SUPER_ADMIN_ONLY_LINKS: Record<string, true> = { '/admin/plans': true };
+const SUPER_ADMIN_ONLY_LINKS: Record<string, true> = {
+  '/admin/users': true,
+  '/admin/plans': true,
+};
 
 /**
  * Navegación de la consola: los links core + los que aporta cada módulo

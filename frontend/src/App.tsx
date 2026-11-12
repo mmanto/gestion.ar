@@ -22,6 +22,7 @@ import { ModuleGate } from './modules/ModuleGate';
 import { moduleRoutes } from './modules/registry';
 import { Tenants } from './pages/admin/Tenants';
 import { TenantEdit } from './pages/admin/TenantEdit';
+import { Users } from './pages/admin/Users';
 import { Plans } from './pages/admin/Plans';
 import { Settings } from './pages/Settings';
 
@@ -80,6 +81,14 @@ function AppRoutes() {
                       element={
                         <ProtectedRoute roles={['super_admin', 'partner']}>
                           <TenantEdit />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/users"
+                      element={
+                        <ProtectedRoute roles={['super_admin']}>
+                          <Users />
                         </ProtectedRoute>
                       }
                     />

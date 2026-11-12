@@ -108,6 +108,13 @@ export interface TenantUser {
   subscription_status?: SubscriptionStatus;
 }
 
+/**
+ * Roles que administra el panel general (`/api/admin/users`). Es el espejo
+ * completo de `UserRole` del backend: a diferencia de `TenantUserRole` incluye
+ * `super_admin`, el único rol sin tenant.
+ */
+export type AdminUserRole = 'super_admin' | 'admin' | 'operativo' | 'broker' | 'partner';
+
 export interface TenantUserCreate {
   username: string;
   password: string;
@@ -115,12 +122,13 @@ export interface TenantUserCreate {
   nombre?: string;
   apellido?: string;
   avatar_url?: string;
-  tenant_id: string;
-  role: TenantUserRole;
+  /** Obligatorio salvo `role: 'super_admin'` (ver ADR-041). */
+  tenant_id?: string;
+  role: AdminUserRole;
 }
 
 export interface TenantUserUpdate {
-  role?: TenantUserRole;
+  role?: AdminUserRole;
   disabled?: boolean;
   email?: string;
   nombre?: string;

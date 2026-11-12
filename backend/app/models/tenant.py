@@ -125,7 +125,9 @@ class TenantUserCreate(BaseModel):
     nombre: Optional[str] = None
     apellido: Optional[str] = None
     avatar_url: Optional[str] = None
-    tenant_id: str
+    #: Tenant del usuario. Obligatorio salvo `role=super_admin`, el único rol
+    #: que vive sin tenant (ver ck_users_role_tenant_consistency).
+    tenant_id: Optional[str] = None
     role: UserRole = UserRole.OPERATIVO
     broker_username: Optional[str] = Field(None, description="Solo para role=operativo: el broker (firma) del que depende")
 

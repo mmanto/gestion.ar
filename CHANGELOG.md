@@ -7,6 +7,16 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **ABM global de usuarios en el backoffice principal** (`/admin/users`, solo
+  `super_admin`). Nueva pantalla `frontend/src/pages/admin/Users.tsx` con la
+  grilla de todas las cuentas (usuario, nombre, email, rol, tenant, estado),
+  alta con rol + tenant, edición de datos/rol/contraseña, habilitar/deshabilitar
+  y baja con confirmación. El acceso a un tenant desde la grilla lleva a su
+  pantalla de edición. En el backend, `POST /api/admin/users` ahora crea
+  **super_admins sin tenant** (`tenant_id` opcional; obligatorio para el resto
+  de los roles) y `PATCH` rechaza explícitamente (400 con el motivo)
+  promover/degradar una cuenta a través del límite tenant ↔ sin tenant, en vez
+  de fallar contra el CHECK de la base.
 - **Rol `partner`: backoffice general para construir tenants derivados**
   (ADR-041). Un partner es un usuario con `role='partner'` asignado a un
   **tenant base** (`users.tenant_id`, se crea desde `/api/admin/users`). Entra
