@@ -14,10 +14,11 @@ import { LoadingPage } from '../../components/common/Spinner';
 import { PageHeader } from '../../components/common/PageHeader';
 import { Alert } from '../../components/common/Alert';
 import { TenantSummary } from '../../components/tenants/TenantSummary';
-import { tenantInternalUrl } from '../../lib/platform';
+import { tenantInternalUrl, tenantSiteUrl } from '../../lib/platform';
 import tenantAdminService from '../../services/tenantAdmin.service';
 import { tenantScopeApi } from '../../services/tenantScope.service';
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../hooks/useToast';
 import type { Plan, Tenant, TenantStatus } from '../../types/tenant.types';
 
 const statusLabels: Record<TenantStatus, string> = {
@@ -35,6 +36,7 @@ const statusVariants: Record<TenantStatus, 'success' | 'destructive' | 'warning'
 export const Tenants = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { showToast } = useToast();
   // El partner administra su tenant base y los derivados (ADR-041): misma
   // pantalla, otra API (`/api/partner/*`) y sin planes — el alta de un
   // derivado hereda el plan del base.
@@ -190,6 +192,24 @@ export const Tenants = () => {
       entity,
       // Sin columna de checks: la grilla se opera fila por fila.
       selectable: false,
+      // Acciones propias de la fila, además de detalle/edición que aporta el
+      // `entity`. Van al final del desplegable.
+      rowActions: [
+        {
+          id: 'site',
+          label: 'Sitio',
+          run: (tenant) => {
+            // El dominio externo manda; la URL interna del apex es el fallback.
+            const url = tenantSiteUrl(tenant);
+            if (!url) {
+              showToast('El tenant no tiene dominio ni nombre interno asignado', 'error');
+              return;
+            }
+            // Pestaña nueva: no se pierde el panel ni el estado de la grilla.
+            window.open(url, '_blank', 'noopener,noreferrer');
+          },
+        },
+      ],
       // Cabecera dentro del DataTable: hereda su layout (título + métricas
       // arriba del toolbar, con el mismo padding que el resto del componente).
       header: (rows) => (
@@ -258,7 +278,7 @@ export const Tenants = () => {
         },
       ],
     });
-  }, [api, plans, isPartner, fetchTenants]);
+  }, [api, plans, isPartner, fetchTenants, showToast]);
 
   if (loading) {
     return <LoadingPage />;

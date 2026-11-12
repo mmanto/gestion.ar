@@ -7,6 +7,12 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Agregado
+- **Acción «Sitio» en la grilla de tenants** (`/admin/tenants`): el desplegable de
+  cada fila abre el sitio del tenant en otra pestaña. Prioriza el dominio externo
+  (`tenants.domain`) y cae a la URL interna (`intellify.pro/<slug>`) cuando el
+  tenant no tiene dominio; si no tiene ninguno de los dos (tenants viejos sin
+  `slug`), muestra un toast en vez de abrir una pestaña vacía.
+
 - **Nombre interno de tenant: la organización ya es accesible en
   `https://intellify.pro/<slug>/` apenas se crea** (ADR-042). Cada tenant tiene
   `tenants.slug` —se genera del nombre al dar de alta (`IUS Legal` →
