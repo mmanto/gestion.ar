@@ -1,6 +1,10 @@
-import { useDemoDb } from '../../demo/store';
+import { useAuth } from '../../../../hooks/useAuth';
+import { mutate, useDemoDb } from '../../demo/store';
 import { SETUP, health, healthMeta, setupPct } from '../../demo/selectors';
-import { TODAY, diff, pd, rel } from '../../demo/format';
+import { TODAY, diff, pd, rel, waLink } from '../../demo/format';
+import { actorOf, setSetup } from '../../demo/actions';
+import { fillTemplate } from '../../demo/messages';
+import { useUvPermissions } from '../../permissions';
 import { UvIcon } from '../../ui/UvIcon';
 
 export function WeekBars({ values }: { values: number[] }) {
@@ -36,6 +40,8 @@ interface UsageTabProps {
 
 export default function UsageTab({ clubId }: UsageTabProps) {
   const db = useDemoDb();
+  const perms = useUvPermissions();
+  const { user } = useAuth();
   const c = db.clubs.find((x) => x.id === clubId);
   if (!c) return null;
   const u = c.usage || { w: [], players: 0, last: null };
@@ -64,6 +70,11 @@ export default function UsageTab({ clubId }: UsageTabProps) {
           <p className="us-f">
             {H.why ? `${H.why}. ` : ''}Movimientos: reclamos recibidos, altas de vecinos y avisos. Solo ves la actividad, no la facturación del cliente.
           </p>
+          {perms.remind && (H.k === 'riesgo' || H.k === 'poco') ? (
+            <a className="btn sm" target="_blank" rel="noopener noreferrer" href={waLink(c.phone, fillTemplate(db, db.tpls.find((t) => t.id === 'checkin')?.text || 'Hola {dueño}! Te escribo de UrbanVoice para saber cómo vienen con la plataforma en {cliente}. ¿Hay algo en lo que te podamos dar una mano?', c))}>
+              <UvIcon name="wa" />Preguntarle cómo viene
+            </a>
+          ) : null}
         </section>
       </div>
       <div>
@@ -78,7 +89,12 @@ export default function UsageTab({ clubId }: UsageTabProps) {
               const done = !!(c.setup || {})[key];
               return (
                 <label className={`ck ${done ? 'done' : ''}`} key={key}>
-                  {done ? <UvIcon name="check" /> : null}
+                  <input
+                    type="checkbox"
+                    checked={done}
+                    disabled={!perms.setup}
+                    onChange={(e) => mutate((draft) => setSetup(draft, c.id, key, e.target.checked, actorOf(user)))}
+                  />
                   <span>{label}</span>
                 </label>
               );

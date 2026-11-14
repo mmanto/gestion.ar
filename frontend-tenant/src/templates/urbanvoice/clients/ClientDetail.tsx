@@ -10,6 +10,7 @@ import { UvIcon } from '../ui/UvIcon';
 import { useToast } from '../ui/Toast';
 import { TooltipHost } from '../ui/Tooltip';
 import { PayModal } from './modals/PayModal';
+import { MessageModal } from './modals/MessageModal';
 import SummaryTab from './tabs/SummaryTab';
 import BillingTab from './tabs/BillingTab';
 import UsageTab from './tabs/UsageTab';
@@ -28,6 +29,7 @@ export default function ClientDetail({ clientId }: ClientDetailProps) {
   const { showToast } = useToast();
   const [tab, setTab] = useState<DetailTab>('resumen');
   const [payOpen, setPayOpen] = useState(false);
+  const [msgOpen, setMsgOpen] = useState(false);
   const c = club(db, clientId);
   if (!c) return <Navigate to="/clients" replace />;
 
@@ -103,6 +105,9 @@ export default function ClientDetail({ clientId }: ClientDetailProps) {
           {S.k !== 'baja' && perms.pay ? (
             <button type="button" className="btn pri" onClick={() => setPayOpen(true)}><UvIcon name="cash" />Registrar pago</button>
           ) : null}
+          {S.k !== 'baja' && perms.remind ? (
+            <button type="button" className="btn" onClick={() => setMsgOpen(true)}><UvIcon name="wa" />Mensaje</button>
+          ) : null}
           {S.k === 'baja' && perms.plan ? (
             <button type="button" className="btn pri" onClick={reactivate}><UvIcon name="play" />Reactivar cliente</button>
           ) : null}
@@ -140,6 +145,7 @@ export default function ClientDetail({ clientId }: ClientDetailProps) {
         {visibleTab === 'historial' ? <HistoryTab clubId={c.id} /> : null}
       </div>
       <PayModal open={payOpen} clubId={c.id} onClose={() => setPayOpen(false)} />
+      <MessageModal open={msgOpen} clubId={c.id} onClose={() => setMsgOpen(false)} />
     </>
   );
 }

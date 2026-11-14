@@ -2,7 +2,7 @@
 
 import { TODAY, addD, diff, fD, iso, norm, nS, pd, rel } from './format';
 import type {
-  Club, ClubState, ClubStateKey, Health, HealthKey, ListFilters, Partner, Pay, Pending, Plan, SetupKey,
+  Club, ClubState, ClubStateKey, Health, HealthKey, ListFilters, Partner, Pay, Pending, Plan, SetupKey, Task,
 } from './types';
 
 export const MODS: Record<string, [string, string]> = {
@@ -162,6 +162,6 @@ export function pendingAll(db: { clubs: Club[]; plans: Plan[]; cfg: { grace: num
   return out.sort((a, b) => TONE[a.tone] - TONE[b.tone]);
 }
 
-export const tasksOf = (db: { tasks: Array<{ club: string }> }, clubId: string) => db.tasks.filter((t) => t.club === clubId);
+export const tasksOf = (db: { tasks: Task[] }, clubId: string): Task[] => db.tasks.filter((t) => t.club === clubId);
 export const userName = (db: { users: Array<{ id: string; name: string }> }, userId: string, snapshot?: string): string =>
   snapshot || db.users.find((u) => u.id === userId)?.name || '—';

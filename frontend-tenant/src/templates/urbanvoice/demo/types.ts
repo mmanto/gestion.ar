@@ -155,6 +155,7 @@ export interface Task {
   text: string;
   done: boolean;
   by: string;
+  byName?: string;
   at: number;
   doneAt?: number;
 }

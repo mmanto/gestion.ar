@@ -173,7 +173,7 @@ export function setSetup(db: DemoDb, clubId: string, key: SetupKey, done: boolea
 }
 
 export function addTask(db: DemoDb, clubId: string, due: string, text: string, actor: Actor): void {
-  db.tasks.push({ id: `k${Date.now()}`, club: clubId, due, text: text.trim(), done: false, by: actor.id, at: Date.now() });
+  db.tasks.push({ id: `k${Date.now()}`, club: clubId, due, text: text.trim(), done: false, by: actor.id, byName: actor.name, at: Date.now() });
   db.audit.unshift({ ts: Date.now(), user: actor.id, userName: actor.name, action: 'Seguimiento', detail: `Nuevo seguimiento: ${text.trim()}`, club: clubId });
   db.audit = db.audit.slice(0, 400);
 }
