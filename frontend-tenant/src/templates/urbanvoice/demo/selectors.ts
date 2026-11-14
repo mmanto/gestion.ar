@@ -1,6 +1,6 @@
 /** Selectores y reglas de negocio de la demo — puerto de core.js, datos.js y clubes.js. */
 
-import { TODAY, addD, diff, fD, iso, norm, pd, rel } from './format';
+import { TODAY, addD, diff, fD, iso, norm, nS, pd, rel } from './format';
 import type {
   Club, ClubState, ClubStateKey, Health, HealthKey, ListFilters, Partner, Pay, Pending, Plan, SetupKey,
 } from './types';
@@ -74,7 +74,7 @@ export function planPrice(p: Plan, socios: number): number {
   return +p.cap ? Math.min(+p.cap, v) : v;
 }
 export const planRule = (p: Plan): string =>
-  `$${(+p.base || 0).toLocaleString('es-AR')} hasta ${(+p.incl || 0).toLocaleString('es-AR')}${+p.extra ? ` · +$${(+p.extra).toLocaleString('es-AR')} cada ${stepOf(p).toLocaleString('es-AR')} más` : ''}${+p.cap ? ` · máximo $${(+p.cap).toLocaleString('es-AR')}` : ''}`;
+  `$${(+p.base || 0).toLocaleString('es-AR')} hasta ${nS(+p.incl || 0)}${+p.extra ? ` · +$${(+p.extra).toLocaleString('es-AR')} cada ${nS(stepOf(p))} más` : ''}${+p.cap ? ` · máximo $${(+p.cap).toLocaleString('es-AR')}` : ''}`;
 
 export const specialOn = (c: Club): boolean => !!(c.special && c.special.type && (!c.special.until || pd(c.special.until)! >= TODAY));
 export function clubPrice(db: { plans: Plan[] }, c: Club, planId?: string): number {

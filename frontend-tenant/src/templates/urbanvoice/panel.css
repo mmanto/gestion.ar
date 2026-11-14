@@ -1045,3 +1045,6 @@
 .uv-admin.side-mini .side-brand .uvb small{display:none}
 .uv-admin.side-mini .side-brand .uv-logo{width:25px;height:34px;object-fit:cover;object-position:left center}
 @media(max-width:900px){.uv-admin .login-art .brand.big .uv-logo{height:64px}}
+
+/* Ajuste de la réplica: las tabs no deben encogerse (mobile). */
+.uv-admin .ctabs button{flex:0 0 auto}
