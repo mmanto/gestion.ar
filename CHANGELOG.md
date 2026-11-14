@@ -36,7 +36,9 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   demo y persisten en `localStorage['uv-admin-db']`; la API real queda para una
   etapa posterior. Con el tema activo el login cae en `/clients` y las demás
   rutas privadas redirigen salvo `/settings`. `operativo` se mapea al rol
-  «Ventas» de la demo (sin montos ni cobros).
+  «Ventas» de la demo (sin montos ni cobros). El tenant UrbanVoice lo tiene por
+  defecto cuando no hay `branding.template_id` guardado (por slug/nombre); el
+  resto de los tenants sigue cayendo en «Clásico».
 
 - **Acción «Sitio» en la grilla de tenants** (`/admin/tenants`): el desplegable de
   cada fila abre el sitio del tenant en otra pestaña. Prioriza el dominio externo

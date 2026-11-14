@@ -2698,6 +2698,10 @@ contenido entre temas. La demo no tiene API: su estado vive en `localStorage`.
 
 ### Decisión
 - `TemplateId` suma `urbanvoice`; el backend lo acepta en `VALID_TEMPLATE_IDS`.
+- Sin `branding.template_id` guardado, el tenant UrbanVoice resuelve a
+  `urbanvoice` por slug/nombre (`frontend-tenant/src/config/tenantTemplateDefaults.ts`);
+  un tema guardado en Ajustes siempre gana. No es un default global: el resto
+  de los tenants sigue cayendo en `default`.
 - El tema tiene shell propio (sidebar con sólo Clientes, topbar con
   buscador/campana/menú, colapso mini y off-canvas mobile) y guard de rutas:
   salvo `/clients` y `/settings`, las rutas privadas redirigen a `/clients`.

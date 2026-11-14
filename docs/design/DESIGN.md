@@ -239,3 +239,7 @@ excepción deliberada a la regla de «sólo Tailwind»:
   `operativo` a «Ventas» (sin montos, pagos, plan, suspensión ni baja).
 - **Contenido propio**: el listado y la ficha de Clientes son componentes del
   tema; `pages/ClientsRoute.tsx` despacha `urbanvoice` vs. la pantalla clásica.
+- **Default del tenant**: si `branding.template_id` no está guardado, el tenant
+  UrbanVoice (slug `urbanvoice`/`urban-voice` o nombre «Urban Voice») resuelve a
+  este tema (`config/tenantTemplateDefaults.ts`). El valor guardado en Ajustes
+  siempre gana.
