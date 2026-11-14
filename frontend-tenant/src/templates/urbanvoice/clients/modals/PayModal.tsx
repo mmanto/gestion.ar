@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../../../hooks/useAuth';
-import { useDemoDb, mutate } from '../../demo/store';
+import { getDb, mutate, useDemoDb } from '../../demo/store';
 import { clubPrice, discFor, plan, priceFor, state } from '../../demo/selectors';
 import { TODAY, addM, fD, iso, money, pd } from '../../demo/format';
 import { actorOf, registerPayment } from '../../demo/actions';
@@ -64,7 +64,7 @@ export function PayModal({ open, clubId, onClose }: PayModalProps) {
       showToast(
         <>
           Pago registrado. <b>{c.name}</b> queda al día hasta el {fD(to)}.{' '}
-          <button type="button" className="tl-a" onClick={() => openReceipt(db, payId)}>Ver recibo</button>
+          <button type="button" className="tl-a" onClick={() => openReceipt(getDb(), payId)}>Ver recibo</button>
         </>,
       );
     }

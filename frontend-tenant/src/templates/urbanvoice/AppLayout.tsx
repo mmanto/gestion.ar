@@ -45,10 +45,13 @@ export function UrbanVoiceAppLayout({ children }: { children: ReactNode }) {
   const roleLabel = ROLE_LABEL[user?.role || 'operativo'] || 'Operativo';
 
   useEffect(() => {
-    setNavOpen(false);
-    setBellOpen(false);
-    setUserOpen(false);
-    setQ('');
+    const timer = window.setTimeout(() => {
+      setNavOpen(false);
+      setBellOpen(false);
+      setUserOpen(false);
+      setQ('');
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [pathname]);
 
   useEffect(() => {

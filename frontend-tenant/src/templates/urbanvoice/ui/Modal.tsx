@@ -14,7 +14,9 @@ interface ModalProps {
 export function Modal({ open, title, onClose, children, wide = false }: ModalProps) {
   const box = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
-  close.current = onClose;
+  useEffect(() => {
+    close.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) return;

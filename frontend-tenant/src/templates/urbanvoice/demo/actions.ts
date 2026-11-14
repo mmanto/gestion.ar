@@ -144,8 +144,7 @@ export function reactivateClub(db: DemoDb, clubId: string, actor: Actor): void {
   logAdd(db, c.id, 'react', wasBaja ? 'Cliente reactivado' : 'Se quitó la suspensión', actor);
 }
 
-const PATCH_KEYS = ['name', 'city', 'prov', 'owner', 'phone', 'email', 'tipo', 'socios', 'slug'] as const;
-export type ClubDataPatch = Partial<Pick<Club, (typeof PATCH_KEYS)[number]>>;
+export type ClubDataPatch = Partial<Pick<Club, 'name' | 'city' | 'prov' | 'owner' | 'phone' | 'email' | 'tipo' | 'socios' | 'slug'>>;
 
 export function updateClubData(db: DemoDb, clubId: string, patch: ClubDataPatch, actor: Actor): void {
   const c = db.clubs.find((x) => x.id === clubId);
