@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { useDemoDb } from '../demo/store';
+import { useAuth } from '../../../hooks/useAuth';
+import { getDb, mutate, useDemoDb } from '../demo/store';
 import { badgeMeta, club, health, healthMeta, plan, setupPct, siteUrl, state } from '../demo/selectors';
 import { MES, addD, fD, initials, pd, rel } from '../demo/format';
+import { actorOf, reactivateClub } from '../demo/actions';
 import { useUvPermissions } from '../permissions';
 import { UvIcon } from '../ui/UvIcon';
+import { useToast } from '../ui/Toast';
 import { TooltipHost } from '../ui/Tooltip';
+import { PayModal } from './modals/PayModal';
 import SummaryTab from './tabs/SummaryTab';
 import BillingTab from './tabs/BillingTab';
 import UsageTab from './tabs/UsageTab';
@@ -20,7 +24,10 @@ interface ClientDetailProps {
 export default function ClientDetail({ clientId }: ClientDetailProps) {
   const db = useDemoDb();
   const perms = useUvPermissions();
+  const { user } = useAuth();
+  const { showToast } = useToast();
   const [tab, setTab] = useState<DetailTab>('resumen');
+  const [payOpen, setPayOpen] = useState(false);
   const c = club(db, clientId);
   if (!c) return <Navigate to="/clients" replace />;
 
@@ -52,6 +59,16 @@ export default function ClientDetail({ clientId }: ClientDetailProps) {
               ? ['off', `Dado de baja el ${fD(c.bajaAt ?? null)}${c.bajaWhy ? ` · ${c.bajaWhy}` : ''}. El sitio y el panel no están disponibles.`]
               : null;
 
+  const reactivate = () => {
+    mutate((draft) => reactivateClub(draft, c.id, actorOf(user)));
+    showToast(<><b>{c.name}</b> reactivado</>);
+    const refreshed = club(getDb(), c.id);
+    if (refreshed) {
+      const next = state(getDb(), refreshed).k;
+      if (next === 'atrasado' || next === 'suspendido') setPayOpen(true);
+    }
+  };
+
   const glance: Array<{ tab: DetailTab; label: string; value: string; tone: string }> = [
     ...(tabs.some((t) => t.key === 'abono')
       ? [{ tab: 'abono' as DetailTab, label: 'Abono', value: badgeMeta(S.k).label, tone: badgeMeta(S.k).tone }]
@@ -81,6 +98,14 @@ export default function ClientDetail({ clientId }: ClientDetailProps) {
               <span className="url"><UvIcon name="ext" />{siteUrl(db, c)}</span>
             </div>
           </div>
+        </div>
+        <div className="ch-a">
+          {S.k !== 'baja' && perms.pay ? (
+            <button type="button" className="btn pri" onClick={() => setPayOpen(true)}><UvIcon name="cash" />Registrar pago</button>
+          ) : null}
+          {S.k === 'baja' && perms.plan ? (
+            <button type="button" className="btn pri" onClick={reactivate}><UvIcon name="play" />Reactivar cliente</button>
+          ) : null}
         </div>
       </div>
 
@@ -114,6 +139,7 @@ export default function ClientDetail({ clientId }: ClientDetailProps) {
         {visibleTab === 'uso' ? <UsageTab clubId={c.id} /> : null}
         {visibleTab === 'historial' ? <HistoryTab clubId={c.id} /> : null}
       </div>
+      <PayModal open={payOpen} clubId={c.id} onClose={() => setPayOpen(false)} />
     </>
   );
 }
