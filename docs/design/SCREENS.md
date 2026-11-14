@@ -24,6 +24,12 @@
 
 **Frontend de tenant (`frontend-tenant/`, un panel por tenant):**
 
+Sólo `admin` y `operativo` del tenant tienen acceso. `super_admin` y `partner`
+pertenecen al panel de administración general (`frontend/`, ADR-041): el login
+valida el rol antes de guardar la sesión y los rechaza con un mensaje que los
+deriva a ese panel (sin el guard, `/dashboard` → `/login` → `/dashboard` era un
+loop).
+
 | Pantalla | Ruta | Descripción |
 |---|---|---|
 | Registro "Crea tu cuenta" | `/registro` (alias `/register`) | Autoregistro público de un admin del tenant: plan mensual/anual, nombre/correo/contraseña y pago Mercado Pago. Réplica del bloque de la landing ius. |

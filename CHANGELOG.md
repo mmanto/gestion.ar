@@ -7,6 +7,14 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Corregido
+- **El login del panel de tenant ya no entra en loop con cuentas `partner` /
+  `super_admin`** (`frontend-tenant`): una cuenta de otro rol autenticaba bien,
+  pero `/dashboard` la rebotaba a `/login` y `/login` volvía a mandarla al
+  home, en un ciclo. Ahora el rol se valida al establecer la sesión (password,
+  OAuth, passkey, biometría y rehidratación), igual que en el panel admin: sólo
+  `admin`/`operativo` entran, el resto ve un mensaje que lo deriva al panel de
+  administración general y no se guarda token.
+
 - **Vaciar el dominio propio de un tenant ya funciona** (`/admin/tenants →
   TenantEdit` y panel de partner): antes borrar el campo no tenía efecto porque
   el frontend omitía la clave y el backend nunca seteaba `NULL`. Ahora vaciarlo
