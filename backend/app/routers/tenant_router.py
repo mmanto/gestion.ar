@@ -58,8 +58,9 @@ MAX_LOGO_BYTES = 2 * 1024 * 1024  # 2MB
 # default para tenants nuevos, 'default' queda solo por compatibilidad con
 # tenants que ya lo tenían elegido. 'devbout' es el shell de
 # @mmanto/devbout-ui (sidebar colapsable + header de breadcrumb): cambia el
-# chrome, no el contenido de las páginas.
-VALID_TEMPLATE_IDS = {"default", "kero", "devbout"}
+# chrome, no el contenido de las páginas. 'urbanvoice' es la réplica del panel
+# de la demo UrbanVoice (CSS vendorizado + datos locales).
+VALID_TEMPLATE_IDS = {"default", "kero", "devbout", "urbanvoice"}
 
 # Rubro del tenant (branding.industry) -- eje de personalización de
 # contenido (labels del menú, contenido del Escritorio) DISTINTO del tema

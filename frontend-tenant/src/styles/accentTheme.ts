@@ -17,4 +17,6 @@ export const ACCENT_THEME: Record<TemplateId, AccentTheme> = {
   // devbout: el cian de marca del tenant (primary-500 / primary-700), el mismo
   // que usa el shell de @mmanto/devbout-ui en los ítems activos.
   devbout: { accent: '#2793b4', accentHover: '#1f75ca', accentSoft: 'rgba(39, 147, 180, 0.08)' },
+  // urbanvoice: el azul de marca de la demo (--pri / --pri-d).
+  urbanvoice: { accent: '#087CF5', accentHover: '#0658BD', accentSoft: 'rgba(8, 124, 245, 0.08)' },
 };

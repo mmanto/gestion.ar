@@ -4,6 +4,7 @@ import type { ColorFilter } from '../types/client.types';
 import { DefaultAppLayout } from './default/AppLayout';
 import { KeroAppLayout } from './kero/AppLayout';
 import { DevboutAppLayout } from './devbout/AppLayout';
+import { UrbanVoiceAppLayout } from './urbanvoice/AppLayout';
 import DefaultClientsGrid from '../components/dashboard/ClientsGrid';
 import KeroClientsGrid from './kero/ClientsGrid';
 
@@ -23,6 +24,9 @@ export const TEMPLATES: TemplateDefinition[] = [
   // breadcrumb). El contenido de las páginas es el mismo que en «Clásico»: el
   // tema sólo cambia el chrome (ver templates/devbout/AppLayout.tsx).
   { id: 'devbout',  label: 'Panel',   AppLayout: DevboutAppLayout, ClientsGrid: DefaultClientsGrid },
+  // Réplica de la administración de la demo UrbanVoice: shell propio y CSS
+  // vendorizado scopeado; el contenido de Clientes también es propio.
+  { id: 'urbanvoice', label: 'UrbanVoice', AppLayout: UrbanVoiceAppLayout, ClientsGrid: DefaultClientsGrid },
 ];
 
 export const TEMPLATE_MAP: Record<TemplateId, TemplateDefinition> = Object.fromEntries(

@@ -15,7 +15,10 @@ import { getInternalTenantSlug } from '../config/internalTenant';
  * sirve la landing por dominio, no el bundle del WebView.
  */
 export function resolveHomePath(user: User | null, tenant: TenantPublicInfo | null): string {
-  if (!user || Capacitor.isNativePlatform()) return '/dashboard';
+  if (!user) return '/dashboard';
+  // El tema UrbanVoice sólo muestra Clientes: el ingreso cae ahí.
+  if (tenant?.branding.template_id === 'urbanvoice') return '/clients';
+  if (Capacitor.isNativePlatform()) return '/dashboard';
   return tenant?.settings?.home_paths?.[user.role] || '/dashboard';
 }
 
@@ -50,7 +53,7 @@ export function goToHome(
   // `settings.home_paths` apuntan a pantallas de la landing por dominio, que en
   // este host no existen (el apex sirve sólo el SPA).
   if (getInternalTenantSlug()) {
-    navigate('/dashboard');
+    navigate(tenant?.branding.template_id === 'urbanvoice' ? '/clients' : '/dashboard');
     return;
   }
   // El `next` explícito gana sobre el home del rol: lo pidió la página de la
@@ -61,7 +64,7 @@ export function goToHome(
     return;
   }
   const path = resolveHomePath(user, tenant);
-  if (path === '/dashboard') {
+  if (path === '/dashboard' || path === '/clients') {
     navigate(path);
     return;
   }
