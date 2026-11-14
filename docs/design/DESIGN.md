@@ -213,3 +213,29 @@ Reglas del tema:
 - Mobile (< `md`): el paquete reemplaza el sidebar por un `Sheet`; el menú del
   avatar de la Navbar deja de existir en este tema y sus acciones (Compartir,
   Ajustes, Salir) viven en el `NavUser` del sidebar.
+
+### Tema «UrbanVoice» (réplica de la demo)
+
+`frontend-tenant/src/templates/urbanvoice/` es una réplica de la administración
+de la demo UrbanVoice (`/home/mmanto/tmp/urbanvoice/administracion/`). Es una
+excepción deliberada a la regla de «sólo Tailwind»:
+
+- **CSS vendorizado**: `panel.css` es una transcripción mecánica de
+  `shared/panel.css` de la demo, con todos los selectores scopeados a
+  `.uv-admin` (incluidos `:root`, `body`, `*` y los estados `side-mini` /
+  `nav-open`). Se importa sólo desde `templates/urbanvoice/AppLayout.tsx`; no
+  toca `src/index.css` ni el resto de los temas. La cabecera del archivo y el
+  ADR-043 explican cómo regenerarlo.
+- **Tipografía propia**: Inter local (`fonts.css` + `fonts/*.woff`), la misma
+  familia de la demo. `.uv-admin` fija `font-size: 14px`, así que la escala
+  `:root.backoffice` no lo agranda.
+- **Datos de demo**: `templates/urbanvoice/demo/` es el puerto tipado de
+  `datos.js` y afines (clubes, planes, pagos, uso, puesta en marcha,
+  seguimientos, plantillas, partners, usuarios y auditoría). El store persiste
+  en `localStorage` con la clave `uv-admin-db` (versión `1`); JSON inválido o
+  versión distinta resiembra. No hay llamadas a la API: la integración real
+  queda para una etapa posterior.
+- **Permisos**: `permissions.ts` mapea `admin` al rol `admin` de la demo y
+  `operativo` a «Ventas» (sin montos, pagos, plan, suspensión ni baja).
+- **Contenido propio**: el listado y la ficha de Clientes son componentes del
+  tema; `pages/ClientsRoute.tsx` despacha `urbanvoice` vs. la pantalla clásica.

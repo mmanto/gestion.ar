@@ -23,6 +23,21 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   interna (`intellify.pro/<slug>`).
 
 ### Agregado
+- **Tema «UrbanVoice» en el backoffice del tenant y réplica de la sección
+  Clientes** (`frontend-tenant/src/templates/urbanvoice/`, ADR-043). Nuevo
+  `template_id='urbanvoice'` (`VALID_TEMPLATE_IDS` lo acepta): shell propio
+  (sidebar con sólo Clientes, topbar con buscador/campana/menú, colapso mini y
+  off-canvas mobile), CSS de la demo vendorizado y scopeado a `.uv-admin`, e
+  Inter local. Clientes incluye listado (búsqueda, chips de estado, filtros por
+  plan/partner/tipo), ficha con Resumen, Abono y pagos, Uso y puesta en marcha
+  e Historial, y las acciones de la demo (pagos y anulación, plan, precio
+  especial, suspender/reactivar/baja, datos, notas, seguimientos, puesta en
+  marcha, mensajes de WhatsApp, contraseña, recibos y CSV). Los datos son de
+  demo y persisten en `localStorage['uv-admin-db']`; la API real queda para una
+  etapa posterior. Con el tema activo el login cae en `/clients` y las demás
+  rutas privadas redirigen salvo `/settings`. `operativo` se mapea al rol
+  «Ventas» de la demo (sin montos ni cobros).
+
 - **Acción «Sitio» en la grilla de tenants** (`/admin/tenants`): el desplegable de
   cada fila abre el sitio del tenant en otra pestaña. Prioriza el dominio externo
   (`tenants.domain`) y cae a la URL interna (`intellify.pro/<slug>`) cuando el

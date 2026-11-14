@@ -33,7 +33,8 @@ loop).
 | Pantalla | Ruta | Descripción |
 |---|---|---|
 | Registro "Crea tu cuenta" | `/registro` (alias `/register`) | Autoregistro público de un admin del tenant: plan mensual/anual, nombre/correo/contraseña y pago Mercado Pago. Réplica del bloque de la landing ius. |
-| Ajustes | `/settings` | Información de la cuenta; **Marca** (solo `admin`): logos, color primario, tagline, rubro (`branding.industry`), visibilidad de la barra lateral y **tema visual del panel** —«Clásico» (`default`), «Kero» (`kero`) o «Panel» (`devbout`, shell de `@mmanto/devbout-ui`)—, guardado por tenant en `branding.template_id`; **Proveedor de IA** (solo `admin`, ver ADR-038): proveedor (Claude/DeepSeek/OpenRouter), modelo, API key propia con estado configurado/sin configurar, botones Guardar / Probar conexión / Quitar configuración; biometría y passkeys. |
+| Ajustes | `/settings` | Información de la cuenta; **Marca** (solo `admin`): logos, color primario, tagline, rubro (`branding.industry`), visibilidad de la barra lateral y **tema visual del panel** —«Clásico» (`default`), «Kero» (`kero`), «Panel» (`devbout`, shell de `@mmanto/devbout-ui`) o «UrbanVoice» (`urbanvoice`, réplica de la demo)—, guardado por tenant en `branding.template_id`; **Proveedor de IA** (solo `admin`, ver ADR-038): proveedor (Claude/DeepSeek/OpenRouter), modelo, API key propia con estado configurado/sin configurar, botones Guardar / Probar conexión / Quitar configuración; biometría y passkeys. |
+| Clientes (tema UrbanVoice) | `/clients`, `/clients/:clientId` | Réplica de la administración de la demo UrbanVoice: listado con búsqueda, chips de estado, filtros por plan/partner/tipo y tabla; ficha con Resumen, Abono y pagos, Uso y puesta en marcha e Historial. Con el tema activo el menú sólo muestra Clientes y el login cae en `/clients`; las demás rutas privadas redirigen salvo `/settings`. Los datos son de demo (`localStorage`, clave `uv-admin-db`), sin API. |
 | Compartir | `/compartir` | El staff comparte sus datos y su link de chat web propio con un cliente por WhatsApp: input de número + botón que abre `wa.me` con el mensaje armado. |
 
 ---
@@ -58,11 +59,16 @@ loop).
   - «Panel» (`devbout`): shell de `@mmanto/devbout-ui` — sidebar colapsable a
     iconos (`SidebarProvider`/`Sidebar`/`SidebarRail`), `SidebarInset` con header
     de breadcrumb y `NavUser` en el pie. El contenido de las páginas es el mismo
-    en los tres temas.
+    en los temas anteriores.
+  - «UrbanVoice» (`urbanvoice`): shell propio (sidebar con sólo Clientes,
+    topbar con buscador/campana/menú) y CSS de la demo vendorizado y scopeado a
+    `.uv-admin`. El contenido de Clientes también es propio; el resto de las
+    rutas privadas redirige a `/clients` salvo `/settings`.
 - **Navegación mobile (< `md`)**: en «Clásico» y «Kero» la sidebar no se muestra
   —el menú del avatar (UserMenu) ES el menú de la aplicación—; en «Panel» el
   sidebar pasa a `Sheet` (drawer) y el menú del avatar se reemplaza por el
-  `NavUser` del sidebar.
+  `NavUser` del sidebar. En «UrbanVoice» la sidebar es off-canvas: la abre el
+  botón hamburguesa de la topbar y se cierra con el scrim.
 - Framework: React + Vite + TypeScript
 - Estilos: Tailwind CSS
 - Estado servidor: React Query (TanStack Query)

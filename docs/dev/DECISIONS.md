@@ -2676,3 +2676,50 @@ vía de acceso principal de cada tenant.
 - El login OAuth de tenant (Nango) no cambia en código, pero el origen
   `https://intellify.pro` tiene que estar permitido en la configuración de Nango
   para usarlo desde la URL interna.
+
+## ADR-043: El tema UrbanVoice replica la demo con CSS vendorizado y datos locales
+
+### Contexto
+UrbanVoice tiene una administración funcional como demo estática
+(`/home/mmanto/tmp/urbanvoice/administracion/`). Se quiere que el backoffice del
+tenant sea una réplica literal —diseño y contenido—, implementando una sección a
+la vez, empezando por Clientes. El producto ya elige el chrome por tenant
+(`branding.template_id`: `default`, `kero`, `devbout`), y sus páginas comparten
+contenido entre temas. La demo no tiene API: su estado vive en `localStorage`.
+
+### Alternativas consideradas
+1. **Tema React en `frontend-tenant`** (elegido): shell y pantallas propias;
+   `panel.css` vendorizado y scopeado; datos demo en un store tipado. Nace
+   dentro del producto y cada sección nueva se suma al mismo shell.
+2. **Copia estática en `public/`**: port más rápido, pero fuera del SPA (sin
+   login ni sesión) y con trabajo duplicado al portarlo.
+3. **Iframe de la demo**: literal inmediato, pero dos apps anidadas, scroll
+   doble y sin integración de sesión/navegación.
+
+### Decisión
+- `TemplateId` suma `urbanvoice`; el backend lo acepta en `VALID_TEMPLATE_IDS`.
+- El tema tiene shell propio (sidebar con sólo Clientes, topbar con
+  buscador/campana/menú, colapso mini y off-canvas mobile) y guard de rutas:
+  salvo `/clients` y `/settings`, las rutas privadas redirigen a `/clients`.
+  Con el tema activo, el login cae en `/clients`.
+- `panel.css` se vendoriza scopeado a `.uv-admin`; es la única excepción a la
+  regla de «sólo Tailwind» y no se importa fuera del tema.
+- Los datos de la demo se portan a módulos tipados y persisten en
+  `localStorage['uv-admin-db']`. `mutate()` clona el estado, aplica y notifica
+  vía `useSyncExternalStore`.
+- Permisos: `admin` → rol `admin` de la demo; `operativo` → «Ventas» (sin
+  montos ni cobros).
+- Se omite lo que depende de módulos aún no construidos (Partners, Soporte,
+  Avisos, comprobantes, sitio/panel del cliente): no se muestran controles
+  muertos.
+
+### Consecuencias
+- El CSS y la semilla deben actualizarse contra la demo cuando ésta cambie; el
+  archivo generado se puede diffear con `shared/panel.css`.
+- Los cambios del store se pierden al limpiar el storage del navegador: es
+  demo, no datos del tenant.
+- La integración con la API real (clientes, cobros, soporte) es una etapa
+  posterior; hasta entonces el tema muestra datos de ejemplo aunque el tenant
+  tenga datos reales.
+- El tema se selecciona por tenant como los demás; validarlo no requiere un
+  tenant UrbanVoice.

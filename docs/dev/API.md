@@ -872,11 +872,11 @@ Actualizar campos de marca. Todos opcionales (`null`/ausente = no se toca).
 }
 ```
 
-- `template_id` — tema visual del panel: `default` («Clásico»), `kero` o
-  `devbout` («Panel», shell de `@mmanto/devbout-ui`). Cualquier otro valor
-  devuelve 400. El backend valida contra `VALID_TEMPLATE_IDS`
-  (`backend/app/routers/tenant_router.py`), que debe actualizarse junto con
-  `frontend-tenant/src/types/template.types.ts`.
+- `template_id` — tema visual del panel: `default` («Clásico»), `kero`,
+  `devbout` («Panel», shell de `@mmanto/devbout-ui`) o `urbanvoice` (réplica de
+  la demo UrbanVoice). Cualquier otro valor devuelve 400. El backend valida
+  contra `VALID_TEMPLATE_IDS` (`backend/app/routers/tenant_router.py`), que debe
+  actualizarse junto con `frontend-tenant/src/types/template.types.ts`.
 - `industry` — `legal` | `salud` | `generico` (`VALID_INDUSTRIES`).
 - `sidebar_visible` — booleano; oculta la barra lateral del panel.
 
