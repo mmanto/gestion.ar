@@ -4,6 +4,7 @@ import { useAuth } from '../../../../hooks/useAuth';
 import { mutate, useDemoDb } from '../../demo/store';
 import { TIPOS, clubPrice } from '../../demo/selectors';
 import { actorOf, updateClubData } from '../../demo/actions';
+import { useUvPermissions } from '../../permissions';
 import { money } from '../../demo/format';
 import { Modal } from '../../ui/Modal';
 import { useToast } from '../../ui/Toast';
@@ -20,6 +21,7 @@ export function EditClientModal({ open, clubId, onClose }: EditClientModalProps)
   const db = useDemoDb();
   const { user } = useAuth();
   const { showToast } = useToast();
+  const perms = useUvPermissions();
   const c = db.clubs.find((x) => x.id === clubId);
   const [name, setName] = useState('');
   const [city, setCity] = useState('');
@@ -64,7 +66,7 @@ export function EditClientModal({ open, clubId, onClose }: EditClientModalProps)
       return;
     }
     onClose();
-    showToast(next !== prev
+    showToast(next !== prev && perms.money
       ? <>Datos guardados. El abono pasa de {money(prev)} a <b>{money(next)}</b> desde el próximo pago</>
       : 'Datos guardados');
   };

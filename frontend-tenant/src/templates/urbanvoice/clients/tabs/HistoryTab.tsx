@@ -1,6 +1,7 @@
 import { useDemoDb } from '../../demo/store';
 import { userName } from '../../demo/selectors';
 import { fD, initials, relTs } from '../../demo/format';
+import { useUvPermissions } from '../../permissions';
 
 const ICON: Record<string, string> = { pay: '$', new: '+', baja: '×', remind: '✆', sus: '‖', react: '▶', plan: '⇅', edit: '✎' };
 
@@ -8,10 +9,20 @@ interface HistoryTabProps {
   clubId: string;
 }
 
+const MONEY_LOG = new Set(['pay', 'plan', 'sus', 'baja', 'react']);
+const MONEY_ACTION = new Set(['Pago', 'Plan', 'Suspensión', 'Baja', 'Reactivación']);
+
 export default function HistoryTab({ clubId }: HistoryTabProps) {
   const db = useDemoDb();
-  const log = db.log.filter((l) => l.club === clubId).slice(0, 30);
-  const audit = db.audit.filter((a) => a.club === clubId).slice(0, 30);
+  const perms = useUvPermissions();
+  const log = db.log
+    .filter((l) => l.club === clubId)
+    .filter((l) => perms.money || (!MONEY_LOG.has(l.t) && !l.txt.includes('$')))
+    .slice(0, 30);
+  const audit = db.audit
+    .filter((a) => a.club === clubId)
+    .filter((a) => perms.money || (!MONEY_ACTION.has(a.action) && !a.detail.includes('$')))
+    .slice(0, 30);
 
   return (
     <div className="g2 club-g">
