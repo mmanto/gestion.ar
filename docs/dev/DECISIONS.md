@@ -2778,3 +2778,50 @@ algunos anchors: no necesita un runtime propio.
   por Host; sin dominio sigue disponible en `intellify.pro/urbanvoice/`.
 - La landing no consulta la API: los CTA siguen yendo a WhatsApp y el único
   enlace a la app es `/login`.
+
+## ADR-045: Ajustes de UrbanVoice dentro del tema, con lógica compartida
+
+### Contexto
+La entrega de Clientes dejó `/settings` fuera de `.uv-admin` para que Tailwind
+no chocara con las reglas sin capa del tema (ver el commit `3a25983`). El
+resultado era una pantalla con otro lenguaje visual y una grilla de 3 columnas:
+Marca ocupaba un tercio, Proveedor de IA dejaba un tercio vacío y
+biometría/passkeys se llevaban filas completas. Con el tema ya consolidado, el
+usuario pidió que Ajustes coincida con UrbanVoice y que los bloques no queden
+sueltos.
+
+### Alternativas consideradas
+1. **Mantener Tailwind y aislar el contenido** (portal, iframe o shadow DOM):
+   conserva los componentes, pero agrega una capa frágil, difícil de testear y
+   que no hereda el lenguaje visual del tema.
+2. **Duplicar las secciones con otra presentación**: resultado visual correcto,
+   pero dos copias de la lógica de Marca, IA, passkeys y huella.
+3. **Extraer la lógica a hooks y tener dos presentaciones** (elegida): la
+   pantalla genérica de default/kero/devbout sigue igual; UrbanVoice usa su CSS
+   y su grilla.
+
+### Decisión
+- `pages/SettingsRoute.tsx` despacha `urbanvoice` a
+  `templates/urbanvoice/settings/UrbanVoiceSettings.tsx`; los demás temas
+  siguen con `pages/Settings.tsx`.
+- La lógica de Marca, Proveedor de IA, Passkeys y Acceso con huella vive en
+  `components/settings/use*Settings.ts`. Los componentes actuales quedan como
+  presentación del producto y los bloques de `templates/urbanvoice/settings/`
+  como presentación del tema.
+- La pantalla usa `UrbanVoiceAppLayout` (sidebar + topbar), una grilla de dos
+  columnas —Mi cuenta + Acceso y seguridad; Marca y Proveedor de IA a ancho
+  completo— y `settings.css` scopeado a `.uv-admin` con el prefijo `.uv-set-*`.
+- El sidebar suma el grupo **Ajustes › Configuración**; el guard del layout
+  sigue permitiendo `/settings`.
+- El bloque de cuenta de UrbanVoice no muestra DNI ni Honorarios: son datos del
+  bot legal que no aplican al panel de la plataforma. La pantalla genérica los
+  conserva.
+
+### Consecuencias
+- Cambiar una lógica de Ajustes se hace una vez y aplica a todos los temas; la
+  presentación puede divergir sin duplicar estado ni llamadas a la API.
+- Los bloques de Marca e IA siguen siendo sólo para `admin`.
+- Cambiar el tema desde Marca desmonta la pantalla UrbanVoice y muestra la
+  presentación del tema elegido, como antes.
+- La pantalla genérica mantiene su grilla de 3 columnas; el arreglo de bloques
+  es específico del tema UrbanVoice.

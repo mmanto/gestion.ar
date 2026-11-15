@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useDemoDb } from './demo/store';
 import { badgeMeta, counts, pendingAll, searchClubs, state } from './demo/selectors';
@@ -70,22 +70,6 @@ export function UrbanVoiceAppLayout({ children }: { children: ReactNode }) {
     return <Navigate to="/clients" replace />;
   }
 
-  // Ajustes es la salida para cambiar de tema: se muestra con el layout del
-  // producto (Tailwind), no dentro de `.uv-admin`, cuyas reglas sin capa
-  // pisarían las utilidades de la pantalla.
-  if (pathname === '/settings') {
-    return (
-      <div className="min-h-screen bg-[#F8F9FD]">
-        <div className="border-b border-gray-200 bg-white px-6 py-3">
-          <Link to="/clients" className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:underline">
-            <UvIcon name="left" />Volver a Clientes
-          </Link>
-        </div>
-        <div className="mx-auto w-full max-w-6xl">{children}</div>
-      </div>
-    );
-  }
-
   const toggleSide = () => {
     if (window.innerWidth > 900) setMini((v) => !v);
     else setNavOpen((v) => !v);
@@ -115,6 +99,7 @@ export function UrbanVoiceAppLayout({ children }: { children: ReactNode }) {
               </div>
             </div>
             <nav id="nav">
+              <small className="nav-g">Gestión</small>
               <button
                 type="button"
                 data-v="clubs"
@@ -125,6 +110,17 @@ export function UrbanVoiceAppLayout({ children }: { children: ReactNode }) {
                 <UvIcon name="club" />
                 <span>Clientes</span>
                 <em>{activeCount}</em>
+              </button>
+              <small className="nav-g">Ajustes</small>
+              <button
+                type="button"
+                data-v="config"
+                aria-label="Configuración"
+                className={pathname === '/settings' ? 'on' : ''}
+                onClick={() => navigate('/settings')}
+              >
+                <UvIcon name="gear" />
+                <span>Configuración</span>
               </button>
             </nav>
             <div className="side-art" aria-hidden="true">

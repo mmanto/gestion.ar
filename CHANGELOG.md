@@ -7,6 +7,18 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Corregido
+- **Ajustes de UrbanVoice con el tema del panel y bloques rebalanceados**
+  (`templates/urbanvoice/settings/`, ADR-045): `/settings` ahora se renderiza
+  dentro del shell de UrbanVoice (`UrbanVoiceAppLayout`), con la grilla del
+  tema —Mi cuenta + Acceso y seguridad arriba; Marca y Proveedor de IA a ancho
+  completo— en vez del layout genérico de 3 columnas que dejaba un tercio
+  vacío al lado de IA y filas completas para biometría/passkeys. La lógica de
+  Marca, IA, passkeys y huella se extrajo a hooks compartidos
+  (`components/settings/use*Settings.ts`); la pantalla clásica de
+  default/kero/devbout conserva su presentación y comportamiento. El sidebar
+  suma el grupo **Ajustes › Configuración** y el bloque de cuenta de UrbanVoice
+  no muestra los campos heredados del bot legal (DNI/Honorarios).
+
 - **El contenido del admin UrbanVoice ocupa todo el ancho disponible**
   (`templates/urbanvoice/panel.css`): `.view` ya no se capa en 1480 px ni deja
   aire a la derecha en pantallas anchas; el listado y la ficha de Clientes

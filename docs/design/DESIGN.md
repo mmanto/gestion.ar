@@ -239,6 +239,13 @@ excepción deliberada a la regla de «sólo Tailwind»:
   `operativo` a «Ventas» (sin montos, pagos, plan, suspensión ni baja).
 - **Contenido propio**: el listado y la ficha de Clientes son componentes del
   tema; `pages/ClientsRoute.tsx` despacha `urbanvoice` vs. la pantalla clásica.
+- **Ajustes propios**: `pages/SettingsRoute.tsx` despacha `urbanvoice` a
+  `templates/urbanvoice/settings/UrbanVoiceSettings.tsx`, que usa el shell del
+  tema y una grilla de dos columnas (Mi cuenta + Acceso y seguridad; Marca y
+  Proveedor de IA a ancho completo). La lógica de Marca, IA, passkeys y huella
+  vive en `components/settings/use*Settings.ts`, compartida con la pantalla
+  genérica; el CSS es `templates/urbanvoice/settings/settings.css`, scopeado a
+  `.uv-admin` y con el prefijo `.uv-set-*`.
 - **Default del tenant**: si `branding.template_id` no está guardado, el tenant
   UrbanVoice (slug `urbanvoice`/`urban-voice` o nombre «Urban Voice») resuelve a
   este tema (`config/tenantTemplateDefaults.ts`). El valor guardado en Ajustes

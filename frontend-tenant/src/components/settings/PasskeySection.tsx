@@ -1,25 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
 import { KeyRound } from 'lucide-react';
 import { Card } from '../common/Card';
 import { Button } from '../common/Button';
 import { Alert } from '../common/Alert';
-import {
-  enrollPasskey,
-  isPasskeySupported,
-  listPasskeys,
-  revokePasskey,
-  PasskeyCancelled,
-  type PasskeyInfo,
-} from '../../services/passkey.service';
-
-/**
- * Mensaje a mostrar: los errores de passkey.service ya vienen traducidos al
- * español (con el `detail` del backend si existía), así que alcanza con el
- * mensaje del Error y, si no es un Error, el fallback.
- */
-function errorMessage(err: unknown, fallback: string): string {
-  return err instanceof Error && err.message ? err.message : fallback;
-}
+import { usePasskeySettings } from './usePasskeySettings';
 
 /**
  * "Passkeys" — gestión del ingreso con Face ID, huella, Windows Hello o llave
@@ -31,73 +14,19 @@ function errorMessage(err: unknown, fallback: string): string {
  * actual; abajo se listan las registradas para revocar las que ya no se usan.
  */
 export const PasskeySection = () => {
-  const supported = isPasskeySupported();
-
-  const [passkeys, setPasskeys] = useState<PasskeyInfo[]>([]);
-  const [name, setName] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [revokingId, setRevokingId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  // Aviso (no error) cuando el dispositivo no creó la passkey: el caso típico es
-  // que ya tenga una para este sitio — revocar acá borra el registro del
-  // servidor, pero la copia del sistema sigue en el gestor de contraseñas y el
-  // autenticador rechaza crear otra. El navegador no distingue eso de una
-  // cancelación, así que se explica en vez de quedarse en silencio.
-  const [hint, setHint] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    try {
-      setPasskeys(await listPasskeys());
-    } catch (err: unknown) {
-      setError(errorMessage(err, 'No se pudieron cargar tus passkeys'));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!supported) {
-      setLoading(false);
-      return;
-    }
-    void load();
-  }, [load, supported]);
-
-  const handleAdd = async () => {
-    setError(null);
-    setHint(null);
-    setBusy(true);
-    try {
-      await enrollPasskey(name.trim() || undefined);
-      setName('');
-      await load();
-    } catch (err: unknown) {
-      if (err instanceof PasskeyCancelled) {
-        setHint(
-          'El dispositivo no creó la passkey. Si ya tiene una para este sitio, borrala primero ' +
-            'del gestor de contraseñas del sistema (o del navegador) y volvé a intentar.',
-        );
-      } else {
-        setError(errorMessage(err, 'No se pudo agregar la passkey'));
-      }
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleRevoke = async (credentialId: string) => {
-    setError(null);
-    setRevokingId(credentialId);
-    try {
-      await revokePasskey(credentialId);
-      await load();
-    } catch (err: unknown) {
-      setError(errorMessage(err, 'No se pudo revocar la passkey'));
-    } finally {
-      setRevokingId(null);
-    }
-  };
+  const {
+    supported,
+    passkeys,
+    name,
+    loading,
+    busy,
+    revokingId,
+    error,
+    hint,
+    setName,
+    handleAdd,
+    handleRevoke,
+  } = usePasskeySettings();
 
   return (
     <Card className="md:col-span-3" shadow="sm">

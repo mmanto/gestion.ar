@@ -1,0 +1,220 @@
+/* Ajustes del panel UrbanVoice. Se importa sólo desde
+ * templates/urbanvoice/settings/UrbanVoiceSettings.tsx y todo cuelga de
+ * .uv-admin, así que no toca el resto de los temas ni las rutas públicas. */
+
+.uv-admin .uv-set{width:100%}
+.uv-admin .uv-set-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:18px;
+  align-items:start;
+}
+.uv-admin .uv-set-span-2{grid-column:1/-1;min-width:0}
+.uv-admin .uv-set-card{margin-bottom:0;padding:22px;min-width:0}
+.uv-admin .uv-set-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:18px;
+}
+.uv-admin .uv-set-head h3{margin:0;font-size:17px;line-height:1.2;font-weight:800;color:var(--ink)}
+.uv-admin .uv-set-head p{margin:5px 0 0;font-size:12.5px;line-height:1.45;color:var(--muted)}
+
+.uv-admin .uv-set-tag,
+.uv-admin .uv-set-status{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  min-height:26px;
+  padding:0 10px;
+  border-radius:99px;
+  font-size:11.5px;
+  font-weight:800;
+  white-space:nowrap;
+}
+.uv-admin .uv-set-tag{background:var(--pri-s);color:var(--pri-d)}
+.uv-admin .uv-set-status.ok{background:var(--ok-s);color:var(--ok)}
+.uv-admin .uv-set-status.warn{background:var(--warn-s);color:var(--warn)}
+.uv-admin .uv-set-status.bad{background:var(--bad-s);color:var(--bad)}
+
+.uv-admin .uv-set-alert{
+  margin-bottom:14px;
+  padding:10px 12px;
+  border:1px solid transparent;
+  border-radius:10px;
+  font-size:12.5px;
+  line-height:1.45;
+}
+.uv-admin .uv-set-alert.err{background:var(--bad-s);border-color:#f3c9c5;color:var(--bad)}
+.uv-admin .uv-set-alert.ok{background:var(--ok-s);border-color:#c4e8d3;color:var(--ok)}
+.uv-admin .uv-set-alert.info{background:var(--info-s);border-color:#cfdefb;color:var(--info)}
+.uv-admin .uv-set-alert.warn{background:var(--warn-s);border-color:#eed9a8;color:var(--warn)}
+
+.uv-admin .uv-set-account{display:grid;grid-template-columns:1fr 1fr;gap:14px 22px}
+.uv-admin .uv-set-account>div{min-width:0}
+.uv-admin .uv-set-label{
+  display:block;
+  margin-bottom:4px;
+  font-size:10.5px;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.uv-admin .uv-set-account b{display:block;font-size:14px;font-weight:600;color:var(--ink);overflow-wrap:anywhere}
+
+.uv-admin .uv-set-fields{display:grid;gap:14px;min-width:0}
+.uv-admin .uv-set-2,
+.uv-admin .uv-set-3{display:grid;gap:14px}
+.uv-admin .uv-set-2{grid-template-columns:1fr 1fr}
+.uv-admin .uv-set-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.uv-admin .uv-set-field{min-width:0}
+.uv-admin .uv-set-field>label{
+  display:block;
+  margin-bottom:6px;
+  font-size:12px;
+  font-weight:700;
+  color:var(--text);
+}
+.uv-admin .uv-set-field input[type=text],
+.uv-admin .uv-set-field input[type=password],
+.uv-admin .uv-set-field input[type=email],
+.uv-admin .uv-set-field input[type=number],
+.uv-admin .uv-set-field select,
+.uv-admin .uv-set-field textarea{
+  width:100%;
+  height:42px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:#fff;
+  padding:0 12px;
+  color:var(--ink);
+  font-size:13.5px;
+  outline:none;
+  transition:border-color .15s,box-shadow .15s;
+}
+.uv-admin .uv-set-field textarea{height:auto;min-height:96px;padding:10px 12px;resize:vertical}
+.uv-admin .uv-set-field input::placeholder{color:#9aa2b4}
+.uv-admin .uv-set-field input:focus,
+.uv-admin .uv-set-field select:focus,
+.uv-admin .uv-set-field textarea:focus{border-color:var(--pri);box-shadow:0 0 0 3px rgba(8,124,245,.14)}
+.uv-admin .uv-set-field input:disabled,
+.uv-admin .uv-set-field select:disabled{background:#f7f8fa;color:var(--muted)}
+.uv-admin .uv-set-hint{margin:6px 0 0;font-size:11.5px;line-height:1.45;color:var(--muted)}
+.uv-admin .uv-set-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.uv-admin .uv-set-actions .btn{height:38px}
+.uv-admin .uv-set-inline{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}
+.uv-admin .uv-set-inline .uv-set-field{flex:1;min-width:160px}
+.uv-admin .uv-set-inline>input,
+.uv-admin .uv-set-inline>select{flex:1;min-width:0;width:auto}
+
+.uv-admin .uv-set-chips{display:flex;flex-wrap:wrap;gap:8px}
+.uv-admin .uv-set-chips button{
+  height:34px;
+  padding:0 12px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:#fff;
+  color:var(--text);
+  font-size:12.5px;
+  font-weight:700;
+  transition:border-color .15s,background .15s,color .15s;
+}
+.uv-admin .uv-set-chips button:hover{border-color:#cfd4dc;background:#fafbfc}
+.uv-admin .uv-set-chips button.on{border-color:var(--pri);background:var(--pri-s);color:var(--pri-d)}
+.uv-admin .uv-set-chips button:disabled{opacity:.55;cursor:default}
+
+.uv-admin .uv-set-branding{display:grid;gap:18px}
+.uv-admin .uv-set-logos{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:start}
+.uv-admin .uv-set-branding .uv-set-fields{grid-template-columns:1fr 1fr;gap:16px}
+.uv-admin .uv-set-logo{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:12px;
+  min-width:0;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#fff;
+}
+.uv-admin .uv-set-logo-prev{
+  display:grid;
+  place-items:center;
+  flex:none;
+  width:64px;
+  height:64px;
+  border-radius:10px;
+  background:#f4f5f9;
+  overflow:hidden;
+}
+.uv-admin .uv-set-logo-prev img{width:100%;height:100%;object-fit:contain;padding:6px}
+.uv-admin .uv-set-logo-prev span{
+  display:grid;
+  place-items:center;
+  width:100%;
+  height:100%;
+  color:#fff;
+  font-size:24px;
+  font-weight:800;
+}
+.uv-admin .uv-set-logo-meta{min-width:0;flex:1}
+.uv-admin .uv-set-logo-meta b{display:block;font-size:13px;font-weight:700;color:var(--ink)}
+.uv-admin .uv-set-logo-meta small{display:block;margin-top:2px;font-size:11.5px;line-height:1.4;color:var(--muted)}
+.uv-admin .uv-set-logo-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.uv-admin .uv-set-logo-actions .btn{height:30px;padding:0 10px;font-size:12px}
+.uv-admin .uv-set-logo-err{margin:6px 0 0;font-size:11.5px;color:var(--bad)}
+.uv-admin .uv-set-color{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.uv-admin .uv-set-color input[type=color]{
+  width:42px;
+  height:42px;
+  padding:3px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:#fff;
+  cursor:pointer;
+}
+.uv-admin .uv-set-color code{font-size:12.5px;font-weight:600;color:var(--text)}
+
+.uv-admin .uv-set-sec{min-width:0}
+.uv-admin .uv-set-sec+.uv-set-sec{margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}
+.uv-admin .uv-set-sec-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.uv-admin .uv-set-sec-head b{font-size:13.5px;font-weight:800;color:var(--ink)}
+.uv-admin .uv-set-sec p{margin:0;font-size:12.5px;line-height:1.5;color:var(--text)}
+.uv-admin .uv-set-list{display:flex;flex-direction:column;gap:4px;margin-top:10px}
+.uv-admin .uv-set-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:9px 0;
+  border-top:1px solid var(--line);
+  font-size:13px;
+  color:var(--text);
+}
+.uv-admin .uv-set-row:first-child{border-top:0}
+.uv-admin .uv-set-row>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.uv-admin .uv-set-row .btn{height:30px;padding:0 10px;font-size:12px;flex:none}
+
+@media(max-width:1200px){
+  .uv-admin .uv-set-3{grid-template-columns:1fr 1fr}
+}
+@media(max-width:1080px){
+  .uv-admin .uv-set-grid{grid-template-columns:1fr}
+  .uv-admin .uv-set-span-2{grid-column:auto}
+}
+@media(max-width:900px){
+  .uv-admin .uv-set-logos,
+  .uv-admin .uv-set-branding .uv-set-fields{grid-template-columns:1fr}
+}
+@media(max-width:720px){
+  .uv-admin .uv-set-card{padding:18px}
+  .uv-admin .uv-set-account,
+  .uv-admin .uv-set-2,
+  .uv-admin .uv-set-3{grid-template-columns:1fr}
+  .uv-admin .uv-set-logo{align-items:flex-start}
+  .uv-admin .uv-set-inline{align-items:stretch;flex-direction:column}
+  .uv-admin .uv-set-inline>input,
+  .uv-admin .uv-set-inline>select,
+  .uv-admin .uv-set-inline .btn{width:100%}
+}

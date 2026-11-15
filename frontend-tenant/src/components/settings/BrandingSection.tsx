@@ -1,36 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 import { Trash2, Upload } from 'lucide-react';
 import { Card } from '../common/Card';
 import { Button } from '../common/Button';
 import { Alert } from '../common/Alert';
-import { useTenant } from '../../hooks/useTenant';
-import { useTemplate } from '../../hooks/useTemplate';
-import tenantBrandingService from '../../services/tenantBranding.service';
 import { resolveAssetUrl } from '../../utils/assetUrl';
-import type { TemplateId } from '../../types/template.types';
-import type { TenantIndustry } from '../../types/tenant.types';
-
-const INDUSTRY_OPTIONS: { id: TenantIndustry; label: string }[] = [
-  { id: 'legal', label: 'Legal' },
-  { id: 'salud', label: 'Salud' },
-  { id: 'generico', label: 'Genérico' },
-];
-
-const MAX_BYTES = 2 * 1024 * 1024;
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
-const ALLOWED_EXTENSIONS = '.jpg,.jpeg,.png,.webp,.svg';
-
-type LogoType = 'horizontal' | 'vertical';
-
-const LOGO_LABELS: Record<LogoType, string> = {
-  horizontal: 'Logo horizontal',
-  vertical: 'Logo vertical',
-};
-
-const LOGO_HINTS: Record<LogoType, string> = {
-  horizontal: 'Se usa en la landing, login y menú expandido',
-  vertical: 'Se usa en el login y menú colapsado',
-};
+import {
+  ALLOWED_EXTENSIONS,
+  INDUSTRY_OPTIONS,
+  LOGO_HINTS,
+  LOGO_LABELS,
+  useBrandingSettings,
+  type LogoType,
+} from './useBrandingSettings';
 
 const LogoUploadSlot: React.FC<{
   type: LogoType;
@@ -106,144 +87,35 @@ const LogoUploadSlot: React.FC<{
 };
 
 export const BrandingSection = () => {
-  const { tenant, refetchTenant } = useTenant();
-  const { templateId, setTemplateId, templates } = useTemplate();
-
-  const [logoH, setLogoH] = useState<string | undefined>(
-    tenant?.branding.logo_url_horizontal || tenant?.branding.logo_url || undefined,
-  );
-  const [logoV, setLogoV] = useState<string | undefined>(
-    tenant?.branding.logo_url_vertical || undefined,
-  );
-  const [primaryColor, setPrimaryColor] = useState<string>(
-    tenant?.branding.primary_color || '#25357a',
-  );
-  const [tagline, setTagline] = useState<string>(
-    tenant?.branding.tagline || '',
-  );
-  const [industry, setIndustry] = useState<TenantIndustry>(
-    tenant?.branding.industry || 'legal',
-  );
-
-  const [uploadingH, setUploadingH] = useState(false);
-  const [uploadingV, setUploadingV] = useState(false);
-  const [uploadErrorH, setUploadErrorH] = useState<string | null>(null);
-  const [uploadErrorV, setUploadErrorV] = useState<string | null>(null);
-  const [deletingH, setDeletingH] = useState(false);
-  const [deletingV, setDeletingV] = useState(false);
-  const [colorSaving, setColorSaving] = useState(false);
-  const [taglineSaving, setTaglineSaving] = useState(false);
-  const [themeSaving, setThemeSaving] = useState(false);
-  const [industrySaving, setIndustrySaving] = useState(false);
-  const [saved, setSaved] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (tenant) {
-      setLogoH(tenant.branding.logo_url_horizontal || tenant.branding.logo_url || undefined);
-      setLogoV(tenant.branding.logo_url_vertical || undefined);
-      setPrimaryColor(tenant.branding.primary_color || '#25357a');
-      setTagline(tenant.branding.tagline || '');
-      setIndustry(tenant.branding.industry || 'legal');
-    }
-  }, [tenant]);
-
-  const flashSaved = (msg: string) => {
-    setSaved(msg);
-    setTimeout(() => setSaved(null), 2000);
-  };
-
-  const handleLogoSelect = async (type: LogoType, file: File) => {
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      type === 'horizontal' ? setUploadErrorH('Formato no soportado — usá JPG, PNG, WEBP o SVG') : setUploadErrorV('Formato no soportado — usá JPG, PNG, WEBP o SVG');
-      return;
-    }
-    if (file.size > MAX_BYTES) {
-      type === 'horizontal' ? setUploadErrorH('La imagen supera el tamaño máximo de 2MB') : setUploadErrorV('La imagen supera el tamaño máximo de 2MB');
-      return;
-    }
-
-    type === 'horizontal' ? (setUploadErrorH(null), setUploadingH(true)) : (setUploadErrorV(null), setUploadingV(true));
-    try {
-      const url = await tenantBrandingService.uploadLogo(file, type);
-      type === 'horizontal' ? setLogoH(url) : setLogoV(url);
-      await refetchTenant();
-      flashSaved(`${LOGO_LABELS[type]} actualizado`);
-    } catch {
-      type === 'horizontal' ? setUploadErrorH('No se pudo subir el logo') : setUploadErrorV('No se pudo subir el logo');
-    } finally {
-      type === 'horizontal' ? setUploadingH(false) : setUploadingV(false);
-    }
-  };
-
-  const handleDeleteLogo = async (type: LogoType) => {
-    type === 'horizontal' ? setDeletingH(true) : setDeletingV(true);
-    try {
-      await tenantBrandingService.deleteLogo(type);
-      type === 'horizontal' ? setLogoH(undefined) : setLogoV(undefined);
-      await refetchTenant();
-      flashSaved(`${LOGO_LABELS[type]} eliminado`);
-    } catch {
-      // handled by interceptor toast
-    } finally {
-      type === 'horizontal' ? setDeletingH(false) : setDeletingV(false);
-    }
-  };
-
-  const handleColorChange = async (color: string) => {
-    setPrimaryColor(color);
-    setColorSaving(true);
-    try {
-      await tenantBrandingService.updateBranding({ primary_color: color });
-      await refetchTenant();
-      flashSaved('Color guardado');
-    } finally {
-      setColorSaving(false);
-    }
-  };
-
-  const handleTaglineSave = async () => {
-    setTaglineSaving(true);
-    try {
-      await tenantBrandingService.updateBranding({ tagline });
-      await refetchTenant();
-      flashSaved('Tagline guardada');
-    } finally {
-      setTaglineSaving(false);
-    }
-  };
-
-  const handleThemeChange = async (id: TemplateId) => {
-    if (id === templateId) return;
-    setThemeSaving(true);
-    try {
-      await setTemplateId(id);
-      flashSaved('Tema guardado');
-    } finally {
-      setThemeSaving(false);
-    }
-  };
-
-  const handleIndustryChange = async (value: TenantIndustry) => {
-    if (value === industry) return;
-    const previous = industry;
-    setIndustry(value);
-    setIndustrySaving(true);
-    setError(null);
-    try {
-      await tenantBrandingService.updateBranding({ industry: value });
-      await refetchTenant();
-      flashSaved('Rubro guardado');
-    } catch (err) {
-      setIndustry(previous); // revertir ante error
-      const detail = (err as { response?: { data?: { detail?: string } } }).response?.data?.detail;
-      setError(detail || 'No se pudo guardar el rubro.');
-    } finally {
-      setIndustrySaving(false);
-    }
-  };
-
-  const fallbackLetter = (tenant?.name || '?').charAt(0).toUpperCase();
+  const {
+    templateId,
+    templates,
+    logoH,
+    logoV,
+    primaryColor,
+    tagline,
+    industry,
+    uploadingH,
+    uploadingV,
+    uploadErrorH,
+    uploadErrorV,
+    deletingH,
+    deletingV,
+    colorSaving,
+    taglineSaving,
+    themeSaving,
+    industrySaving,
+    saved,
+    error,
+    fallbackLetter,
+    setTagline,
+    handleLogoSelect,
+    handleDeleteLogo,
+    handleColorChange,
+    handleTaglineSave,
+    handleThemeChange,
+    handleIndustryChange,
+  } = useBrandingSettings();
 
   return (
     <Card className="md:col-span-1" shadow="sm">

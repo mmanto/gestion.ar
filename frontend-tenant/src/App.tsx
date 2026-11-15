@@ -25,7 +25,7 @@ import { Records } from './pages/Records';
 import { Reports } from './pages/Reports';
 import { Modules } from './pages/Modules';
 import { Users } from './pages/Users';
-import { Settings } from './pages/Settings';
+import { SettingsRoute } from './pages/SettingsRoute';
 import { Share } from './pages/Share';
 
 /** Registra el push nativo del staff una vez autenticado. Vive adentro de
@@ -151,7 +151,7 @@ function App() {
                   path="/settings"
                   element={
                     <ProtectedRoute roles={['admin', 'operativo']}>
-                      <Settings />
+                      <SettingsRoute />
                     </ProtectedRoute>
                   }
                 />
