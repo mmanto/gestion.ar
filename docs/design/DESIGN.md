@@ -243,6 +243,9 @@ excepción deliberada a la regla de «sólo Tailwind»:
   UrbanVoice (slug `urbanvoice`/`urban-voice` o nombre «Urban Voice») resuelve a
   este tema (`config/tenantTemplateDefaults.ts`). El valor guardado en Ajustes
   siempre gana.
+- **Ancho del contenido**: `.uv-admin .view` usa `width:100%; max-width:none`
+  (override al final de `panel.css` sobre el tope de 1480 px de la demo), así
+  el listado y la ficha de Clientes ocupan todo el `main` junto al sidebar.
 - **Landing pública**: `templates/urbanvoice/Landing.tsx` es la réplica del
   sitio estático que vivía en `sites/urbanvoice/` (ADR-044). `landing/landing.css`
   es una transcripción mecánica del CSS original scopeada a `.uv-landing`

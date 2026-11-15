@@ -7,6 +7,12 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Corregido
+- **El contenido del admin UrbanVoice ocupa todo el ancho disponible**
+  (`templates/urbanvoice/panel.css`): `.view` ya no se capa en 1480 px ni deja
+  aire a la derecha en pantallas anchas; el listado y la ficha de Clientes
+  usan el ancho completo del `main` (al lado del sidebar). En mobile no cambia
+  porque el 100% ya era el comportamiento efectivo.
+
 - **El login del panel de tenant ya no entra en loop con cuentas `partner` /
   `super_admin`** (`frontend-tenant`): una cuenta de otro rol autenticaba bien,
   pero `/dashboard` la rebotaba a `/login` y `/login` volvía a mandarla al

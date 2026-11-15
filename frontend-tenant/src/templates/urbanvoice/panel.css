@@ -1048,3 +1048,7 @@
 
 /* Ajuste de la réplica: las tabs no deben encogerse (mobile). */
 .uv-admin .ctabs button{flex:0 0 auto}
+
+/* Ajuste de la réplica: el contenido ocupa todo el ancho disponible del main
+ * (la demo lo capaba en 1480px y dejaba aire a la derecha en pantallas anchas). */
+.uv-admin .view{width:100%;max-width:none}
