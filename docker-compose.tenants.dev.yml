@@ -71,5 +71,10 @@ services:
       - "traefik.http.routers.tenant-pachoteayuda-hmr.priority=20"
       - "traefik.http.routers.tenant-pachoteayuda-hmr.service=tenant-pachoteayuda"
 
+      # UrbanVoice no comparte host con una landing estática (ADR-044): el
+      # router tenant-urbanvoice va directo al dev-server y el websocket de HMR
+      # usa el mismo, así que sólo cambia el puerto del service.
+      - "traefik.http.services.tenant-urbanvoice.loadbalancer.server.port=5174"
+
 volumes:
   frontend_tenant_node_modules:

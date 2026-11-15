@@ -94,6 +94,14 @@ services:
       - "traefik.http.routers.tenant-pachoteayuda.priority=1"
       - "traefik.http.routers.tenant-pachoteayuda.service=tenant-pachoteayuda"
       - "traefik.http.services.tenant-pachoteayuda.loadbalancer.server.port=80"
+      # UrbanVoice sirve landing + SPA en el mismo host (ADR-044), sin router
+      # de landing. Se prueba en urbanvoice.intellify.pro.localhost; el backend
+      # resuelve el tenant por Host quitando el sufijo .localhost.
+      - "traefik.http.routers.tenant-urbanvoice.rule=Host(`urbanvoice.intellify.pro.localhost`)"
+      - "traefik.http.routers.tenant-urbanvoice.entrypoints=web"
+      - "traefik.http.routers.tenant-urbanvoice.priority=1"
+      - "traefik.http.routers.tenant-urbanvoice.service=tenant-urbanvoice"
+      - "traefik.http.services.tenant-urbanvoice.loadbalancer.server.port=80"
 
   # landing comparte dominio con frontend-tenant: este router matchea "/",
   # cualquier página .html y los assets de la landing; todo lo demás cae en

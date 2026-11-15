@@ -19,6 +19,5 @@ COPY proptech-landing/ /usr/share/nginx/html/proptech/
 COPY erma/ /usr/share/nginx/html/erma/
 COPY pachoteayuda-landing/ /usr/share/nginx/html/pachoteayuda/
 COPY openpadel-landing/ /usr/share/nginx/html/openpadel/
-COPY urbanvoice/ /usr/share/nginx/html/urbanvoice/
 
 EXPOSE 80

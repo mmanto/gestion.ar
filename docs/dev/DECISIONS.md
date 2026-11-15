@@ -2727,3 +2727,54 @@ contenido entre temas. La demo no tiene API: su estado vive en `localStorage`.
   tenga datos reales.
 - El tema se selecciona por tenant como los demás; validarlo no requiere un
   tenant UrbanVoice.
+
+## ADR-044: La landing de UrbanVoice la sirve el SPA del tenant
+
+### Contexto
+`urbanvoice.intellify.pro` servía una landing estática (`sites/urbanvoice/`,
+router `landing-urbanvoice` con prioridad 10) porque el tenant no existía. Con
+el tenant dado de alta y el tema `urbanvoice` (ADR-043), el host tiene que
+compartir landing, login y panel. Mantener la landing estática obliga a partir
+el dominio con reglas de `Path` y deja el sitio fuera de la sesión y de los
+deploys del SPA. El sitio es una única página con CSS inline, imágenes y
+algunos anchors: no necesita un runtime propio.
+
+### Alternativas consideradas
+1. **Componente en `frontend-tenant`** (elegida): la landing se pinta desde el
+   SPA, comparte host con login/panel y se despliega con el frontend. El CSS se
+   vendoriza scopeado y los assets van a `public/`.
+2. **Mantener la landing estática y restringir su router** a `/`, `.html` y
+   `/images/`, agregando `tenant-urbanvoice` en prioridad 1. Conserva el HTML
+   server-rendered (mejor SEO sin JS), pero son dos despliegues, dos fuentes de
+   assets y la landing no puede usar `Link`/estado de la app.
+3. **Iframe de la landing estática** dentro del SPA: evita el port pero anida
+   scroll, rompe anchors y duplica la carga.
+
+### Decisión
+- `templates/urbanvoice/Landing.tsx` es la landing pública; `landing.css` es
+  una transcripción mecánica del `<style>` del sitio estático, con todos los
+  selectores scopeados a `.uv-landing` (incluidos `:root`, `html`, `body` y
+  `*`) y los `url(images/…)` reescritos a `/uv/landing/…`.
+- Los assets viven en `public/uv/landing/` (26 PNG, nombres fijos) y nginx los
+  sirve con cache de 7 días; no se importan al bundle para no duplicar 33 MB.
+- La landing se resuelve por slug/nombre del tenant
+  (`config/tenantLanding.ts` + `tenantIdentityKey`), **no** por
+  `branding.template_id`: cambiar el tema del backoffice no cambia el sitio
+  público. Tiene precedencia sobre el modo chat-only genérico.
+- `urbanvoice.intellify.pro` pasa al router `tenant-urbanvoice` (priority 1);
+  se elimina `landing-urbanvoice`, la copia de `sites/urbanvoice/` y su línea
+  en `sites/Dockerfile` / `sites/nginx.conf`.
+- El título, `description` y Open Graph se fijan desde la landing y se
+  restauran al desmontar.
+
+### Consecuencias
+- Cambiar la landing requiere rebuild de `frontend-tenant` (no del contenedor
+  `landing`). El HTML inicial del SPA no contiene el contenido: los crawlers
+  que no ejecutan JS no lo ven. Si el SEO orgánico pasa a ser crítico, hay que
+  prerenderizar o volver a servir la landing estática para `/`.
+- Los PNG no llevan hash: un reemplazo de imagen puede tardar hasta 7 días en
+  verse para visitantes con cache; para forzar el cambio, renombrar el archivo.
+- El tenant debe existir con `domain=urbanvoice.intellify.pro` para el acceso
+  por Host; sin dominio sigue disponible en `intellify.pro/urbanvoice/`.
+- La landing no consulta la API: los CTA siguen yendo a WhatsApp y el único
+  enlace a la app es `/login`.

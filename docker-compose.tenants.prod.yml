@@ -130,6 +130,17 @@ services:
       - "traefik.http.routers.tenant-openpadel.service=tenant-openpadel"
       - "traefik.http.services.tenant-openpadel.loadbalancer.server.port=80"
 
+      # ── urbanvoice ──────────────────────────────────────────────────────
+      # El sitio público de UrbanVoice es la landing del SPA (por slug/nombre
+      # del tenant), no un contenedor estático: este router le da al host el
+      # SPA completo (landing, login, panel) en priority=1.
+      - "traefik.http.routers.tenant-urbanvoice.rule=Host(`urbanvoice.intellify.pro`)"
+      - "traefik.http.routers.tenant-urbanvoice.entrypoints=websecure"
+      - "traefik.http.routers.tenant-urbanvoice.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.tenant-urbanvoice.priority=1"
+      - "traefik.http.routers.tenant-urbanvoice.service=tenant-urbanvoice"
+      - "traefik.http.services.tenant-urbanvoice.loadbalancer.server.port=80"
+
       # ── velsa ───────────────────────────────────────────────────────────
       - "traefik.http.routers.tenant-velsa.rule=Host(`velsa.intellify.pro`)"
       - "traefik.http.routers.tenant-velsa.entrypoints=websecure"
@@ -211,20 +222,6 @@ services:
       - "traefik.http.routers.landing-openpadel.priority=10"
       - "traefik.http.routers.landing-openpadel.service=landing-openpadel"
       - "traefik.http.services.landing-openpadel.loadbalancer.server.port=80"
-
-      # ── urbanvoice ──────────────────────────────────────────────────────
-      # OJO: el tenant UrbanVoice todavía NO existe, así que este router matchea
-      # el host entero (sin regla de Path) y hoy todo el host es de la landing;
-      # las rutas que el SPA del tenant va a necesitar (/login, /dashboard,
-      # /api/*…) devuelven 404 de nginx hasta que ese tenant se implemente.
-      # Cuando se dé de alta, restringir este router a las rutas de la landing
-      # y agregar su router tenant-urbanvoice (priority=1) en frontend-tenant.
-      - "traefik.http.routers.landing-urbanvoice.rule=Host(`urbanvoice.intellify.pro`)"
-      - "traefik.http.routers.landing-urbanvoice.entrypoints=websecure"
-      - "traefik.http.routers.landing-urbanvoice.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.landing-urbanvoice.priority=10"
-      - "traefik.http.routers.landing-urbanvoice.service=landing-urbanvoice"
-      - "traefik.http.services.landing-urbanvoice.loadbalancer.server.port=80"
 
 networks:
   default:

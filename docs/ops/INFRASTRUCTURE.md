@@ -170,7 +170,7 @@ esos 2 servicios (no service blocks ni contenedores por tenant).
 | erma | erma.com.ar | `sites/erma/` | `tenant-erma`, `landing-erma` |
 | pachoteayuda | pachoteayuda.ar | `sites/pachoteayuda-landing/` | `tenant-pachoteayuda`, `landing-pachoteayuda` |
 | openpadel | openpadel.pro | `sites/openpadel-landing/` | `tenant-openpadel`, `landing-openpadel` |
-| urbanvoice | urbanvoice.intellify.pro | `sites/urbanvoice/` | `landing-urbanvoice` (todavía sin tenant — ver abajo) |
+| urbanvoice | urbanvoice.intellify.pro | — (landing en el SPA, `public/uv/landing/`) | `tenant-urbanvoice` (ver abajo) |
 | *(URL interna)* | `intellify.pro/<slug>` | — | `tenant-internal` (un único router para todos los tenants; ver abajo) |
 
 > DNS: para dominios propios del cliente (`erma.com.ar`, `pachoteayuda.ar`,
@@ -229,28 +229,19 @@ ve, primero verificar que el `.html` exista dentro del contenedor `landing`
 correcta y el archivo existe, el `PathRegexp` ya la enruta al contenedor
 correcto.
 
-### Caso urbanvoice: landing sin tenant (por ahora)
+### Caso urbanvoice: landing servida por el SPA
 
-`urbanvoice.intellify.pro` es la única excepción al patrón de arriba: la
-landing existe (`sites/urbanvoice/`, directorio + router `landing-urbanvoice`
-en el servicio `landing` de `docker-compose.tenants.prod.yml`) pero el tenant
-UrbanVoice todavía no está implementado, así que **no hay SPA que comparta el
-host** y el router no lleva regla de `Path` — matchea el host entero con
-prioridad 10. Lo que antes caía en el SPA (`/login`, `/dashboard`, `/assets/*`…)
-hoy devuelve 404 de nginx, que es lo esperado mientras el tenant no exista.
+`urbanvoice.intellify.pro` ya no usa el contenedor `landing`: el host entero lo
+sirve `frontend-tenant` con el router `tenant-urbanvoice` (`priority=1`). La
+landing es un componente del SPA (`templates/urbanvoice/Landing.tsx`, ADR-044) y
+sus assets viven en `public/uv/landing/`; nginx los sirve con cache de 7 días
+(`location ^~ /uv/landing/`). No hay router `landing-urbanvoice` ni copia en
+`sites/`.
 
-Cuando se dé de alta el tenant hay que hacer **dos** cosas, o el router de la
-landing (priority=10) se queda con todas las rutas y el SPA nunca recibe
-tráfico:
-
-1. agregar el router `tenant-urbanvoice` (label en `frontend-tenant`, `Host(...)`,
-   `priority=1`) y crear el tenant con `domain=urbanvoice.intellify.pro`;
-2. restringir el rule de `landing-urbanvoice` a las rutas de la landing —
-   `(Path(`/`) || PathRegexp(`^/.*\.html$`) || PathPrefix(`/images/`))`.
-
-La landing es un único `index.html` con el CSS inline y **una sola** carpeta de
-assets (`images/`), así que la lista es corta: no hay js/css propio que sumar al
-`Path(...)` (ver la regla práctica en el caso `footer.css`, abajo).
+El tenant tiene que existir con `domain=urbanvoice.intellify.pro` para que
+`GET /api/public/tenants/current` lo resuelva por Host. Sin dominio sigue
+accesible en `https://intellify.pro/urbanvoice/` (URL interna). Un cambio de
+landing se despliega con `frontend-tenant`, no con `landing`.
 
 ### Caso pachoteayuda: assets propios y páginas generadas
 

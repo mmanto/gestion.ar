@@ -243,3 +243,12 @@ excepción deliberada a la regla de «sólo Tailwind»:
   UrbanVoice (slug `urbanvoice`/`urban-voice` o nombre «Urban Voice») resuelve a
   este tema (`config/tenantTemplateDefaults.ts`). El valor guardado en Ajustes
   siempre gana.
+- **Landing pública**: `templates/urbanvoice/Landing.tsx` es la réplica del
+  sitio estático que vivía en `sites/urbanvoice/` (ADR-044). `landing/landing.css`
+  es una transcripción mecánica del CSS original scopeada a `.uv-landing`
+  (incluidos `:root`, `html`, `body` y `*`) y los 26 PNG están en
+  `public/uv/landing/`. La landing se resuelve por slug/nombre del tenant
+  (`config/tenantLanding.ts`), no por el tema del backoffice: cambiar
+  `branding.template_id` no la reemplaza. El CSS de la landing no se importa
+  fuera de `Landing.tsx` y el header sticky usa `overflow-x: clip` (no
+  `hidden`) para no crear un scroll container.

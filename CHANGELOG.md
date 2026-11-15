@@ -23,6 +23,22 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   interna (`intellify.pro/<slug>`).
 
 ### Agregado
+- **Landing pública de UrbanVoice servida por el SPA del tenant**
+  (`frontend-tenant/src/templates/urbanvoice/Landing.tsx`): réplica del sitio
+  estático que vivía en `sites/urbanvoice/`, ahora dentro de `frontend-tenant`
+  y con acceso directo a `/login`. El CSS se vendoriza scopeado a `.uv-landing`
+  (`templates/urbanvoice/landing/landing.css`) y los 26 assets pasan a
+  `public/uv/landing/` (cache 7d en nginx, sin hash). El header queda sticky, el
+  menú mobile y los anchors funcionan sin recargar, y la página fija
+  título/description/Open Graph propios. La landing se resuelve por slug/nombre
+  del tenant (`config/tenantLanding.ts`), no por `branding.template_id`; el
+  resto de los tenants sigue con la landing genérica. Se retiran
+  `sites/urbanvoice/` y el router `landing-urbanvoice`, y
+  `urbanvoice.intellify.pro` pasa al SPA con el router `tenant-urbanvoice`
+  (ADR-044). **Requiere** rebuild de `frontend-tenant` y recrear los labels de
+  Traefik (`up -d`), y que el tenant exista con
+  `domain=urbanvoice.intellify.pro` (o se entre por `intellify.pro/urbanvoice/`).
+
 - **Tema «UrbanVoice» en el backoffice del tenant y réplica de la sección
   Clientes** (`frontend-tenant/src/templates/urbanvoice/`, ADR-043). Nuevo
   `template_id='urbanvoice'` (`VALID_TEMPLATE_IDS` lo acepta): shell propio

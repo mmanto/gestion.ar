@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useTenant } from '../hooks/useTenant';
 import { resolveAssetUrl } from '../utils/assetUrl';
 import { ChatInterface } from '../components/chat/ChatInterface';
+import { tenantLandingFor } from '../config/tenantLanding';
+import { UrbanVoiceLanding } from '../templates/urbanvoice/Landing';
 
 /**
  * Landing pública de este tenant — cada contenedor de frontend-tenant sirve a
@@ -28,6 +30,12 @@ export const Landing: React.FC = () => {
         </p>
       </div>
     );
+  }
+
+  // Landing propia del tenant (hoy sólo UrbanVoice): reemplaza la landing
+  // genérica y el modo chat-only, porque es el sitio público de esa marca.
+  if (tenantLandingFor(tenant.slug, tenant.name) === 'urbanvoice') {
+    return <UrbanVoiceLanding />;
   }
 
   const primaryColor = tenant.branding.primary_color || '#25357a';

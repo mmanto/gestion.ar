@@ -1,4 +1,5 @@
 import type { TemplateId } from '../types/template.types';
+import { tenantIdentityKey } from './tenantIdentity';
 
 /**
  * Tema por defecto para tenants que todavía no eligieron uno en Ajustes › Marca.
@@ -9,6 +10,5 @@ import type { TemplateId } from '../types/template.types';
  * tenant puede cambiar de tema desde Ajustes.
  */
 export function defaultTemplateForTenant(slug?: string | null, name?: string | null): TemplateId {
-  const key = String(slug || name || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
-  return key === 'urbanvoice' ? 'urbanvoice' : 'default';
+  return tenantIdentityKey(slug, name) === 'urbanvoice' ? 'urbanvoice' : 'default';
 }

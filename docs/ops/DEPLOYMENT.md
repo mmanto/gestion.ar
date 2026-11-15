@@ -471,13 +471,14 @@ curl -I https://openpadel.pro          # debe redirigir a HTTPS y devolver 200
 curl -I https://openpadel.pro/login    # debe llegar al SPA del tenant
 ```
 
-**urbanvoice.intellify.pro — landing (todavía sin tenant):**
+**urbanvoice.intellify.pro — landing + SPA del tenant:**
 
-La landing de UrbanVoice (`sites/urbanvoice/`) vive en un subdominio de
-`intellify.pro`, así que el wildcard DNS `*.intellify.pro` ya la resuelve: no
-hay que tocar DNS (a diferencia de los dominios propios del cliente). Tampoco
-hay tenant que crear todavía; el directorio `sites/urbanvoice/` y su router
-`landing-urbanvoice` ya están en el `landing` compartido.
+La landing de UrbanVoice vive en el SPA (`frontend-tenant`), no en el
+contenedor `landing`: el host entero lo sirve el router `tenant-urbanvoice`
+(priority 1), con los assets en `public/uv/landing/`. El wildcard DNS
+`*.intellify.pro` ya resuelve el host. Para que el SPA lo reconozca por Host, el
+tenant tiene que existir con `domain=urbanvoice.intellify.pro`; sin dominio
+sigue accesible en `https://intellify.pro/urbanvoice/`.
 
 ```bash
 cd /opt/gestion.ar   # en el VPS, con el commit ya pulleado
@@ -486,15 +487,15 @@ docker compose --env-file .env.prod \
   -f docker-compose.yml \
   -f docker-compose.prod.yml \
   -f docker-compose.tenants.prod.yml \
-  up -d --build landing
+  up -d --build frontend-tenant
 
 # Verificar (la primera request HTTPS en el host dispara la emisión del
 # certificado TLS-ALPN-01 — puede tardar unos segundos):
-curl -sI https://urbanvoice.intellify.pro/ | head -1                  # 200 text/html
-curl -sI https://urbanvoice.intellify.pro/images/logo.png | head -1   # 200 image/png
+curl -sI https://urbanvoice.intellify.pro/ | head -1                  # 200 text/html (SPA)
+curl -sI https://urbanvoice.intellify.pro/login | head -1             # 200 text/html (SPA)
+curl -sI https://urbanvoice.intellify.pro/uv/landing/logo.png | head -1  # 200 image/png
 ```
 
-`/login`, `/dashboard`, `/assets/*`… devuelven 404 de nginx: son rutas del SPA
-del tenant, que todavía no existe. Cuando se implemente hay que agregar su
-router `tenant-urbanvoice` **y** restringir el rule de `landing-urbanvoice`
-(ver `docs/ops/INFRASTRUCTURE.md` § “Caso urbanvoice”).
+El contenedor `landing` ya no participa en este host: no hay router
+`landing-urbanvoice` ni copia en `sites/`. Ver `docs/ops/INFRASTRUCTURE.md`
+§ “Caso urbanvoice”.
