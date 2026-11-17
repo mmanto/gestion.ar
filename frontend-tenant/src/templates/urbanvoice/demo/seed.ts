@@ -1,9 +1,9 @@
 /** Semilla de la demo — puerto de datos.js, partners.js, equipo.js y mensajes.js. */
 
 import { TODAY, addD, addM, diff, hsh, iso, pd } from './format';
-import { MODS, SETUP, planPrice } from './selectors';
+import { MODS, SETUP, pComm, planPrice } from './selectors';
 import type {
-  AuditEntry, Club, DemoConfig, DemoDb, DemoUser, LogEntry, MessageTemplate, Partner, Pay, Plan, Task,
+  AuditEntry, Club, DemoConfig, DemoDb, DemoUser, Lead, Liquidation, LogEntry, MessageTemplate, Partner, Pay, Plan, Task,
 } from './types';
 
 const COLORS = ['#F9A30A', '#2563EB', '#0E9F6E', '#DC2626', '#7C3AED', '#0891B2', '#DB2777', '#65A30D', '#EA580C', '#4F46E5', '#0F766E', '#B45309'];
@@ -211,19 +211,70 @@ const tasksSeed = (): Task[] => [
   { id: 'k4', club: 'c4', due: iso(addD(TODAY, 6)), text: 'Ofrecerle 12 meses con descuento antes de fin de año', done: false, by: 'u3', at: Date.now() - 864e5 },
 ];
 
+const leadsSeed = (): Lead[] => {
+  const t = Date.now();
+  const h = 36e5;
+  return [
+    { id: 'l1', ref: 'estudiosur', at: t - 3 * h, club: 'Equipo de Campaña Chascomús Unida', tipo: 'Candidatura', city: 'Chascomús', prov: 'Buenos Aires', socios: 380, owner: 'Federico Luna', phone: '2241 556-210', email: 'fede@chascomusunida.com.ar', plan: '', msg: 'Hoy juntamos los reclamos de los vecinos por WhatsApp y planillas, queremos verlos en un mapa', status: 'nueva', src: 'web' },
+    { id: 'l2', at: t - 27 * h, club: 'Foro Vecinal Bolívar Norte', tipo: 'Organización vecinal', city: 'San Carlos de Bolívar', prov: 'Buenos Aires', socios: 720, owner: 'Mariana Quiroga', phone: '2314 448-901', email: 'mariana@forobolivarnorte.com.ar', plan: '', msg: 'Queremos saber cuáles son los barrios con más reclamos de alumbrado', status: 'nueva', src: 'web' },
+    { id: 'l3', partner: 'pt2', at: t - 74 * h, club: 'Concejal Esteban Rivas', tipo: 'Concejal', city: '9 de Julio', prov: 'Buenos Aires', socios: 240, owner: 'Esteban Rivas', phone: '2317 401-332', email: 'esteban@rivasconcejal.com.ar', plan: 'basico', msg: '', status: 'contactada', src: 'web', note: 'Quiere arrancar el mes que viene, antes de presentar sus proyectos.' },
+    { id: 'l4', at: t - 12 * 24 * h, club: 'Referente Barrial Rubén Ibarra', tipo: 'Referente barrial', city: 'Saladillo', prov: 'Buenos Aires', socios: 150, owner: 'Rubén Ibarra', phone: '2344 455-120', email: 'rubenibarra@gmail.com', plan: '', msg: 'Solo para consultar precios', status: 'descartada', why: 'Solo consultaba precios', src: 'web' },
+    { id: 'l5', partner: 'pt1', at: t - 8 * 24 * h, club: 'Referente Barrial Marcela Ortiz', tipo: 'Referente barrial', city: 'Azul', prov: 'Buenos Aires', socios: 95, owner: 'Marcela Ortiz', phone: '2281 433-876', email: 'marcela@marcelaortiz.com.ar', plan: 'basico', msg: '', status: 'alta', clubId: 'c6', src: 'web' },
+  ];
+};
+
+/** Liquidaciones de ejemplo: los meses viejos ya pagados y el anterior sin liquidar para pt3. */
+function liqSeed(partners: Partner[], clubs: Club[], pays: Pay[]): Liquidation[] {
+  const src = { partners, clubs, pays };
+  const out: Liquidation[] = [];
+  partners
+    .filter((p) => !p.house)
+    .forEach((p) => {
+      for (let i = 1; i <= 12; i++) {
+        const ym = iso(addM(TODAY, -i)).slice(0, 7);
+        const amount = pComm(src, p.id, ym);
+        if (amount <= 0 || (i === 1 && p.id === 'pt3')) continue;
+        out.push({
+          id: `lq-${p.id}-${ym}`,
+          pid: p.id,
+          ym,
+          amount,
+          at: iso(new Date(TODAY.getFullYear(), TODAY.getMonth() - i + 1, 5)),
+          method: 'Transferencia',
+          ref: `Liquidación ${ym}`,
+        });
+      }
+    });
+  return out;
+}
+
+/** Completa las colecciones nuevas sobre una base ya guardada, sin resembrar. */
+export function ensureDemoDb(db: DemoDb): DemoDb {
+  if (!Array.isArray(db.partners)) db.partners = partnersSeed();
+  db.clubs.forEach((c) => {
+    if (!c.partner) c.partner = P_CLUBS[c.name] || 'pt0';
+  });
+  if (!Array.isArray(db.liq)) db.liq = liqSeed(db.partners, db.clubs, db.pays);
+  if (!Array.isArray(db.leads)) db.leads = leadsSeed();
+  return db;
+}
+
 export function seedDb(): DemoDb {
   const base = seed();
   base.clubs.forEach((c) => {
     clubExtras(c, base.plans);
     c.partner = P_CLUBS[c.name] || 'pt0';
   });
+  const partners = partnersSeed();
   return {
     v: 1,
     plans: base.plans,
     clubs: base.clubs,
     pays: base.pays,
     log: base.log,
-    partners: partnersSeed(),
+    partners,
+    liq: liqSeed(partners, base.clubs, base.pays),
+    leads: leadsSeed(),
     users: usersSeed(),
     audit: auditSeed(),
     tpls: tplsSeed(),

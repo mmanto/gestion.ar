@@ -2,8 +2,8 @@
 
 import type { User } from '../../../types/auth.types';
 import { TODAY, addM, iso } from './format';
-import { clubPrice, discFor, plan, setupPct, state } from './selectors';
-import type { Club, DemoDb, LogType, Pay, PlanId, SetupKey, SpecialPrice } from './types';
+import { COLORS, clubPrice, discFor, pName, plan, setupPct, state } from './selectors';
+import type { Club, DemoDb, Liquidation, LogType, Partner, Pay, PlanId, SetupKey, SpecialPrice } from './types';
 
 export interface Actor {
   id: string;
@@ -191,4 +191,96 @@ export function deleteTask(db: DemoDb, taskId: string): void {
 
 export function logMessage(db: DemoDb, clubId: string, templateName: string, actor: Actor): void {
   logAdd(db, clubId, 'remind', `Mensaje enviado: ${templateName}`, actor);
+}
+
+/* ---------- Partners (puerto de partners.js) ---------- */
+
+function auditAdd(db: DemoDb, actor: Actor, action: string, detail: string, club = ''): void {
+  db.audit.unshift({ ts: Date.now(), user: actor.id, userName: actor.name, action, detail, club });
+  db.audit = db.audit.slice(0, 400);
+}
+
+export interface PartnerInput {
+  name: string;
+  owner: string;
+  email: string;
+  phone: string;
+  city: string;
+  prov?: string;
+  pct: number;
+  code: string;
+}
+
+/** Alta o edición de partner desde la administración. */
+export function savePartner(db: DemoDb, input: PartnerInput, actor: Actor, partnerId?: string): Partner {
+  const clean: PartnerInput = {
+    name: input.name.trim(),
+    owner: input.owner.trim(),
+    email: input.email.trim().toLowerCase(),
+    phone: input.phone.trim(),
+    city: input.city.trim(),
+    prov: input.prov?.trim() || 'Buenos Aires',
+    pct: +input.pct || 0,
+    code: input.code.trim().toLowerCase(),
+  };
+  if (partnerId) {
+    const p = db.partners.find((x) => x.id === partnerId);
+    if (!p) throw new Error('Partner inexistente');
+    Object.assign(p, clean);
+    auditAdd(db, actor, 'Partner', `${p.name} editado`);
+    return p;
+  }
+  const id = `pt${Date.now()}`;
+  const created: Partner = {
+    id,
+    ...clean,
+    prov: clean.prov || 'Buenos Aires',
+    short: clean.name.split(' ').slice(0, 2).join(' '),
+    house: false,
+    active: true,
+    since: iso(TODAY),
+    color: COLORS[db.partners.length % COLORS.length],
+    notes: '',
+    users: [{ id: `pu${Date.now()}`, name: clean.owner, email: clean.email, role: 'admin', active: true, last: 0 }],
+  };
+  db.partners.push(created);
+  auditAdd(db, actor, 'Partner', `Nuevo partner: ${created.name} · ${created.pct}%`);
+  return created;
+}
+
+export function setPartnerActive(db: DemoDb, partnerId: string, active: boolean, actor: Actor): void {
+  const p = db.partners.find((x) => x.id === partnerId);
+  if (!p) return;
+  p.active = active;
+  auditAdd(db, actor, 'Partner', `${p.name} ${active ? 'reactivado' : 'suspendido'}`);
+}
+
+export interface SettlementInput {
+  amount: number;
+  method: string;
+  ref: string;
+}
+
+/** Registra el pago de la comisión de un mes cerrado. */
+export function settleCommission(db: DemoDb, partnerId: string, ym: string, input: SettlementInput, actor: Actor): Liquidation {
+  const liq: Liquidation = {
+    id: `lq${Date.now()}`,
+    pid: partnerId,
+    ym,
+    amount: Math.max(0, +input.amount || 0),
+    at: iso(TODAY),
+    method: input.method,
+    ref: input.ref.trim(),
+  };
+  db.liq.push(liq);
+  auditAdd(db, actor, 'Comisión liquidada', `${pName(db, partnerId)} · ${ym} · ${liq.amount}`);
+  return liq;
+}
+
+/** Sólo la administración pasa un cliente de un partner a otro. */
+export function reassignClubPartner(db: DemoDb, clubId: string, partnerId: string, actor: Actor): void {
+  const c = db.clubs.find((x) => x.id === clubId);
+  if (!c || c.partner === partnerId) return;
+  c.partner = partnerId;
+  auditAdd(db, actor, 'Partner del cliente', `${c.name} pasó a ${pName(db, partnerId)}`, c.id);
 }

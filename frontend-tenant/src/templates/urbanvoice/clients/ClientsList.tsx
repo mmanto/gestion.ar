@@ -8,6 +8,7 @@ import {
 import { fDs, initials, money, nS } from '../demo/format';
 import type { Club, ClubStateKey, ListFilters } from '../demo/types';
 import { useUvPermissions } from '../permissions';
+import { UvIcon } from '../ui/UvIcon';
 
 const CHIPS: Array<[ClubStateKey | '', string]> = [
   ['', 'Todos'],
@@ -42,6 +43,11 @@ export default function ClientsList() {
         <div>
           <h1>Clientes</h1>
           <p className="muted">{subtitle}</p>
+        </div>
+        <div className="vh-a">
+          <button type="button" className="btn" onClick={() => navigate('/partners')}>
+            <UvIcon name="team" />Partners
+          </button>
         </div>
       </div>
 

@@ -223,6 +223,23 @@ services:
       - "traefik.http.routers.landing-openpadel.service=landing-openpadel"
       - "traefik.http.services.landing-openpadel.loadbalancer.server.port=80"
 
+      # ── intellify (landing comercial) ───────────────────────────────────
+      # www: todo el host es el sitio comercial.
+      - 'traefik.http.routers.landing-intellify-www.rule=Host(`www.intellify.pro`)'
+      - "traefik.http.routers.landing-intellify-www.entrypoints=websecure"
+      - "traefik.http.routers.landing-intellify-www.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.landing-intellify-www.priority=10"
+      - "traefik.http.routers.landing-intellify-www.service=landing-intellify-www"
+      - "traefik.http.services.landing-intellify-www.loadbalancer.server.port=80"
+      # Apex: sólo la raíz es el sitio comercial. El resto (/<slug>/…, /login,
+      # /assets/*, /api/*) sigue en frontend-tenant con priority=1.
+      - 'traefik.http.routers.landing-intellify-apex.rule=Host(`intellify.pro`) && (Path(`/`) || Path(`/index.html`))'
+      - "traefik.http.routers.landing-intellify-apex.entrypoints=websecure"
+      - "traefik.http.routers.landing-intellify-apex.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.landing-intellify-apex.priority=10"
+      - "traefik.http.routers.landing-intellify-apex.service=landing-intellify-apex"
+      - "traefik.http.services.landing-intellify-apex.loadbalancer.server.port=80"
+
 networks:
   default:
     name: gestionar_network

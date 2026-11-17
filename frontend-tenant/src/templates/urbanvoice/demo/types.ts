@@ -126,6 +126,7 @@ export interface PartnerUser {
   name: string;
   email: string;
   role: string;
+  active?: boolean;
   last: number;
 }
 
@@ -146,6 +147,42 @@ export interface Partner {
   color: string;
   notes: string;
   users: PartnerUser[];
+}
+
+/** Pago de comisión a un partner por un mes cerrado (`DB.liq` de la demo). */
+export interface Liquidation {
+  id: string;
+  pid: string;
+  ym: string;
+  amount: number;
+  at: string;
+  method: string;
+  ref: string;
+}
+
+export type LeadStatus = 'nueva' | 'contactada' | 'alta' | 'descartada';
+
+/** Pedido de demo de la página de venta (demo `op-leads`). */
+export interface Lead {
+  id: string;
+  ref?: string;
+  at: number;
+  club: string;
+  tipo: string;
+  city: string;
+  prov: string;
+  socios: number;
+  owner: string;
+  phone: string;
+  email: string;
+  plan: string;
+  msg: string;
+  status: LeadStatus;
+  src: string;
+  note?: string;
+  why?: string;
+  partner?: string;
+  clubId?: string;
 }
 
 export interface Task {
@@ -183,6 +220,8 @@ export interface DemoDb {
   pays: Pay[];
   log: LogEntry[];
   partners: Partner[];
+  liq: Liquidation[];
+  leads: Lead[];
   users: DemoUser[];
   audit: AuditEntry[];
   tpls: MessageTemplate[];

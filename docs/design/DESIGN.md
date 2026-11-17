@@ -231,14 +231,20 @@ excepción deliberada a la regla de «sólo Tailwind»:
   `:root.backoffice` no lo agranda.
 - **Datos de demo**: `templates/urbanvoice/demo/` es el puerto tipado de
   `datos.js` y afines (clubes, planes, pagos, uso, puesta en marcha,
-  seguimientos, plantillas, partners, usuarios y auditoría). El store persiste
-  en `localStorage` con la clave `uv-admin-db` (versión `1`); JSON inválido o
-  versión distinta resiembra. No hay llamadas a la API: la integración real
-  queda para una etapa posterior.
+  seguimientos, plantillas, partners, liquidaciones de comisiones, leads,
+  usuarios y auditoría). El store persiste en `localStorage` con la clave
+  `uv-admin-db` (versión `1`); JSON inválido o versión distinta resiembra y
+  `ensureDemoDb` completa sin perder cambios las colecciones nuevas
+  (`liq`, `leads`) en una base guardada.
 - **Permisos**: `permissions.ts` mapea `admin` al rol `admin` de la demo y
-  `operativo` a «Ventas» (sin montos, pagos, plan, suspensión ni baja).
-- **Contenido propio**: el listado y la ficha de Clientes son componentes del
-  tema; `pages/ClientsRoute.tsx` despacha `urbanvoice` vs. la pantalla clásica.
+  `operativo` a «Ventas» (sin montos, pagos, plan, suspensión ni baja). En
+  Partners, «Ventas» ve el listado y la ficha, crea/edita partners y reasigna
+  clientes; liquidar comisiones y suspender/reactivar un partner quedan para
+  `admin`.
+- **Contenido propio**: el listado y la ficha de Clientes y de Partners son
+  componentes del tema; `pages/ClientsRoute.tsx` y `pages/PartnersRoute.tsx`
+  despachan `urbanvoice` vs. la pantalla clásica (Partners no existe fuera del
+  tema: la URL vuelve a `/dashboard`).
 - **Ajustes propios**: `pages/SettingsRoute.tsx` despacha `urbanvoice` a
   `templates/urbanvoice/settings/UrbanVoiceSettings.tsx`, que usa el shell del
   tema y una grilla de dos columnas (Mi cuenta + Acceso y seguridad; Marca y

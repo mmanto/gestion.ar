@@ -185,19 +185,23 @@ el router `tenant-internal` (`Host(\`intellify.pro\`)`, label de
 `docker-compose.tenants.prod.yml`) y sirve el SPA de cada tenant bajo
 `https://intellify.pro/<slug>/…`. Es la vía de acceso que no necesita DNS,
 router ni certificado por tenant: el tenant se resuelve por el primer segmento
-del path (`GET /api/public/tenants/by-slug/{slug}`), no por Host. El apex sin
-slug (`https://intellify.pro/`, `/login`) redirige al panel de administración.
+del path (`GET /api/public/tenants/by-slug/{slug}`), no por Host. La raíz sin
+slug (`https://intellify.pro/`) la sirve el contenedor `landing` (router
+`landing-intellify-apex`, priority 10); las rutas reservadas (`/login`, etc.)
+siguen yendo al panel de administración.
 
 | Host | IP | Sirve |
 |---|---|---|
-| `intellify.pro` | `147.79.86.54` (Traefik) | SPA de tenant en modo path + `/api`, `/ws` |
-| `www.intellify.pro` | `89.116.111.245` (Caddy) | Sitio de marketing |
+| `intellify.pro` | `147.79.86.54` (Traefik) | Landing comercial en `/`; SPA de tenant en `/<slug>/…`; `/api`, `/ws` |
+| `www.intellify.pro` | `147.79.86.54` (Traefik) | Landing comercial (todo el host) |
 | `api.intellify.pro` | `147.79.86.54` (Traefik) | API del backend |
 | `<tenant>.intellify.pro`, dominios de clientes | `147.79.86.54` | SPA del tenant por Host (+ landing) |
 
-El `A` de `www` tiene que existir **antes** de mover el del apex: si el apex
-apunta al Traefik y `www` sigue siendo un `CNAME` al apex, el marketing deja de
-servirse (procedimiento completo en `docs/ops/DEPLOYMENT.md`).
+La landing vive en `sites/intellify-landing/` y la sirve el contenedor
+`landing` (nginx, `sites/nginx.conf` elige la raíz por Host). `www` y el apex
+resuelven al mismo Traefik, así que no hace falta el Caddy externo ni un DNS
+distinto para el marketing: los routers `landing-intellify-www` y
+`landing-intellify-apex` emiten su certificado con `letsencrypt`.
 
 ---
 

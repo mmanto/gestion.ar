@@ -35,7 +35,8 @@ loop).
 | Landing UrbanVoice | `/` | Sitio público del tenant UrbanVoice (slug/nombre `urbanvoice`, ver `config/tenantLanding.ts`): réplica del sitio estático en `templates/urbanvoice/Landing.tsx` + `landing/landing.css` scopeado a `.uv-landing`, con assets en `public/uv/landing/`. Secciones hero, proceso, asistente, mapa, servicios, clientes, equipo, CTA y footer; menú mobile, anchors sin recarga y acceso a `/login`. No depende de `branding.template_id`; el resto de los tenants sigue con la landing genérica. |
 | Registro "Crea tu cuenta" | `/registro` (alias `/register`) | Autoregistro público de un admin del tenant: plan mensual/anual, nombre/correo/contraseña y pago Mercado Pago. Réplica del bloque de la landing ius. |
 | Ajustes | `/settings` | Información de la cuenta; **Marca** (solo `admin`): logos, color primario, tagline, rubro (`branding.industry`), visibilidad de la barra lateral y **tema visual del panel** —«Clásico» (`default`), «Kero» (`kero`), «Panel» (`devbout`, shell de `@mmanto/devbout-ui`) o «UrbanVoice» (`urbanvoice`, réplica de la demo; es el tema por defecto del tenant UrbanVoice cuando no hay uno guardado, ver `config/tenantTemplateDefaults.ts`)—, guardado por tenant en `branding.template_id`; **Proveedor de IA** (solo `admin`, ver ADR-038): proveedor (Claude/DeepSeek/OpenRouter), modelo, API key propia con estado configurado/sin configurar, botones Guardar / Probar conexión / Quitar configuración; biometría y passkeys. |
-| Clientes (tema UrbanVoice) | `/clients`, `/clients/:clientId` | Réplica de la administración de la demo UrbanVoice: listado con búsqueda, chips de estado, filtros por plan/partner/tipo y tabla; ficha con Resumen, Abono y pagos, Uso y puesta en marcha e Historial. Con el tema activo el menú sólo muestra Clientes y el login cae en `/clients`; las demás rutas privadas redirigen salvo `/settings`. Los datos son de demo (`localStorage`, clave `uv-admin-db`), sin API. |
+| Clientes (tema UrbanVoice) | `/clients`, `/clients/:clientId` | Réplica de la administración de la demo UrbanVoice: listado con búsqueda, chips de estado, filtros por plan/partner/tipo y tabla; ficha con Resumen, Abono y pagos, Uso y puesta en marcha e Historial. El menú del tema muestra Clientes y Partners; el login cae en `/clients` y las demás rutas privadas redirigen salvo `/partners` y `/settings`. Los datos son de demo (`localStorage`, clave `uv-admin-db`), sin API. |
+| Partners (tema UrbanVoice) | `/partners`, `/partners/:partnerId` | Réplica de la sección Partners de la demo: KPIs (partners activos, abonos de cartera, comisiones por liquidar, demos sin partner), tabla con cartera/MRR/comisión/mes anterior/por liquidar y barras de lo cobrado en el mes. Ficha con Cartera, Comisiones (liquidar y ver detalle por mes), Solicitudes (leads asignados o llegados por su link) y Equipo y datos; alta/edición de partner, suspender/reactivar y pase de un cliente de un partner a otro. Mismo store de demo que Clientes. |
 | Ajustes (tema UrbanVoice) | `/settings` | `SettingsRoute` despacha al tema: shell de UrbanVoice, sidebar con **Ajustes › Configuración** y grilla de dos columnas (Mi cuenta + Acceso y seguridad; Marca y Proveedor de IA a ancho completo). Marca/IA sólo para `admin`; la cuenta no muestra los campos heredados del bot legal. Misma lógica que la pantalla genérica (`components/settings/use*Settings.ts`), presentación propia en `templates/urbanvoice/settings/`. |
 | Compartir | `/compartir` | El staff comparte sus datos y su link de chat web propio con un cliente por WhatsApp: input de número + botón que abre `wa.me` con el mensaje armado. |
 
@@ -62,10 +63,10 @@ loop).
     iconos (`SidebarProvider`/`Sidebar`/`SidebarRail`), `SidebarInset` con header
     de breadcrumb y `NavUser` en el pie. El contenido de las páginas es el mismo
     en los temas anteriores.
-  - «UrbanVoice» (`urbanvoice`): shell propio (sidebar con sólo Clientes,
+  - «UrbanVoice» (`urbanvoice`): shell propio (sidebar con Clientes y Partners,
     topbar con buscador/campana/menú) y CSS de la demo vendorizado y scopeado a
-    `.uv-admin`. El contenido de Clientes también es propio; el resto de las
-    rutas privadas redirige a `/clients` salvo `/settings`.
+    `.uv-admin`. El contenido de Clientes y Partners también es propio; el resto
+    de las rutas privadas redirige a `/clients` salvo `/partners` y `/settings`.
 - **Navegación mobile (< `md`)**: en «Clásico» y «Kero» la sidebar no se muestra
   —el menú del avatar (UserMenu) ES el menú de la aplicación—; en «Panel» el
   sidebar pasa a `Sheet` (drawer) y el menú del avatar se reemplaza por el

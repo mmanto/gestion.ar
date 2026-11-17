@@ -19,6 +19,7 @@ import { UserLandingPage } from './pages/UserLandingPage';
 import { Dashboard } from './pages/Dashboard';
 import { Customers } from './pages/Customers';
 import { ClientsRoute } from './pages/ClientsRoute';
+import { PartnersRoute } from './pages/PartnersRoute';
 import { Conversations } from './pages/Conversations';
 import { ConversationView } from './pages/ConversationView';
 import { Records } from './pages/Records';
@@ -92,6 +93,22 @@ function App() {
                   element={
                     <ProtectedRoute roles={['admin', 'operativo']}>
                       <ClientsRoute />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/partners"
+                  element={
+                    <ProtectedRoute roles={['admin', 'operativo']}>
+                      <PartnersRoute />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/partners/:partnerId"
+                  element={
+                    <ProtectedRoute roles={['admin', 'operativo']}>
+                      <PartnersRoute />
                     </ProtectedRoute>
                   }
                 />

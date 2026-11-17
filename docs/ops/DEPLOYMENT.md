@@ -344,21 +344,29 @@ path del apex. Apenas se crea la fila, el tenant es accesible en
 DNS, sin router de Traefik y sin certificado nuevo**. El apex entero va al
 contenedor `frontend-tenant` por el router `tenant-internal` (label de
 `docker-compose.tenants.prod.yml`); el `slug` se autogenera del nombre al dar de
-alta y se puede editar en el panel (cambiarlo invalida la URL anterior).
+alta y se puede editar en el panel (cambiarlo invalida la URL anterior). La
+raíz sin slug (`https://intellify.pro/`) la sirve la landing comercial desde el
+contenedor `landing` (router `landing-intellify-apex`, priority 10); `/login` y
+las demás rutas reservadas siguen yendo a `admin.intellify.pro`. `www` también
+se sirve desde ese contenedor: `sites/intellify-landing/` + routers
+`landing-intellify-www`/`landing-intellify-apex`.
 
-Cutover del apex (una sola vez, **en este orden**):
+Cutover del marketing (ya no usa Caddy):
 
-1. Desplegar backend + `frontend-tenant` con el cambio y correr
-   `alembic upgrade head` (migración `20261112_1200_add_tenant_slug.py`: agrega
-   `tenants.slug` y lo backfillea desde el nombre).
-2. En el DNS de `intellify.pro`: crear el `A` de `www` → `89.116.111.245` (el
-   Caddy del sitio de marketing) y **después** cambiar el `A` del apex a
-   `147.79.86.54` (Traefik de la app). Si el apex se cambia primero, el sitio de
-   marketing queda apuntando al Traefik y deja de servirse.
-3. Auditar el HTML del marketing: todo link/asset interno debe ser relativo o
-   apuntar a `https://www.intellify.pro/…` (una URL absoluta al apex deja de
-   existir).
-4. `api.intellify.pro` y los subdominios de tenants no se tocan.
+1. Copiar/actualizar `sites/intellify-landing/index.html`.
+2. DNS: `intellify.pro` y `www.intellify.pro` apuntan a `147.79.86.54`
+   (Traefik). El certificado de `www` lo emite `letsencrypt` al aplicar el
+   router nuevo.
+3. `make prod-rebuild SERVICE=landing` (o `prod-up`) para reconstruir el
+   contenedor `landing` con el sitio nuevo.
+4. Verificar `curl -I https://www.intellify.pro/` y
+   `curl -I https://intellify.pro/` (200 con la landing); un tenant sigue
+   entrando por `https://intellify.pro/<slug>/`.
+
+La landing usa sólo anclas internas y assets inline/absolutos, así que no
+necesita rutas adicionales en el router del apex: `/` e `/index.html` alcanzan.
+`/login`, `/assets/*`, `/api/*` y `/<slug>/…` siguen en `frontend-tenant` por
+`tenant-internal` (priority 1).
 
 Passkeys: el apex es un host de página válido para WebAuthn (`WEBAUTHN_ORIGINS`
 en `.env.prod`). El RP ID es `intellify.pro`, distinto del de cada dominio

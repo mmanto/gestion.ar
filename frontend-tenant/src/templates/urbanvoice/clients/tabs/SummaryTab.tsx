@@ -11,6 +11,7 @@ import { useToast } from '../../ui/Toast';
 import { AbonoCard } from '../AbonoCard';
 import { EditClientModal } from '../modals/EditClientModal';
 import { PasswordModal } from '../modals/PasswordModal';
+import { ReassignPartnerModal } from '../../partners/modals/ReassignPartnerModal';
 
 interface SummaryTabProps {
   clubId: string;
@@ -29,6 +30,7 @@ export default function SummaryTab({ clubId }: SummaryTabProps) {
   const c = db.clubs.find((x) => x.id === clubId);
   const [editOpen, setEditOpen] = useState(false);
   const [passOpen, setPassOpen] = useState(false);
+  const [partnerOpen, setPartnerOpen] = useState(false);
   const [notes, setNotesDraft] = useState('');
   const [taskText, setTaskText] = useState('');
   const [taskDue, setTaskDue] = useState(iso(addD(TODAY, 1)));
@@ -124,6 +126,7 @@ export default function SummaryTab({ clubId }: SummaryTabProps) {
             </dl>
             <div className="acc-a">
               {perms.plan ? <button type="button" className="btn sm" onClick={() => setPassOpen(true)}><UvIcon name="key" />Nueva contraseña</button> : null}
+              {perms.edit ? <button type="button" className="btn sm" onClick={() => setPartnerOpen(true)}><UvIcon name="team" />Cambiar partner</button> : null}
             </div>
           </section>
           <section className="card">
@@ -139,6 +142,7 @@ export default function SummaryTab({ clubId }: SummaryTabProps) {
       </div>
       <EditClientModal open={editOpen} clubId={c.id} onClose={() => setEditOpen(false)} />
       <PasswordModal open={passOpen} clubId={c.id} onClose={() => setPassOpen(false)} />
+      <ReassignPartnerModal open={partnerOpen} clubId={c.id} onClose={() => setPartnerOpen(false)} />
     </>
   );
 }

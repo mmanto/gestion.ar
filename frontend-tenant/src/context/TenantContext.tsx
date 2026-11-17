@@ -6,6 +6,7 @@ import { setTenantStorageScope } from '../services/tenantStorageScope';
 import {
   ADMIN_PANEL_URL,
   INTERNAL_TENANT_HOST,
+  MARKETING_URL,
   getInternalTenantSlug,
   isInternalTenantHost,
 } from '../config/internalTenant';
@@ -90,13 +91,15 @@ export const TenantProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
 
     // 2) Apex sin tenant en el path (`/`, `/login`, una ruta reservada): el apex
-    //    es de la app, no del sitio de marketing. En producción se manda al panel
-    //    de administración; en el alias de dev se deja el error visible para no
-    //    sacar al dev-server de la pantalla que se está probando.
+    //    es de la app, no del sitio de marketing. La raíz sin slug va a la
+    //    landing comercial (`www`); las rutas reservadas (login, etc.) siguen
+    //    yendo al panel de administración. En el alias de dev se deja el error
+    //    visible para no sacar al dev-server de la pantalla que se está probando.
     if (isInternalTenantHost()) {
       setTenantStorageScope(null);
       if (window.location.hostname.toLowerCase() === INTERNAL_TENANT_HOST) {
-        window.location.replace(`${ADMIN_PANEL_URL}/`);
+        const target = window.location.pathname === '/' ? MARKETING_URL : ADMIN_PANEL_URL;
+        window.location.replace(`${target}/`);
         return;
       }
       setError(NO_ORGANIZATION_ERROR);

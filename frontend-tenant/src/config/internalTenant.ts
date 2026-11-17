@@ -13,11 +13,21 @@
 export const INTERNAL_TENANT_HOST = 'intellify.pro';
 
 /**
- * Panel de administración general: destino del apex cuando no hay tenant en el
- * path (`https://intellify.pro/` o una ruta reservada como `/login`). El sitio
- * de marketing no vive acá: se sirve en `www.intellify.pro`.
+ * Panel de administración general: destino del apex para una ruta reservada sin
+ * tenant (`https://intellify.pro/login`, etc.). El sitio de marketing no vive
+ * acá: se sirve en `www.intellify.pro`.
  */
 export const ADMIN_PANEL_URL = 'https://admin.intellify.pro';
+
+/**
+ * Landing comercial. El apex (`https://intellify.pro/`) es la URL interna de
+ * los tenants (`/<slug>/…`), no el sitio de marketing: en producción la raíz
+ * la sirve el contenedor `landing` por Traefik, y este redirect queda como
+ * fallback si el SPA llegara a montarse en `/` (dev o acceso directo al
+ * contenedor). `www.intellify.pro` también sirve esa landing (ver
+ * `docs/ops/INFRASTRUCTURE.md`).
+ */
+export const MARKETING_URL = 'https://www.intellify.pro';
 
 /** Espejo de `RESERVED_TENANT_SLUGS` del backend. */
 export const RESERVED_TENANT_SLUGS: Record<string, true> = {

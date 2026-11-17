@@ -66,7 +66,7 @@ export function UrbanVoiceAppLayout({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('mousedown', close);
   }, []);
 
-  if (!(pathname === '/clients' || pathname.startsWith('/clients/') || pathname === '/settings')) {
+  if (!(pathname === '/clients' || pathname.startsWith('/clients/') || pathname === '/partners' || pathname.startsWith('/partners/') || pathname === '/settings')) {
     return <Navigate to="/clients" replace />;
   }
 
@@ -110,6 +110,16 @@ export function UrbanVoiceAppLayout({ children }: { children: ReactNode }) {
                 <UvIcon name="club" />
                 <span>Clientes</span>
                 <em>{activeCount}</em>
+              </button>
+              <button
+                type="button"
+                data-v="partners"
+                aria-label="Partners"
+                className={pathname.startsWith('/partners') ? 'on' : ''}
+                onClick={() => navigate('/partners')}
+              >
+                <UvIcon name="handshake" />
+                <span>Partners</span>
               </button>
               <small className="nav-g">Ajustes</small>
               <button

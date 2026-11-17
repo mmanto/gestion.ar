@@ -1,8 +1,8 @@
 /** Selectores y reglas de negocio de la demo — puerto de core.js, datos.js y clubes.js. */
 
-import { TODAY, addD, diff, fD, iso, norm, nS, pd, rel } from './format';
+import { MES, TODAY, addD, addM, diff, fD, iso, norm, nS, pd, rel } from './format';
 import type {
-  Club, ClubState, ClubStateKey, Health, HealthKey, ListFilters, Partner, Pay, Pending, Plan, SetupKey, Task,
+  Club, ClubState, ClubStateKey, Health, HealthKey, Lead, LeadStatus, Liquidation, ListFilters, Partner, Pay, Pending, Plan, SetupKey, Task,
 } from './types';
 
 export const MODS: Record<string, [string, string]> = {
@@ -163,5 +163,93 @@ export function pendingAll(db: { clubs: Club[]; plans: Plan[]; cfg: { grace: num
 }
 
 export const tasksOf = (db: { tasks: Task[] }, clubId: string): Task[] => db.tasks.filter((t) => t.club === clubId);
+
+/* ---------- Partners (puerto de partners.js) ---------- */
+type PartnerDb = {
+  plans: Plan[];
+  clubs: Club[];
+  pays: Pay[];
+  partners: Partner[];
+  liq: Liquidation[];
+  leads: Lead[];
+  cfg: { grace: number; autoSusp: boolean; soon: number };
+};
+
+export const LS: Record<LeadStatus, [string, string]> = {
+  nueva: ['Nueva', 'warn'],
+  contactada: ['Contactada', 'info'],
+  alta: ['Dada de alta', 'ok'],
+  descartada: ['Descartada', 'off'],
+};
+
+export const partner = (db: { partners: Partner[] }, id: string): Partner | undefined => db.partners.find((p) => p.id === id);
+export const pName = (db: { partners: Partner[] }, id: string): string => partner(db, id)?.name || '—';
+export const mKey = (d: Date): string => iso(d).slice(0, 7);
+export const partnerByCode = (db: { partners: Partner[] }, code?: string | null): Partner | null =>
+  code ? db.partners.find((p) => p.active !== false && p.code === String(code).toLowerCase()) || null : null;
+
+export const pClubs = (db: { clubs: Club[] }, pid: string): Club[] => db.clubs.filter((c) => c.partner === pid);
+export const pClients = (db: { clubs: Club[] }, pid: string): number => pClubs(db, pid).length;
+export const pActive = (db: PartnerDb, pid: string): number => pClubs(db, pid).filter((c) => active(db, c)).length;
+export const pMrr = (db: PartnerDb, pid: string): number =>
+  pClubs(db, pid).filter((c) => paying(db, c)).reduce((a, c) => a + clubPrice(db, c), 0);
+
+/** Cobrado a los clientes del partner en un mes (`YYYY-MM`). */
+export function pColl(db: { clubs: Club[]; pays: Pay[] }, pid: string, ym: string): number {
+  const ids = new Set(pClubs(db, pid).map((c) => c.id));
+  return db.pays.filter((x) => ids.has(x.club) && x.date.startsWith(ym)).reduce((a, x) => a + x.amount, 0);
+}
+export const pPct = (db: { partners: Partner[] }, pid: string): number => +((partner(db, pid) || {}).pct ?? 0) || 0;
+export const pComm = (db: { partners: Partner[]; clubs: Club[]; pays: Pay[] }, pid: string, ym: string): number =>
+  Math.round((pColl(db, pid, ym) * pPct(db, pid)) / 100);
+
+/** Detalle de un mes: qué pagó cada cliente del partner. */
+export function pDetail(db: { clubs: Club[]; pays: Pay[] }, pid: string, ym: string): Array<{ name: string; kind: string; amount: number; c: Club }> {
+  const rows: Array<{ name: string; kind: string; amount: number; c: Club }> = [];
+  pClubs(db, pid).forEach((c) => {
+    const amount = db.pays.filter((x) => x.club === c.id && x.date.startsWith(ym)).reduce((s, x) => s + x.amount, 0);
+    if (amount) rows.push({ name: c.name, kind: 'Cliente', amount, c });
+  });
+  return rows.sort((a, b) => b.amount - a.amount);
+}
+
+export const liqOf = (db: { liq: Liquidation[] }, pid: string, ym: string): Liquidation | undefined =>
+  db.liq.find((x) => x.pid === pid && x.ym === ym);
+
+/** Comisiones de los últimos 12 meses ya cerrados que todavía no se liquidaron. */
+export function pDebt(db: PartnerDb, pid: string): number {
+  let n = 0;
+  for (let i = 1; i <= 12; i++) {
+    const k = mKey(addM(TODAY, -i));
+    if (!liqOf(db, pid, k)) n += pComm(db, pid, k);
+  }
+  return n;
+}
+export const pPaid = (db: { liq: Liquidation[] }, pid: string): number =>
+  db.liq.filter((x) => x.pid === pid).reduce((a, x) => a + x.amount, 0);
+
+export interface PartnerMonth { k: string; label: string; cur: boolean }
+export function pMonths(n = 6): PartnerMonth[] {
+  const rows: PartnerMonth[] = [];
+  for (let i = 0; i < n; i++) {
+    const d = addM(TODAY, -i);
+    const label = `${MES[d.getMonth()][0].toUpperCase()}${MES[d.getMonth()].slice(1)} ${d.getFullYear()}`;
+    rows.push({ k: mKey(d), label, cur: i === 0 });
+  }
+  return rows;
+}
+export const mLabel = (k: string): string => {
+  const [y, m] = k.split('-');
+  return `${MES[+m - 1][0].toUpperCase()}${MES[+m - 1].slice(1)} ${y}`;
+};
+
+/** Partner de una solicitud: el asignado a mano o el del link (`?p=código`). */
+export const leadPartner = (db: { partners: Partner[] }, l: Lead): Partner | null =>
+  (l.partner && partner(db, l.partner)) || partnerByCode(db, l.ref);
+export const leadsOfPartner = (db: { partners: Partner[]; leads: Lead[] }, pid: string): Lead[] =>
+  db.leads.filter((l) => leadPartner(db, l)?.id === pid);
+export const unassignedLeads = (db: { partners: Partner[]; leads: Lead[] }): number =>
+  db.leads.filter((l) => !leadPartner(db, l) && ['nueva', 'contactada'].includes(l.status)).length;
+
 export const userName = (db: { users: Array<{ id: string; name: string }> }, userId: string, snapshot?: string): string =>
   snapshot || db.users.find((u) => u.id === userId)?.name || '—';

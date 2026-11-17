@@ -7,6 +7,18 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
 ## [Sin versión] - En desarrollo
 
 ### Corregido
+- **La landing comercial se sirve en `intellify.pro/` y `www.intellify.pro/`**
+  (`sites/intellify-landing/`): se incorpora el HTML comercial al contenedor
+  `landing` (nginx elige la raíz por Host) y se agregan los routers
+  `landing-intellify-apex` (`Host(intellify.pro) && Path('/')`, priority 10) y
+  `landing-intellify-www` (`Host(www.intellify.pro)`), ambos con
+  `letsencrypt`. El apex sigue sirviendo el SPA de cada tenant en `/<slug>/…`
+  y `/login`/`/assets/*`/`/api/*` por `tenant-internal` (priority 1). Ya no
+  hace falta el Caddy externo: ambos hosts resuelven al Traefik. En el SPA,
+  `frontend-tenant` manda la raíz sin slug a `www` (`MARKETING_URL`) como
+  fallback si el router de borde no intercepta. **Requiere** rebuild del
+  servicio `landing` (`make prod-rebuild SERVICE=landing`).
+
 - **Ajustes de UrbanVoice con el tema del panel y bloques rebalanceados**
   (`templates/urbanvoice/settings/`, ADR-045): `/settings` ahora se renderiza
   dentro del shell de UrbanVoice (`UrbanVoiceAppLayout`), con la grilla del
@@ -41,6 +53,21 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   interna (`intellify.pro/<slug>`).
 
 ### Agregado
+- **Partners en el backoffice de UrbanVoice** (`templates/urbanvoice/partners/`):
+  réplica de la sección de la demo con listado (KPIs de partners activos,
+  abonos de cartera, comisiones por liquidar y demos sin partner; tabla de
+  cartera/comisión/mes anterior/por liquidar; barras de lo cobrado en el mes) y
+  ficha con Cartera, Comisiones, Solicitudes y Equipo y datos. Se suman alta y
+  edición de partner, liquidación de comisiones con detalle por cliente,
+  suspender/reactivar, pase de un cliente a otro partner y la pestaña
+  Solicitudes con los leads asignados o llegados por el link del partner. El
+  store de demo (`uv-admin-db`) suma `liq` y `leads`
+  (`ensureDemoDb` migra bases guardadas sin perder cambios), y `PartnersRoute`
+  existe sólo para el tema `urbanvoice` (`/partners`, `/partners/:partnerId`).
+  El menú del tema suma **Partners**, el listado de Clientes suma el botón
+  **Partners** y la ficha de cliente suma **Cambiar partner**. No hay API: los
+  datos siguen siendo de demo.
+
 - **Landing pública de UrbanVoice servida por el SPA del tenant**
   (`frontend-tenant/src/templates/urbanvoice/Landing.tsx`): réplica del sitio
   estático que vivía en `sites/urbanvoice/`, ahora dentro de `frontend-tenant`

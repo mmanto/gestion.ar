@@ -1,7 +1,7 @@
 /** Store de la demo UrbanVoice: singleton con persistencia en localStorage. */
 
 import { useSyncExternalStore } from 'react';
-import { seedDb } from './seed';
+import { ensureDemoDb, seedDb } from './seed';
 import type { DemoDb } from './types';
 
 export const STORAGE_KEY = 'uv-admin-db';
@@ -23,7 +23,7 @@ export function loadDb(storage?: StorageLike): DemoDb {
     const raw = storage.getItem(STORAGE_KEY);
     if (!raw) return seedDb();
     const parsed: unknown = JSON.parse(raw);
-    return shapeOk(parsed) ? parsed : seedDb();
+    return shapeOk(parsed) ? ensureDemoDb(parsed) : seedDb();
   } catch {
     return seedDb();
   }
