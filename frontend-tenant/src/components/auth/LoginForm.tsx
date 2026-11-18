@@ -13,9 +13,14 @@ const PRIMARY = '#25357a';
 
 interface LoginFormProps {
   onSuccess?: () => void;
+  /** `urbanvoice` replica la caja de ingreso de la demo de administración
+   * (templates/urbanvoice/UrbanVoiceLogin): labels e inputs del panel, CTA
+   * azul y errores en línea. La lógica de autenticación es la misma. */
+  variant?: 'default' | 'urbanvoice';
 }
 
-export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
+export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, variant = 'default' }) => {
+  const uv = variant === 'urbanvoice';
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -220,10 +225,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     }
   };
 
-  const inputClass =
-    'w-full border border-gray-200 rounded-xl pl-11 pr-4 py-3 text-sm text-gray-800 placeholder-gray-400 transition-shadow focus:outline-none focus:border-[#2563eb] focus:ring-[3px] focus:ring-[#2563eb]/15';
+  const inputClass = uv
+    ? undefined
+    : 'w-full border border-gray-200 rounded-xl pl-11 pr-4 py-3 text-sm text-gray-800 placeholder-gray-400 transition-shadow focus:outline-none focus:border-[#2563eb] focus:ring-[3px] focus:ring-[#2563eb]/15';
 
-  const labelClass = 'block text-sm font-semibold text-gray-800 mb-1.5';
+  // En `urbanvoice` el look lo definen `.uv-admin label` / `.uv-admin input`
+  // (panel.css); el span solo aporta el texto.
+  const labelClass = uv ? '' : 'block text-sm font-semibold text-gray-800 mb-1.5';
+  const secondaryClass = uv
+    ? 'btn wide'
+    : 'w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl py-3.5 font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-60';
 
   return oauthLoading ? (
     // Pantalla intermedia de carga del OAuth: en vez de mostrar el login con
@@ -241,13 +252,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       </div>
     </div>
   ) : (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit} className={uv ? undefined : 'flex flex-col gap-4'}>
       {/* Error */}
-      {error && (
-        <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
-          {error}
-        </div>
-      )}
+      {error &&
+        (uv ? (
+          <small className="lg-err">{error}</small>
+        ) : (
+          <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
+            {error}
+          </div>
+        ))}
 
       {/* Acceso rápido con huella (solo si hay credencial enrolada en el dispositivo) */}
       {biometricReady && (
@@ -256,7 +270,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             type="button"
             onClick={handleBiometric}
             disabled={biometricLoading}
-            className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-gray-200 py-3.5 font-semibold text-gray-800 hover:bg-gray-50 transition-colors disabled:opacity-60"
+            className={secondaryClass}
           >
             <svg
               className="w-5 h-5"
@@ -279,7 +293,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             {biometricLoading ? 'Verificando…' : 'Entrá con tu huella'}
           </button>
 
-          <div className="flex items-center gap-3 my-1">
+          <div className={uv ? 'or' : 'flex items-center gap-3 my-1'}>
             <div className="h-px bg-gray-200 flex-1" />
             <span className="text-xs text-gray-400 whitespace-nowrap">o</span>
             <div className="h-px bg-gray-200 flex-1" />
@@ -288,21 +302,23 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       )}
 
       {/* Usuario */}
-      <label className="block">
+      <label className={uv ? undefined : 'block'}>
         <span className={labelClass}>Usuario</span>
         <div className="relative">
-          <svg
-            className="w-5 h-5 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="12" cy="8" r="4" />
-            <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
-          </svg>
+          {!uv && (
+            <svg
+              className="w-5 h-5 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
+            </svg>
+          )}
           <input
             id="username"
             type="text"
@@ -321,21 +337,23 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       </label>
 
       {/* Contraseña */}
-      <label className="block">
+      <label className={uv ? undefined : 'block'}>
         <span className={labelClass}>Contraseña</span>
         <div className="relative">
-          <svg
-            className="w-5 h-5 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <rect x="4" y="11" width="16" height="9" rx="2" />
-            <path d="M8 11V7a4 4 0 0 1 8 0v4" />
-          </svg>
+          {!uv && (
+            <svg
+              className="w-5 h-5 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="4" y="11" width="16" height="9" rx="2" />
+              <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+            </svg>
+          )}
           <input
             id="password"
             type={showPassword ? 'text' : 'password'}
@@ -344,7 +362,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={loading}
-            className={`${inputClass} pr-11`}
+            className={uv ? undefined : `${inputClass} pr-11`}
+            style={uv ? { paddingRight: 40 } : undefined}
           />
           <button
             type="button"
@@ -372,14 +391,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       <button
         type="submit"
         disabled={loading}
-        className="w-full flex items-center justify-center gap-2 text-white font-semibold py-3.5 rounded-xl hover:opacity-90 transition-all hover:scale-[1.01] shadow-lg disabled:opacity-60"
-        style={{ background: `linear-gradient(135deg, ${PRIMARY}, #3b82f6)` }}
+        className={uv ? 'btn pri wide' : 'w-full flex items-center justify-center gap-2 text-white font-semibold py-3.5 rounded-xl hover:opacity-90 transition-all hover:scale-[1.01] shadow-lg disabled:opacity-60'}
+        style={uv ? undefined : { background: `linear-gradient(135deg, ${PRIMARY}, #3b82f6)` }}
       >
-        {loading ? 'Iniciando sesión…' : 'Iniciar sesión'}
+        {uv ? (loading ? 'Entrando…' : 'Entrar') : loading ? 'Iniciando sesión…' : 'Iniciar sesión'}
       </button>
 
       {/* Separador */}
-      <div className="flex items-center gap-3 my-1">
+      <div className={uv ? 'or' : 'flex items-center gap-3 my-1'}>
         <div className="h-px bg-gray-200 flex-1" />
         <span className="text-xs text-gray-400 whitespace-nowrap">o continúa con</span>
         <div className="h-px bg-gray-200 flex-1" />
@@ -390,7 +409,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         type="button"
         onClick={() => handleProviderLogin('google')}
         disabled={oauthLoading !== null || !tenantId}
-        className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl py-3.5 font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-60"
+        className={secondaryClass}
       >
         <svg className="w-5 h-5" viewBox="0 0 24 24">
           <path fill="#4285F4" d="M23.52 12.27c0-.84-.07-1.64-.2-2.42H12v4.58h6.47a5.54 5.54 0 0 1-2.4 3.64v3h3.88c2.27-2.09 3.57-5.17 3.57-8.8z" />
@@ -407,7 +426,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
           type="button"
           onClick={handlePasskeyLogin}
           disabled={passkeyLoading || oauthLoading !== null || !tenantId}
-          className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl py-3.5 font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-60"
+          className={secondaryClass}
         >
           <KeyRound className="w-5 h-5" />
           {passkeyLoading ? 'Verificando…' : 'Entrar con passkey'}
@@ -434,7 +453,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             type="button"
             onClick={handlePasskeySignup}
             disabled={signupLoading || passkeyLoading || !tenantId}
-            className="w-full flex items-center justify-center gap-3 border border-dashed border-gray-300 rounded-xl py-3.5 font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-60"
+            className={secondaryClass}
           >
             <UserPlus className="w-5 h-5" />
             {signupLoading ? 'Creando cuenta…' : 'Crear cuenta nueva con passkey'}
@@ -442,7 +461,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         </div>
       )}
 
-      <p className="text-xs text-gray-400 text-center leading-relaxed">
+      <p className={uv ? 'hint' : 'text-xs text-gray-400 text-center leading-relaxed'}>
         ¿No tenés cuenta? Ingresá con Google y se crea automáticamente, o pedile acceso a quien
         administra tu cuenta en la plataforma.
       </p>

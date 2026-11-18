@@ -53,6 +53,16 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   interna (`intellify.pro/<slug>`).
 
 ### Agregado
+- **El login del tenant UrbanVoice usa la pantalla de la demo de administración**
+  (`templates/urbanvoice/UrbanVoiceLogin.tsx`): con el tema `urbanvoice`
+  (`branding.template_id`), `/login` muestra el layout de dos columnas de
+  `administracion/index.html` —panel de marca con el logo blanco, «La
+  plataforma para todos los clientes» y los tres bullets, más la caja blanca
+  «Ingresar»— reutilizando `panel.css` scopeado a `.uv-admin`. El formulario es
+  el `LoginForm` compartido con una variante `urbanvoice` (inputs/labels del
+  panel, CTA azul y errores en línea); usuario/contraseña, Google, passkey y
+  huella mantienen exactamente la misma lógica. El resto de los tenants sigue
+  viendo el login genérico.
 - **Partners en el backoffice de UrbanVoice** (`templates/urbanvoice/partners/`):
   réplica de la sección de la demo con listado (KPIs de partners activos,
   abonos de cartera, comisiones por liquidar y demos sin partner; tabla de

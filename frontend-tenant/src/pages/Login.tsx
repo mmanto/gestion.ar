@@ -2,13 +2,16 @@ import React, { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTenant } from '../hooks/useTenant';
+import { useTemplate } from '../hooks/useTemplate';
 import { LoginForm } from '../components/auth/LoginForm';
+import { UrbanVoiceLogin } from '../templates/urbanvoice/UrbanVoiceLogin';
 import { resolveAssetUrl } from '../utils/assetUrl';
 import { goToHome } from '../utils/homePath';
 
 export const Login: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
-  const { tenant } = useTenant();
+  const { tenant, isLoading } = useTenant();
+  const { templateId } = useTemplate();
   const navigate = useNavigate();
   const logo = resolveAssetUrl(tenant?.branding.logo_url);
 
@@ -20,6 +23,21 @@ export const Login: React.FC = () => {
       goToHome(user, tenant, navigate);
     }
   }, [isAuthenticated, user, tenant, navigate]);
+
+  // Mientras el tenant carga no se pinta el login genérico: el tema todavía
+  // no se conoce (UrbanVoice tiene su propia pantalla) y el cambio de layout
+  // se vería como un parpadeo.
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-400" />
+      </div>
+    );
+  }
+
+  if (templateId === 'urbanvoice') {
+    return <UrbanVoiceLogin />;
+  }
 
   const primaryColor = tenant?.branding.primary_color || '#25357a';
   const tenantName = tenant?.name || 'Tu cuenta';
