@@ -1,4 +1,6 @@
-export type TemplateId = 'default' | 'kero' | 'devbout' | 'urbanvoice';
+export const TEMPLATE_IDS = ['default', 'kero', 'devbout', 'urbanvoice'] as const;
+
+export type TemplateId = (typeof TEMPLATE_IDS)[number];
 
 export interface TemplateOption {
   id: TemplateId;

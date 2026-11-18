@@ -1,5 +1,7 @@
 export type AuthProvider = 'google' | 'microsoft';
-export type UserRole = 'super_admin' | 'admin' | 'operativo';
+// Roles del backend. `partner` sólo entra a este SPA cuando el tenant servido
+// es UrbanVoice (ver utils/authRoles).
+export type UserRole = 'super_admin' | 'partner' | 'admin' | 'operativo' | 'broker';
 
 export interface User {
   username: string;

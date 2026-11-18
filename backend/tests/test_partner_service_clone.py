@@ -12,7 +12,13 @@ from types import SimpleNamespace
 import pytest
 
 import app.services.partner_service as ps
-from app.services.partner_service import PartnerService, build_cloned_rows
+from app.auth_service import verify_password
+from app.models.tenant import PartnerAdminUserCreate
+from app.services.partner_service import (
+    PartnerService,
+    build_admin_user_row,
+    build_cloned_rows,
+)
 
 
 def _base_tenant():
@@ -24,7 +30,11 @@ def _base_tenant():
         status="active",
         plan_id="pro",
         settings={"free_signup": True, "nested": {"flag": True}},
-        branding={"primary_color": "#111111", "tagline": "tagline del base"},
+        branding={
+            "primary_color": "#111111",
+            "tagline": "tagline del base",
+            "template_id": "urbanvoice",
+        },
         parent_tenant_id=None,
         created_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
         updated_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
@@ -95,6 +105,9 @@ def test_clone_inherits_plan_status_settings_and_merges_branding():
     # Plan y estado salen del base, no del pedido de alta.
     assert tenant_row.plan_id == "pro"
     assert tenant_row.status == "active"
+    # El tema del panel es del tenant base: el cliente no hereda `template_id`.
+    assert "template_id" not in tenant_row.branding
+    assert tenant_row.branding["primary_color"] == "#222222"
     assert tenant_row.settings == {"free_signup": True, "nested": {"flag": True}}
     # Deep copy: son dicts nuevos, no los del base.
     assert tenant_row.settings is not base.settings
@@ -290,3 +303,22 @@ async def test_delete_managed_child_rejects_out_of_scope_tenant(monkeypatch):
 
     with pytest.raises(LookupError):
         await PartnerService().delete_managed_child("tenant_base", other.tenant_id)
+
+
+def test_admin_user_row_belongs_to_child_tenant_with_hashed_password():
+    row = build_admin_user_row(
+        "tenant_hijo",
+        PartnerAdminUserCreate(
+            username="admin_cliente",
+            password="secreto123",
+            email="admin@cliente.com",
+            nombre="Ana",
+            apellido="Pérez",
+        ),
+    )
+
+    assert row.tenant_id == "tenant_hijo"
+    assert row.role == "admin"
+    assert row.disabled is False
+    assert row.hashed_password != "secreto123"
+    assert verify_password("secreto123", row.hashed_password) is True

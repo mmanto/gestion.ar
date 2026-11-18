@@ -81,13 +81,28 @@ class TenantUpdate(TenantSlugInput):
     plan_id: Optional[str] = None
 
 
+class PartnerAdminUserCreate(BaseModel):
+    """Admin inicial del tenant derivado, creado en la misma transacción del
+    alta (ver `PartnerService.provision_tenant`)."""
+
+    username: str = Field(..., min_length=3, max_length=50)
+    password: str = Field(..., min_length=6)
+    email: Optional[str] = None
+    nombre: Optional[str] = None
+    apellido: Optional[str] = None
+
+
 class PartnerTenantCreate(TenantSlugInput):
     """Alta de un tenant derivado: el plan, estado, settings y marca base
-    salen del tenant base; sólo se eligen nombre y dominio."""
+    salen del tenant base; sólo se eligen nombre y dominio (y, opcionalmente,
+    el usuario admin con el que el cliente entra a su panel)."""
     name: str = Field(..., min_length=2, max_length=100)
     domain: Optional[str] = None
     slug: Optional[str] = None
     branding: Dict[str, Any] = Field(default_factory=dict)
+    #: Sin esto el tenant queda sin usuarios y sólo administración general o
+    #: el partner pueden cargarlos después (`POST /api/partner/tenants/{id}/users`).
+    admin_user: Optional[PartnerAdminUserCreate] = None
 
 
 class PartnerTenantUpdate(TenantSlugInput):

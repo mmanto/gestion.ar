@@ -53,6 +53,22 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   interna (`intellify.pro/<slug>`).
 
 ### Agregado
+- **Los clientes de UrbanVoice son tenants hijos reales** (ADR-046): la
+  sección Clientes del panel del tenant (`templates/urbanvoice/clients/`)
+  deja el `localStorage` demo y usa `/api/partner/tenants`. Listado con
+  búsqueda y filtros por estado, alta («Nuevo cliente»: nombre, dominio,
+  nombre interno y admin del cliente), ficha con Datos (nombre/dominio/nombre
+  interno/marca), Usuarios y Agentes y módulos, suspensión/reactivación y
+  eliminación. Se retiran las pestañas de abono, pagos, uso e historial (no
+  hay API de facturación) y la campana de «pendientes», que era demo.
+- **El alta de tenant derivado crea el admin del cliente en la misma
+  transacción** (`POST /api/partner/tenants`, `admin_user`): usuario con rol
+  `admin` y contraseña hasheada; si el usuario ya existe, el tenant no queda
+  creado. El derivado ya no hereda `branding.template_id` — el tema del panel
+  es del tenant base, no de sus clientes.
+- **El login del tenant acepta el rol `partner` cuando el tenant es
+  UrbanVoice** (`utils/authRoles.ts`): es el dueño de la plataforma y administra
+  sus clientes desde `/clients`. En cualquier otro tenant sigue rechazado.
 - **El login del tenant UrbanVoice usa la pantalla de la demo de administración**
   (`templates/urbanvoice/UrbanVoiceLogin.tsx`): con el tema `urbanvoice`
   (`branding.template_id`), `/login` muestra el layout de dos columnas de

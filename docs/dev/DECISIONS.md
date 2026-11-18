@@ -2825,3 +2825,52 @@ sueltos.
   presentación del tema elegido, como antes.
 - La pantalla genérica mantiene su grilla de 3 columnas; el arreglo de bloques
   es específico del tema UrbanVoice.
+
+## ADR-046: El partner de UrbanVoice administra sus clientes desde el panel del tenant
+
+**Estado:** Aceptado
+**Fecha:** 2026-11-17
+
+### Contexto
+El panel de UrbanVoice (`frontend-tenant`, tema `urbanvoice`, ADR-043) es una
+réplica de la demo de administración. Su sección **Clientes** mostraba datos
+demo en `localStorage`: las altas, los estados y las cuentas de cada cliente no
+existían en el producto. El mecanismo real de tenants hijos ya existía para el
+rol `partner` (ADR-041), pero su panel era el de administración general
+(`frontend/`), con otra marca y otro flujo, y el login del tenant rechazaba el
+rol `partner`.
+
+### Decisión
+- **El dueño de UrbanVoice es un `partner`** cuyo `users.tenant_id` es el
+  tenant UrbanVoice. Sus clientes son tenants hijos
+  (`tenants.parent_tenant_id = UrbanVoice`).
+- **El login del tenant acepta `partner` sólo cuando el tenant servido resuelve
+  al tema `urbanvoice`** (`utils/authRoles.ts` + `config/tenantTemplateDefaults.ts`).
+  En cualquier otro tenant sigue rechazado con el mensaje que lo deriva al
+  panel general. Las rutas `/clients*` lo admiten en `ProtectedRoute`.
+- **El shell del tema oculta Partners y Configuración para el partner**: esas
+  pantallas hablan con `/api/tenant/*`, que exige `admin`. El partner sólo
+  administra Clientes.
+- **La sección Clientes deja de ser demo**: listado, alta, edición, suspensión
+  y eliminación usan `GET/POST/PATCH/DELETE /api/partner/tenants`; la ficha
+  suma Usuarios (`/users`) y Agentes y módulos (`/bots`, `/modules`). Se
+  retiran las pestañas de abono/pagos/uso/historial (no hay API de facturación
+  ni de uso) y los datos demo de la sección.
+- **El alta es completa y atómica**: `POST /api/partner/tenants` acepta
+  `admin_user` y crea la fila de `users` (rol `admin`) en la misma transacción
+  del tenant y del clon.
+- **El derivado no hereda `branding.template_id`**: el tema UrbanVoice es el
+  panel del reseller, no el de sus clientes. Sin `template_id`, el cliente
+  entra a su propio panel con el tema por defecto.
+
+### Consecuencias
+- Un partner de UrbanVoice ya no usa el panel general para sus clientes: lo
+  gestiona en el mismo panel temático (`/clients`), con la misma API
+  (`/api/partner/*`). La pantalla de tenants del panel general sigue
+  funcionando y muestra los mismos datos.
+- La topbar del tema busca y cuenta clientes reales (ya no hay campana de
+  «pendientes»: no hay fuente real para esas notificaciones).
+- Partners (sección de la demo) sigue con datos de `localStorage`; su
+  integración es una tarea aparte.
+- Los usuarios creados en el alta nacen con contraseña inicial que conoce el
+  partner; el cliente puede cambiarla desde su panel.

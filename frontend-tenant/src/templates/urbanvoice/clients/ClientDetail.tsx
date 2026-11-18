@@ -1,151 +1,179 @@
-import { useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
-import { useAuth } from '../../../hooks/useAuth';
-import { getDb, mutate, useDemoDb } from '../demo/store';
-import { badgeMeta, club, health, healthMeta, plan, setupPct, siteUrl, state } from '../demo/selectors';
-import { MES, addD, fD, initials, pd, rel } from '../demo/format';
-import { actorOf, reactivateClub } from '../demo/actions';
+import { useCallback, useEffect, useState } from 'react';
+import axios from 'axios';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
+import partnerTenantsService from '../../../services/partnerTenants.service';
+import type { PartnerTenant } from '../../../types/partnerTenant.types';
 import { useUvPermissions } from '../permissions';
 import { UvIcon } from '../ui/UvIcon';
 import { useToast } from '../ui/Toast';
-import { TooltipHost } from '../ui/Tooltip';
-import { PayModal } from './modals/PayModal';
-import { MessageModal } from './modals/MessageModal';
-import SummaryTab from './tabs/SummaryTab';
-import BillingTab from './tabs/BillingTab';
-import UsageTab from './tabs/UsageTab';
-import HistoryTab from './tabs/HistoryTab';
+import { ConfirmModal } from './modals/ConfirmModal';
+import BotsTab from './tabs/BotsTab';
+import DataTab from './tabs/DataTab';
+import UsersTab from './tabs/UsersTab';
+import { formatDate, statusMeta, tenantColor, tenantInitials, tenantUrl } from './tenantDisplay';
 
-export type DetailTab = 'resumen' | 'abono' | 'uso' | 'historial';
+type DetailTab = 'datos' | 'usuarios' | 'agentes';
 
 interface ClientDetailProps {
   clientId: string;
 }
 
 export default function ClientDetail({ clientId }: ClientDetailProps) {
-  const db = useDemoDb();
   const perms = useUvPermissions();
-  const { user } = useAuth();
   const { showToast } = useToast();
-  const [tab, setTab] = useState<DetailTab>('resumen');
-  const [payOpen, setPayOpen] = useState(false);
-  const [msgOpen, setMsgOpen] = useState(false);
-  const c = club(db, clientId);
-  if (!c) return <Navigate to="/clients" replace />;
+  const navigate = useNavigate();
 
-  const S = state(db, c);
-  const p = plan(db, c.plan);
-  const H = health(db, c);
-  const pct = setupPct(c);
-  const created = pd(c.created);
-  const createdLabel = created ? `${MES[created.getMonth()]} ${created.getFullYear()}` : '—';
+  const [client, setClient] = useState<PartnerTenant | null>(null);
+  const [notFound, setNotFound] = useState(false);
+  const [error, setError] = useState('');
+  const [tab, setTab] = useState<DetailTab>('datos');
+  const [busy, setBusy] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
-  const tabs: Array<{ key: DetailTab; label: string }> = [
-    { key: 'resumen', label: 'Resumen' },
-    ...(perms.money || perms.pay ? [{ key: 'abono' as DetailTab, label: 'Abono y pagos' }] : []),
-    { key: 'uso', label: 'Uso y puesta en marcha' },
-    { key: 'historial', label: 'Historial' },
-  ];
-  const visibleTab = tabs.some((t) => t.key === tab) ? tab : 'resumen';
+  useEffect(() => {
+    let cancelled = false;
+    setClient(null);
+    setNotFound(false);
+    setError('');
+    partnerTenantsService
+      .getTenant(clientId)
+      .then((result) => {
+        if (!cancelled) setClient(result);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        if (axios.isAxiosError(err) && err.response?.status === 404) setNotFound(true);
+        else setError('No se pudo cargar el cliente.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [clientId]);
 
-  const alert: [string, string] | null =
-    S.k === 'atrasado'
-      ? ['bad', `El abono venció el ${fD(S.due)}. ${db.cfg.autoSusp ? `Si no paga, el ${fD(addD(S.cut!, 1))} se suspende el sitio y el panel del cliente.` : ''}`]
-      : S.k === 'suspendido'
-        ? ['sus', S.man ? 'Lo suspendiste a mano. El sitio y el panel del cliente están bloqueados.' : `Sin pago desde el ${fD(S.due)}. El sitio muestra «fuera de servicio» y el panel del cliente está bloqueado hasta que pague.`]
-        : S.k === 'prueba'
-          ? ['info', `Está probando UrbanVoice. La prueba termina el ${fD(S.due)}; para seguir tiene que pagar el primer mes.`]
-          : S.k === 'pronto'
-            ? ['warn', `El abono vence ${rel(S.due!)}. Podés mandarle un recordatorio.`]
-            : S.k === 'baja'
-              ? ['off', `Dado de baja el ${fD(c.bajaAt ?? null)}${c.bajaWhy ? ` · ${c.bajaWhy}` : ''}. El sitio y el panel no están disponibles.`]
-              : null;
+  const replaceClient = useCallback((updated: PartnerTenant) => setClient(updated), []);
 
-  const reactivate = () => {
-    mutate((draft) => reactivateClub(draft, c.id, actorOf(user)));
-    showToast(<><b>{c.name}</b> reactivado</>);
-    const refreshed = club(getDb(), c.id);
-    if (refreshed) {
-      const next = state(getDb(), refreshed).k;
-      if (next === 'atrasado' || next === 'suspendido') setPayOpen(true);
+  const toggleSuspend = async () => {
+    if (!client || busy) return;
+    const next = client.status === 'suspended' ? 'active' : 'suspended';
+    setBusy(true);
+    try {
+      const updated = await partnerTenantsService.updateTenant(client.tenant_id, { status: next });
+      setClient(updated);
+      showToast(<><b>{updated.name}</b> {next === 'suspended' ? 'suspendido' : 'reactivado'}</>);
+    } catch {
+      showToast(<>No se pudo cambiar el estado de <b>{client.name}</b></>);
+    } finally {
+      setBusy(false);
     }
   };
 
-  const glance: Array<{ tab: DetailTab; label: string; value: string; tone: string }> = [
-    ...(tabs.some((t) => t.key === 'abono')
-      ? [{ tab: 'abono' as DetailTab, label: 'Abono', value: badgeMeta(S.k).label, tone: badgeMeta(S.k).tone }]
-      : []),
-    { tab: 'uso', label: 'Uso', value: H.k !== 'off' ? healthMeta(H.k).label : '—', tone: H.k !== 'off' ? healthMeta(H.k).tone : 'off' },
-    { tab: 'uso', label: 'Puesta en marcha', value: `${pct}%`, tone: pct === 100 ? 'ok' : 'info' },
+  const remove = async () => {
+    if (!client) return;
+    setBusy(true);
+    setDeleteError('');
+    try {
+      await partnerTenantsService.deleteTenant(client.tenant_id);
+      showToast(<><b>{client.name}</b> eliminado</>);
+      navigate('/clients');
+    } catch (err) {
+      setDeleteError(
+        axios.isAxiosError<{ detail?: string }>(err) && err.response?.status === 409
+          ? 'El cliente tiene usuarios, canales o conversaciones. Eliminá primero esos datos.'
+          : 'No se pudo eliminar el cliente.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (notFound) return <Navigate to="/clients" replace />;
+
+  if (!client) {
+    return (
+      <>
+        <Link className="back" to="/clients"><UvIcon name="left" />Clientes</Link>
+        <div className="card">
+          <p className="muted">{error || 'Cargando cliente…'}</p>
+        </div>
+      </>
+    );
+  }
+
+  const meta = statusMeta(client.status);
+  const url = tenantUrl(client);
+  const tabs: Array<{ key: DetailTab; label: string }> = [
+    { key: 'datos', label: 'Datos' },
+    { key: 'usuarios', label: 'Usuarios' },
+    { key: 'agentes', label: 'Agentes y módulos' },
   ];
 
   return (
     <>
-      <TooltipHost />
       <Link className="back" to="/clients"><UvIcon name="left" />Clientes</Link>
       <div className="ch-h card">
         <div className="ch-id">
-          <span className="clogo" style={{ width: 64, height: 64, background: c.color, fontSize: 24 }}>
-            {initials(c.name)}
+          <span className="clogo" style={{ width: 64, height: 64, background: tenantColor(client), fontSize: 24 }}>
+            {tenantInitials(client.name)}
           </span>
           <div>
-            <h1>{c.name}</h1>
-            <p className="muted">
-              {c.tipo || 'Cliente'} · {c.city}, {c.prov} · {c.socios.toLocaleString('es-AR')} vecinos · cliente desde {createdLabel}
-            </p>
+            <h1>{client.name}</h1>
+            <p className="muted">Cliente desde {formatDate(client.created_at)}</p>
             <div className="ch-b">
-              <span className={`bdg ${badgeMeta(S.k).tone}`}>{badgeMeta(S.k).label}</span>
-              <span className={`pl pl-${p.id}`}>Plan {p.name}</span>
-              {H.k !== 'off' ? <span className={`bdg ${healthMeta(H.k).tone}`}>{healthMeta(H.k).label}</span> : null}
-              <span className="url"><UvIcon name="ext" />{siteUrl(db, c)}</span>
+              <span className={`bdg ${meta.tone}`}>{meta.label}</span>
+              {url ? (
+                <a className="url" href={url} target="_blank" rel="noopener noreferrer">
+                  <UvIcon name="ext" />{client.domain || `intellify.pro/${client.slug}`}
+                </a>
+              ) : (
+                <span className="url">Sin URL asignada</span>
+              )}
             </div>
           </div>
         </div>
         <div className="ch-a">
-          {S.k !== 'baja' && perms.pay ? (
-            <button type="button" className="btn pri" onClick={() => setPayOpen(true)}><UvIcon name="cash" />Registrar pago</button>
+          {perms.isAdmin ? (
+            <button type="button" className="btn" onClick={toggleSuspend} disabled={busy}>
+              <UvIcon name={client.status === 'suspended' ? 'play' : 'pause'} />
+              {client.status === 'suspended' ? 'Reactivar' : 'Suspender'}
+            </button>
           ) : null}
-          {S.k !== 'baja' && perms.remind ? (
-            <button type="button" className="btn" onClick={() => setMsgOpen(true)}><UvIcon name="wa" />Mensaje</button>
-          ) : null}
-          {S.k === 'baja' && perms.plan ? (
-            <button type="button" className="btn pri" onClick={reactivate}><UvIcon name="play" />Reactivar cliente</button>
+          {perms.isAdmin ? (
+            <button type="button" className="btn danger" onClick={() => setDeleteOpen(true)} disabled={busy}>
+              <UvIcon name="trash" />Eliminar
+            </button>
           ) : null}
         </div>
-      </div>
-
-      {alert ? (
-        <div className={`alert ${alert[0]}`}>
-          <UvIcon name={S.k === 'prueba' || S.k === 'pronto' ? 'clock' : 'alert'} />
-          <span>{alert[1]}</span>
-        </div>
-      ) : null}
-
-      <div className="glance">
-        {glance.map((g, i) => (
-          <button type="button" className={`gl gl-${g.tone}`} key={`${g.tab}-${i}`} onClick={() => setTab(g.tab)}>
-            <small>{g.label}</small>
-            <b>{g.value}</b>
-          </button>
-        ))}
       </div>
 
       <div className="tabs ctabs">
         {tabs.map((t) => (
-          <button type="button" key={t.key} className={visibleTab === t.key ? 'on' : ''} onClick={() => setTab(t.key)}>
+          <button type="button" key={t.key} className={tab === t.key ? 'on' : ''} onClick={() => setTab(t.key)}>
             {t.label}
           </button>
         ))}
       </div>
 
       <div className="ctab-b">
-        {visibleTab === 'resumen' ? <SummaryTab clubId={c.id} /> : null}
-        {visibleTab === 'abono' ? <BillingTab clubId={c.id} /> : null}
-        {visibleTab === 'uso' ? <UsageTab clubId={c.id} /> : null}
-        {visibleTab === 'historial' ? <HistoryTab clubId={c.id} /> : null}
+        {tab === 'datos' ? <DataTab client={client} onUpdated={replaceClient} /> : null}
+        {tab === 'usuarios' ? <UsersTab tenantId={client.tenant_id} canEdit={perms.isAdmin} /> : null}
+        {tab === 'agentes' ? <BotsTab tenantId={client.tenant_id} canEdit={perms.isAdmin} /> : null}
       </div>
-      <PayModal open={payOpen} clubId={c.id} onClose={() => setPayOpen(false)} />
-      <MessageModal open={msgOpen} clubId={c.id} onClose={() => setMsgOpen(false)} />
+
+      <ConfirmModal
+        open={deleteOpen}
+        title={`Eliminar a ${client.name}`}
+        description="Se borran el tenant y los agentes clonados. No se puede deshacer."
+        confirmLabel="Eliminar cliente"
+        danger
+        onConfirm={remove}
+        onClose={() => {
+          setDeleteOpen(false);
+          setDeleteError('');
+        }}
+      >
+        {deleteError ? <small className="lg-err">{deleteError}</small> : null}
+      </ConfirmModal>
     </>
   );
 }

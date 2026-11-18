@@ -286,7 +286,7 @@ no en el tenant.
 | `domain` | `TEXT (opt)` | Dominio propio, único cuando no es null |
 | `slug` | `TEXT` UNIQUE (opt) | **Nombre interno** del tenant: primer segmento de la URL interna `https://intellify.pro/<slug>/…`. Se genera del `name` al dar de alta (con sufijo `-2`, `-3`… si está tomado) y se puede editar; la migración `20261112_1200_add_tenant_slug.py` lo backfillea para las filas existentes. Único por índice parcial (`ix_tenants_slug`), así los `NULL` —tenants creados por los scripts históricos de alta— no compiten. Formato y reservados: `backend/app/tenant_slug.py` |
 | `status` | `TEXT NOT NULL` | `active` / `suspended` / `trial` |
-| `branding` | `JSONB` | Marca (logo, color, tagline) |
+| `branding` | `JSONB` | Marca (logo, color, tagline, `template_id` del tema del panel). El alta de un derivado hereda la marca del base salvo `template_id` (ADR-046) |
 | `settings` | `JSONB` | Flags de runtime por tenant (p. ej. `{"stats_two_cols_mobile": true}`). Antes se inyectaban por contenedor (`STATS_TWO_COLS_MOBILE`); ahora viajan en el response de `/api/public/tenants/current` |
 | `api_key_hash` | `TEXT` UNIQUE (opt) | **SHA-256** de la API key del tenant (`tk_live_…`); la key en claro se muestra una sola vez al emitirla. Resuelve el tenant en `/api/public/voice/*` (ADR-035). Múltiples `NULL` permitidos |
 | `plan_id` | `TEXT` → FK `plans.plan_id` | Plan de suscripción al que está dado de alta el tenant |
@@ -302,7 +302,9 @@ desde `name`).
 
 El alta de un tenant derivado (`POST /api/partner/tenants`) **clona** agentes
 (`bots` con la misma `config`, sin `channel_ids` ni contadores), `bot_modules` y
-`tenant_modules` del base. No copia `tenant_llm_configs`, canales, clientes,
+`tenant_modules` del base. Con `admin_user` en el body crea además la fila de
+`users` (rol `admin`, `tenant_id` del derivado) en la misma transacción. No
+copia `tenant_llm_configs`, ni `branding.template_id`, ni canales, clientes,
 conversaciones, push subscriptions ni `api_key_hash`: el tenant nuevo carga su
 proveedor de IA en Ajustes › Proveedor de IA.
 

@@ -83,7 +83,7 @@ function App() {
                 <Route
                   path="/clients"
                   element={
-                    <ProtectedRoute roles={['admin', 'operativo']}>
+                    <ProtectedRoute roles={['admin', 'operativo', 'partner']}>
                       <ClientsRoute />
                     </ProtectedRoute>
                   }
@@ -91,7 +91,7 @@ function App() {
                 <Route
                   path="/clients/:clientId"
                   element={
-                    <ProtectedRoute roles={['admin', 'operativo']}>
+                    <ProtectedRoute roles={['admin', 'operativo', 'partner']}>
                       <ClientsRoute />
                     </ProtectedRoute>
                   }

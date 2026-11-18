@@ -1,3 +1,4 @@
+import { TEMPLATE_IDS } from '../types/template.types';
 import type { TemplateId } from '../types/template.types';
 import { tenantIdentityKey } from './tenantIdentity';
 
@@ -11,4 +12,21 @@ import { tenantIdentityKey } from './tenantIdentity';
  */
 export function defaultTemplateForTenant(slug?: string | null, name?: string | null): TemplateId {
   return tenantIdentityKey(slug, name) === 'urbanvoice' ? 'urbanvoice' : 'default';
+}
+
+/** Fuente mínima para resolver el tema: el tenant público o nada (antes de
+ * cargar). Un `branding.template_id` guardado siempre gana. */
+export interface TenantTemplateSource {
+  slug?: string | null;
+  name?: string | null;
+  branding?: { template_id?: string };
+}
+
+/** Tema efectivo del tenant (por ejemplo, el que decide el login). */
+export function resolveTenantTemplateId(tenant: TenantTemplateSource | null | undefined): TemplateId {
+  const stored = tenant?.branding?.template_id;
+  if (stored && (TEMPLATE_IDS as readonly string[]).includes(stored)) {
+    return stored as TemplateId;
+  }
+  return defaultTemplateForTenant(tenant?.slug, tenant?.name);
 }

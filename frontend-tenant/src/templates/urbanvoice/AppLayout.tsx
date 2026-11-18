@@ -2,10 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { useDemoDb } from './demo/store';
-import { badgeMeta, counts, pendingAll, searchClubs, state } from './demo/selectors';
-import { initials } from './demo/format';
-import type { Club } from './demo/types';
+import { useTenant } from '../../hooks/useTenant';
+import partnerTenantsService from '../../services/partnerTenants.service';
+import type { PartnerTenant } from '../../types/partnerTenant.types';
+import { clientMatches, isClientOf, statusMeta, tenantColor, tenantInitials } from './clients/tenantDisplay';
 import { useUvPermissions } from './permissions';
 import { UvIcon } from './ui/UvIcon';
 import { UvSprite } from './ui/UvSprite';
@@ -13,12 +13,16 @@ import { ToastProvider } from './ui/Toast';
 import './fonts.css';
 import './panel.css';
 
-const ROLE_LABEL: Record<string, string> = { admin: 'Administrador', operativo: 'Operativo' };
+const ROLE_LABEL: Record<string, string> = {
+  admin: 'Administrador',
+  operativo: 'Operativo',
+  partner: 'Administrador general',
+};
 
-function clubLogo(c: Club, size: number) {
+function clientLogo(client: PartnerTenant, size: number) {
   return (
-    <span className="clogo" style={{ width: size, height: size, background: c.color, fontSize: Math.round(size * 0.38) }}>
-      {initials(c.name)}
+    <span className="clogo" style={{ width: size, height: size, background: tenantColor(client), fontSize: Math.round(size * 0.38) }}>
+      {tenantInitials(client.name)}
     </span>
   );
 }
@@ -28,26 +32,46 @@ export function UrbanVoiceAppLayout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { tenant } = useTenant();
   const perms = useUvPermissions();
-  const db = useDemoDb();
 
   const [mini, setMini] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
-  const [bellOpen, setBellOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
   const [q, setQ] = useState('');
+  const [clients, setClients] = useState<PartnerTenant[]>([]);
   const root = useRef<HTMLDivElement>(null);
 
-  const activeCount = counts(db).all - counts(db).baja;
-  const pending = useMemo(() => pendingAll(db), [db]);
-  const results = useMemo(() => searchClubs(db, q), [db, q]);
+  // Los clientes del panel son los tenant hijos del tenant servido (ADR-046):
+  // el contador y el buscador de la topbar salen de acá, no de datos demo.
+  useEffect(() => {
+    if (!tenant?.tenant_id) return;
+    let cancelled = false;
+    partnerTenantsService
+      .listTenants(1, 100)
+      .then((result) => {
+        if (!cancelled) setClients(result.tenants.filter((t) => isClientOf(tenant.tenant_id, t)));
+      })
+      .catch(() => {
+        if (!cancelled) setClients([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // También en cada navegación: dar de alta o suspender un cliente cambia el
+    // contador y el buscador sin recargar la página.
+  }, [tenant?.tenant_id, pathname]);
+
+  const results = useMemo(() => clients.filter((c) => clientMatches(c, q)).slice(0, 6), [clients, q]);
   const fullName = [user?.nombre, user?.apellido].filter(Boolean).join(' ') || user?.username || 'Administrador';
   const roleLabel = ROLE_LABEL[user?.role || 'operativo'] || 'Operativo';
+  // El partner sólo administra clientes: Partners y Configuración son de los
+  // usuarios del tenant base (endpoints /api/tenant/*, que el partner no usa).
+  const partnerOnlyClients = perms.isPartner;
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setNavOpen(false);
-      setBellOpen(false);
       setUserOpen(false);
       setQ('');
     }, 0);
@@ -58,7 +82,6 @@ export function UrbanVoiceAppLayout({ children }: { children: ReactNode }) {
     const close = (e: MouseEvent) => {
       if (!root.current?.contains(e.target as Node)) return;
       if (!(e.target as Element).closest('.dd')) {
-        setBellOpen(false);
         setUserOpen(false);
       }
     };
@@ -66,7 +89,9 @@ export function UrbanVoiceAppLayout({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('mousedown', close);
   }, []);
 
-  if (!(pathname === '/clients' || pathname.startsWith('/clients/') || pathname === '/partners' || pathname.startsWith('/partners/') || pathname === '/settings')) {
+  const isClientsRoute = pathname === '/clients' || pathname.startsWith('/clients/');
+  const isTenantRoute = pathname === '/partners' || pathname.startsWith('/partners/') || pathname === '/settings';
+  if (!isClientsRoute && (partnerOnlyClients || !isTenantRoute)) {
     return <Navigate to="/clients" replace />;
   }
 
@@ -75,10 +100,9 @@ export function UrbanVoiceAppLayout({ children }: { children: ReactNode }) {
     else setNavOpen((v) => !v);
   };
 
-  const openClient = (c: Club) => {
+  const openClient = (client: PartnerTenant) => {
     setQ('');
-    setBellOpen(false);
-    navigate(`/clients/${c.id}`);
+    navigate(`/clients/${client.tenant_id}`);
   };
 
   const doLogout = () => {
@@ -109,29 +133,35 @@ export function UrbanVoiceAppLayout({ children }: { children: ReactNode }) {
               >
                 <UvIcon name="club" />
                 <span>Clientes</span>
-                <em>{activeCount}</em>
+                <em>{clients.length || ''}</em>
               </button>
-              <button
-                type="button"
-                data-v="partners"
-                aria-label="Partners"
-                className={pathname.startsWith('/partners') ? 'on' : ''}
-                onClick={() => navigate('/partners')}
-              >
-                <UvIcon name="handshake" />
-                <span>Partners</span>
-              </button>
-              <small className="nav-g">Ajustes</small>
-              <button
-                type="button"
-                data-v="config"
-                aria-label="Configuración"
-                className={pathname === '/settings' ? 'on' : ''}
-                onClick={() => navigate('/settings')}
-              >
-                <UvIcon name="gear" />
-                <span>Configuración</span>
-              </button>
+              {partnerOnlyClients ? null : (
+                <button
+                  type="button"
+                  data-v="partners"
+                  aria-label="Partners"
+                  className={pathname.startsWith('/partners') ? 'on' : ''}
+                  onClick={() => navigate('/partners')}
+                >
+                  <UvIcon name="handshake" />
+                  <span>Partners</span>
+                </button>
+              )}
+              {partnerOnlyClients ? null : (
+                <>
+                  <small className="nav-g">Ajustes</small>
+                  <button
+                    type="button"
+                    data-v="config"
+                    aria-label="Configuración"
+                    className={pathname === '/settings' ? 'on' : ''}
+                    onClick={() => navigate('/settings')}
+                  >
+                    <UvIcon name="gear" />
+                    <span>Configuración</span>
+                  </button>
+                </>
+              )}
             </nav>
             <div className="side-art" aria-hidden="true">
               <svg viewBox="0 0 260 200" preserveAspectRatio="none">
@@ -161,7 +191,7 @@ export function UrbanVoiceAppLayout({ children }: { children: ReactNode }) {
                 <UvIcon name="search" />
                 <input
                   id="q"
-                  placeholder="Buscar cliente, localidad o responsable…"
+                  placeholder="Buscar cliente, dominio o nombre interno…"
                   autoComplete="off"
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
@@ -173,21 +203,21 @@ export function UrbanVoiceAppLayout({ children }: { children: ReactNode }) {
                 {q.trim() ? (
                   <div className="srch-r">
                     {results.length ? (
-                      results.map((c) => {
-                        const meta = badgeMeta(state(db, c).k);
+                      results.map((client) => {
+                        const meta = statusMeta(client.status);
                         return (
                           <a
-                            href={`/clients/${c.id}`}
-                            key={c.id}
+                            href={`/clients/${client.tenant_id}`}
+                            key={client.tenant_id}
                             onClick={(e) => {
                               e.preventDefault();
-                              openClient(c);
+                              openClient(client);
                             }}
                           >
-                            {clubLogo(c, 30)}
+                            {clientLogo(client, 30)}
                             <span>
-                              <b>{c.name}</b>
-                              <small>{c.city} · {c.owner}</small>
+                              <b>{client.name}</b>
+                              <small>{client.domain || (client.slug ? `intellify.pro/${client.slug}` : '—')}</small>
                             </span>
                             <span className={`bdg ${meta.tone}`}>{meta.label}</span>
                           </a>
@@ -203,53 +233,10 @@ export function UrbanVoiceAppLayout({ children }: { children: ReactNode }) {
                 <div className="dd">
                   <button
                     type="button"
-                    className="ico bell"
-                    aria-label="Avisos"
-                    onClick={() => {
-                      setBellOpen((v) => !v);
-                      setUserOpen(false);
-                    }}
-                  >
-                    <UvIcon name="bell" />
-                    <em>{pending.length || ''}</em>
-                  </button>
-                  <div className="dd-m bell-m" hidden={!bellOpen}>
-                    <div className="dd-h">
-                      <b>Para hacer</b>
-                      <span>{pending.length}</span>
-                    </div>
-                    {pending.length ? (
-                      pending.slice(0, 7).map((p, i) => (
-                        <a
-                          href={`/clients/${p.clubId}`}
-                          key={`${p.clubId}-${i}`}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            navigate(`/clients/${p.clubId}`);
-                          }}
-                        >
-                          <span className={`dot ${p.tone}`} />
-                          <span>
-                            <b>{db.clubs.find((c) => c.id === p.clubId)?.name}</b>
-                            <small>{p.text}</small>
-                          </span>
-                        </a>
-                      ))
-                    ) : (
-                      <p className="muted">No hay nada pendiente.</p>
-                    )}
-                  </div>
-                </div>
-                <div className="dd">
-                  <button
-                    type="button"
                     className="user"
-                    onClick={() => {
-                      setUserOpen((v) => !v);
-                      setBellOpen(false);
-                    }}
+                    onClick={() => setUserOpen((v) => !v)}
                   >
-                    <span className="av">{initials(fullName)}</span>
+                    <span className="av">{tenantInitials(fullName)}</span>
                     <span className="u-t">
                       <b>{fullName}</b>
                       <small>{roleLabel}</small>

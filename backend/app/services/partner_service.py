@@ -23,6 +23,7 @@ from typing import Dict, List, Optional, Sequence
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 
+from app.auth_service import get_password_hash
 from app.db.database import AsyncSessionLocal
 from app.db.models import Bot as BotModel
 from app.db.models import BotModule as BotModuleModel
@@ -35,6 +36,7 @@ from app.db.models import TenantModule as TenantModuleModel
 from app.db.models import User as UserModel
 from app.models.tenant import (
     BotModuleOut,
+    PartnerAdminUserCreate,
     PartnerTenantCreate,
     PartnerTenantUpdate,
     Tenant,
@@ -82,7 +84,9 @@ def build_cloned_rows(
 
     - El tenant nuevo hereda estado, plan y `settings` (deep copy: los flags de
       runtime son parte de la configuración, no datos operativos) y el
-      branding del base mezclado con el del alta (gana el del alta).
+      branding del base mezclado con el del alta (gana el del alta). No hereda
+      `branding.template_id`: ese tema es el panel del tenant base (p. ej. el
+      UrbanVoice del reseller, ADR-046), no el de sus clientes.
     - Cada agente se copia entero **menos** canales y contadores: nace sin
       `channel_ids`, con los contadores en cero y `metadata` vacía. La config
       técnica (`config`) va deep-copiada porque es la plantilla que el partner
@@ -94,6 +98,11 @@ def build_cloned_rows(
     - El nombre interno (`slug`, URL del apex) lo resuelve `provision_tenant`:
       no se hereda del base, que ya tiene el suyo.
     """
+    inherited_branding = {
+        key: value
+        for key, value in (base.branding or {}).items()
+        if key != "template_id"
+    }
     tenant_row = TenantModel(
         tenant_id=new_tenant_id,
         name=name,
@@ -102,7 +111,7 @@ def build_cloned_rows(
         status=base.status,
         plan_id=base.plan_id,
         settings=copy.deepcopy(base.settings or {}),
-        branding={**(base.branding or {}), **branding},
+        branding={**inherited_branding, **branding},
         parent_tenant_id=base.tenant_id,
         api_key_hash=None,
     )
@@ -148,6 +157,24 @@ def build_cloned_rows(
     ]
 
     return tenant_row, bot_rows, bot_module_rows, tenant_module_rows
+
+
+def build_admin_user_row(tenant_id: str, admin: PartnerAdminUserCreate) -> UserModel:
+    """Fila del admin del tenant derivado que se crea en el mismo alta.
+
+    El rol es siempre `admin`: el partner no crea partners ni super_admins, y
+    la contraseña se hashea acá — nunca se guarda en claro ni viaja al cliente.
+    """
+    return UserModel(
+        username=admin.username,
+        email=admin.email,
+        nombre=admin.nombre,
+        apellido=admin.apellido,
+        hashed_password=get_password_hash(admin.password),
+        disabled=False,
+        tenant_id=tenant_id,
+        role="admin",
+    )
 
 
 class PartnerService:
@@ -205,10 +232,15 @@ class PartnerService:
     async def provision_tenant(self, base_tenant_id: str, data: PartnerTenantCreate) -> Tenant:
         """Da de alta un tenant derivado clonando agente y módulos del base.
 
+        Con `admin_user`, el usuario admin del tenant nuevo se inserta en la
+        misma transacción: si el nombre de usuario ya existe, no queda un
+        tenant a medio provisionar.
+
         Raises:
             LookupError: el tenant base no existe.
             PermissionError: el tenant base está suspendido.
-            ValueError: ya existe un tenant con ese dominio.
+            ValueError: ya existe un tenant con ese dominio o un usuario con
+                ese nombre.
             TenantSlugConflict: ya existe un tenant con ese nombre interno.
         """
         new_tenant_id = f"tenant_{uuid.uuid4().hex[:12]}"
@@ -247,6 +279,17 @@ class PartnerService:
                     await taken_slugs(session),
                 )
 
+            if data.admin_user:
+                taken_user = (await session.execute(
+                    select(UserModel.username).where(
+                        UserModel.username == data.admin_user.username
+                    )
+                )).first()
+                if taken_user:
+                    raise ValueError(
+                        f"El usuario '{data.admin_user.username}' ya existe"
+                    )
+
             tenant_row, bot_rows, bot_module_rows, tenant_module_rows = build_cloned_rows(
                 base,
                 bots,
@@ -267,14 +310,21 @@ class PartnerService:
                 session.add_all(bot_rows)
                 await session.flush()
                 session.add_all([*bot_module_rows, *tenant_module_rows])
+                if data.admin_user:
+                    session.add(build_admin_user_row(new_tenant_id, data.admin_user))
                 await session.commit()
             except IntegrityError as e:
                 await session.rollback()
                 if getattr(e.orig, "sqlstate", None) == "23505":
                     # Dos índices únicos compiten en el `flush` del tenant: el
                     # del dominio (comportamiento previo) y el del nombre interno.
-                    if integrity_constraint_name(e) == SLUG_CONSTRAINT:
+                    constraint = integrity_constraint_name(e)
+                    if constraint == SLUG_CONSTRAINT:
                         raise TenantSlugConflict() from e
+                    if constraint == "users_pkey":
+                        raise ValueError(
+                            f"El usuario '{data.admin_user.username if data.admin_user else ''}' ya existe"
+                        ) from e
                     raise ValueError("Ya existe un tenant con ese dominio")
                 raise
             await session.refresh(tenant_row)

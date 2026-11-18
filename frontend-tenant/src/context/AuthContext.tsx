@@ -58,7 +58,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * /login y /login lo re-manda a /dashboard: loop.
    */
   const assertSessionUser = (candidate: User) => {
-    assertTenantPanelRole(candidate.role);
+    assertTenantPanelRole(candidate.role, tenant);
     assertSameTenant(candidate);
   };
 

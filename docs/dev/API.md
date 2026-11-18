@@ -765,17 +765,28 @@ Tenant base + derivados, del más nuevo al más viejo. Mismo shape que
 
 Alta de un tenant derivado. Body:
 ```json
-{ "name": "Cliente Partner", "domain": "cliente-partner.test" }
+{
+  "name": "Cliente Partner",
+  "domain": "cliente-partner.test",
+  "admin_user": { "username": "cliente_admin", "password": "secreto", "nombre": "Ana", "email": "ana@cliente.test" }
+}
 ```
-`branding` (opcional) se mezcla sobre el del tenant base. El resto **no** se
-elige: `status`, `plan_id` y `settings` se copian del base, junto con sus
-agentes (misma `config`, sin `channel_ids` ni contadores) y sus módulos (con
-`granted`/`enabled` tal como estaban). No se copia `tenant_llm_configs`, ni
-canales, clientes o conversaciones.
+`admin_user` es opcional: se inserta en la **misma transacción** del alta con
+rol `admin` y `tenant_id` del tenant nuevo (la contraseña se hashea; nunca se
+devuelve). Si el usuario ya existe, no queda un tenant a medio provisionar.
+
+`branding` (opcional) se mezcla sobre el del tenant base, **excepto**
+`template_id`: el tema del panel es del tenant base (p. ej. el UrbanVoice del
+reseller), no de sus clientes. El resto **no** se elige: `status`, `plan_id` y
+`settings` se copian del base, junto con sus agentes (misma `config`, sin
+`channel_ids` ni contadores) y sus módulos (con `granted`/`enabled` tal como
+estaban). No se copia `tenant_llm_configs`, ni canales, clientes o
+conversaciones.
 
 - **201** `{"success": true, "tenant": {...}}` (incluye `parent_tenant_id`).
 - **403** si el tenant base está suspendido.
-- **409** si ya existe un tenant con ese dominio.
+- **409** si ya existe un tenant con ese dominio o un usuario con ese
+  `admin_user.username`.
 
 ### GET `/api/partner/tenants/{tenant_id}`
 
