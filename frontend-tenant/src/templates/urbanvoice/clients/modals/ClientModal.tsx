@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useTenant } from '../../../../hooks/useTenant';
 import partnerTenantsService from '../../../../services/partnerTenants.service';
 import { apiErrorDetail } from '../../../../utils/apiError';
 import type { PartnerTenant } from '../../../../types/partnerTenant.types';
+import { UvIcon } from '../../ui/UvIcon';
 import { Modal } from '../../ui/Modal';
 
 interface ClientModalProps {
@@ -31,17 +33,33 @@ const BLANK: FormState = {
  * (`POST /api/partner/tenants`).
  */
 export default function ClientModal({ open, onClose, onCreated }: ClientModalProps) {
+  const { tenant } = useTenant();
   const [form, setForm] = useState<FormState>(BLANK);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  /** Agentes del tenant base: es lo que el alta va a clonar. */
+  const [baseAgents, setBaseAgents] = useState<number | null>(null);
 
   useEffect(() => {
-    if (open) {
-      setForm(BLANK);
-      setError('');
-      setSaving(false);
-    }
-  }, [open]);
+    if (!open) return;
+    setForm(BLANK);
+    setError('');
+    setSaving(false);
+    setBaseAgents(null);
+    if (!tenant?.tenant_id) return;
+    let cancelled = false;
+    partnerTenantsService
+      .listBots(tenant.tenant_id)
+      .then((bots) => {
+        if (!cancelled) setBaseAgents(bots.length);
+      })
+      .catch(() => {
+        if (!cancelled) setBaseAgents(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, tenant?.tenant_id]);
 
   const set = (key: keyof FormState) => (e: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
@@ -86,8 +104,18 @@ export default function ClientModal({ open, onClose, onCreated }: ClientModalPro
   return (
     <Modal open={open} title="Nuevo cliente" onClose={onClose} wide>
       <p className="muted">
-        Se crea un panel propio para el cliente con el agente y los módulos de UrbanVoice ya configurados.
+        Se crea un panel propio para el cliente con una copia de los agentes y módulos de UrbanVoice.
       </p>
+      {baseAgents === 0 ? (
+        <div className="alert warn">
+          <UvIcon name="alert" />
+          <span>UrbanVoice no tiene agentes configurados: el cliente se va a crear sin agentes.</span>
+        </div>
+      ) : baseAgents === null ? null : (
+        <p className="muted sm">
+          Se {baseAgents === 1 ? 'va a clonar 1 agente' : `van a clonar ${baseAgents} agentes`} de UrbanVoice.
+        </p>
+      )}
 
       <label htmlFor="cl-name">Nombre del cliente</label>
       <input id="cl-name" value={form.name} onChange={set('name')} placeholder="Ej. Municipalidad de San Pedro" />

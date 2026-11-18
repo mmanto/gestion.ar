@@ -58,6 +58,15 @@ const partnerTenantsService = {
     return response.data.bots;
   },
 
+  /** Copia los agentes actuales del tenant base a un cliente sin agentes
+   * (reparación: el alta clona una foto del base). */
+  async cloneAgents(tenantId: string): Promise<number> {
+    const response = await api.post<{ success: boolean; cloned: number }>(
+      `/partner/tenants/${encodeURIComponent(tenantId)}/agents/clone`,
+    );
+    return response.data.cloned;
+  },
+
   async listBotModules(tenantId: string, botId: string): Promise<PartnerTenantBotModule[]> {
     const response = await api.get<{ success: boolean; modules: PartnerTenantBotModule[] }>(
       `/partner/tenants/${encodeURIComponent(tenantId)}/bots/${encodeURIComponent(botId)}/modules`,

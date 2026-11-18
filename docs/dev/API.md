@@ -811,6 +811,18 @@ y nunca se borran en cascada.
 Resumen read-only de los agentes (`bot_id`, `name`, `description`, `status`,
 `business_type`) — mismo shape que `/api/tenant/bots`.
 
+### POST `/api/partner/tenants/{tenant_id}/agents/clone`
+
+Copia al cliente los agentes **actuales** del tenant base, con sus módulos
+(`granted`/`enabled`), sin canales ni contadores. Es el camino de reparación:
+el alta clona una foto del base, y si entonces no tenía agentes (o el base sumó
+agentes después) el cliente quedó sin ellos.
+
+- **200** `{"success": true, "cloned": 1}`.
+- **400** sobre el tenant base, si el cliente ya tiene agentes o si el base no
+  tiene ninguno.
+- **404** fuera de alcance.
+
 ### GET `/api/partner/tenants/{tenant_id}/bots/{bot_id}/modules`
 
 Módulos del agente con `granted`/`enabled`/`available`. **404** si el agente no

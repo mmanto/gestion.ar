@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useTenant } from '../../../../hooks/useTenant';
 import partnerTenantsService from '../../../../services/partnerTenants.service';
 import type { PartnerTenantBot, PartnerTenantBotModule } from '../../../../types/partnerTenant.types';
 import { UvIcon } from '../../ui/UvIcon';
@@ -15,38 +16,44 @@ interface BotWithModules {
 }
 
 export default function BotsTab({ tenantId, canEdit }: BotsTabProps) {
+  const { tenant } = useTenant();
   const { showToast } = useToast();
   const [bots, setBots] = useState<BotWithModules[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  /** Agentes del tenant base: si el cliente tiene 0, explican el porqué. */
+  const [baseAgents, setBaseAgents] = useState<number | null>(null);
+  const [cloning, setCloning] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
+  const load = useCallback(async () => {
     setLoading(true);
     setError('');
-    partnerTenantsService
-      .listBots(tenantId)
-      .then(async (list) => {
-        // Los módulos son por agente: se resuelven después de tener la lista.
-        const withModules = await Promise.all(
-          list.map(async (bot) => ({
-            bot,
-            modules: await partnerTenantsService.listBotModules(tenantId, bot.bot_id),
-          })),
-        );
-        if (!cancelled) setBots(withModules);
-      })
-      .catch(() => {
-        if (!cancelled) setError('No se pudieron cargar los agentes.');
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [tenantId]);
+    try {
+      const list = await partnerTenantsService.listBots(tenantId);
+      // Los módulos son por agente: se resuelven después de tener la lista.
+      const withModules = await Promise.all(
+        list.map(async (bot) => ({
+          bot,
+          modules: await partnerTenantsService.listBotModules(tenantId, bot.bot_id),
+        })),
+      );
+      setBots(withModules);
+      setBaseAgents(
+        list.length || !tenant?.tenant_id
+          ? null
+          : (await partnerTenantsService.listBots(tenant.tenant_id)).length,
+      );
+    } catch {
+      setError('No se pudieron cargar los agentes.');
+    } finally {
+      setLoading(false);
+    }
+  }, [tenantId, tenant?.tenant_id]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const toggle = async (botId: string, module: PartnerTenantBotModule) => {
     const key = `${botId}:${module.module_key}`;
@@ -71,6 +78,20 @@ export default function BotsTab({ tenantId, canEdit }: BotsTabProps) {
     }
   };
 
+  const cloneAgents = async () => {
+    if (cloning) return;
+    setCloning(true);
+    try {
+      const cloned = await partnerTenantsService.cloneAgents(tenantId);
+      showToast(<>{cloned === 1 ? 'Se clonó 1 agente' : `Se clonaron ${cloned} agentes`} de UrbanVoice</>);
+      await load();
+    } catch {
+      showToast(<>No se pudieron clonar los agentes</>);
+    } finally {
+      setCloning(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="card">
@@ -83,7 +104,8 @@ export default function BotsTab({ tenantId, canEdit }: BotsTabProps) {
     <div className="card">
       <h3>Agentes y módulos</h3>
       <p className="muted sm">
-        Los agentes se clonaron de UrbanVoice. Sólo se prenden o apagan los módulos ya otorgados.
+        Los agentes del cliente son una copia de los de UrbanVoice al momento del alta. Sólo se
+        prenden o apagan los módulos ya otorgados.
       </p>
 
       {error ? <small className="lg-err">{error}</small> : null}
@@ -126,7 +148,24 @@ export default function BotsTab({ tenantId, canEdit }: BotsTabProps) {
         <div className="empty">
           <UvIcon name="club" />
           <b>El cliente no tiene agentes</b>
-          <span>El agente se clona del tenant base al dar de alta el cliente.</span>
+          {baseAgents === null ? (
+            <span>No se pudieron verificar los agentes de UrbanVoice.</span>
+          ) : baseAgents === 0 ? (
+            <span>
+              UrbanVoice no tiene agentes configurados, por eso el cliente se creó sin agentes.
+              Cuando los tenga, se pueden clonar desde acá.
+            </span>
+          ) : (
+            <span>
+              UrbanVoice tiene {baseAgents} {baseAgents === 1 ? 'agente' : 'agentes'} y este cliente
+              se creó sin ellos.
+            </span>
+          )}
+          {canEdit && baseAgents ? (
+            <button type="button" className="btn pri sm" onClick={cloneAgents} disabled={cloning}>
+              <UvIcon name="layers" />{cloning ? 'Clonando…' : 'Clonar agentes de UrbanVoice'}
+            </button>
+          ) : null}
         </div>
       )}
     </div>

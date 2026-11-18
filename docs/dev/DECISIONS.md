@@ -2870,6 +2870,11 @@ rol `partner`.
   funcionando y muestra los mismos datos.
 - La topbar del tema busca y cuenta clientes reales (ya no hay campana de
   «pendientes»: no hay fuente real para esas notificaciones).
+- El alta es una foto: si UrbanVoice no tenía agentes al crear el cliente, el
+  cliente nace sin agentes y el alta lo avisa antes de crearlo. La ficha
+  muestra el estado real y ofrece **Clonar agentes de UrbanVoice**
+  (`POST /api/partner/tenants/{id}/agents/clone`), que copia los agentes
+  actuales del base sin tocar los existentes.
 - Partners (sección de la demo) sigue con datos de `localStorage`; su
   integración es una tarea aparte.
 - Los usuarios creados en el alta nacen con contraseña inicial que conoce el

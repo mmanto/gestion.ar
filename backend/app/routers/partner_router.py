@@ -171,6 +171,22 @@ async def list_bots(
     }
 
 
+@router.post("/tenants/{tenant_id}/agents/clone", response_model=dict)
+async def clone_agents(tenant_id: str, current_user: User = Depends(get_current_user)):
+    """Copia los agentes actuales del tenant base a un derivado sin agentes.
+
+    El alta es una foto: si el base no tenía agentes entonces, o sumó agentes
+    después, el partner repara el cliente desde acá sin borrarlo.
+    """
+    try:
+        cloned = await get_partner_service().clone_agents(_base(current_user), tenant_id)
+    except LookupError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Tenant no encontrado")
+    except ValueError as e:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e))
+    return {"success": True, "cloned": cloned}
+
+
 @router.get("/tenants/{tenant_id}/bots/{bot_id}/modules", response_model=dict)
 async def get_bot_modules(
     tenant_id: str,

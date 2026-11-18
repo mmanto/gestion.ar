@@ -66,6 +66,51 @@ BUSINESS_DATA_DEPENDENTS = (
 )
 
 
+def build_cloned_bot_rows(
+    new_tenant_id: str,
+    bots: Sequence[BotModel],
+    bot_modules_by_bot: Dict[str, Sequence[BotModuleModel]],
+) -> tuple[List[BotModel], List[BotModuleModel]]:
+    """Filas de los agentes clonados (y sus módulos) para un tenant nuevo.
+
+    Cada agente nace con la misma `config` (deep copy), **sin** `channel_ids`,
+    con los contadores en cero y `metadata` vacía. Los módulos conservan su
+    `granted`/`enabled` tal como estaban en el base.
+
+    La usan el alta de un derivado (`build_cloned_rows`) y el re-clonado de
+    agentes de un cliente que quedó sin ellos (`clone_agents`).
+    """
+    bot_rows: List[BotModel] = []
+    bot_module_rows: List[BotModuleModel] = []
+    for bot in bots:
+        new_bot_id = f"bot_{uuid.uuid4().hex[:12]}"
+        bot_rows.append(BotModel(
+            bot_id=new_bot_id,
+            tenant_id=new_tenant_id,
+            owner_id=bot.owner_id,
+            name=bot.name,
+            description=bot.description,
+            business_type=bot.business_type,
+            status=bot.status,
+            config=copy.deepcopy(bot.config or {}),
+            channel_ids=[],
+            metadata_={},
+            total_clients=0,
+            total_conversations=0,
+            total_messages=0,
+        ))
+        for module in bot_modules_by_bot.get(bot.bot_id, []):
+            bot_module_rows.append(BotModuleModel(
+                bot_id=new_bot_id,
+                module_key=module.module_key,
+                granted=module.granted,
+                enabled=module.enabled,
+                granted_by=module.granted_by,
+                granted_at=module.granted_at,
+            ))
+    return bot_rows, bot_module_rows
+
+
 def build_cloned_rows(
     base: TenantModel,
     bots: Sequence[BotModel],
@@ -116,34 +161,9 @@ def build_cloned_rows(
         api_key_hash=None,
     )
 
-    bot_rows: List[BotModel] = []
-    bot_module_rows: List[BotModuleModel] = []
-    for bot in bots:
-        new_bot_id = f"bot_{uuid.uuid4().hex[:12]}"
-        bot_rows.append(BotModel(
-            bot_id=new_bot_id,
-            tenant_id=new_tenant_id,
-            owner_id=bot.owner_id,
-            name=bot.name,
-            description=bot.description,
-            business_type=bot.business_type,
-            status=bot.status,
-            config=copy.deepcopy(bot.config or {}),
-            channel_ids=[],
-            metadata_={},
-            total_clients=0,
-            total_conversations=0,
-            total_messages=0,
-        ))
-        for module in bot_modules_by_bot.get(bot.bot_id, []):
-            bot_module_rows.append(BotModuleModel(
-                bot_id=new_bot_id,
-                module_key=module.module_key,
-                granted=module.granted,
-                enabled=module.enabled,
-                granted_by=module.granted_by,
-                granted_at=module.granted_at,
-            ))
+    bot_rows, bot_module_rows = build_cloned_bot_rows(
+        new_tenant_id, bots, bot_modules_by_bot
+    )
 
     tenant_module_rows = [
         TenantModuleModel(
@@ -329,6 +349,56 @@ class PartnerService:
                 raise
             await session.refresh(tenant_row)
             return to_tenant(tenant_row)
+
+    async def clone_agents(self, base_tenant_id: str, tenant_id: str) -> int:
+        """Copia los agentes actuales del base a un derivado que no tiene.
+
+        Es el camino de reparación cuando el cliente se dio de alta sin
+        agentes (el base no tenía) o el base sumó agentes después: el alta es
+        una foto y no se propaga sola. No toca agentes ya existentes.
+
+        Returns:
+            Cantidad de agentes clonados.
+
+        Raises:
+            LookupError: el tenant no está en el alcance del partner.
+            ValueError: se intenta sobre el tenant base, ya tiene agentes, o
+                el base no tiene ninguno.
+        """
+        if tenant_id == base_tenant_id:
+            raise ValueError("El tenant base no clona sus propios agentes")
+        if not await self.get_managed_tenant(base_tenant_id, tenant_id):
+            raise LookupError(tenant_id)
+
+        async with AsyncSessionLocal() as session:
+            existing = (await session.execute(
+                select(func.count()).select_from(BotModel).where(BotModel.tenant_id == tenant_id)
+            )).scalar_one()
+            if existing:
+                raise ValueError("El cliente ya tiene agentes")
+
+            bots = (await session.execute(
+                select(BotModel).where(BotModel.tenant_id == base_tenant_id)
+            )).scalars().all()
+            if not bots:
+                raise ValueError("El tenant base no tiene agentes para clonar")
+
+            bot_ids = [bot.bot_id for bot in bots]
+            bot_modules_by_bot: Dict[str, List[BotModuleModel]] = {bot_id: [] for bot_id in bot_ids}
+            bot_modules = (await session.execute(
+                select(BotModuleModel).where(BotModuleModel.bot_id.in_(bot_ids))
+            )).scalars().all()
+            for module in bot_modules:
+                bot_modules_by_bot[module.bot_id].append(module)
+
+            bot_rows, bot_module_rows = build_cloned_bot_rows(
+                tenant_id, bots, bot_modules_by_bot
+            )
+            session.add_all(bot_rows)
+            await session.flush()
+            session.add_all(bot_module_rows)
+            await session.commit()
+            return len(bot_rows)
 
     async def update_managed_tenant(
         self, base_tenant_id: str, tenant_id: str, data: PartnerTenantUpdate

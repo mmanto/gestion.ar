@@ -53,6 +53,14 @@ Historial de cambios del proyecto. Seguir el formato [Keep a Changelog](https://
   interna (`intellify.pro/<slug>`).
 
 ### Agregado
+- **La ficha del cliente avisa por qué no tiene agentes y permite clonarlos**
+  (ADR-046): el alta clona una foto del tenant base; si UrbanVoice no tenía
+  agentes, el cliente nace sin ellos. Ahora el modal de alta muestra cuántos
+  agentes se van a clonar (o advierte que el padre no tiene), la pestaña
+  Agentes explica el caso real y ofrece **Clonar agentes de UrbanVoice**
+  (`POST /api/partner/tenants/{id}/agents/clone`, copia los agentes actuales
+  del base con sus módulos). El clon de agentes se extrajo a
+  `build_cloned_bot_rows` y lo comparten el alta y la reparación.
 - **Los clientes de UrbanVoice son tenants hijos reales** (ADR-046): la
   sección Clientes del panel del tenant (`templates/urbanvoice/clients/`)
   deja el `localStorage` demo y usa `/api/partner/tenants`. Listado con
